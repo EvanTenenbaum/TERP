@@ -15,6 +15,13 @@ let supplierHistoryData: Array<{
   poNumber: string;
   orderDate: string;
 }> = [];
+let catalogData: Array<{
+  id: number;
+  productName?: string | null;
+  nameCanonical?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+}> = [];
 
 // Mock PowersheetGrid since AG Grid doesn't render in JSDOM
 vi.mock("./PowersheetGrid", () => ({
@@ -53,7 +60,7 @@ vi.mock("@/lib/trpc", () => ({
         })),
       },
       products: {
-        useQuery: vi.fn(() => ({ data: [], isLoading: false })),
+        useQuery: vi.fn(() => ({ data: { items: [] }, isLoading: false })),
       },
     },
     inventory: {
@@ -64,12 +71,21 @@ vi.mock("@/lib/trpc", () => ({
         })),
       },
     },
+    productCatalogue: {
+      list: {
+        useQuery: vi.fn(() => ({
+          data: { items: catalogData },
+          isLoading: false,
+        })),
+      },
+    },
   },
 }));
 
 describe("ProductBrowserGrid", () => {
   beforeEach(() => {
     supplierHistoryData = [];
+    catalogData = [];
   });
 
   const defaultProps = {
@@ -169,5 +185,37 @@ describe("ProductBrowserGrid", () => {
 
     expect(screen.getByText("Added")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /added/i })).toBeDisabled();
+  });
+
+  it("falls back to product catalogue results on the catalog tab when PO products are empty", () => {
+    const onAddProduct = vi.fn();
+    catalogData = [
+      {
+        id: 201,
+        productName: "Fallback Gelato",
+        category: "Flower",
+        subcategory: "Smalls",
+      },
+    ];
+
+    render(
+      <ProductBrowserGrid
+        {...defaultProps}
+        supplierId={12}
+        onAddProduct={onAddProduct}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /catalog/i }));
+    fireEvent.click(screen.getByText("Select first row"));
+    fireEvent.click(screen.getByRole("button", { name: /\+ add selected/i }));
+
+    expect(onAddProduct).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productId: 201,
+        productName: "Fallback Gelato",
+        subcategory: "Smalls",
+      })
+    );
   });
 });

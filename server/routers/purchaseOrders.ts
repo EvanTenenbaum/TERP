@@ -101,6 +101,7 @@ const purchaseOrderItemInputSchema = z
       .min(0, "Maximum unit cost cannot be negative")
       .max(100_000, "Maximum unit cost must not exceed 100,000")
       .optional(),
+    notes: z.string().trim().max(1000).optional(),
   })
   .superRefine((item, ctx) => {
     if (!item.productId && !item.productName) {
@@ -419,9 +420,9 @@ export const purchaseOrdersRouter = router({
       // Generate PO number
       const poNumber = await generatePONumber(db);
 
-      const normalizedPaymentTerms = normalizePurchaseOrderPaymentTerms(
-        poData.paymentTerms
-      );
+      const normalizedPaymentTerms = poData.paymentTerms?.trim()
+        ? normalizePurchaseOrderPaymentTerms(poData.paymentTerms)
+        : null;
 
       const resolvedItems = await Promise.all(
         items.map(async item => {
@@ -440,6 +441,7 @@ export const purchaseOrdersRouter = router({
             unitCostMax: costSummary.unitCostMax,
             quantityOrdered: item.quantityOrdered,
             totalCost: costSummary.unitCost * item.quantityOrdered,
+            notes: item.notes?.trim() || null,
           };
         })
       );
@@ -491,7 +493,7 @@ export const purchaseOrdersRouter = router({
             unitCostMax: item.unitCostMax?.toString() ?? null,
             totalCost: (item.quantityOrdered * item.unitCost).toString(),
             supplierClientId: resolvedSupplierClientId ?? null,
-            notes: null, // Explicit null for nullable column (BUG-002)
+            notes: item.notes ?? null,
           }))
         );
       }
@@ -688,10 +690,11 @@ export const purchaseOrdersRouter = router({
       z.object({
         id: z.number(),
         supplierClientId: z.number().optional(), // Allow updating supplier
-        expectedDeliveryDate: z.string().optional(),
-        paymentTerms: z.string().optional(),
-        notes: z.string().optional(),
-        vendorNotes: z.string().optional(),
+        orderDate: z.string().optional(),
+        expectedDeliveryDate: z.string().nullable().optional(),
+        paymentTerms: z.string().nullable().optional(),
+        notes: z.string().nullable().optional(),
+        vendorNotes: z.string().nullable().optional(),
         status: z.string().optional(),
       })
     )
@@ -699,12 +702,38 @@ export const purchaseOrdersRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const { id, expectedDeliveryDate, ...rest } = input;
+      const {
+        id,
+        orderDate,
+        expectedDeliveryDate,
+        paymentTerms,
+        notes,
+        vendorNotes,
+        ...rest
+      } = input;
 
       // Build update object with proper types
       const updateData: Record<string, unknown> = { ...rest };
-      if (expectedDeliveryDate) {
-        updateData.expectedDeliveryDate = new Date(expectedDeliveryDate);
+      if (orderDate !== undefined) {
+        updateData.orderDate = new Date(orderDate);
+      }
+      if (expectedDeliveryDate !== undefined) {
+        updateData.expectedDeliveryDate = expectedDeliveryDate
+          ? new Date(expectedDeliveryDate)
+          : null;
+      }
+      if (paymentTerms !== undefined) {
+        updateData.paymentTerms = paymentTerms?.trim()
+          ? normalizePurchaseOrderPaymentTerms(paymentTerms)
+          : null;
+      }
+      if (notes !== undefined) {
+        updateData.notes = notes?.trim() ? notes.trim() : null;
+      }
+      if (vendorNotes !== undefined) {
+        updateData.vendorNotes = vendorNotes?.trim()
+          ? vendorNotes.trim()
+          : null;
       }
 
       await db

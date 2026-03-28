@@ -33,6 +33,7 @@ describe("validatePoDocument", () => {
       lineItems: [
         {
           tempId: "temp-1",
+          existingItemId: null,
           productId: 10,
           productName: "Test Product",
           category: "Flower",
@@ -73,6 +74,14 @@ describe("validatePoDocument", () => {
     expect(errors.some(e => e.includes("quantity must be > 0"))).toBe(true);
   });
 
+  it("catches missing product selection", () => {
+    const state = makeValidState();
+    state.lineItems[0].productId = null;
+    state.lineItems[0].productName = "";
+    const errors = validatePoDocument(state);
+    expect(errors.some(e => e.includes("product is required"))).toBe(true);
+  });
+
   it("passes for valid state", () => {
     const errors = validatePoDocument(makeValidState());
     expect(errors).toHaveLength(0);
@@ -86,6 +95,7 @@ describe("buildCreatePayload", () => {
       lineItems: [
         {
           tempId: "temp-1",
+          existingItemId: null,
           productId: 7,
           productName: "OG Kush",
           category: "Flower",
@@ -118,6 +128,7 @@ describe("buildCreatePayload", () => {
     expect(payload.items[0].productId).toBe(7);
     expect(payload.items[0].quantityOrdered).toBe(10);
     expect(payload.items[0].unitCost).toBe(5);
+    expect(payload.items[0].notes).toBe("fragile");
     // FIXED mode should not include min/max
     expect(payload.items[0].unitCostMin).toBeUndefined();
     expect(payload.items[0].unitCostMax).toBeUndefined();
@@ -128,6 +139,7 @@ describe("getLineTotal", () => {
   it("calculates FIXED correctly (100 * 2.5 = 250)", () => {
     const item: PoLineItem = {
       tempId: "t1",
+      existingItemId: null,
       productId: null,
       productName: "",
       category: "",
@@ -145,6 +157,7 @@ describe("getLineTotal", () => {
   it("calculates RANGE as average (100 * avg(2,3) = 250)", () => {
     const item: PoLineItem = {
       tempId: "t2",
+      existingItemId: null,
       productId: null,
       productName: "",
       category: "",
@@ -165,6 +178,7 @@ describe("getDocumentTotal", () => {
     const items: PoLineItem[] = [
       {
         tempId: "t1",
+        existingItemId: null,
         productId: null,
         productName: "",
         category: "",
@@ -178,6 +192,7 @@ describe("getDocumentTotal", () => {
       },
       {
         tempId: "t2",
+        existingItemId: null,
         productId: null,
         productName: "",
         category: "",

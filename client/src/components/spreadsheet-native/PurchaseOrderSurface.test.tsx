@@ -3,7 +3,7 @@
  */
 
 import type { ReactNode } from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PurchaseOrderSurface } from "./PurchaseOrderSurface";
 
@@ -11,7 +11,20 @@ const mockSetLocation = vi.fn();
 const mockSetSelectedId = vi.fn();
 const mockUseSearch = vi.fn(() => "");
 const mockCreateMutate = vi.fn();
+const mockUpdateMutateAsync = vi.fn(() => Promise.resolve({ success: true }));
+const mockAddItemMutateAsync = vi.fn(() => Promise.resolve({ success: true }));
+const mockUpdateItemMutateAsync = vi.fn(() =>
+  Promise.resolve({ success: true })
+);
+const mockDeleteItemMutateAsync = vi.fn(() =>
+  Promise.resolve({ success: true })
+);
 const mockSubmitMutate = vi.fn();
+const mockCreateProductIntakeDraftFromPO = vi.fn(input => ({
+  id: "draft-123",
+  ...input,
+}));
+const mockUpsertProductIntakeDraft = vi.fn(draft => draft);
 let mockSelectedPoId: number | null = null;
 
 let queueData: Array<{
@@ -150,6 +163,25 @@ vi.mock("@/lib/trpc", () => ({
       update: {
         useMutation: vi.fn(() => ({
           mutate: vi.fn(),
+          mutateAsync: mockUpdateMutateAsync,
+          isPending: false,
+        })),
+      },
+      addItem: {
+        useMutation: vi.fn(() => ({
+          mutateAsync: mockAddItemMutateAsync,
+          isPending: false,
+        })),
+      },
+      updateItem: {
+        useMutation: vi.fn(() => ({
+          mutateAsync: mockUpdateItemMutateAsync,
+          isPending: false,
+        })),
+      },
+      deleteItem: {
+        useMutation: vi.fn(() => ({
+          mutateAsync: mockDeleteItemMutateAsync,
           isPending: false,
         })),
       },
@@ -218,6 +250,29 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: vi.fn(() => ({ user: { id: 1 }, isAuthenticated: true })),
 }));
 
+vi.mock("@/lib/productIntakeDrafts", () => ({
+  createProductIntakeDraftFromPO: (...args: unknown[]) =>
+    mockCreateProductIntakeDraftFromPO(...args),
+  upsertProductIntakeDraft: (...args: unknown[]) =>
+    mockUpsertProductIntakeDraft(...args),
+}));
+
+vi.mock("@/lib/workspaceRoutes", () => ({
+  buildOperationsWorkspacePath: (
+    tab: string,
+    params?: Record<string, string | number | null | undefined>
+  ) => {
+    const qs = new URLSearchParams();
+    qs.set("tab", tab);
+    Object.entries(params ?? {}).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        qs.set(key, String(value));
+      }
+    });
+    return `/inventory?${qs.toString()}`;
+  },
+}));
+
 vi.mock("@/lib/spreadsheet-native", () => ({
   useSpreadsheetSelectionParam: vi.fn(() => ({
     selectedId: mockSelectedPoId,
@@ -240,6 +295,15 @@ describe("PurchaseOrderSurface", () => {
     poDetailData = null;
     poDetailIsLoading = false;
     mockSelectedPoId = null;
+    mockUpdateMutateAsync.mockClear();
+    mockAddItemMutateAsync.mockClear();
+    mockUpdateItemMutateAsync.mockClear();
+    mockDeleteItemMutateAsync.mockClear();
+    mockCreateProductIntakeDraftFromPO.mockImplementation(input => ({
+      id: "draft-123",
+      ...input,
+    }));
+    mockUpsertProductIntakeDraft.mockImplementation(draft => draft);
   });
 
   it('renders "Purchase Orders" title in queue mode', () => {
@@ -283,6 +347,60 @@ describe("PurchaseOrderSurface", () => {
       expect.stringContaining("poId=14")
     );
   });
+
+  it("starts receiving by persisting a draft and navigating with draftId", () => {
+    queueData = [
+      {
+        id: 33,
+        poNumber: "PO-033",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: "2026-04-03",
+        total: "250.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+    poDetailData = {
+      poNumber: "PO-033",
+      supplier: { email: "ops@northfarm.test", phone: "555-0100" },
+      items: [
+        {
+          id: 501,
+          productId: 91,
+          productName: "Wedding Cake",
+          category: "Flower",
+          subcategory: "Top Shelf",
+          quantityOrdered: "20",
+          quantityReceived: "5",
+          cogsMode: "FIXED",
+          unitCost: "2.40",
+        },
+      ],
+    };
+    mockSelectedPoId = 33;
+
+    render(<PurchaseOrderSurface defaultStatusFilter={["CONFIRMED"]} />);
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /start receiving/i })[0]
+    );
+    fireEvent.click(screen.getByRole("button", { name: /go to receiving/i }));
+
+    expect(mockCreateProductIntakeDraftFromPO).toHaveBeenCalledWith(
+      expect.objectContaining({
+        poId: 33,
+        poNumber: "PO-033",
+      })
+    );
+    expect(mockUpsertProductIntakeDraft).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "draft-123" }),
+      1
+    );
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      expect.stringContaining("draftId=draft-123")
+    );
+  });
 });
 
 describe("PurchaseOrderSurface — creation mode", () => {
@@ -301,6 +419,13 @@ describe("PurchaseOrderSurface — creation mode", () => {
     expect(
       screen.getByRole("button", { name: /back to queue/i })
     ).toBeInTheDocument();
+  });
+
+  it("hydrates the supplier from a creation-mode deep link", () => {
+    mockUseSearch.mockReturnValue("poView=create&supplierClientId=12");
+    render(<PurchaseOrderSurface />);
+
+    expect(screen.getByText("Supplier: 12")).toBeInTheDocument();
   });
 
   it("navigates back to the queue from creation mode", () => {
@@ -340,5 +465,51 @@ describe("PurchaseOrderSurface — creation mode", () => {
         ]),
       })
     );
+  });
+
+  it("persists edit mode header changes and item mutations through the dedicated PO item endpoints", async () => {
+    mockUseSearch.mockReturnValue("poView=edit&poId=22");
+    poDetailData = {
+      poNumber: "PO-022",
+      items: [
+        {
+          id: 501,
+          productId: 91,
+          productName: "Wedding Cake",
+          category: "Flower",
+          subcategory: "Top Shelf",
+          quantityOrdered: "20",
+          quantityReceived: "0",
+          cogsMode: "FIXED",
+          unitCost: "2.40",
+          notes: "keep cool",
+        },
+      ],
+    };
+
+    render(<PurchaseOrderSurface />);
+
+    fireEvent.click(screen.getByText("Choose supplier"));
+    fireEvent.click(screen.getByText("Add mock product"));
+    fireEvent.click(screen.getByText("Select first purchase order"));
+    fireEvent.click(screen.getByRole("button", { name: /remove selected/i }));
+    fireEvent.click(screen.getByText("Update PO"));
+
+    await waitFor(() => {
+      expect(mockUpdateMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 22,
+          supplierClientId: 12,
+        })
+      );
+      expect(mockAddItemMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          purchaseOrderId: 22,
+          productId: 91,
+        })
+      );
+      expect(mockDeleteItemMutateAsync).toHaveBeenCalledWith({ id: 501 });
+      expect(mockUpdateItemMutateAsync).not.toHaveBeenCalled();
+    });
   });
 });
