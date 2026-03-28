@@ -2042,6 +2042,7 @@ function PurchaseOrderQueueMode({
         onClose={() => setSelectedPoId(null)}
         title={selectedRow?.poNumber ?? "PO Inspector"}
         subtitle={selectedRow?.supplierName ?? "Select a purchase order"}
+        trapFocus={false}
         headerActions={
           selectedRow ? (
             <Badge variant="outline">{selectedRow.statusLabel}</Badge>

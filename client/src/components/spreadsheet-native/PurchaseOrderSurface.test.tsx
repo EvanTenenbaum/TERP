@@ -10,6 +10,7 @@ import { PurchaseOrderSurface } from "./PurchaseOrderSurface";
 const mockSetLocation = vi.fn();
 const mockSetSelectedId = vi.fn();
 const mockUseSearch = vi.fn(() => "");
+const mockInspectorPanel = vi.fn();
 const mockCreateMutate = vi.fn();
 const mockUpdateMutateAsync = vi.fn(() => Promise.resolve({ success: true }));
 const mockAddItemMutateAsync = vi.fn(() => Promise.resolve({ success: true }));
@@ -131,6 +132,45 @@ vi.mock("@/components/ui/supplier-combobox", () => ({
     <div data-testid="supplier-combobox">
       <div>Supplier: {value ?? "none"}</div>
       <button onClick={() => onValueChange(12)}>Choose supplier</button>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/work-surface/InspectorPanel", () => ({
+  InspectorPanel: ({
+    isOpen,
+    trapFocus,
+    children,
+  }: {
+    isOpen?: boolean;
+    trapFocus?: boolean;
+    children?: ReactNode;
+  }) => {
+    mockInspectorPanel({ isOpen, trapFocus });
+    return isOpen ? <div data-testid="inspector-panel">{children}</div> : null;
+  },
+  InspectorSection: ({
+    title,
+    children,
+  }: {
+    title: string;
+    children?: ReactNode;
+  }) => (
+    <section>
+      <h3>{title}</h3>
+      {children}
+    </section>
+  ),
+  InspectorField: ({
+    label,
+    children,
+  }: {
+    label: string;
+    children?: ReactNode;
+  }) => (
+    <div>
+      <span>{label}</span>
+      {children}
     </div>
   ),
 }));
@@ -290,6 +330,7 @@ vi.mock("@/hooks/work-surface/useExport", () => ({
 describe("PurchaseOrderSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockInspectorPanel.mockClear();
     mockUseSearch.mockReturnValue("");
     queueData = [];
     poDetailData = null;
@@ -399,6 +440,32 @@ describe("PurchaseOrderSurface", () => {
     );
     expect(mockSetLocation).toHaveBeenCalledWith(
       expect.stringContaining("draftId=draft-123")
+    );
+  });
+
+  it("disables focus trapping for the PO inspector so row selection does not loop focus", () => {
+    queueData = [
+      {
+        id: 18,
+        poNumber: "PO-018",
+        supplierClientId: 12,
+        purchaseOrderStatus: "DRAFT",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: "2026-04-03",
+        total: "125.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+    poDetailData = { items: [] };
+    mockSelectedPoId = 18;
+
+    render(<PurchaseOrderSurface />);
+
+    expect(mockInspectorPanel).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isOpen: true,
+        trapFocus: false,
+      })
     );
   });
 });
