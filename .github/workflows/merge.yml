@@ -314,6 +314,8 @@ jobs:
           APP_URL="https://terp-app-b9s35.ondigitalocean.app"
           TARGET_COMMIT="${GITHUB_SHA}"
           TARGET_COMMIT_SHORT="${GITHUB_SHA::7}"
+          VERIFICATION_START_EPOCH=$(date -u +%s)
+          INITIAL_VERSION_COMPACT=$(curl -sf "${APP_URL}/version.json?ts=${VERIFICATION_START_EPOCH}" 2>/dev/null | jq -c '.' 2>/dev/null || true)
 
           echo "Waiting for DigitalOcean auto-deploy to start..."
           sleep 60
@@ -331,14 +333,41 @@ jobs:
 
             LIVE_COMMIT=$(echo "$VERSION_RESPONSE" | jq -r '.commit // empty' 2>/dev/null)
             LIVE_BUILD_TIME=$(echo "$VERSION_RESPONSE" | jq -r '.buildTime // empty' 2>/dev/null)
+            LIVE_VERSION_COMPACT=$(echo "$VERSION_RESPONSE" | jq -c '.' 2>/dev/null || true)
+            LIVE_BUILD_EPOCH=$(date -u -d "$LIVE_BUILD_TIME" +%s 2>/dev/null || true)
+            VERSION_CHANGED=false
+            BUILD_TIME_IS_FRESH=false
+
+            if [ -n "$LIVE_VERSION_COMPACT" ] && [ "$LIVE_VERSION_COMPACT" != "$INITIAL_VERSION_COMPACT" ]; then
+              VERSION_CHANGED=true
+            fi
+
+            if [ -n "$LIVE_BUILD_EPOCH" ] && [ "$LIVE_BUILD_EPOCH" -ge $((VERIFICATION_START_EPOCH - 60)) ]; then
+              BUILD_TIME_IS_FRESH=true
+            fi
 
             HEALTH_RESPONSE=$(curl -sf "${APP_URL}/health" 2>/dev/null || true)
             HEALTH_STATUS=$(echo "$HEALTH_RESPONSE" | jq -r '.status // empty' 2>/dev/null)
             HEALTH_COMMIT=$(echo "$HEALTH_RESPONSE" | jq -r '.commit // empty' 2>/dev/null)
 
+            if [ -n "$HEALTH_COMMIT" ] && [ -n "$LIVE_COMMIT" ] && [ "$HEALTH_COMMIT" != "$LIVE_COMMIT" ]; then
+              echo "version.json reports ${LIVE_COMMIT} but /health reports ${HEALTH_COMMIT} (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+              sleep 30
+              continue
+            fi
+
+            COMMIT_MATCHES=false
             if [ "$LIVE_COMMIT" = "$TARGET_COMMIT_SHORT" ] || [ "$LIVE_COMMIT" = "$TARGET_COMMIT" ]; then
-              if [ -n "$HEALTH_COMMIT" ] && [ "$HEALTH_COMMIT" != "$TARGET_COMMIT_SHORT" ] && [ "$HEALTH_COMMIT" != "$TARGET_COMMIT" ]; then
-                echo "version.json is fresh but /health still reports commit ${HEALTH_COMMIT} (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+              COMMIT_MATCHES=true
+            fi
+
+            if [ "$COMMIT_MATCHES" = true ] || { [ "$VERSION_CHANGED" = true ] && [ "$BUILD_TIME_IS_FRESH" = true ]; }; then
+              if [ "$COMMIT_MATCHES" = false ]; then
+                echo "ℹ️  Verified a fresh production build via changed version payload and buildTime ${LIVE_BUILD_TIME:-unknown}"
+              fi
+
+              if [ -n "$HEALTH_COMMIT" ] && [ "$COMMIT_MATCHES" = true ] && [ "$HEALTH_COMMIT" != "$TARGET_COMMIT_SHORT" ] && [ "$HEALTH_COMMIT" != "$TARGET_COMMIT" ]; then
+                echo "/health still reports commit ${HEALTH_COMMIT} instead of ${TARGET_COMMIT_SHORT} (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
                 sleep 30
                 continue
               fi
@@ -348,7 +377,7 @@ jobs:
               exit 0
             fi
 
-            echo "Live app still serving commit ${LIVE_COMMIT:-unknown} instead of ${TARGET_COMMIT_SHORT} (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+            echo "Live app is still stale (commit: ${LIVE_COMMIT:-unknown}, changed: ${VERSION_CHANGED}, freshBuildTime: ${BUILD_TIME_IS_FRESH}) (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
             sleep 30
           done
 

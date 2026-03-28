@@ -900,6 +900,20 @@ export async function runAutoMigrations() {
 
     try {
       await db.execute(
+        sql`ALTER TABLE orders ADD COLUMN shipping DECIMAL(15, 2) DEFAULT 0`
+      );
+      console.info("  ✅ Added shipping column to orders");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  orders.shipping already exists");
+      } else {
+        console.info("  ⚠️  orders.shipping:", errMsg);
+      }
+    }
+
+    try {
+      await db.execute(
         sql`ALTER TABLE orders ADD COLUMN show_adjustment_on_document BOOLEAN NOT NULL DEFAULT TRUE`
       );
       console.info("  ✅ Added show_adjustment_on_document column to orders");
