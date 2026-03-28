@@ -45,6 +45,10 @@ const proxyConfig = getProxyConfig();
 
 export default defineConfig({
   testDir: ".",
+  testIgnore: [
+    "**/.claude/worktrees/**",
+    "**/.codex-worktrees/**",
+  ],
   testMatch: [
     "tests-e2e/**/*.spec.ts",
     "tests/smoke/**/*.spec.ts",
@@ -194,7 +198,7 @@ export default defineConfig({
       : {
           command:
             'pnpm test:env:up && JWT_SECRET="${JWT_SECRET:-terp-local-e2e-jwt-secret-2026-000000000000}" DATABASE_URL="${DATABASE_URL:-mysql://root:rootpassword@127.0.0.1:3307/terp-test}" TEST_DATABASE_URL="${TEST_DATABASE_URL:-mysql://root:rootpassword@127.0.0.1:3307/terp-test}" PORT=5173 pnpm dev',
-          url: "http://localhost:5173",
+          url: "http://localhost:5173/health",
           reuseExistingServer: true,
         },
   globalSetup: resolve(__dirname, "./testing/setup-e2e.ts"),
