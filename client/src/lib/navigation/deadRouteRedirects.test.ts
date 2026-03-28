@@ -117,4 +117,26 @@ describe("TER-859 dead route redirects", () => {
       expect(destination).toBe("/settings?section=users");
     });
   });
+
+  describe("new admin/calendar/product aliases", () => {
+    it("redirects /admin/users to the users settings tab", () => {
+      const destination = buildRedirectWithTab("/settings", "users");
+      expect(destination).toBe("/settings?tab=users");
+    });
+
+    it("redirects /admin/roles/new to the roles settings tab", () => {
+      const destination = buildRedirectWithTab("/settings", "roles");
+      expect(destination).toBe("/settings?tab=roles");
+    });
+
+    it("redirects /calendar/invitations to the invitations tab", () => {
+      const destination = buildRedirectWithTab("/calendar", "invitations");
+      expect(destination).toBe("/calendar?tab=invitations");
+    });
+
+    it("redirects /strains to canonical /products while preserving search", () => {
+      const destination = `/products?search=gelato`;
+      expect(destination).toBe("/products?search=gelato");
+    });
+  });
 });

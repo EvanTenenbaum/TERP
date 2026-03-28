@@ -24,6 +24,7 @@ vi.mock("./PowersheetGrid", () => ({
     rows = [],
     onSelectedRowChange,
     headerActions,
+    selectedRowId,
   }: {
     title: string;
     rows?: Array<{ batchId?: number; identity?: { rowKey: string } }>;
@@ -31,9 +32,11 @@ vi.mock("./PowersheetGrid", () => ({
       row: { batchId?: number; identity?: { rowKey: string } } | null
     ) => void;
     headerActions?: ReactNode;
+    selectedRowId?: string | null;
   }) => (
     <div data-testid={`grid-${title}`}>
       <div>{title}</div>
+      <div data-testid={`selected-${title}`}>{selectedRowId ?? "none"}</div>
       {headerActions}
       {rows.length > 0 && onSelectedRowChange ? (
         <button onClick={() => onSelectedRowChange(rows[0])}>
@@ -268,5 +271,70 @@ describe("InventoryManagementSurface", () => {
     fireEvent.click(screen.getByText("Select inventory row"));
 
     expect(mockSetSelectedId).toHaveBeenCalledWith(42);
+  });
+
+  it("does not push a fallback detail row back into grid selection when the selected batch is outside the loaded grid", async () => {
+    const { trpc } = await import("@/lib/trpc");
+    const { useSpreadsheetSelectionParam, mapInventoryDetailToPilotRow } =
+      await import("@/lib/spreadsheet-native");
+
+    vi.mocked(useSpreadsheetSelectionParam).mockReturnValue({
+      selectedId: 999,
+      setSelectedId: mockSetSelectedId,
+    });
+
+    vi.mocked(trpc.inventory.getById.useQuery).mockReturnValue({
+      data: {
+        id: 999,
+        batchId: 999,
+        sku: "BATCH-999",
+        productName: "Remote Batch",
+        productSummary: "Remote Batch · Smalls",
+        vendorName: "North Farm",
+        brandName: "Reserve",
+        grade: "AA",
+        status: "LIVE",
+        onHandQty: 10,
+        reservedQty: 0,
+        availableQty: 10,
+        unitCogs: 1.5,
+        ageLabel: "5d",
+        stockStatus: "LOW",
+        locations: [],
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+    } as never);
+
+    vi.mocked(mapInventoryDetailToPilotRow).mockReturnValue({
+      batchId: 999,
+      sku: "BATCH-999",
+      productName: "Remote Batch",
+      productSummary: "Remote Batch · Smalls",
+      vendorName: "North Farm",
+      brandName: "Reserve",
+      grade: "AA",
+      status: "LIVE",
+      onHandQty: 10,
+      reservedQty: 0,
+      availableQty: 10,
+      unitCogs: 1.5,
+      ageLabel: "5d",
+      stockStatus: "LOW",
+      identity: {
+        rowKey: "batch:999",
+        entityId: 999,
+        entityType: "batch",
+        recordVersion: 1,
+      },
+    } as never);
+
+    render(<InventoryManagementSurface />);
+
+    expect(screen.getByTestId("selected-Inventory Sheet")).toHaveTextContent(
+      "none"
+    );
+    expect(screen.getByText("Remote Batch · Smalls")).toBeInTheDocument();
   });
 });

@@ -19,6 +19,7 @@ import EventFormDialog from "../components/calendar/EventFormDialog";
 import AppointmentRequestsList from "../components/calendar/AppointmentRequestsList";
 import AppointmentRequestModal from "../components/calendar/AppointmentRequestModal";
 import TimeOffRequestsList from "../components/calendar/TimeOffRequestsList";
+import PendingInvitationsWidget from "../components/calendar/PendingInvitationsWidget";
 import { trpc } from "../lib/trpc";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import {
@@ -41,10 +42,15 @@ import {
  */
 
 type ViewType = "MONTH" | "WEEK" | "DAY" | "AGENDA";
-type TabType = "calendar" | "requests" | "timeoff";
+type TabType = "calendar" | "invitations" | "requests" | "timeoff";
 
 export default function CalendarPage() {
   const routeSearch = useSearch();
+  const routeTab = useMemo(() => {
+    const params = new URLSearchParams(routeSearch);
+    const requestedTab = params.get("tab");
+    return requestedTab === "invitations" ? "invitations" : null;
+  }, [routeSearch]);
   const [activeTab, setActiveTab] = useState<TabType>("calendar");
   const [currentView, setCurrentView] = useState<ViewType>("MONTH");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -59,6 +65,12 @@ export default function CalendarPage() {
     () => parseCalendarRouteContext(routeSearch).eventId,
     [routeSearch]
   );
+
+  useEffect(() => {
+    if (routeTab === "invitations") {
+      setActiveTab("invitations");
+    }
+  }, [routeTab]);
 
   // Get pending counts for badges
   const { data: pendingRequestCount } =
@@ -391,6 +403,17 @@ export default function CalendarPage() {
             <span className="hidden sm:inline">Calendar</span>
           </button>
           <button
+            onClick={() => setActiveTab("invitations")}
+            className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
+              activeTab === "invitations"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Inbox className="h-4 w-4" />
+            <span className="hidden sm:inline">Invitations</span>
+          </button>
+          <button
             onClick={() => setActiveTab("requests")}
             className={`flex items-center gap-2 border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === "requests"
@@ -477,6 +500,9 @@ export default function CalendarPage() {
             )}
           </>
         )}
+
+        {/* Invitations Tab */}
+        {activeTab === "invitations" && <PendingInvitationsWidget />}
 
         {/* Requests Tab */}
         {activeTab === "requests" && (
