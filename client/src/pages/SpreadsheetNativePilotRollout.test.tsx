@@ -73,6 +73,9 @@ vi.mock("@/components/spreadsheet-native/ReturnsPilotSurface", () => ({
 vi.mock("@/components/spreadsheet-native/InventorySheetPilotSurface", () => ({
   default: () => <div>Inventory Sheet Pilot</div>,
 }));
+vi.mock("@/components/spreadsheet-native/InventoryManagementSurface", () => ({
+  InventoryManagementSurface: () => <div>Inventory Management Surface</div>,
+}));
 
 vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
   default: ({ forceDocumentMode }: { forceDocumentMode?: boolean }) => (
@@ -105,34 +108,38 @@ describe("spreadsheet-native pilot rollout gating", () => {
     mockRefetchFlags.mockClear();
   });
 
-  it("keeps inventory classic and does not expose a visible pilot toggle", () => {
+  it("renders unified InventoryManagementSurface and exposes no pilot toggle for inventory", () => {
     render(<InventoryWorkspacePage />);
 
-    expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
+    expect(
+      screen.getByText("Inventory Management Surface")
+    ).toBeInTheDocument();
     expect(screen.queryByText("Inventory Sheet Pilot")).not.toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: "Spreadsheet View" })
     ).not.toBeInTheDocument();
   });
 
-  it("strips a stale inventory sheet-native URL when the pilot is disabled", () => {
+  it("renders unified surface even when surface=sheet-native is in the URL", () => {
     mockSearch = "?tab=inventory&surface=sheet-native";
 
     render(<InventoryWorkspacePage />);
 
-    expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
-    expect(mockSetLocation).toHaveBeenCalledWith("/operations?tab=inventory", {
-      replace: true,
-    });
+    expect(
+      screen.getByText("Inventory Management Surface")
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Inventory Sheet Pilot")).not.toBeInTheDocument();
   });
 
-  it("does not rewrite the URL while pilot availability is still loading", () => {
+  it("renders unified surface while pilot flag is loading", () => {
     mockSearch = "?tab=inventory&surface=sheet-native";
     mockPilotFlagLoading = true;
 
     render(<InventoryWorkspacePage />);
 
-    expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
+    expect(
+      screen.getByText("Inventory Management Surface")
+    ).toBeInTheDocument();
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 

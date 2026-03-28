@@ -5,21 +5,9 @@ import {
 } from "@/components/layout/LinearWorkspaceShell";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
-import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
-import { lazy } from "react";
-import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
-import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
-
-const PurchaseOrdersPilotSurface = lazy(
-  () => import("@/components/spreadsheet-native/PurchaseOrdersPilotSurface")
-);
+import { PurchaseOrderSurface } from "@/components/spreadsheet-native/PurchaseOrderSurface";
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
-import {
-  buildSurfaceAvailability,
-  useSpreadsheetPilotAvailability,
-  useSpreadsheetSurfaceMode,
-} from "@/lib/spreadsheet-native";
-import { Redirect, useLocation, useSearch } from "wouter";
+import { Redirect, useSearch } from "wouter";
 
 type ProcurementTab = "purchase-orders";
 type ProcurementQueryTab =
@@ -33,7 +21,6 @@ const PROCUREMENT_TABS = [
 ] as const satisfies readonly LinearWorkspaceTab<ProcurementTab>[];
 
 export default function ProcurementWorkspacePage() {
-  const [, setLocation] = useLocation();
   const search = useSearch();
   const { activeTab, setActiveTab } = useQueryTabState<ProcurementQueryTab>({
     defaultTab: "purchase-orders",
@@ -47,17 +34,6 @@ export default function ProcurementWorkspacePage() {
   const redirectParams = Object.fromEntries(
     Array.from(new URLSearchParams(search).entries()).filter(
       ([key]) => key !== "tab"
-    )
-  );
-
-  const pilotSurfaceSupported = activeTab === "purchase-orders";
-  const { sheetPilotEnabled, availabilityReady } =
-    useSpreadsheetPilotAvailability(pilotSurfaceSupported);
-  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
-    buildSurfaceAvailability(
-      "purchase-orders",
-      sheetPilotEnabled,
-      availabilityReady
     )
   );
 
@@ -97,30 +73,9 @@ export default function ProcurementWorkspacePage() {
           value: "Use Operations for receiving, shipping, and stock control",
         },
       ]}
-      commandStrip={
-        activeTab === "purchase-orders" ? (
-          <SheetModeToggle
-            enabled={sheetPilotEnabled}
-            surfaceMode={surfaceMode}
-            onSurfaceModeChange={setSurfaceMode}
-          />
-        ) : null
-      }
     >
       <LinearWorkspacePanel value="purchase-orders">
-        {surfaceMode === "sheet-native" ? (
-          <PilotSurfaceBoundary fallback={<PurchaseOrdersSlicePage />}>
-            <PurchaseOrdersPilotSurface
-              onOpenClassic={poId =>
-                setLocation(
-                  `/purchase-orders${poId !== null && poId !== undefined ? `?poId=${poId}` : ""}`
-                )
-              }
-            />
-          </PilotSurfaceBoundary>
-        ) : (
-          <PurchaseOrdersSlicePage />
-        )}
+        <PurchaseOrderSurface />
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );

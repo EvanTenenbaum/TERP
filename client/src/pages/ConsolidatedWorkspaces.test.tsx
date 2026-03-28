@@ -119,8 +119,14 @@ vi.mock("@/components/uiux-slice/ProductIntakeSlicePage", () => ({
 vi.mock("@/components/uiux-slice/PurchaseOrdersSlicePage", () => ({
   default: () => <div>Purchase Orders Slice Surface</div>,
 }));
+vi.mock("@/components/spreadsheet-native/PurchaseOrderSurface", () => ({
+  PurchaseOrderSurface: () => <div>Purchase Order Surface</div>,
+}));
 vi.mock("@/components/spreadsheet-native/InventorySheetPilotSurface", () => ({
   default: () => <div>Inventory Sheet Pilot Surface</div>,
+}));
+vi.mock("@/components/spreadsheet-native/InventoryManagementSurface", () => ({
+  InventoryManagementSurface: () => <div>Inventory Management Surface</div>,
 }));
 vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
   default: () => <div>Orders Sheet Pilot Surface</div>,
@@ -130,9 +136,9 @@ vi.mock("@/pages/ReturnsPage", () => ({
     <div>Returns {embedded ? "Embedded" : "Standalone"}</div>
   ),
 }));
-vi.mock("@/pages/SalesSheetCreatorPage", () => ({
-  default: ({ embedded }: { embedded?: boolean }) => (
-    <div>Sales Catalogues {embedded ? "Embedded" : "Standalone"}</div>
+vi.mock("@/components/spreadsheet-native/SalesCatalogueSurface", () => ({
+  default: () => (
+    <div data-testid="sale-catalogue-surface">SalesCatalogueSurface</div>
   ),
 }));
 vi.mock("@/pages/LiveShoppingPage", () => ({
@@ -192,18 +198,21 @@ describe("Consolidated workspace pages", () => {
     expect(
       screen.getByRole("heading", { name: "Inventory" })
     ).toBeInTheDocument();
-    expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
+    expect(
+      screen.getByText("Inventory Management Surface")
+    ).toBeInTheDocument();
   });
 
-  it("renders Inventory workspace with sheet-native pilot when enabled", async () => {
+  it("renders Inventory workspace always shows unified surface regardless of pilot mode", async () => {
     mockActiveTab = "inventory";
     mockPilotMode = "sheet-native";
     render(<InventoryWorkspacePage />);
-    await waitFor(() => {
-      expect(
-        screen.getByText("Inventory Sheet Pilot Surface")
-      ).toBeInTheDocument();
-    });
+    expect(
+      screen.getByText("Inventory Management Surface")
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Inventory Sheet Pilot Surface")
+    ).not.toBeInTheDocument();
   });
 
   it("renders Inventory workspace with receiving queue content", () => {
@@ -212,9 +221,7 @@ describe("Consolidated workspace pages", () => {
     expect(
       screen.getByRole("heading", { name: "Inventory" })
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Purchase Orders Slice Surface")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Purchase Order Surface")).toBeInTheDocument();
   });
 
   it("renders Inventory workspace receiving editor when a draft is selected", async () => {
@@ -262,11 +269,13 @@ describe("Consolidated workspace pages", () => {
     });
   });
 
-  it("renders Sales workspace with sales catalogues tab content", () => {
+  it("renders Sales workspace with sales catalogues tab content", async () => {
     mockActiveTab = "sales-sheets";
     render(<SalesWorkspacePage />);
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
-    expect(screen.getByText("Sales Catalogues Embedded")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId("sale-catalogue-surface")
+    ).toBeInTheDocument();
   });
 
   it("renders Sales workspace with live shopping tab content", () => {
@@ -317,8 +326,6 @@ describe("Consolidated workspace pages", () => {
     expect(
       screen.getByRole("heading", { name: "Procurement" })
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Purchase Orders Slice Surface")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Purchase Order Surface")).toBeInTheDocument();
   });
 });

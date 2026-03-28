@@ -178,10 +178,10 @@ export default function AccountingDashboard({
   };
 
   return (
-    <div className="flex flex-col gap-6 p-6" data-testid="accounting-dashboard">
+    <div className="flex flex-col gap-3 p-3" data-testid="accounting-dashboard">
       {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">
+      <div className="space-y-1">
+        <h1 className="text-xl font-bold tracking-tight">
           Accounting Dashboard
         </h1>
         <p className="text-muted-foreground mt-1">
@@ -190,28 +190,28 @@ export default function AccountingDashboard({
         </p>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-2 xl:grid-cols-[1.5fr_1fr]">
         <Card className="border-green-200 bg-green-50/60">
-          <CardHeader className="space-y-2">
+          <CardHeader className="space-y-1">
             <Badge
               variant="outline"
               className="w-fit border-green-300 bg-white/80 text-green-700"
             >
               Start here
             </Badge>
-            <div className="grid gap-4 lg:grid-cols-2">
-              <div className="rounded-xl border border-green-200 bg-background/90 p-4">
+            <div className="grid gap-2 lg:grid-cols-2">
+              <div className="rounded-md border border-green-200 bg-background/90 p-2.5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <CardTitle className="text-xl">Receive payment</CardTitle>
+                    <CardTitle className="text-sm">Receive payment</CardTitle>
                     <CardDescription className="mt-1">
                       Record incoming cash against open invoices first.
                     </CardDescription>
                   </div>
                   <ArrowDownCircle className="h-5 w-5 text-green-600" />
                 </div>
-                <div className="mt-4 space-y-1">
-                  <p className="text-2xl font-semibold text-green-700">
+                <div className="mt-2 space-y-1">
+                  <p className="text-lg font-semibold text-green-700">
                     {formatCurrency(arSummary?.totalAR)}
                   </p>
                   <p className="text-sm text-muted-foreground">
@@ -219,7 +219,7 @@ export default function AccountingDashboard({
                     {overdueInvoiceCount === 1 ? "" : "s"} ready for follow-up
                   </p>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-2">
                   <Button
                     className="bg-green-600 hover:bg-green-700"
                     onClick={() => setReceivePaymentOpen(true)}
@@ -235,10 +235,10 @@ export default function AccountingDashboard({
                 </div>
               </div>
 
-              <div className="rounded-xl border border-amber-200 bg-background/90 p-4">
+              <div className="rounded-md border border-amber-200 bg-background/90 p-2.5">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <CardTitle className="text-xl">Pay supplier</CardTitle>
+                    <CardTitle className="text-sm">Pay supplier</CardTitle>
                     <CardDescription className="mt-1">
                       Clear open bills and log outgoing payments without leaving
                       finance.
@@ -246,8 +246,8 @@ export default function AccountingDashboard({
                   </div>
                   <ArrowUpCircle className="h-5 w-5 text-amber-600" />
                 </div>
-                <div className="mt-4 space-y-1">
-                  <p className="text-2xl font-semibold text-amber-700">
+                <div className="mt-2 space-y-1">
+                  <p className="text-lg font-semibold text-amber-700">
                     {formatCurrency(apSummary?.totalAP)}
                   </p>
                   <p className="text-sm text-muted-foreground">
@@ -255,7 +255,7 @@ export default function AccountingDashboard({
                     {overdueBillCount === 1 ? "" : "s"} need attention
                   </p>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-2">
                   <Button
                     variant="destructive"
                     onClick={() => setPayVendorOpen(true)}
@@ -319,7 +319,7 @@ export default function AccountingDashboard({
       </div>
 
       {/* AR/AP Aging - BUG-092 fix: Proper loading/error states */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-2 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>AR Aging</CardTitle>
@@ -376,7 +376,7 @@ export default function AccountingDashboard({
       </div>
 
       {/* Wave 5C: Top Debtors & Overdue Items */}
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-2 md:grid-cols-2">
         {/* Top Debtors */}
         <Card>
           <CardHeader>
@@ -547,7 +547,7 @@ export default function AccountingDashboard({
               )}
               {overdueInvoices?.pagination?.total &&
                 overdueInvoices.pagination.total > 5 && (
-                  <div className="mt-4 text-center">
+                  <div className="mt-2 text-center">
                     <Button
                       variant="outline"
                       size="sm"
@@ -616,7 +616,7 @@ export default function AccountingDashboard({
               )}
               {overdueBills?.pagination?.total &&
                 overdueBills.pagination.total > 5 && (
-                  <div className="mt-4 text-center">
+                  <div className="mt-2 text-center">
                     <Button
                       variant="outline"
                       size="sm"
@@ -663,7 +663,7 @@ export default function AccountingDashboard({
           </Card>
         </TabsContent>
 
-        <TabsContent value="analysis" className="space-y-6">
+        <TabsContent value="analysis" className="space-y-3">
           <DataCardSection moduleId="accounting" />
 
           {expenseBreakdown &&
@@ -717,7 +717,7 @@ export default function AccountingDashboard({
       <PayVendorModal open={payVendorOpen} onOpenChange={setPayVendorOpen} />
 
       {/* Recent Activity */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-2 md:grid-cols-3">
         {/* Recent Invoices */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">

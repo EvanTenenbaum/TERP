@@ -1,19 +1,17 @@
 /**
- * PaymentsPilotSurface — TER-812
+ * PaymentsSurface — TER-976
  *
- * Sheet-native payments registry (Ledger+Inspector family).
- * Implements PAY-001 through PAY-014 capability ledger.
+ * Unified sheet-native surface for Payments. Replaces PaymentsPilotSurface
+ * (928 lines) and classic Payments.tsx (337 lines).
  *
- * Layout:
- *   1. KPI summary cards (PAY-005)
- *   2. Search + type filter bar (PAY-001, PAY-002)
- *   3. PowersheetGrid registry (PAY-001, PAY-003)
- *   4. Action buttons: Record Payment, Void Payment
- *   5. WorkSurfaceStatusBar + KeyboardHintBar
- *   6. InvoiceToPaymentFlow dialog (PAY-006 through PAY-013)
- *   7. Void confirmation dialog (PAY-014)
+ * Layout (top → bottom):
+ *   1. Toolbar: title + KPI badges + search + refresh
+ *   2. Action Bar: 3 type filter tabs + workflow actions
+ *   3. Grid + Collapsible Inspector
+ *   4. Status Bar: WorkSurfaceStatusBar + KeyboardHintBar
+ *   5. Sidecar Dialogs: InvoiceToPaymentFlow, Void
  *
- * Deep-link support: ?id=, ?invoiceId=, ?orderId= (PAY-004)
+ * Deep-link support: ?id=, ?invoiceId= via manual URL parsing.
  */
 
 import { useMemo, useState, useCallback, useRef } from "react";
@@ -21,13 +19,7 @@ import type { ColDef } from "ag-grid-community";
 import { useSearch } from "wouter";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import {
-  DollarSign,
-  ArrowDownCircle,
-  ArrowUpCircle,
-  RefreshCw,
-  Ban,
-} from "lucide-react";
+import { RefreshCw, Search, Ban } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../../server/routers";
@@ -37,7 +29,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -75,12 +66,6 @@ type PaymentItem = PaymentListResponse extends { items: Array<infer Item> }
   ? Item
   : never;
 
-type PaymentSortField =
-  | "paymentDate"
-  | "amount"
-  | "paymentType"
-  | "paymentNumber";
-
 type PaymentTypeFilter = "ALL" | "RECEIVED" | "SENT";
 
 // ============================================================================
@@ -91,6 +76,12 @@ const isMac =
   typeof navigator !== "undefined" &&
   /mac/i.test(navigator.platform || navigator.userAgent);
 const mod = isMac ? "\u2318" : "Ctrl";
+
+const TYPE_TABS: Array<{ value: PaymentTypeFilter; label: string }> = [
+  { value: "ALL", label: "All" },
+  { value: "RECEIVED", label: "Received" },
+  { value: "SENT", label: "Sent" },
+];
 
 const registryAffordances: PowersheetAffordance[] = [
   { label: "Select", available: true },
@@ -108,7 +99,7 @@ const keyboardHints: KeyboardHint[] = [
   { key: "Shift+Click", label: "extend range" },
   { key: `${mod}+Click`, label: "add to selection" },
   { key: `${mod}+C`, label: "copy cells" },
-  { key: `${mod}+A`, label: "select all" },
+  { key: "Escape", label: "close inspector" },
 ];
 
 // ============================================================================
@@ -130,11 +121,21 @@ const formatCurrency = (value: string | number): string => {
   }).format(num);
 };
 
+const formatCurrencyCompact = (value: string | number): string => {
+  const num = typeof value === "string" ? parseFloat(value) : value;
+  if (Number.isNaN(num)) return "$0";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(num);
+};
+
 const formatDate = (value: string | Date | null | undefined): string => {
   if (!value) return "-";
   try {
     const d = typeof value === "string" ? new Date(value) : value;
-    return format(d, "MMM dd, yyyy");
+    return format(d, "MMM d, yyyy");
   } catch {
     return "-";
   }
@@ -156,7 +157,6 @@ function paymentMatchesSearch(payment: PaymentItem, query: string): boolean {
 // ============================================================================
 
 interface PaymentGridRow {
-  /** Stable rowKey for AG Grid */
   rowKey: string;
   id: number;
   paymentNumber: string;
@@ -197,8 +197,6 @@ const columnDefs: ColDef<PaymentGridRow>[] = [
     minWidth: 130,
     maxWidth: 160,
     cellClass: "powersheet-cell--locked font-mono",
-    headerTooltip:
-      "Payment identifier. Format varies by origin: PAY- (manual), PMT-RCV- (received from customer), PMT-SNT- (sent to supplier). All refer to the same payment record.",
   },
   {
     field: "paymentDate",
@@ -206,7 +204,6 @@ const columnDefs: ColDef<PaymentGridRow>[] = [
     minWidth: 120,
     maxWidth: 150,
     cellClass: "powersheet-cell--locked",
-    headerTooltip: "Read-only: date payment was recorded.",
   },
   {
     field: "paymentType",
@@ -214,7 +211,6 @@ const columnDefs: ColDef<PaymentGridRow>[] = [
     minWidth: 100,
     maxWidth: 120,
     cellClass: "powersheet-cell--locked",
-    headerTooltip: "Read-only: RECEIVED or SENT.",
     cellRenderer: (params: { value: string }) => {
       if (!params.value || params.value === "-") return "-";
       const color =
@@ -230,7 +226,6 @@ const columnDefs: ColDef<PaymentGridRow>[] = [
     minWidth: 120,
     maxWidth: 160,
     cellClass: "powersheet-cell--locked",
-    headerTooltip: "Read-only: payment method used.",
   },
   {
     field: "amountFormatted",
@@ -239,15 +234,15 @@ const columnDefs: ColDef<PaymentGridRow>[] = [
     maxWidth: 140,
     cellClass: "powersheet-cell--locked font-mono text-right",
     headerClass: "text-right",
-    headerTooltip: "Read-only: payment amount.",
-  },
-  {
-    field: "referenceNumber",
-    headerName: "Reference",
-    flex: 1,
-    minWidth: 120,
-    cellClass: "powersheet-cell--locked text-muted-foreground",
-    headerTooltip: "Read-only: reference number or check number.",
+    cellStyle: params => {
+      const row = params.data as PaymentGridRow | undefined;
+      if (!row) return undefined;
+      return row.paymentType === "RECEIVED"
+        ? { color: "var(--color-green-700)" }
+        : row.paymentType === "SENT"
+          ? { color: "var(--color-red-700)" }
+          : undefined;
+    },
   },
   {
     field: "invoiceId",
@@ -255,66 +250,16 @@ const columnDefs: ColDef<PaymentGridRow>[] = [
     minWidth: 90,
     maxWidth: 110,
     cellClass: "powersheet-cell--locked font-mono",
-    headerTooltip: "Read-only: linked invoice ID.",
     valueFormatter: params => (params.value ? `#${String(params.value)}` : "-"),
   },
+  {
+    field: "referenceNumber",
+    headerName: "Reference",
+    flex: 1,
+    minWidth: 120,
+    cellClass: "powersheet-cell--locked text-muted-foreground",
+  },
 ];
-
-// ============================================================================
-// KPI CARDS
-// ============================================================================
-
-interface KpiCardsProps {
-  totalCount: number;
-  totalReceived: number;
-  totalSent: number;
-  isLoading: boolean;
-}
-
-function KpiCards({
-  totalCount,
-  totalReceived,
-  totalSent,
-  isLoading,
-}: KpiCardsProps) {
-  return (
-    <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Payments</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">
-            {isLoading ? "—" : totalCount}
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Received</CardTitle>
-          <ArrowDownCircle className="h-4 w-4 text-green-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-green-600">
-            {isLoading ? "—" : formatCurrency(totalReceived)}
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Sent</CardTitle>
-          <ArrowUpCircle className="h-4 w-4 text-red-600" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-red-600">
-            {isLoading ? "—" : formatCurrency(totalSent)}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 
 // ============================================================================
 // VOID DIALOG
@@ -433,18 +378,12 @@ function VoidDialog({
 // MAIN SURFACE
 // ============================================================================
 
-interface PaymentsPilotSurfaceProps {
-  onOpenClassic?: () => void;
-}
-
-export function PaymentsPilotSurface({
-  onOpenClassic,
-}: PaymentsPilotSurfaceProps) {
+export function PaymentsSurface() {
   const search = useSearch();
   const { hasPermission } = usePermissions();
   const canVoid = hasPermission("accounting:delete");
 
-  // PAY-004: Deep-link support (?id=, ?invoiceId= only — orderId not supported by API)
+  // Deep-link support: ?id=, ?invoiceId=
   const routeParams = useMemo(() => {
     const params = new URLSearchParams(search);
     return {
@@ -453,18 +392,16 @@ export function PaymentsPilotSurface({
     };
   }, [search]);
 
-  // Filter/search state — PAY-001, PAY-002, PAY-003
-  const [searchQuery, setSearchQuery] = useState(() => {
+  // Filter / search state
+  const [searchTerm, setSearchTerm] = useState(() => {
     if (routeParams.paymentId !== null) return String(routeParams.paymentId);
     return "";
   });
   const [typeFilter, setTypeFilter] = useState<PaymentTypeFilter>("ALL");
-  const [sortField, setSortField] = useState<PaymentSortField>("paymentDate");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // Selection state
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
-  const [registrySelectionSummary, setRegistrySelectionSummary] =
+  const [selectionSummary, setSelectionSummary] =
     useState<PowersheetSelectionSummary | null>(null);
   const lastEmittedRowIdRef = useRef<string | null>(null);
 
@@ -472,14 +409,14 @@ export function PaymentsPilotSurface({
   const [recordPaymentOpen, setRecordPaymentOpen] = useState(false);
   const [voidDialogOpen, setVoidDialogOpen] = useState(false);
 
-  // Data query — PAY-001
+  // Data query
   const paymentsQuery = trpc.accounting.payments.list.useQuery({
     paymentType:
       typeFilter !== "ALL" ? (typeFilter as "RECEIVED" | "SENT") : undefined,
     invoiceId: routeParams.invoiceId ?? undefined,
   });
 
-  // Void mutation — PAY-014, DISC-PAY-005
+  // Void mutation
   const voidMutation = trpc.payments.void.useMutation({
     onSuccess: () => {
       toast.success("Payment voided successfully.");
@@ -488,78 +425,42 @@ export function PaymentsPilotSurface({
       setSelectedRowId(null);
       void paymentsQuery.refetch();
     },
-    onError: err => {
-      console.error("[PaymentsPilotSurface] void mutation error:", err);
-      toast.error(err.message || "Failed to void payment. Please try again.");
+    onError: (err: { message?: string }) => {
+      toast.error(err.message || "Failed to void payment.");
     },
   });
 
-  // Build grid rows — PAY-001, PAY-003
+  // Build grid rows
   const gridRows = useMemo((): PaymentGridRow[] => {
     const raw = paymentsQuery.data?.items ?? [];
-    const normalizedQuery = searchQuery.trim().toLowerCase();
+    const normalizedQuery = searchTerm.trim().toLowerCase();
 
-    // Client-side search filter
     const searched = normalizedQuery
       ? raw.filter(p => paymentMatchesSearch(p, normalizedQuery))
       : raw;
 
-    // Deep-link filter by paymentId
     const routeFiltered =
       routeParams.paymentId !== null
         ? searched.filter(p => p.id === routeParams.paymentId)
         : searched;
 
-    // Sort — PAY-003
-    const sorted = [...routeFiltered].sort((a, b) => {
-      let cmp = 0;
-      switch (sortField) {
-        case "paymentDate": {
-          const aDate =
-            a.paymentDate instanceof Date
-              ? a.paymentDate
-              : new Date(String(a.paymentDate));
-          const bDate =
-            b.paymentDate instanceof Date
-              ? b.paymentDate
-              : new Date(String(b.paymentDate));
-          cmp = aDate.getTime() - bDate.getTime();
-          break;
-        }
-        case "amount":
-          cmp = parseFloat(a.amount ?? "0") - parseFloat(b.amount ?? "0");
-          break;
-        case "paymentType":
-          cmp = (a.paymentType ?? "").localeCompare(b.paymentType ?? "");
-          break;
-        case "paymentNumber":
-          cmp = (a.paymentNumber ?? "").localeCompare(b.paymentNumber ?? "");
-          break;
-      }
-      return sortDirection === "asc" ? cmp : -cmp;
-    });
+    return mapToGridRows(routeFiltered);
+  }, [paymentsQuery.data, searchTerm, routeParams.paymentId]);
 
-    return mapToGridRows(sorted);
-  }, [
-    paymentsQuery.data,
-    searchQuery,
-    sortField,
-    sortDirection,
-    routeParams.paymentId,
-  ]);
-
-  // KPI totals — PAY-005 (computed from filtered gridRows, not raw API response)
+  // KPI totals — computed client-side from gridRows
   const kpiTotals = useMemo(() => {
+    const totalReceived = gridRows
+      .filter(r => r.paymentType === "RECEIVED")
+      .reduce((sum, r) => sum + parseFloat(r.amount ?? "0"), 0);
+    const totalSent = gridRows
+      .filter(r => r.paymentType === "SENT")
+      .reduce((sum, r) => sum + parseFloat(r.amount ?? "0"), 0);
     return {
-      totalCount: gridRows.length,
-      totalReceived: gridRows
-        .filter(r => r.paymentType === "RECEIVED")
-        .reduce((sum, r) => sum + parseFloat(r.amount ?? "0"), 0),
-      totalSent: gridRows
-        .filter(r => r.paymentType === "SENT")
-        .reduce((sum, r) => sum + parseFloat(r.amount ?? "0"), 0),
+      totalCount: paymentsQuery.data?.pagination?.total ?? gridRows.length,
+      totalReceived,
+      totalSent,
     };
-  }, [gridRows]);
+  }, [gridRows, paymentsQuery.data?.pagination?.total]);
 
   // Selected row lookup
   const selectedRow = useMemo(
@@ -574,17 +475,11 @@ export function PaymentsPilotSurface({
 
   const handleSelectedRowChange = useCallback((row: PaymentGridRow | null) => {
     const nextId = row?.rowKey ?? null;
-
-    if (nextId === lastEmittedRowIdRef.current) {
-      return;
-    }
-
+    if (nextId === lastEmittedRowIdRef.current) return;
     lastEmittedRowIdRef.current = nextId;
     setSelectedRowId(nextId);
   }, []);
 
-  // Invoice ID to open the payment flow dialog.
-  // If a row is selected and has an invoiceId, use it. Fall back to URL invoiceId.
   const invoiceIdForFlow =
     selectedRow?.invoiceId ?? routeParams.invoiceId ?? null;
 
@@ -602,7 +497,7 @@ export function PaymentsPilotSurface({
     [paymentsQuery]
   );
 
-  // Status bar copy
+  // Status bar
   const statusLeft = (
     <span>
       {gridRows.length} payment{gridRows.length !== 1 ? "s" : ""} visible
@@ -615,122 +510,103 @@ export function PaymentsPilotSurface({
       Selected: {selectedRow.paymentNumber} &middot;{" "}
       {selectedRow.amountFormatted}
     </span>
-  ) : registrySelectionSummary ? (
+  ) : selectionSummary ? (
     <span>
-      {registrySelectionSummary.selectedCellCount} cells selected &middot;{" "}
-      {registrySelectionSummary.selectedRowCount} rows
+      {selectionSummary.selectedCellCount} cells selected &middot;{" "}
+      {selectionSummary.selectedRowCount} rows
     </span>
   ) : null;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
-      {/* PAY-005: KPI Summary Cards */}
-      <KpiCards
-        totalCount={kpiTotals.totalCount}
-        totalReceived={kpiTotals.totalReceived}
-        totalSent={kpiTotals.totalSent}
-        isLoading={paymentsQuery.isLoading}
-      />
+    <div className="flex flex-col">
+      {/* ── 1. Toolbar ── */}
+      <div className="flex items-center gap-2 px-2 py-1 bg-muted/30 border-b">
+        <span className="font-bold text-xs">Payments</span>
 
-      {/* Search + Filter + Sort bar — PAY-001, PAY-002, PAY-003 */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex-1 min-w-[180px] max-w-sm relative">
-          <Input
-            placeholder="Search payments..."
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="pr-8"
-            aria-label="Search payments"
-          />
-          {searchQuery && (
-            <button
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-sm"
-              onClick={() => setSearchQuery("")}
-              aria-label="Clear search"
-            >
-              &times;
-            </button>
-          )}
-        </div>
+        {/* KPI badges */}
+        <Badge
+          variant="outline"
+          className="text-[9px] py-0 px-1.5 bg-blue-50 text-blue-700 border-blue-200"
+        >
+          {kpiTotals.totalCount} total
+        </Badge>
+        <Badge
+          variant="outline"
+          className="text-[9px] py-0 px-1.5 bg-green-50 text-green-700 border-green-200"
+        >
+          {formatCurrencyCompact(kpiTotals.totalReceived)} received
+        </Badge>
+        <Badge
+          variant="outline"
+          className="text-[9px] py-0 px-1.5 bg-amber-50 text-amber-700 border-amber-200"
+        >
+          {formatCurrencyCompact(kpiTotals.totalSent)} sent
+        </Badge>
 
-        {/* PAY-002: Type filter */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Type:</span>
-          <div className="flex gap-1">
-            {(["ALL", "RECEIVED", "SENT"] as const).map(t => (
-              <Button
-                key={t}
-                variant={typeFilter === t ? "default" : "outline"}
-                size="sm"
-                onClick={() => setTypeFilter(t)}
-              >
-                {t === "ALL" ? "All" : t === "RECEIVED" ? "Received" : "Sent"}
-              </Button>
-            ))}
+        <div className="ml-auto flex items-center gap-1">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+            <Input
+              className="h-5 pl-6 text-[10px] w-40"
+              placeholder="Search payment # or ref"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              data-testid="payments-search-input"
+            />
           </div>
-        </div>
-
-        {/* PAY-003: Sort controls */}
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Sort:</span>
-          <select
-            className="text-sm border rounded px-2 py-1 bg-background"
-            value={sortField}
-            onChange={e => setSortField(e.target.value as PaymentSortField)}
-            aria-label="Sort field"
-          >
-            <option value="paymentDate">Date</option>
-            <option value="amount">Amount</option>
-            <option value="paymentType">Type</option>
-            <option value="paymentNumber">Payment #</option>
-          </select>
           <Button
             variant="ghost"
             size="sm"
-            onClick={() =>
-              setSortDirection(prev => (prev === "asc" ? "desc" : "asc"))
-            }
-            aria-label={`Sort ${sortDirection === "asc" ? "descending" : "ascending"}`}
-          >
-            {sortDirection === "asc" ? "\u2191" : "\u2193"}
-          </Button>
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex items-center gap-2 ml-auto">
-          <Button
-            variant="outline"
-            size="sm"
+            className="h-5 w-5 p-0"
             onClick={() => void paymentsQuery.refetch()}
             disabled={paymentsQuery.isFetching}
             aria-label="Refresh payments"
           >
-            <RefreshCw
-              className={`h-4 w-4 mr-1 ${paymentsQuery.isFetching ? "animate-spin" : ""}`}
-            />
-            Refresh
+            <RefreshCw className="h-3 w-3" />
           </Button>
+        </div>
+      </div>
 
-          {/* PAY-006 through PAY-013: Open guided payment flow */}
+      {/* ── 2. Action Bar ── */}
+      <div className="flex items-center gap-1 px-2 py-0.5 bg-muted/10 border-b flex-wrap">
+        {/* Type filter tabs */}
+        {TYPE_TABS.map(tab => (
+          <Button
+            key={tab.value}
+            variant={typeFilter === tab.value ? "default" : "ghost"}
+            size="sm"
+            className="h-5 text-[9px] px-2"
+            onClick={() => {
+              setTypeFilter(tab.value);
+              setSearchTerm("");
+            }}
+            data-testid={`type-tab-${tab.value}`}
+          >
+            {tab.label}
+          </Button>
+        ))}
+
+        <div className="ml-auto flex items-center gap-1">
           <Button
             size="sm"
-            onClick={() => setRecordPaymentOpen(true)}
+            className="h-5 text-[9px] px-2"
             disabled={invoiceIdForFlow === null}
+            onClick={() => setRecordPaymentOpen(true)}
             title={
               invoiceIdForFlow === null
                 ? "Select a payment with an invoice, or navigate from an invoice"
                 : "Record a payment against the linked invoice"
             }
+            data-testid="action-record-payment"
           >
             Record Payment
           </Button>
-
-          {/* PAY-014: Void payment (gated on accounting:delete — PAY-P2-PERM) */}
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setVoidDialogOpen(true)}
+            className="h-5 text-[9px] px-2"
             disabled={selectedRow === null || !canVoid}
+            onClick={() => setVoidDialogOpen(true)}
             title={
               !canVoid
                 ? "You don't have permission to void payments"
@@ -738,29 +614,18 @@ export function PaymentsPilotSurface({
                   ? "Select a payment row to void"
                   : `Void ${selectedRow.paymentNumber}`
             }
+            data-testid="action-void"
           >
-            <Ban className="h-4 w-4 mr-1" />
+            <Ban className="h-3 w-3 mr-1" />
             Void
           </Button>
-
-          {/* Classic fallback toggle */}
-          {onOpenClassic && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onOpenClassic}
-              className="text-muted-foreground"
-            >
-              Classic View
-            </Button>
-          )}
         </div>
       </div>
 
-      {/* PAY-001, PAY-003: Payment registry grid */}
+      {/* ── 3. Grid ── */}
       <PowersheetGrid
         surfaceId="payments-registry"
-        requirementIds={["PAY-001", "PAY-002", "PAY-003", "PAY-004", "PAY-014"]}
+        requirementIds={["PAY-001", "PAY-002", "PAY-003", "PAY-004"]}
         affordances={registryAffordances}
         title="Payments Registry"
         description="Read-only payment transaction ledger. Select a row to see details and take actions."
@@ -772,7 +637,7 @@ export function PaymentsPilotSurface({
         selectionMode="cell-range"
         enableFillHandle={false}
         enableUndoRedo={false}
-        onSelectionSummaryChange={setRegistrySelectionSummary}
+        onSelectionSummaryChange={setSelectionSummary}
         isLoading={paymentsQuery.isLoading}
         errorMessage={
           paymentsQuery.error
@@ -781,7 +646,7 @@ export function PaymentsPilotSurface({
         }
         emptyTitle="No payments found"
         emptyDescription={
-          searchQuery || typeFilter !== "ALL"
+          searchTerm || typeFilter !== "ALL"
             ? "Adjust your search or filter to see more payments."
             : "No payments have been recorded yet."
         }
@@ -793,7 +658,7 @@ export function PaymentsPilotSurface({
         minHeight={360}
       />
 
-      {/* Inspector panel — selected payment detail */}
+      {/* ── 4. Inspector ── */}
       <InspectorPanel
         isOpen={selectedRow !== null}
         onClose={handleCloseInspector}
@@ -835,11 +700,6 @@ export function PaymentsPilotSurface({
                 className="flex-1"
                 onClick={() => setVoidDialogOpen(true)}
                 disabled={!canVoid}
-                title={
-                  !canVoid
-                    ? "You don't have permission to void payments"
-                    : undefined
-                }
               >
                 <Ban className="h-4 w-4 mr-1" />
                 Void
@@ -849,61 +709,78 @@ export function PaymentsPilotSurface({
         }
       >
         {selectedRow && (
-          <>
-            <InspectorSection title="Payment Details">
-              <InspectorField label="Payment Number">
-                <p className="font-mono">{selectedRow.paymentNumber}</p>
-              </InspectorField>
-              <InspectorField label="Date">
-                <p>{selectedRow.paymentDate}</p>
-              </InspectorField>
-              <InspectorField label="Type">
-                <p>{selectedRow.paymentType}</p>
-              </InspectorField>
-              <InspectorField label="Method">
-                <p>{selectedRow.paymentMethod}</p>
-              </InspectorField>
-              <InspectorField label="Amount">
-                <p className="font-mono font-semibold">
-                  {selectedRow.amountFormatted}
+          <InspectorSection title="Payment Details">
+            <InspectorField label="Payment Number">
+              <p className="font-mono">{selectedRow.paymentNumber}</p>
+            </InspectorField>
+            <InspectorField label="Date">
+              <p>{selectedRow.paymentDate}</p>
+            </InspectorField>
+            <InspectorField label="Type">
+              <Badge
+                variant="outline"
+                className={
+                  selectedRow.paymentType === "RECEIVED"
+                    ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-red-50 text-red-700 border-red-200"
+                }
+              >
+                {selectedRow.paymentType}
+              </Badge>
+            </InspectorField>
+            <InspectorField label="Method">
+              <p>{selectedRow.paymentMethod}</p>
+            </InspectorField>
+            <InspectorField label="Amount">
+              <p
+                className={`font-mono font-semibold ${
+                  selectedRow.paymentType === "RECEIVED"
+                    ? "text-green-700"
+                    : selectedRow.paymentType === "SENT"
+                      ? "text-red-700"
+                      : ""
+                }`}
+              >
+                {selectedRow.amountFormatted}
+              </p>
+            </InspectorField>
+            <InspectorField label="Reference">
+              <p
+                className={
+                  selectedRow.referenceNumber === "No reference"
+                    ? "text-muted-foreground italic"
+                    : "font-mono"
+                }
+              >
+                {selectedRow.referenceNumber}
+              </p>
+            </InspectorField>
+            {selectedRow.invoiceId !== null && (
+              <InspectorField label="Invoice">
+                <p className="font-mono text-blue-600 cursor-pointer hover:underline">
+                  #{selectedRow.invoiceId}
                 </p>
               </InspectorField>
-              <InspectorField label="Reference">
-                <p
-                  className={
-                    selectedRow.referenceNumber === "No reference"
-                      ? "text-muted-foreground italic"
-                      : "font-mono"
-                  }
-                >
-                  {selectedRow.referenceNumber}
+            )}
+            {selectedRow.notes && (
+              <InspectorField label="Notes">
+                <p className="text-sm text-muted-foreground">
+                  {selectedRow.notes}
                 </p>
               </InspectorField>
-              {selectedRow.invoiceId !== null && (
-                <InspectorField label="Invoice">
-                  <p className="font-mono">#{selectedRow.invoiceId}</p>
-                </InspectorField>
-              )}
-              {selectedRow.notes && (
-                <InspectorField label="Notes">
-                  <p className="text-sm text-muted-foreground">
-                    {selectedRow.notes}
-                  </p>
-                </InspectorField>
-              )}
-            </InspectorSection>
-          </>
+            )}
+          </InspectorSection>
         )}
       </InspectorPanel>
 
-      {/* Status bar */}
+      {/* ── 5. Status Bar ── */}
       <WorkSurfaceStatusBar
         left={statusLeft}
         center={statusCenter}
         right={<KeyboardHintBar hints={keyboardHints} className="text-xs" />}
       />
 
-      {/* PAY-006 through PAY-013: Guided payment flow dialog */}
+      {/* ── 6. Sidecar Dialogs ── */}
       {invoiceIdForFlow !== null && (
         <InvoiceToPaymentFlow
           invoiceId={invoiceIdForFlow}
@@ -913,7 +790,6 @@ export function PaymentsPilotSurface({
         />
       )}
 
-      {/* PAY-014, DISC-PAY-005: Void payment dialog */}
       <VoidDialog
         payment={selectedRow}
         open={voidDialogOpen}
@@ -925,4 +801,4 @@ export function PaymentsPilotSurface({
   );
 }
 
-export default PaymentsPilotSurface;
+export default PaymentsSurface;

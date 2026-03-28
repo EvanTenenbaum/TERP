@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
@@ -7,8 +7,8 @@ import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfa
 const OrdersSheetPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/OrdersSheetPilotSurface")
 );
-const SalesSheetsPilotSurface = lazy(
-  () => import("@/components/spreadsheet-native/SalesSheetsPilotSurface")
+const SalesCatalogueSurface = lazy(
+  () => import("@/components/spreadsheet-native/SalesCatalogueSurface")
 );
 const QuotesPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/QuotesPilotSurface")
@@ -18,7 +18,6 @@ const ReturnsPilotSurface = lazy(
 );
 import ReturnsPage from "@/pages/ReturnsPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
-import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 import LiveShoppingPage from "@/pages/LiveShoppingPage";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
@@ -90,23 +89,6 @@ export default function SalesWorkspacePage() {
     )
   );
 
-  // Sales-sheets pilot — independent surface mode so orders default (sheet-native) doesn't bleed in
-  const salesSheetsPilotSupported = activeTab === "sales-sheets";
-  const {
-    sheetPilotEnabled: salesSheetsPilotEnabled,
-    availabilityReady: salesSheetsAvailabilityReady,
-  } = useSpreadsheetPilotAvailability(salesSheetsPilotSupported);
-  const {
-    surfaceMode: salesSheetsSurfaceMode,
-    setSurfaceMode: setSalesSheetsSurfaceMode,
-  } = useSpreadsheetSurfaceMode(
-    buildSurfaceAvailability(
-      "sales-sheets",
-      salesSheetsPilotEnabled,
-      salesSheetsAvailabilityReady && salesSheetsPilotSupported
-    )
-  );
-
   const quotesPilotSupported = activeTab === "quotes";
   const {
     sheetPilotEnabled: quotesPilotEnabled,
@@ -163,12 +145,6 @@ export default function SalesWorkspacePage() {
             surfaceMode={surfaceMode}
             onSurfaceModeChange={setSurfaceMode}
           />
-        ) : activeTab === "sales-sheets" ? (
-          <SheetModeToggle
-            enabled={salesSheetsPilotEnabled}
-            surfaceMode={salesSheetsSurfaceMode}
-            onSurfaceModeChange={setSalesSheetsSurfaceMode}
-          />
         ) : activeTab === "quotes" ? (
           <SheetModeToggle
             enabled={quotesPilotEnabled}
@@ -224,18 +200,15 @@ export default function SalesWorkspacePage() {
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="sales-sheets">
-        {salesSheetsPilotEnabled &&
-        salesSheetsSurfaceMode === "sheet-native" ? (
-          <PilotSurfaceBoundary fallback={<SalesSheetCreatorPage embedded />}>
-            <SalesSheetsPilotSurface
-              onOpenClassic={() =>
-                setLocation(buildSalesWorkspacePath("sales-sheets"))
-              }
-            />
-          </PilotSurfaceBoundary>
-        ) : (
-          <SalesSheetCreatorPage embedded />
-        )}
+        <Suspense
+          fallback={
+            <div className="p-4 text-sm text-muted-foreground">
+              Loading catalogue...
+            </div>
+          }
+        >
+          <SalesCatalogueSurface />
+        </Suspense>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="live-shopping">
         <LiveShoppingPage />
