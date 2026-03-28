@@ -28,6 +28,13 @@ const mockCreateProductIntakeDraftFromPO = vi.fn(input => ({
 }));
 const mockUpsertProductIntakeDraft = vi.fn(draft => draft);
 let mockSelectedPoId: number | null = null;
+let getAllQueryInput:
+  | {
+      limit: number;
+      offset: number;
+      supplierClientId?: number;
+    }
+  | null = null;
 
 let queueData: Array<{
   id: number;
@@ -186,12 +193,19 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     purchaseOrders: {
       getAll: {
-        useQuery: vi.fn(() => ({
+        useQuery: vi.fn((input: {
+          limit: number;
+          offset: number;
+          supplierClientId?: number;
+        }) => {
+          getAllQueryInput = input;
+          return {
           data: queueData,
           isLoading: false,
           error: null,
           refetch: vi.fn(),
-        })),
+          };
+        }),
       },
       getById: {
         useQuery: vi.fn(() => ({
@@ -353,6 +367,7 @@ describe("PurchaseOrderSurface", () => {
       ...input,
     }));
     mockUpsertProductIntakeDraft.mockImplementation(draft => draft);
+    getAllQueryInput = null;
   });
 
   it('renders "Purchase Orders" title in queue mode', () => {
@@ -499,6 +514,25 @@ describe("PurchaseOrderSurface", () => {
         selectionMode: "single-row",
       })
     );
+  });
+
+  it("normalizes legacy ?id= PO deep links into the queue selection param", () => {
+    mockUseSearch.mockReturnValue("id=44");
+
+    render(<PurchaseOrderSurface />);
+
+    expect(mockSetSelectedId).toHaveBeenCalledWith(44);
+  });
+
+  it("passes supplierClientId deep links through to the PO queue query and surfaces the supplier context", () => {
+    mockUseSearch.mockReturnValue("supplierClientId=12");
+
+    render(<PurchaseOrderSurface />);
+
+    expect(getAllQueryInput).toEqual(
+      expect.objectContaining({ supplierClientId: 12 })
+    );
+    expect(screen.getByText(/Supplier: North Farm/i)).toBeInTheDocument();
   });
 });
 

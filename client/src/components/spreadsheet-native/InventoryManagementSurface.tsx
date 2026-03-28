@@ -411,8 +411,10 @@ export function InventoryManagementSurface() {
     rows.find(row => row.batchId === selectedBatchId) ?? null;
   const selectedFallbackRow = useMemo(
     () =>
-      selectedRowOnGrid ? null : mapInventoryDetailToPilotRow(detailQuery.data),
-    [detailQuery.data, selectedRowOnGrid]
+      selectedBatchId !== null && !selectedRowOnGrid
+        ? mapInventoryDetailToPilotRow(detailQuery.data)
+        : null,
+    [detailQuery.data, selectedBatchId, selectedRowOnGrid]
   );
   const selectedRow = selectedRowOnGrid ?? selectedFallbackRow;
   const detailSummary = summarizeInventoryDetail(detailQuery.data);
@@ -1008,7 +1010,7 @@ export function InventoryManagementSurface() {
             rows={rows}
             columnDefs={columnDefs}
             getRowId={row => row.identity.rowKey}
-            selectedRowId={selectedRow ? selectedRow.identity.rowKey : null}
+            selectedRowId={selectedRowOnGrid?.identity.rowKey ?? null}
             onSelectedRowChange={row =>
               setSelectedBatchId(row?.batchId ?? null)
             }
