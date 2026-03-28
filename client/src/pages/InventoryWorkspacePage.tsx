@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { InventoryManagementSurface } from "@/components/spreadsheet-native/InventoryManagementSurface";
 import DirectIntakeWorkSurface from "@/components/work-surface/DirectIntakeWorkSurface";
-import PurchaseOrdersSlicePage from "@/components/uiux-slice/PurchaseOrdersSlicePage";
+import { PurchaseOrderSurface } from "@/components/spreadsheet-native/PurchaseOrderSurface";
 import PickPackWorkSurface from "@/components/work-surface/PickPackWorkSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
@@ -175,7 +175,9 @@ export default function InventoryWorkspacePage() {
             <ReceivingPage />
           </Suspense>
         ) : (
-          <PurchaseOrdersSlicePage mode="receiving" />
+          <PurchaseOrderSurface
+            defaultStatusFilter={["CONFIRMED", "RECEIVING"]}
+          />
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="photography">

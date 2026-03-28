@@ -119,6 +119,9 @@ vi.mock("@/components/uiux-slice/ProductIntakeSlicePage", () => ({
 vi.mock("@/components/uiux-slice/PurchaseOrdersSlicePage", () => ({
   default: () => <div>Purchase Orders Slice Surface</div>,
 }));
+vi.mock("@/components/spreadsheet-native/PurchaseOrderSurface", () => ({
+  PurchaseOrderSurface: () => <div>Purchase Order Surface</div>,
+}));
 vi.mock("@/components/spreadsheet-native/InventorySheetPilotSurface", () => ({
   default: () => <div>Inventory Sheet Pilot Surface</div>,
 }));
@@ -218,9 +221,7 @@ describe("Consolidated workspace pages", () => {
     expect(
       screen.getByRole("heading", { name: "Inventory" })
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Purchase Orders Slice Surface")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Purchase Order Surface")).toBeInTheDocument();
   });
 
   it("renders Inventory workspace receiving editor when a draft is selected", async () => {
@@ -325,8 +326,6 @@ describe("Consolidated workspace pages", () => {
     expect(
       screen.getByRole("heading", { name: "Procurement" })
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Purchase Orders Slice Surface")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Purchase Order Surface")).toBeInTheDocument();
   });
 });
