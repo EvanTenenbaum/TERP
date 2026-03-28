@@ -674,9 +674,10 @@ function Router() {
                 />
                 <Route
                   path="/procurement"
-                  component={RedirectWithSearch(
+                  component={RedirectWithTab(
                     "/procurement",
-                    "/purchase-orders"
+                    "/purchase-orders",
+                    "purchase-orders"
                   )}
                 />
                 <Route
