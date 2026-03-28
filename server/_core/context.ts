@@ -1,6 +1,7 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
 import { simpleAuth } from "./simpleAuth";
+import { getSessionCookieOptions } from "./cookies";
 import { getUserByEmail, getUser, upsertUser } from "../db";
 import { env } from "./env";
 import { logger } from "./logger";
@@ -214,9 +215,7 @@ export async function createContext(
         // Set the session cookie for subsequent requests
         const token = simpleAuth.createSessionToken(user);
         opts.res.cookie("terp_session", token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
+          ...getSessionCookieOptions(opts.req),
           maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         });
       } catch (error) {
