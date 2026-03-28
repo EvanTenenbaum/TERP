@@ -6,14 +6,10 @@ import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { ACCOUNTING_WORKSPACE } from "@/config/workspaces";
 import AccountingDashboard from "@/pages/accounting/AccountingDashboard";
-import Expenses from "@/pages/accounting/Expenses";
-import BankAccounts from "@/pages/accounting/BankAccounts";
-import BankTransactions from "@/pages/accounting/BankTransactions";
-import FiscalPeriods from "@/pages/accounting/FiscalPeriods";
 import { lazy } from "react";
 import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
 
-// Phase 1+2 unified surfaces
+// All unified surfaces
 const InvoicesSurface = lazy(
   () => import("@/components/spreadsheet-native/InvoicesSurface")
 );
@@ -28,6 +24,18 @@ const GeneralLedgerSurface = lazy(
 );
 const ChartOfAccountsSurface = lazy(
   () => import("@/components/spreadsheet-native/ChartOfAccountsSurface")
+);
+const ExpensesSurface = lazy(
+  () => import("@/components/spreadsheet-native/ExpensesSurface")
+);
+const BankAccountsSurface = lazy(
+  () => import("@/components/spreadsheet-native/BankAccountsSurface")
+);
+const BankTransactionsSurface = lazy(
+  () => import("@/components/spreadsheet-native/BankTransactionsSurface")
+);
+const FiscalPeriodsSurface = lazy(
+  () => import("@/components/spreadsheet-native/FiscalPeriodsSurface")
 );
 
 type AccountingTab = (typeof ACCOUNTING_WORKSPACE.tabs)[number]["value"];
@@ -114,18 +122,47 @@ export default function AccountingWorkspacePage() {
           <ChartOfAccountsSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
-      {/* Phase 3 tabs remain classic until that phase is built */}
       <LinearWorkspacePanel value="expenses">
-        <Expenses embedded />
+        <PilotSurfaceBoundary
+          fallback={
+            <div className="p-4 text-muted-foreground">Loading expenses...</div>
+          }
+        >
+          <ExpensesSurface />
+        </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="bank-accounts">
-        <BankAccounts embedded />
+        <PilotSurfaceBoundary
+          fallback={
+            <div className="p-4 text-muted-foreground">
+              Loading bank accounts...
+            </div>
+          }
+        >
+          <BankAccountsSurface />
+        </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="bank-transactions">
-        <BankTransactions embedded />
+        <PilotSurfaceBoundary
+          fallback={
+            <div className="p-4 text-muted-foreground">
+              Loading bank transactions...
+            </div>
+          }
+        >
+          <BankTransactionsSurface />
+        </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="fiscal-periods">
-        <FiscalPeriods embedded />
+        <PilotSurfaceBoundary
+          fallback={
+            <div className="p-4 text-muted-foreground">
+              Loading fiscal periods...
+            </div>
+          }
+        >
+          <FiscalPeriodsSurface />
+        </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );
