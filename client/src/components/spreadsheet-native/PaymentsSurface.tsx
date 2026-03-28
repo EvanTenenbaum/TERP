@@ -533,6 +533,29 @@ export function PaymentsSurface() {
     return `Record a payment against invoice #${invoiceIdForFlow}`;
   }, [invoiceIdForFlow, routeParams.orderId]);
 
+  const scopeEmptyDescription = useMemo(() => {
+    if (searchTerm || typeFilter !== "ALL") {
+      return "Adjust your search or filter to see more payments.";
+    }
+
+    if (routeParams.orderId !== null) {
+      return handoffInvoiceId !== null
+        ? `Order #${routeParams.orderId} is linked to invoice #${handoffInvoiceId}, but no payments have been posted for it yet.`
+        : `Order #${routeParams.orderId} does not have a linked invoice yet, so there are no payments to show.`;
+    }
+
+    if (handoffInvoiceId !== null) {
+      return `Invoice #${handoffInvoiceId} does not have any recorded payments yet.`;
+    }
+
+    return "No payments have been recorded yet.";
+  }, [
+    handoffInvoiceId,
+    routeParams.orderId,
+    searchTerm,
+    typeFilter,
+  ]);
+
   // Status bar
   const statusLeft = (
     <span>
@@ -624,6 +647,23 @@ export function PaymentsSurface() {
         </div>
       )}
 
+      {routeParams.orderId === null && handoffInvoiceId !== null && (
+        <div
+          className="mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50/70 px-2 py-1.5"
+          data-testid="payments-invoice-scope-banner"
+        >
+          <Badge
+            variant="outline"
+            className="text-[9px] bg-emerald-100 text-emerald-800 border-emerald-200"
+          >
+            Invoice scope
+          </Badge>
+          <span className="text-[11px] text-emerald-900">
+            Showing payments linked to invoice #{handoffInvoiceId}.
+          </span>
+        </div>
+      )}
+
       {/* ── 2. Action Bar ── */}
       <div className="flex items-center gap-1 px-2 py-0.5 bg-muted/10 border-b flex-wrap">
         {/* Type filter tabs */}
@@ -698,11 +738,7 @@ export function PaymentsSurface() {
             : null
         }
         emptyTitle="No payments found"
-        emptyDescription={
-          searchTerm || typeFilter !== "ALL"
-            ? "Adjust your search or filter to see more payments."
-            : "No payments have been recorded yet."
-        }
+        emptyDescription={scopeEmptyDescription}
         summary={
           <span>
             {gridRows.length} payment{gridRows.length !== 1 ? "s" : ""} visible

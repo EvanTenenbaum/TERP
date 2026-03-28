@@ -399,6 +399,17 @@ describe("InvoicesSurface", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("adds desktop offset spacing to the top action bars when the inspector is open", () => {
+    invoiceSelectionState.selectedId = 1;
+
+    render(<InvoicesSurface />);
+
+    expect(screen.getByTestId("invoices-toolbar")).toHaveClass("md:pr-[400px]");
+    expect(screen.getByTestId("invoices-action-bar")).toHaveClass(
+      "md:pr-[400px]"
+    );
+  });
+
   it("opens the payment dialog when the sales handoff CTA is clicked", () => {
     invoiceSelectionState.selectedId = 1;
     mockParseInvoiceDeepLink.mockReturnValue({
