@@ -12,6 +12,21 @@ vi.mock("./PowersheetGrid", () => ({
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     accounting: {
+      bankAccounts: {
+        list: {
+          useQuery: vi.fn(() => ({
+            data: {
+              items: [
+                {
+                  id: 10,
+                  accountName: "Operating Account",
+                },
+              ],
+            },
+            isLoading: false,
+          })),
+        },
+      },
       bankTransactions: {
         list: {
           useQuery: vi.fn(() => ({
@@ -42,6 +57,12 @@ vi.mock("@/lib/trpc", () => ({
           })),
         },
         reconcile: {
+          useMutation: vi.fn(() => ({
+            mutate: vi.fn(),
+            isPending: false,
+          })),
+        },
+        create: {
           useMutation: vi.fn(() => ({
             mutate: vi.fn(),
             isPending: false,

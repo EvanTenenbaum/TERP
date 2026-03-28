@@ -130,6 +130,43 @@ export async function getInvoiceById(id: number) {
 }
 
 /**
+ * Resolve the latest invoice linked to a business reference without depending
+ * on the parent record shape. This is useful for handoff flows where the
+ * source order may contain legacy payloads that no longer parse cleanly.
+ */
+export async function getInvoiceByReference(
+  referenceId: number,
+  referenceTypes: string[] = ["ORDER", "SALE"]
+) {
+  const db = await getDb();
+  if (!db) return null;
+  if (!Number.isFinite(referenceId) || referenceId <= 0) return null;
+
+  const normalizedReferenceTypes = referenceTypes
+    .map(type => type.trim().toUpperCase())
+    .filter(Boolean);
+
+  if (normalizedReferenceTypes.length === 0) {
+    return null;
+  }
+
+  const invoice = await db
+    .select()
+    .from(invoices)
+    .where(
+      and(
+        sql`${invoices.deletedAt} IS NULL`,
+        eq(invoices.referenceId, referenceId),
+        safeInArray(invoices.referenceType, normalizedReferenceTypes)
+      )
+    )
+    .orderBy(desc(invoices.invoiceDate), desc(invoices.id))
+    .limit(1);
+
+  return invoice[0] ?? null;
+}
+
+/**
  * Create invoice with line items
  */
 export async function createInvoice(
@@ -319,6 +356,11 @@ export async function calculateARAging() {
     let days60 = 0;
     let days90 = 0;
     let days90Plus = 0;
+    let currentCount = 0;
+    let days30Count = 0;
+    let days60Count = 0;
+    let days90Count = 0;
+    let days90PlusCount = 0;
 
     result.forEach(inv => {
       const amountDue = Number(inv.amountDue) || 0;
@@ -329,18 +371,26 @@ export async function calculateARAging() {
 
       if (daysPastDue < 0) {
         current += amountDue;
+        currentCount++;
       } else if (daysPastDue <= 30) {
         days30 += amountDue;
+        days30Count++;
       } else if (daysPastDue <= 60) {
         days60 += amountDue;
+        days60Count++;
       } else if (daysPastDue <= 90) {
         days90 += amountDue;
+        days90Count++;
       } else {
         days90Plus += amountDue;
+        days90PlusCount++;
       }
     });
 
-    return { current, days30, days60, days90, days90Plus };
+    return {
+      current, days30, days60, days90, days90Plus,
+      currentCount, days30Count, days60Count, days90Count, days90PlusCount,
+    };
   } catch (error) {
     // Log the error for debugging but rethrow for frontend to handle
     console.error("[arApDb] calculateARAging error:", error);

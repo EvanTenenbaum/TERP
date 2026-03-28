@@ -8,6 +8,8 @@ describe("parseInvoiceDeepLink", () => {
       invoiceId: 91,
       openRecordPayment: false,
       statusFilter: null,
+      orderId: null,
+      from: null,
     });
   });
 
@@ -20,6 +22,8 @@ describe("parseInvoiceDeepLink", () => {
       invoiceId: 91,
       openRecordPayment: true,
       statusFilter: null,
+      orderId: 33,
+      from: "sales",
     });
   });
 
@@ -28,6 +32,8 @@ describe("parseInvoiceDeepLink", () => {
       invoiceId: null,
       openRecordPayment: true,
       statusFilter: null,
+      orderId: null,
+      from: null,
     });
   });
 
@@ -36,6 +42,8 @@ describe("parseInvoiceDeepLink", () => {
       invoiceId: null,
       openRecordPayment: false,
       statusFilter: "OVERDUE",
+      orderId: null,
+      from: null,
     });
   });
 });
