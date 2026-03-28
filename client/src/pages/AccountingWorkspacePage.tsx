@@ -6,9 +6,6 @@ import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { ACCOUNTING_WORKSPACE } from "@/config/workspaces";
 import AccountingDashboard from "@/pages/accounting/AccountingDashboard";
-import InvoicesWorkSurface from "@/components/work-surface/InvoicesWorkSurface";
-import Bills from "@/pages/accounting/Bills";
-import Payments from "@/pages/accounting/Payments";
 import GeneralLedger from "@/pages/accounting/GeneralLedger";
 import ChartOfAccounts from "@/pages/accounting/ChartOfAccounts";
 import Expenses from "@/pages/accounting/Expenses";
@@ -16,20 +13,18 @@ import BankAccounts from "@/pages/accounting/BankAccounts";
 import BankTransactions from "@/pages/accounting/BankTransactions";
 import FiscalPeriods from "@/pages/accounting/FiscalPeriods";
 import { lazy } from "react";
-import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
 
-const PaymentsPilotSurface = lazy(
-  () => import("@/components/spreadsheet-native/PaymentsPilotSurface")
+// Phase 1 unified surfaces
+const InvoicesSurface = lazy(
+  () => import("@/components/spreadsheet-native/InvoicesSurface")
 );
-const InvoicesPilotSurface = lazy(
-  () => import("@/components/spreadsheet-native/InvoicesPilotSurface")
+const BillsSurface = lazy(
+  () => import("@/components/spreadsheet-native/BillsSurface")
 );
-import {
-  buildSurfaceAvailability,
-  useSpreadsheetPilotAvailability,
-  useSpreadsheetSurfaceMode,
-} from "@/lib/spreadsheet-native";
+const PaymentsSurface = lazy(
+  () => import("@/components/spreadsheet-native/PaymentsSurface")
+);
 
 type AccountingTab = (typeof ACCOUNTING_WORKSPACE.tabs)[number]["value"];
 const ACCOUNTING_TABS = ACCOUNTING_WORKSPACE.tabs.map(
@@ -43,15 +38,6 @@ export default function AccountingWorkspacePage() {
   });
 
   useWorkspaceHomeTelemetry("accounting", activeTab);
-
-  // Sheet-native pilot: supported on the payments and invoices tabs
-  const pilotSurfaceSupported =
-    activeTab === "payments" || activeTab === "invoices";
-  const { sheetPilotEnabled, availabilityReady } =
-    useSpreadsheetPilotAvailability(pilotSurfaceSupported);
-  const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
-    buildSurfaceAvailability(activeTab, sheetPilotEnabled, availabilityReady)
-  );
 
   return (
     <LinearWorkspaceShell
@@ -71,44 +57,38 @@ export default function AccountingWorkspacePage() {
           value: "Invoice -> Payment -> General Ledger",
         },
       ]}
-      commandStrip={
-        pilotSurfaceSupported ? (
-          <SheetModeToggle
-            enabled={sheetPilotEnabled}
-            surfaceMode={surfaceMode}
-            onSurfaceModeChange={setSurfaceMode}
-          />
-        ) : null
-      }
     >
       <LinearWorkspacePanel value="dashboard">
         <AccountingDashboard embedded />
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="invoices">
-        {surfaceMode === "sheet-native" ? (
-          <PilotSurfaceBoundary fallback={<InvoicesWorkSurface />}>
-            <InvoicesPilotSurface
-              onOpenClassic={() => setSurfaceMode("classic")}
-            />
-          </PilotSurfaceBoundary>
-        ) : (
-          <InvoicesWorkSurface />
-        )}
+        <PilotSurfaceBoundary
+          fallback={
+            <div className="p-4 text-muted-foreground">Loading invoices...</div>
+          }
+        >
+          <InvoicesSurface />
+        </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="bills">
-        <Bills embedded />
+        <PilotSurfaceBoundary
+          fallback={
+            <div className="p-4 text-muted-foreground">Loading bills...</div>
+          }
+        >
+          <BillsSurface />
+        </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="payments">
-        {surfaceMode === "sheet-native" ? (
-          <PilotSurfaceBoundary fallback={<Payments embedded />}>
-            <PaymentsPilotSurface
-              onOpenClassic={() => setSurfaceMode("classic")}
-            />
-          </PilotSurfaceBoundary>
-        ) : (
-          <Payments embedded />
-        )}
+        <PilotSurfaceBoundary
+          fallback={
+            <div className="p-4 text-muted-foreground">Loading payments...</div>
+          }
+        >
+          <PaymentsSurface />
+        </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
+      {/* Phase 2-3 tabs remain classic until those phases are built */}
       <LinearWorkspacePanel value="general-ledger">
         <GeneralLedger embedded />
       </LinearWorkspacePanel>
