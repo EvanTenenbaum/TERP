@@ -182,23 +182,16 @@ const PO_ALLOWED_TRANSITIONS: Record<string, POStatus[]> = {
   CANCELLED: [],
 };
 
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const mod = isMac ? "\u2318" : "Ctrl";
-
 const queueKeyboardHints: KeyboardHint[] = [
   { key: "Click", label: "select row" },
-  { key: "Shift+Click", label: "extend range" },
-  { key: `${mod}+Click`, label: "add to selection" },
-  { key: `${mod}+C`, label: "copy cells" },
-  { key: `${mod}+A`, label: "select all" },
+  { key: "Enter", label: "focus selection" },
+  { key: "Esc", label: "clear dialogs" },
 ];
 
 const queueAffordances: PowersheetAffordance[] = [
   { label: "Select", available: true },
-  { label: "Multi-select", available: true },
-  { label: "Copy", available: true },
+  { label: "Multi-select", available: false },
+  { label: "Copy", available: false },
   { label: "Paste", available: false },
   { label: "Fill", available: false },
   { label: "Edit", available: false },
@@ -1831,7 +1824,7 @@ function PurchaseOrderQueueMode({
         getRowId={row => row.identity.rowKey}
         selectedRowId={selectedRow?.identity.rowKey ?? null}
         onSelectedRowChange={row => setSelectedPoId(row?.poId ?? null)}
-        selectionMode="cell-range"
+        selectionMode="single-row"
         enableFillHandle={false}
         enableUndoRedo={false}
         onSelectionSummaryChange={setQueueSelectionSummary}
