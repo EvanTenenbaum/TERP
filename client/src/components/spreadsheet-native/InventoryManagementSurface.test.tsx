@@ -7,16 +7,21 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InventoryManagementSurface } from "./InventoryManagementSurface";
 
-const { mockSetSelectedId, viewsListQuery, filtersState } = vi.hoisted(() => ({
-  mockSetSelectedId: vi.fn(),
-  viewsListQuery: vi.fn(() => ({ data: { items: [] }, refetch: vi.fn() })),
-  filtersState: {
-    history: [] as Array<{
-      isOpen: boolean;
-      onOpenChange: (open: boolean) => void;
+const { mockSetSelectedId, viewsListQuery, inspectorPanelProps, filtersState } =
+  vi.hoisted(() => ({
+    mockSetSelectedId: vi.fn(),
+    viewsListQuery: vi.fn(() => ({ data: { items: [] }, refetch: vi.fn() })),
+    inspectorPanelProps: [] as Array<{
+      trapFocus?: boolean;
+      isOpen?: boolean;
     }>,
-  },
-}));
+    filtersState: {
+      history: [] as Array<{
+        isOpen: boolean;
+        onOpenChange: (open: boolean) => void;
+      }>,
+    },
+  }));
 
 vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
@@ -98,6 +103,36 @@ vi.mock("./InventoryGalleryView", () => ({
     <div data-testid="gallery-view">
       <button onClick={() => onOpenInspector(7)}>Open from gallery</button>
       <button onClick={() => onAdjustQty(42)}>Adjust from gallery</button>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/work-surface/InspectorPanel", () => ({
+  InspectorPanel: ({
+    children,
+    trapFocus,
+    isOpen,
+  }: {
+    children?: ReactNode;
+    trapFocus?: boolean;
+    isOpen?: boolean;
+  }) => {
+    inspectorPanelProps.push({ trapFocus, isOpen });
+    return isOpen ? <div data-testid="inspector-panel">{children}</div> : null;
+  },
+  InspectorSection: ({ children }: { children?: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  InspectorField: ({
+    label,
+    children,
+  }: {
+    label: string;
+    children?: ReactNode;
+  }) => (
+    <div>
+      <span>{label}</span>
+      {children}
     </div>
   ),
 }));
@@ -223,6 +258,7 @@ describe("InventoryManagementSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     filtersState.history = [];
+    inspectorPanelProps.length = 0;
     viewsListQuery.mockImplementation(() => ({
       data: { items: [] },
       refetch: vi.fn(),
@@ -271,6 +307,14 @@ describe("InventoryManagementSurface", () => {
     fireEvent.click(screen.getByText("Select inventory row"));
 
     expect(mockSetSelectedId).toHaveBeenCalledWith(42);
+  });
+
+  it("disables inspector focus trapping so row selection does not fight the grid focus model", () => {
+    render(<InventoryManagementSurface />);
+
+    expect(inspectorPanelProps.some(props => props.trapFocus === false)).toBe(
+      true
+    );
   });
 
   it("does not push a fallback detail row back into grid selection when the selected batch is outside the loaded grid", async () => {

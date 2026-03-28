@@ -1109,6 +1109,7 @@ export function InventoryManagementSurface() {
             selectedRow?.productName ||
             (selectedBatchId ? `Batch #${selectedBatchId}` : "Select a batch")
           }
+          trapFocus={false}
           headerActions={
             selectedRow ? (
               <Badge
