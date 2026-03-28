@@ -62,6 +62,25 @@ describe("checkSchemaFingerprint", () => {
     expect(result.checks).toHaveLength(canaryCount);
   });
 
+  it("surfaces missing orders columns by name", async () => {
+    mockExecute.mockResolvedValueOnce([[{ result: 1 }]]); // warmup
+    for (let i = 0; i < canaryCount; i++) {
+      const isMissingOrderColumn =
+        i === canaryCount - 2 || i === canaryCount - 1;
+      mockExecute.mockResolvedValueOnce([
+        [{ passed: isMissingOrderColumn ? 0 : 1 }],
+      ]);
+    }
+
+    const result = await checkSchemaFingerprint({ retries: 1 });
+
+    expect(result.complete).toBe(false);
+    expect(result.missingChecks).toEqual([
+      "orders.shipping.column",
+      "orders.show_adjustment_on_document.column",
+    ]);
+  });
+
   it("returns non-complete result when db is unavailable", async () => {
     mockedGetDb.mockResolvedValue(null);
 

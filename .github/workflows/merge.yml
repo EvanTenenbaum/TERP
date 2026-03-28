@@ -46,8 +46,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -312,41 +312,46 @@ jobs:
         if: success()
         run: |
           APP_URL="https://terp-app-b9s35.ondigitalocean.app"
+          TARGET_COMMIT="${GITHUB_SHA}"
+          TARGET_COMMIT_SHORT="${GITHUB_SHA::7}"
 
           echo "Waiting for DigitalOcean auto-deploy to start..."
           sleep 60
 
-          MAX_ATTEMPTS=20
+          MAX_ATTEMPTS=30
           ATTEMPTS=0
           while [ "$ATTEMPTS" -lt "$MAX_ATTEMPTS" ]; do
             ATTEMPTS=$((ATTEMPTS + 1))
 
-            RESPONSE=$(curl -sf "${APP_URL}/health" 2>/dev/null) || {
-              echo "App unreachable (attempt $ATTEMPTS/$MAX_ATTEMPTS) — deploy may be in progress"
+            VERSION_RESPONSE=$(curl -sf "${APP_URL}/version.json?ts=$(date +%s)" 2>/dev/null) || {
+              echo "version.json unreachable (attempt $ATTEMPTS/$MAX_ATTEMPTS) — deploy may be in progress"
               sleep 30
               continue
             }
 
-            UPTIME=$(echo "$RESPONSE" | jq -r '.uptime // empty' 2>/dev/null)
-            STATUS=$(echo "$RESPONSE" | jq -r '.status // empty' 2>/dev/null)
+            LIVE_COMMIT=$(echo "$VERSION_RESPONSE" | jq -r '.commit // empty' 2>/dev/null)
+            LIVE_BUILD_TIME=$(echo "$VERSION_RESPONSE" | jq -r '.buildTime // empty' 2>/dev/null)
 
-            if [ -n "$UPTIME" ]; then
-              UPTIME_INT=${UPTIME%.*}
-              if [ "$UPTIME_INT" -lt 300 ] 2>/dev/null; then
-                echo "✅ Fresh deployment verified (uptime: ${UPTIME_INT}s, status: ${STATUS})"
-                echo "deployment_status=verified" >> $GITHUB_OUTPUT
-                exit 0
-              else
-                echo "Uptime ${UPTIME_INT}s — old deployment still serving (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+            HEALTH_RESPONSE=$(curl -sf "${APP_URL}/health" 2>/dev/null || true)
+            HEALTH_STATUS=$(echo "$HEALTH_RESPONSE" | jq -r '.status // empty' 2>/dev/null)
+            HEALTH_COMMIT=$(echo "$HEALTH_RESPONSE" | jq -r '.commit // empty' 2>/dev/null)
+
+            if [ "$LIVE_COMMIT" = "$TARGET_COMMIT_SHORT" ] || [ "$LIVE_COMMIT" = "$TARGET_COMMIT" ]; then
+              if [ -n "$HEALTH_COMMIT" ] && [ "$HEALTH_COMMIT" != "$TARGET_COMMIT_SHORT" ] && [ "$HEALTH_COMMIT" != "$TARGET_COMMIT" ]; then
+                echo "version.json is fresh but /health still reports commit ${HEALTH_COMMIT} (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+                sleep 30
+                continue
               fi
-            else
-              echo "Could not parse uptime from /health (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+
+              echo "✅ Fresh deployment verified (commit: ${LIVE_COMMIT}, health: ${HEALTH_STATUS:-unknown}, buildTime: ${LIVE_BUILD_TIME:-unknown})"
+              echo "deployment_status=verified" >> $GITHUB_OUTPUT
+              exit 0
             fi
 
+            echo "Live app still serving commit ${LIVE_COMMIT:-unknown} instead of ${TARGET_COMMIT_SHORT} (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
             sleep 30
           done
 
-          echo "⚠️ Could not confirm fresh deployment after $MAX_ATTEMPTS attempts (~10 min)"
-          echo "The deploy may still be in progress. Check DigitalOcean dashboard."
-          echo "deployment_status=unverified" >> $GITHUB_OUTPUT
-          exit 0
+          echo "❌ Could not confirm commit ${TARGET_COMMIT_SHORT} on production after $MAX_ATTEMPTS attempts (~15 min)"
+          echo "deployment_status=failed" >> $GITHUB_OUTPUT
+          exit 1
