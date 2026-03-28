@@ -66,4 +66,50 @@ describe("InvoiceBottom", () => {
     expect(onPaymentTermsChange).toHaveBeenCalledWith("COD");
     expect(onFreightChange).toHaveBeenCalledWith(80.5);
   });
+
+  it("clears a local adjustment edit when the parent resets adjustment to null", () => {
+    const onAdjustmentChange = vi.fn();
+    const view = render(
+      <InvoiceBottom
+        subtotal={500}
+        adjustment={{ amount: 25, mode: "DISCOUNT", type: "DOLLAR" }}
+        onAdjustmentChange={onAdjustmentChange}
+        showAdjustmentOnDocument
+        onShowAdjustmentOnDocumentChange={vi.fn()}
+        freight={0}
+        onFreightChange={vi.fn()}
+        total={475}
+        paymentTerms="NET_30"
+        onPaymentTermsChange={vi.fn()}
+        creditAvailable={null}
+        creditUtilizationPercent={null}
+        creditWarning={null}
+      />
+    );
+
+    const adjustmentInput = screen.getByLabelText("Whole Order Change");
+    fireEvent.focus(adjustmentInput);
+    fireEvent.change(adjustmentInput, { target: { value: "10" } });
+
+    view.rerender(
+      <InvoiceBottom
+        subtotal={500}
+        adjustment={null}
+        onAdjustmentChange={onAdjustmentChange}
+        showAdjustmentOnDocument
+        onShowAdjustmentOnDocumentChange={vi.fn()}
+        freight={0}
+        onFreightChange={vi.fn()}
+        total={500}
+        paymentTerms="NET_30"
+        onPaymentTermsChange={vi.fn()}
+        creditAvailable={null}
+        creditUtilizationPercent={null}
+        creditWarning={null}
+      />
+    );
+
+    expect(screen.getByLabelText("Whole Order Change")).toHaveValue("");
+    expect(onAdjustmentChange).not.toHaveBeenCalled();
+  });
 });

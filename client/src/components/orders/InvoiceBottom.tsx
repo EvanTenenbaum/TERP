@@ -77,12 +77,19 @@ export function InvoiceBottom({
   const isEditingAdjustmentRef = useRef(false);
 
   useEffect(() => {
+    if (adjustment === null) {
+      setAdjustmentMode("DISCOUNT");
+      setAdjustmentType("DOLLAR");
+      setAdjustmentAmount("");
+      return;
+    }
+
     if (isEditingAdjustmentRef.current) {
       return;
     }
-    setAdjustmentMode(adjustment?.mode ?? "DISCOUNT");
-    setAdjustmentType(adjustment?.type ?? "DOLLAR");
-    setAdjustmentAmount(adjustment ? String(adjustment.amount) : "");
+    setAdjustmentMode(adjustment.mode);
+    setAdjustmentType(adjustment.type);
+    setAdjustmentAmount(String(adjustment.amount));
   }, [adjustment]);
 
   useEffect(() => {

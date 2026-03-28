@@ -32,7 +32,7 @@ import {
   type Batch,
   type OrderLineItem,
 } from "../../drizzle/schema";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, sql, asc } from "drizzle-orm";
 import { safeInArray } from "../lib/sqlSafety";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
@@ -236,23 +236,46 @@ function buildPersistedDraftItems(
   }));
 }
 
-function parsePersistedDraftItems(
+export function buildPersistedDraftItemKey(
+  batchId: number,
+  isSample: boolean
+): string {
+  return `${batchId}:${isSample ? "sample" : "regular"}`;
+}
+
+export function parsePersistedDraftItems(
   items: unknown
-): Map<number, PersistedDraftItemMetadata> {
+): Map<string, PersistedDraftItemMetadata[]> {
   if (!Array.isArray(items)) {
     return new Map();
   }
 
-  return new Map(
-    items
-      .filter(
-        (item): item is PersistedDraftItemMetadata =>
-          typeof item === "object" &&
-          item !== null &&
-          typeof (item as PersistedDraftItemMetadata).batchId === "number"
-      )
-      .map(item => [item.batchId, item] as const)
+  const persistedItems = items.filter(
+    (item): item is PersistedDraftItemMetadata =>
+      typeof item === "object" &&
+      item !== null &&
+      typeof (item as PersistedDraftItemMetadata).batchId === "number"
   );
+
+  const lookup = new Map<string, PersistedDraftItemMetadata[]>();
+  for (const item of persistedItems) {
+    const key = buildPersistedDraftItemKey(item.batchId, Boolean(item.isSample));
+    const existing = lookup.get(key);
+    if (existing) {
+      existing.push(item);
+    } else {
+      lookup.set(key, [item]);
+    }
+  }
+
+  return lookup;
+}
+
+export function isOrderAlreadyConfirmed(order: {
+  isDraft: boolean;
+  confirmedAt: Date | null;
+}): boolean {
+  return !order.isDraft && order.confirmedAt !== null;
 }
 
 async function getDraftBatchPricingContext(
@@ -1101,16 +1124,15 @@ export const ordersRouter = router({
         overallMarginPercent: totals.avgMarginPercent,
       });
 
-      // Generate order number
-      const orderNumber = await ordersDb.generateOrderNumber(
-        input.orderType,
-        true
-      );
       // paymentTerms is NOT NULL in the orders table; ensure draft paths always persist a valid value.
       const resolvedPaymentTerms = input.paymentTerms || "NET_30";
 
       // Create order + line items atomically
-      const { orderId } = await withTransaction(async tx => {
+      const { orderId, orderNumber } = await withTransaction(async tx => {
+        const orderNumber = await ordersDb.generateOrderNumber(
+          input.orderType,
+          true
+        );
         const [orderResult] = await tx.insert(orders).values({
           orderNumber,
           orderType: input.orderType,
@@ -1123,6 +1145,7 @@ export const ordersRouter = router({
           total: orderTotal.toString(),
           subtotal: totals.subtotal.toString(),
           shipping: shipping.toString(),
+          showAdjustmentOnDocument: input.showAdjustmentOnDocument,
           avgMarginPercent: totals.avgMarginPercent.toString(),
           notes: input.notes || null,
           validUntil: input.validUntil ? new Date(input.validUntil) : null,
@@ -1169,7 +1192,7 @@ export const ordersRouter = router({
           )
         );
 
-        return { orderId: newOrderId };
+        return { orderId: newOrderId, orderNumber };
       });
 
       // Log audit entry (outside transaction — non-critical side effect)
@@ -1391,6 +1414,7 @@ export const ordersRouter = router({
             total: orderTotal.toString(),
             subtotal: totals.subtotal.toString(),
             shipping: shipping.toString(),
+            showAdjustmentOnDocument: input.showAdjustmentOnDocument,
             avgMarginPercent: totals.avgMarginPercent.toString(),
             notes: input.notes,
             validUntil: input.validUntil ? new Date(input.validUntil) : null,
@@ -1684,6 +1708,7 @@ export const ordersRouter = router({
 
       const lineItems = await db.query.orderLineItems.findMany({
         where: eq(orderLineItems.orderId, input.orderId),
+        orderBy: [asc(orderLineItems.id)],
       });
 
       const batchIds = Array.from(new Set(lineItems.map(item => item.batchId)));
@@ -1721,34 +1746,39 @@ export const ordersRouter = router({
 
       return {
         order: normalizedOrder,
-        lineItems: lineItems.map(lineItem => ({
-          ...lineItem,
-          productId:
-            batchMetadataById.get(lineItem.batchId)?.productId ??
-            persistedDraftItems.get(lineItem.batchId)?.productId ??
-            null,
-          batchSku:
-            batchMetadataById.get(lineItem.batchId)?.batchSku ??
-            persistedDraftItems.get(lineItem.batchId)?.batchSku ??
-            null,
-          cogsMode:
-            batchMetadataById.get(lineItem.batchId)?.cogsMode ??
-            persistedDraftItems.get(lineItem.batchId)?.cogsMode ??
-            null,
-          unitCogsMin:
-            batchMetadataById.get(lineItem.batchId)?.unitCogsMin ??
-            persistedDraftItems.get(lineItem.batchId)?.unitCogsMin ??
-            null,
-          unitCogsMax:
-            batchMetadataById.get(lineItem.batchId)?.unitCogsMax ??
-            persistedDraftItems.get(lineItem.batchId)?.unitCogsMax ??
-            null,
-          profilePriceAdjustmentPercent:
-            persistedDraftItems.get(lineItem.batchId)
-              ?.profilePriceAdjustmentPercent ?? null,
-          appliedRules:
-            persistedDraftItems.get(lineItem.batchId)?.appliedRules ?? [],
-        })),
+        lineItems: lineItems.map(lineItem => {
+          const persistedMetadataQueue = persistedDraftItems.get(
+            buildPersistedDraftItemKey(lineItem.batchId, lineItem.isSample)
+          );
+          const persistedMetadata = persistedMetadataQueue?.shift();
+
+          return {
+            ...lineItem,
+            productId:
+              batchMetadataById.get(lineItem.batchId)?.productId ??
+              persistedMetadata?.productId ??
+              null,
+            batchSku:
+              batchMetadataById.get(lineItem.batchId)?.batchSku ??
+              persistedMetadata?.batchSku ??
+              null,
+            cogsMode:
+              batchMetadataById.get(lineItem.batchId)?.cogsMode ??
+              persistedMetadata?.cogsMode ??
+              null,
+            unitCogsMin:
+              batchMetadataById.get(lineItem.batchId)?.unitCogsMin ??
+              persistedMetadata?.unitCogsMin ??
+              null,
+            unitCogsMax:
+              batchMetadataById.get(lineItem.batchId)?.unitCogsMax ??
+              persistedMetadata?.unitCogsMax ??
+              null,
+            profilePriceAdjustmentPercent:
+              persistedMetadata?.profilePriceAdjustmentPercent ?? null,
+            appliedRules: persistedMetadata?.appliedRules ?? [],
+          };
+        }),
       };
     }),
 
@@ -2131,6 +2161,14 @@ export const ordersRouter = router({
               code: "BAD_REQUEST",
               message: "Only SALE orders can be confirmed",
             });
+          }
+
+          if (isOrderAlreadyConfirmed(order)) {
+            logger.info({
+              msg: "INV-003: confirmOrder skipped inventory mutation for already-confirmed order",
+              orderId: input.id,
+            });
+            return { success: true, orderId: input.id, alreadyConfirmed: true };
           }
 
           if (

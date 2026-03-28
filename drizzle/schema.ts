@@ -2787,6 +2787,9 @@ export const orders = mysqlTable(
     tax: decimal("tax", { precision: 15, scale: 2 }).default("0"),
     discount: decimal("discount", { precision: 15, scale: 2 }).default("0"),
     shipping: decimal("shipping", { precision: 15, scale: 2 }).default("0"),
+    showAdjustmentOnDocument: boolean("show_adjustment_on_document")
+      .notNull()
+      .default(true),
     total: decimal("total", { precision: 15, scale: 2 }).notNull(),
     totalCogs: decimal("total_cogs", { precision: 15, scale: 4 }), // SCHEMA-012: standardized to decimal(15,4)
     totalMargin: decimal("total_margin", { precision: 15, scale: 2 }),
