@@ -11,6 +11,7 @@ const mockSetLocation = vi.fn();
 const mockSetSelectedId = vi.fn();
 const mockUseSearch = vi.fn(() => "");
 const mockInspectorPanel = vi.fn();
+const mockPowersheetGrid = vi.fn();
 const mockCreateMutate = vi.fn();
 const mockUpdateMutateAsync = vi.fn(() => Promise.resolve({ success: true }));
 const mockAddItemMutateAsync = vi.fn(() => Promise.resolve({ success: true }));
@@ -65,6 +66,7 @@ vi.mock("./PowersheetGrid", () => ({
     rows = [],
     onSelectedRowChange,
     headerActions,
+    selectionMode,
   }: {
     title: string;
     rows?: Array<{ identity?: { rowKey: string } }>;
@@ -72,17 +74,22 @@ vi.mock("./PowersheetGrid", () => ({
       row: { identity?: { rowKey: string } } | null
     ) => void;
     headerActions?: ReactNode;
-  }) => (
-    <div data-testid={`grid-${title}`}>
-      <div>{title}</div>
-      {headerActions}
-      {rows.length > 0 && onSelectedRowChange ? (
-        <button onClick={() => onSelectedRowChange(rows[0])}>
-          Select first purchase order
-        </button>
-      ) : null}
-    </div>
-  ),
+    selectionMode?: string;
+  }) =>
+    (() => {
+      mockPowersheetGrid({ title, rows, selectionMode });
+      return (
+        <div data-testid={`grid-${title}`}>
+          <div>{title}</div>
+          {headerActions}
+          {rows.length > 0 && onSelectedRowChange ? (
+            <button onClick={() => onSelectedRowChange(rows[0])}>
+              Select first purchase order
+            </button>
+          ) : null}
+        </div>
+      );
+    })(),
 }));
 
 vi.mock("./ProductBrowserGrid", () => ({
@@ -331,6 +338,7 @@ describe("PurchaseOrderSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockInspectorPanel.mockClear();
+    mockPowersheetGrid.mockClear();
     mockUseSearch.mockReturnValue("");
     queueData = [];
     poDetailData = null;
@@ -465,6 +473,30 @@ describe("PurchaseOrderSurface", () => {
       expect.objectContaining({
         isOpen: true,
         trapFocus: false,
+      })
+    );
+  });
+
+  it("uses single-row selection for the PO queue to avoid range-selection row click loops", () => {
+    queueData = [
+      {
+        id: 21,
+        poNumber: "PO-021",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: "2026-04-03",
+        total: "125.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+
+    render(<PurchaseOrderSurface />);
+
+    expect(mockPowersheetGrid).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: "Purchase Orders Queue",
+        selectionMode: "single-row",
       })
     );
   });
