@@ -19,6 +19,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { useExport } from "@/hooks/work-surface/useExport";
+import type { ExportColumn } from "@/hooks/work-surface/useExport";
 import type { CellValueChangedEvent, ColDef } from "ag-grid-community";
 import {
   ArrowLeft,
@@ -214,6 +216,15 @@ const supportAffordances: PowersheetAffordance[] = [
 // Helpers
 // ---------------------------------------------------------------------------
 
+function extractPaginatedData<T>(data: unknown): T[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data as T[];
+  const obj = data as Record<string, unknown>;
+  if (Array.isArray(obj.data)) return obj.data as T[];
+  if (Array.isArray(obj.items)) return obj.items as T[];
+  return [];
+}
+
 function toNumber(value: string | number | null | undefined): number {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : 0;
@@ -405,6 +416,7 @@ function PurchaseOrderCreateEditMode({
 }: {
   editPoId: number | null;
 }) {
+  const [, setLocation] = useLocation();
   const isEditMode = editPoId !== null;
 
   // ── State ───────────────────────────────────────────────────────────────────
@@ -439,23 +451,14 @@ function PurchaseOrderCreateEditMode({
   });
 
   const supplierOptions = useMemo<SupplierOption[]>(() => {
-    const data = suppliersQuery.data as unknown;
-    let items: Array<{
+    const items = extractPaginatedData<{
       id: number;
       name: string;
       email?: string | null;
       phone?: string | null;
       city?: string | null;
       state?: string | null;
-    }> = [];
-    if (Array.isArray(data)) {
-      items = data as typeof items;
-    } else if (data && typeof data === "object") {
-      const withItems = data as { items?: typeof items };
-      if (Array.isArray(withItems.items)) {
-        items = withItems.items;
-      }
-    }
+    }>(suppliersQuery.data);
     return items.map(s => ({
       id: s.id,
       name: s.name ?? "Unknown",
@@ -587,20 +590,18 @@ function PurchaseOrderCreateEditMode({
   });
 
   // ── Navigation ──────────────────────────────────────────────────────────────
-  const navigateBackToQueue = useCallback((poId?: number | null) => {
-    const params = new URLSearchParams(window.location.search);
-    params.delete("poView");
-    if (poId) {
-      params.set("poId", String(poId));
-    }
-    const qs = params.toString();
-    window.history.pushState(
-      {},
-      "",
-      qs ? `${window.location.pathname}?${qs}` : window.location.pathname
-    );
-    window.dispatchEvent(new Event("popstate"));
-  }, []);
+  const navigateBackToQueue = useCallback(
+    (poId?: number | null) => {
+      const params = new URLSearchParams(window.location.search);
+      params.delete("poView");
+      if (poId) {
+        params.set("poId", String(poId));
+      }
+      const qs = params.toString();
+      setLocation(qs ? `?${qs}` : window.location.pathname);
+    },
+    [setLocation]
+  );
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const handleAddProduct = useCallback((product: AddProductPayload) => {
@@ -745,6 +746,14 @@ function PurchaseOrderCreateEditMode({
   );
 
   // ── Render ──────────────────────────────────────────────────────────────────
+
+  if (editPoId && editQuery.isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+        Loading purchase order...
+      </div>
+    );
+  }
 
   const editPoNumber =
     isEditMode && editQuery.data
@@ -1025,6 +1034,10 @@ function PurchaseOrderQueueMode({
   setLocation: (path: string) => void;
   userId: number | null;
 }) {
+  // Export hook
+  const { exportCSV, state: exportState } =
+    useExport<Record<string, unknown>>();
+
   // Filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
@@ -1087,27 +1100,15 @@ function PurchaseOrderQueueMode({
   // Derived data
   // ---------------------------------------------------------------------------
 
-  const rawPos = useMemo((): POQueueRecord[] => {
-    const data = posQuery.data as unknown;
-    if (!data) return [];
-    if (Array.isArray(data)) return data as POQueueRecord[];
-    const withItems = data as { items?: POQueueRecord[] };
-    return Array.isArray(withItems.items) ? withItems.items : [];
-  }, [posQuery.data]);
+  const rawPos = useMemo(
+    () => extractPaginatedData<POQueueRecord>(posQuery.data),
+    [posQuery.data]
+  );
 
   const supplierNamesById = useMemo(() => {
-    const data = suppliersQuery.data as unknown;
-    let items: Array<{ id: number; name: string }> = [];
-    if (Array.isArray(data)) {
-      items = data as Array<{ id: number; name: string }>;
-    } else if (data && typeof data === "object") {
-      const withItems = data as {
-        items?: Array<{ id: number; name: string }>;
-      };
-      if (Array.isArray(withItems.items)) {
-        items = withItems.items;
-      }
-    }
+    const items = extractPaginatedData<{ id: number; name: string }>(
+      suppliersQuery.data
+    );
     return new Map(items.map(s => [s.id, s.name ?? "Unknown"]));
   }, [suppliersQuery.data]);
 
@@ -1239,50 +1240,43 @@ function PurchaseOrderQueueMode({
     // Set URL param to trigger creation mode (Task 4)
     const params = new URLSearchParams(window.location.search);
     params.set("poView", "create");
-    window.history.pushState(
-      {},
-      "",
-      `${window.location.pathname}?${params.toString()}`
-    );
-    window.dispatchEvent(new Event("popstate"));
+    setLocation(`?${params.toString()}`);
   };
+
+  const PO_EXPORT_COLUMNS: ExportColumn<POQueueRow>[] = [
+    { key: "poNumber", label: "PO Number" },
+    { key: "supplierName", label: "Supplier" },
+    { key: "statusLabel", label: "Status" },
+    {
+      key: "orderDate",
+      label: "Order Date",
+      formatter: v => formatDate(v as Date | string | null),
+    },
+    {
+      key: "expectedDeliveryDate",
+      label: "Est. Delivery",
+      formatter: v => formatDate(v as Date | string | null),
+    },
+    {
+      key: "total",
+      label: "Total",
+      formatter: v => String(Number(v ?? 0).toFixed(2)),
+    },
+    { key: "paymentTerms", label: "Payment Terms" },
+  ];
 
   const handleExport = () => {
     if (queueRows.length === 0) {
       notifyToast("warning", "No rows to export");
       return;
     }
-    const header = [
-      "PO Number",
-      "Supplier",
-      "Status",
-      "Order Date",
-      "Expected Delivery",
-      "Total",
-      "Payment Terms",
-    ];
-    const rows = queueRows.map(row => [
-      row.poNumber,
-      row.supplierName,
-      row.statusLabel,
-      formatDate(row.orderDate),
-      formatDate(row.expectedDeliveryDate),
-      row.total.toFixed(2),
-      row.paymentTerms,
-    ]);
-    const csv = [header, ...rows]
-      .map(cols =>
-        cols.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")
-      )
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = `purchase-orders-${new Date().toISOString().split("T")[0]}.csv`;
-    anchor.click();
-    URL.revokeObjectURL(url);
-    notifyToast("success", `Exported ${queueRows.length} rows`);
+    void exportCSV(queueRows as unknown as Record<string, unknown>[], {
+      columns: PO_EXPORT_COLUMNS as unknown as ExportColumn<
+        Record<string, unknown>
+      >[],
+      filename: "purchase-orders",
+      addTimestamp: true,
+    });
   };
 
   const handleStatusTransition = (status: POStatus) => {
@@ -1553,9 +1547,10 @@ function PurchaseOrderQueueMode({
             variant="outline"
             aria-label="Export visible POs to CSV"
             onClick={handleExport}
+            disabled={exportState.isExporting}
           >
             <Download className="mr-1 h-4 w-4" />
-            Export CSV
+            {exportState.isExporting ? "Exporting..." : "Export CSV"}
           </Button>
         </div>
       </div>
@@ -1685,12 +1680,7 @@ function PurchaseOrderQueueMode({
                       );
                       params.set("poView", "edit");
                       params.set("poId", String(selectedRow.poId));
-                      window.history.pushState(
-                        {},
-                        "",
-                        `${window.location.pathname}?${params.toString()}`
-                      );
-                      window.dispatchEvent(new Event("popstate"));
+                      setLocation(`?${params.toString()}`);
                     }}
                   >
                     <Pencil className="mr-1 h-3 w-3" />
