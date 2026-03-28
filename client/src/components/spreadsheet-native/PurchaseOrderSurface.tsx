@@ -18,9 +18,18 @@
  *   8. ConfirmDialogs — delete, status change, receiving handoff
  */
 
-import { useMemo, useState, useRef } from "react";
-import type { ColDef } from "ag-grid-community";
-import { Building, Download, Package, Plus, Trash2, Truck } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import type { CellValueChangedEvent, ColDef } from "ag-grid-community";
+import {
+  ArrowLeft,
+  Building,
+  Download,
+  Package,
+  Plus,
+  Trash2,
+  Truck,
+  X,
+} from "lucide-react";
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -32,6 +41,20 @@ import {
   upsertProductIntakeDraft,
 } from "@/lib/productIntakeDrafts";
 import type { ProductIntakeDraftLine } from "@/lib/productIntakeDrafts";
+import {
+  createDefaultPoDocument,
+  createLineItemFromProduct,
+  validatePoDocument,
+  buildCreatePayload,
+  getLineTotal,
+  getDocumentTotal,
+  type PoDocumentState,
+  type PoLineItem,
+} from "@/hooks/usePoDocument";
+import { ProductBrowserGrid } from "./ProductBrowserGrid";
+import type { AddProductPayload } from "./ProductBrowserGrid";
+import { SupplierCombobox } from "@/components/ui/supplier-combobox";
+import type { SupplierOption } from "@/components/ui/supplier-combobox";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -43,6 +66,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   InspectorField,
   InspectorPanel,
@@ -329,9 +353,11 @@ export function PurchaseOrderSurface({
   );
   const poView = searchParams.get("poView");
 
-  // If creation/edit mode, render placeholder (Task 4)
+  // If creation/edit mode, render the split-surface editor
   if (poView === "create" || poView === "edit") {
-    return <div>Creation mode — coming in Task 4</div>;
+    const editPoId =
+      poView === "edit" ? Number(searchParams.get("poId")) || null : null;
+    return <PurchaseOrderCreateEditMode editPoId={editPoId} />;
   }
 
   // Filter state — initialize from defaultStatusFilter if provided
@@ -349,6 +375,603 @@ export function PurchaseOrderSurface({
       setLocation={setLocation}
       userId={user?.id ?? null}
     />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Payment Terms
+// ---------------------------------------------------------------------------
+
+const PAYMENT_TERMS_OPTIONS = [
+  "CONSIGNMENT",
+  "COD",
+  "NET_7",
+  "NET_15",
+  "NET_30",
+  "PARTIAL",
+] as const;
+
+// ---------------------------------------------------------------------------
+// Creation / Edit Mode
+// ---------------------------------------------------------------------------
+
+const createKeyboardHints: KeyboardHint[] = [
+  { key: "Tab", label: "next cell" },
+  { key: "Enter", label: "confirm edit" },
+  { key: "Esc", label: "cancel edit" },
+];
+
+function PurchaseOrderCreateEditMode({
+  editPoId,
+}: {
+  editPoId: number | null;
+}) {
+  const isEditMode = editPoId !== null;
+
+  // ── State ───────────────────────────────────────────────────────────────────
+  const [doc, setDoc] = useState<PoDocumentState>(createDefaultPoDocument);
+  const [notesMode, setNotesMode] = useState<"internal" | "supplier" | null>(
+    null
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  const updateDoc = useCallback((partial: Partial<PoDocumentState>) => {
+    setDoc(d => ({ ...d, ...partial }));
+  }, []);
+
+  const updateLineItem = useCallback(
+    (tempId: string, partial: Partial<PoLineItem>) => {
+      setDoc(d => ({
+        ...d,
+        lineItems: d.lineItems.map(item =>
+          item.tempId === tempId ? { ...item, ...partial } : item
+        ),
+      }));
+    },
+    []
+  );
+
+  // ── Supplier query ──────────────────────────────────────────────────────────
+  const suppliersQuery = trpc.clients.list.useQuery({
+    clientTypes: ["seller"],
+    limit: 1000,
+  });
+
+  const supplierOptions = useMemo<SupplierOption[]>(() => {
+    const data = suppliersQuery.data as unknown;
+    let items: Array<{
+      id: number;
+      name: string;
+      email?: string | null;
+      phone?: string | null;
+      city?: string | null;
+      state?: string | null;
+    }> = [];
+    if (Array.isArray(data)) {
+      items = data as typeof items;
+    } else if (data && typeof data === "object") {
+      const withItems = data as { items?: typeof items };
+      if (Array.isArray(withItems.items)) {
+        items = withItems.items;
+      }
+    }
+    return items.map(s => ({
+      id: s.id,
+      name: s.name ?? "Unknown",
+      email: s.email,
+      phone: s.phone,
+      city: s.city,
+      state: s.state,
+    }));
+  }, [suppliersQuery.data]);
+
+  const selectedSupplierName = useMemo(() => {
+    if (!doc.supplierId) return null;
+    return supplierOptions.find(s => s.id === doc.supplierId)?.name ?? null;
+  }, [doc.supplierId, supplierOptions]);
+
+  // ── Edit mode: load existing PO ────────────────────────────────────────────
+  const editQuery = trpc.purchaseOrders.getById.useQuery(
+    { id: editPoId ?? 0 },
+    { enabled: isEditMode }
+  );
+
+  useEffect(() => {
+    if (!isEditMode || !editQuery.data) return;
+    const po = editQuery.data as {
+      id: number;
+      poNumber?: string;
+      supplierClientId?: number | null;
+      orderDate?: string | Date | null;
+      expectedDeliveryDate?: string | Date | null;
+      paymentTerms?: string | null;
+      notes?: string | null;
+      vendorNotes?: string | null;
+      items?: Array<{
+        id: number;
+        productId?: number | null;
+        productName?: string | null;
+        category?: string | null;
+        subcategory?: string | null;
+        quantityOrdered?: string | number | null;
+        cogsMode?: string | null;
+        unitCost?: string | number | null;
+        unitCostMin?: string | number | null;
+        unitCostMax?: string | number | null;
+        notes?: string | null;
+      }>;
+    };
+    const toNum = (v: string | number | null | undefined): number => {
+      if (v === null || v === undefined || v === "") return 0;
+      const n = Number(v);
+      return isNaN(n) ? 0 : n;
+    };
+    const toDateStr = (v: string | Date | null | undefined): string => {
+      if (!v) return "";
+      const d = v instanceof Date ? v : new Date(v);
+      return isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
+    };
+    setDoc({
+      supplierId: po.supplierClientId ?? null,
+      lineItems: (po.items ?? []).map((item, idx) => ({
+        tempId: `edit-${item.id ?? idx}-${Date.now()}`,
+        productId: item.productId ?? null,
+        productName: item.productName ?? "",
+        category: item.category ?? "",
+        subcategory: item.subcategory ?? "",
+        quantityOrdered: toNum(item.quantityOrdered),
+        cogsMode: item.cogsMode === "RANGE" ? "RANGE" : "FIXED",
+        unitCost: toNum(item.unitCost),
+        unitCostMin: toNum(item.unitCostMin),
+        unitCostMax: toNum(item.unitCostMax),
+        notes: item.notes ?? "",
+      })),
+      orderDate:
+        toDateStr(po.orderDate) || new Date().toISOString().slice(0, 10),
+      expectedDeliveryDate: toDateStr(po.expectedDeliveryDate),
+      paymentTerms: po.paymentTerms ?? "",
+      internalNotes: po.notes ?? "",
+      supplierNotes: po.vendorNotes ?? "",
+      draftId: editPoId,
+    });
+  }, [isEditMode, editQuery.data, editPoId]);
+
+  // ── Mutations ───────────────────────────────────────────────────────────────
+  const createMutation = trpc.purchaseOrders.create.useMutation({
+    onSuccess: data => {
+      toast.success("Purchase order created");
+      setIsSubmitting(false);
+      const newId = (data as { id?: number })?.id;
+      navigateBackToQueue(newId ?? null);
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to create purchase order");
+      setIsSubmitting(false);
+    },
+  });
+
+  const updateMutation = trpc.purchaseOrders.update.useMutation({
+    onSuccess: () => {
+      toast.success("Purchase order updated");
+      setIsSubmitting(false);
+      navigateBackToQueue(editPoId);
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to update purchase order");
+      setIsSubmitting(false);
+    },
+  });
+
+  // ── Navigation ──────────────────────────────────────────────────────────────
+  const navigateBackToQueue = useCallback((poId?: number | null) => {
+    const params = new URLSearchParams(window.location.search);
+    params.delete("poView");
+    if (poId) {
+      params.set("poId", String(poId));
+    }
+    const qs = params.toString();
+    window.history.pushState(
+      {},
+      "",
+      qs ? `${window.location.pathname}?${qs}` : window.location.pathname
+    );
+    window.dispatchEvent(new Event("popstate"));
+  }, []);
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+  const handleAddProduct = useCallback((product: AddProductPayload) => {
+    const newItem = createLineItemFromProduct(product);
+    setDoc(d => ({ ...d, lineItems: [...d.lineItems, newItem] }));
+  }, []);
+
+  const handleRemoveLineItem = useCallback((tempId: string) => {
+    setDoc(d => {
+      if (d.lineItems.length <= 1) return d;
+      return {
+        ...d,
+        lineItems: d.lineItems.filter(item => item.tempId !== tempId),
+      };
+    });
+  }, []);
+
+  const handleDocCellChanged = useCallback(
+    (event: CellValueChangedEvent<PoLineItem>) => {
+      if (!event.data) return;
+      const field = event.colDef.field as keyof PoLineItem;
+      const value = event.newValue;
+      updateLineItem(event.data.tempId, {
+        [field]:
+          field === "quantityOrdered" || field === "unitCost"
+            ? Number(value)
+            : value,
+      });
+    },
+    [updateLineItem]
+  );
+
+  const handleSubmit = useCallback(() => {
+    const errors = validatePoDocument(doc);
+    if (errors.length > 0) {
+      toast.error(errors[0]);
+      return;
+    }
+    setIsSubmitting(true);
+    if (isEditMode && editPoId) {
+      const payload = buildCreatePayload(doc);
+      updateMutation.mutate({ id: editPoId, ...payload } as Parameters<
+        typeof updateMutation.mutate
+      >[0]);
+    } else {
+      const payload = buildCreatePayload(doc);
+      createMutation.mutate(
+        payload as Parameters<typeof createMutation.mutate>[0]
+      );
+    }
+  }, [doc, isEditMode, editPoId, createMutation, updateMutation]);
+
+  // ── Derived ─────────────────────────────────────────────────────────────────
+  const addedProductIds = useMemo(
+    () =>
+      new Set(
+        doc.lineItems
+          .filter(l => l.productId !== null)
+          .map(l => l.productId as number)
+      ),
+    [doc.lineItems]
+  );
+
+  const documentTotal = useMemo(
+    () => getDocumentTotal(doc.lineItems),
+    [doc.lineItems]
+  );
+
+  // ── Doc grid column defs ────────────────────────────────────────────────────
+  const docColumnDefs = useMemo<ColDef<PoLineItem>[]>(
+    () => [
+      {
+        headerName: "#",
+        valueGetter: p => (p.node?.rowIndex ?? 0) + 1,
+        width: 40,
+        cellClass: "powersheet-cell--locked",
+      },
+      {
+        field: "productName",
+        headerName: "Product",
+        flex: 1.5,
+        cellClass: "powersheet-cell--locked",
+      },
+      {
+        field: "category",
+        headerName: "Category",
+        width: 90,
+        cellClass: "powersheet-cell--locked",
+      },
+      {
+        field: "quantityOrdered",
+        headerName: "Qty",
+        width: 80,
+        editable: true,
+        cellClass: "powersheet-cell--editable",
+      },
+      {
+        field: "cogsMode",
+        headerName: "COGS",
+        width: 80,
+        editable: true,
+        cellEditor: "agSelectCellEditor",
+        cellEditorParams: { values: ["FIXED", "RANGE"] },
+        cellClass: "powersheet-cell--editable",
+      },
+      {
+        field: "unitCost",
+        headerName: "Unit Cost",
+        width: 90,
+        editable: true,
+        valueFormatter: p => {
+          const row = p.data;
+          if (row?.cogsMode === "RANGE") {
+            return `${formatCurrency(row.unitCostMin)}–${formatCurrency(row.unitCostMax)}`;
+          }
+          return formatCurrency(Number(p.value ?? 0));
+        },
+        cellClass: "powersheet-cell--editable",
+      },
+      {
+        headerName: "Total",
+        width: 90,
+        valueGetter: p => (p.data ? getLineTotal(p.data) : 0),
+        valueFormatter: p => formatCurrency(Number(p.value ?? 0)),
+        cellClass: "powersheet-cell--locked",
+      },
+      {
+        headerName: "",
+        width: 40,
+        cellRenderer: (_params: { data: PoLineItem }) => {
+          // Render nothing — delete handled via header action
+          return null;
+        },
+        cellClass: "powersheet-cell--locked",
+      },
+    ],
+    []
+  );
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
+  const editPoNumber =
+    isEditMode && editQuery.data
+      ? ((editQuery.data as { poNumber?: string }).poNumber ?? `PO-${editPoId}`)
+      : null;
+
+  return (
+    <div className="flex flex-col gap-2">
+      {/* 1. Toolbar */}
+      <div className="flex items-center gap-3 py-1">
+        <Button size="sm" variant="ghost" onClick={() => navigateBackToQueue()}>
+          <ArrowLeft className="mr-1 h-4 w-4" />
+          Back to Queue
+        </Button>
+        <h2 className="text-lg font-semibold">
+          {isEditMode
+            ? `Edit ${editPoNumber ?? "Purchase Order"}`
+            : "New Purchase Order"}
+        </h2>
+        <div className="w-64">
+          <SupplierCombobox
+            value={doc.supplierId}
+            onValueChange={id => updateDoc({ supplierId: id })}
+            suppliers={supplierOptions}
+            isLoading={suppliersQuery.isLoading}
+            placeholder="Select supplier..."
+            className="h-8 text-sm"
+          />
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">
+            Draft
+          </Badge>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            Save Draft
+          </Button>
+          <Button size="sm" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting
+              ? "Saving..."
+              : isEditMode
+                ? "Update PO"
+                : "Submit PO"}
+          </Button>
+        </div>
+      </div>
+
+      {/* 2. Split Layout */}
+      <div className="flex gap-1.5" style={{ minHeight: 480 }}>
+        {/* Left: Product Browser (flex: 2) */}
+        <div className="flex-[2] min-w-0 rounded-lg border border-border/70 bg-card p-2 overflow-auto">
+          <ProductBrowserGrid
+            supplierId={doc.supplierId}
+            addedProductIds={addedProductIds}
+            onAddProduct={handleAddProduct}
+          />
+        </div>
+
+        {/* Right: PO Document (flex: 3) */}
+        <div className="flex-[3] min-w-0 flex flex-col gap-2 rounded-lg border border-border/70 bg-card p-2">
+          {/* Document Grid */}
+          <PowersheetGrid<PoLineItem>
+            surfaceId="po-document"
+            requirementIds={["PROC-PO-CREATE-001"]}
+            title="PO Line Items"
+            rows={doc.lineItems}
+            columnDefs={docColumnDefs}
+            getRowId={row => row.tempId}
+            onCellValueChanged={handleDocCellChanged}
+            selectionMode="single-row"
+            enableFillHandle={false}
+            enableUndoRedo={false}
+            isLoading={false}
+            emptyTitle="No line items"
+            emptyDescription="Use the product browser on the left to add items."
+            minHeight={240}
+            headerActions={
+              <div className="flex items-center gap-1">
+                {doc.lineItems.map(item => (
+                  <span key={item.tempId} className="hidden">
+                    {/* Row delete buttons rendered in the grid are not supported in PowersheetGrid,
+                        so we provide a contextual delete via selection */}
+                  </span>
+                ))}
+                {doc.lineItems.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                    onClick={() => {
+                      const last = doc.lineItems[doc.lineItems.length - 1];
+                      if (last && doc.lineItems.length > 1) {
+                        handleRemoveLineItem(last.tempId);
+                      }
+                    }}
+                    disabled={doc.lineItems.length <= 1}
+                    title="Remove last line item"
+                  >
+                    <X className="mr-1 h-3 w-3" />
+                    Remove Last
+                  </Button>
+                )}
+              </div>
+            }
+          />
+
+          {/* Invoice Bottom */}
+          <div className="border-t border-border/40 pt-2 mt-auto space-y-3">
+            {/* Subtotal */}
+            <div className="flex justify-end items-center gap-2 px-2">
+              <span className="text-sm text-muted-foreground">
+                Subtotal ({doc.lineItems.length} line
+                {doc.lineItems.length === 1 ? "" : "s"})
+              </span>
+              <span className="text-lg font-bold text-primary">
+                {formatCurrency(documentTotal)}
+              </span>
+            </div>
+
+            {/* Terms Row */}
+            <div className="grid grid-cols-4 gap-2 px-2">
+              {/* Order Date */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground font-medium">
+                  Order Date
+                </label>
+                <Input
+                  type="date"
+                  className="h-8 text-xs"
+                  value={doc.orderDate}
+                  onChange={e => updateDoc({ orderDate: e.target.value })}
+                />
+              </div>
+              {/* Expected Delivery */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground font-medium">
+                  Expected Delivery
+                </label>
+                <Input
+                  type="date"
+                  className="h-8 text-xs"
+                  value={doc.expectedDeliveryDate}
+                  onChange={e =>
+                    updateDoc({ expectedDeliveryDate: e.target.value })
+                  }
+                />
+              </div>
+              {/* Payment Terms */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground font-medium">
+                  Payment Terms
+                </label>
+                <Select
+                  value={doc.paymentTerms || "none"}
+                  onValueChange={v =>
+                    updateDoc({ paymentTerms: v === "none" ? "" : v })
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Select terms" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">None</SelectItem>
+                    {PAYMENT_TERMS_OPTIONS.map(term => (
+                      <SelectItem key={term} value={term}>
+                        {term.replace(/_/g, " ")}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Notes Toggle */}
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground font-medium">
+                  Notes
+                </label>
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant={notesMode === "internal" ? "default" : "outline"}
+                    className="h-8 text-xs flex-1"
+                    onClick={() =>
+                      setNotesMode(notesMode === "internal" ? null : "internal")
+                    }
+                  >
+                    Internal
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={notesMode === "supplier" ? "default" : "outline"}
+                    className="h-8 text-xs flex-1"
+                    onClick={() =>
+                      setNotesMode(notesMode === "supplier" ? null : "supplier")
+                    }
+                  >
+                    Supplier
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Notes Textarea */}
+            {notesMode && (
+              <div className="px-2">
+                <Textarea
+                  className="text-xs min-h-[60px]"
+                  placeholder={
+                    notesMode === "internal"
+                      ? "Internal notes..."
+                      : "Notes for supplier..."
+                  }
+                  value={
+                    notesMode === "internal"
+                      ? doc.internalNotes
+                      : doc.supplierNotes
+                  }
+                  onChange={e =>
+                    updateDoc(
+                      notesMode === "internal"
+                        ? { internalNotes: e.target.value }
+                        : { supplierNotes: e.target.value }
+                    )
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 3. Status Bar */}
+      <WorkSurfaceStatusBar
+        left={
+          <span>
+            {doc.lineItems.length} line{doc.lineItems.length === 1 ? "" : "s"} ·{" "}
+            {formatCurrency(documentTotal)}
+            {selectedSupplierName ? ` · ${selectedSupplierName}` : ""}
+          </span>
+        }
+        center={
+          <span>
+            {isEditMode ? "Editing" : "Creating"} purchase order
+            {doc.supplierId ? "" : " — select a supplier to begin"}
+          </span>
+        }
+        right={
+          <KeyboardHintBar hints={createKeyboardHints} className="text-xs" />
+        }
+      />
+    </div>
   );
 }
 
