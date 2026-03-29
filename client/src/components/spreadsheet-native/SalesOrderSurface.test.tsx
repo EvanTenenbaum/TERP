@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { SalesOrderSurface } from "./SalesOrderSurface";
 
 const { mockToastError } = vi.hoisted(() => ({
@@ -276,13 +282,25 @@ describe("SalesOrderSurface", () => {
 
   it("renders inventory and document sections when a customer is selected", () => {
     mockDraftState.clientId = 7;
-    render(<SalesOrderSurface />);
+    const { container } = render(<SalesOrderSurface />);
     expect(screen.getByTestId("grid-inventory")).toBeInTheDocument();
     expect(screen.getByTestId("document-grid")).toBeInTheDocument();
     expect(screen.getByTestId("invoice-bottom")).toBeInTheDocument();
     expect(screen.getByTestId("order-adjustments")).toBeInTheDocument();
     expect(
       screen.queryByRole("button", { name: /add selected/i })
+    ).not.toBeInTheDocument();
+
+    const panels = container.querySelectorAll("[data-panel]");
+    expect(panels).toHaveLength(2);
+    expect(
+      within(panels[1] as HTMLElement).getByTestId("document-grid")
+    ).toBeInTheDocument();
+    expect(
+      within(panels[1] as HTMLElement).queryByTestId("invoice-bottom")
+    ).not.toBeInTheDocument();
+    expect(
+      within(panels[1] as HTMLElement).queryByTestId("order-adjustments")
     ).not.toBeInTheDocument();
   });
 

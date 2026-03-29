@@ -680,15 +680,19 @@ export function SalesOrderSurface() {
     </div>
   );
   const documentPanel = (
-    <div className="flex flex-col gap-1">
-      <div className="rounded-lg border border-border/70 bg-background">
-        <OrdersDocumentLineItemsGrid
-          items={draft.items}
-          clientId={draft.clientId}
-          onChange={draft.setItems}
-          showCogsColumn={showCogs}
-          showMarginColumn={showMargin}
-        />
+    <div className="rounded-lg border border-border/70 bg-background">
+      <OrdersDocumentLineItemsGrid
+        items={draft.items}
+        clientId={draft.clientId}
+        onChange={draft.setItems}
+        showCogsColumn={showCogs}
+        showMarginColumn={showMargin}
+      />
+    </div>
+  );
+  const documentControlsBand = (
+    <div className="space-y-1">
+      <div className="overflow-hidden rounded-lg border border-border/70 bg-background">
         <InvoiceBottom
           subtotal={orderTotals.subtotal}
           adjustment={draft.adjustment as OrderAdjustment | null}
@@ -840,7 +844,7 @@ export function SalesOrderSurface() {
       )}
 
       {draft.clientId ? (
-        <div className="flex-1 px-1">
+        <div className="flex flex-1 flex-col gap-1 px-1">
           <AdaptiveSplitLayout
             primary={inventoryPanel}
             secondary={documentPanel}
@@ -848,10 +852,11 @@ export function SalesOrderSurface() {
             primaryDefaultSize={60}
             primaryMinSize={44}
             secondaryMinSize={28}
-            desktopClassName="min-h-[720px]"
+            desktopClassName="min-h-[560px] flex-1"
             primaryPanelClassName="min-w-0"
             secondaryPanelClassName="min-w-0"
           />
+          {documentControlsBand}
         </div>
       ) : (
         <div className="flex flex-1 items-center justify-center px-4 py-16 text-center text-muted-foreground">
