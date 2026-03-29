@@ -21,7 +21,6 @@ import {
 } from "@/hooks/useOrderDraft";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ClientCombobox } from "@/components/ui/client-combobox";
@@ -57,6 +56,7 @@ import {
   type KeyboardHint,
 } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
+import { AdaptiveSplitLayout } from "@/components/layout/AdaptiveSplitLayout";
 import { PowersheetGrid } from "./PowersheetGrid";
 
 interface InventoryBrowserRow {
@@ -333,7 +333,9 @@ export function SalesOrderSurface() {
   }, [clientDetailsQuery.data, grandTotal]);
 
   const isFinalizeBusy =
-    draft.isFinalizingDraft || isCheckingCredit || creditCheckMutation.isPending;
+    draft.isFinalizingDraft ||
+    isCheckingCredit ||
+    creditCheckMutation.isPending;
 
   const inventoryColumnDefs = useMemo<ColDef<InventoryBrowserRow>[]>(() => {
     const cols: ColDef<InventoryBrowserRow>[] = [
@@ -494,38 +496,6 @@ export function SalesOrderSurface() {
     [buildDocumentRoute, resetComposerState, setClientId, setLocation]
   );
 
-  const handleAddSelectedInventory = useCallback(() => {
-    if (!selectedInventoryRowId) return;
-    const selectedRow = inventoryRows.find(
-      row => row.identity.rowKey === selectedInventoryRowId
-    );
-    if (!selectedRow) return;
-    if (
-      NON_SELLABLE_STATUSES.includes(
-        selectedRow.status as (typeof NON_SELLABLE_STATUSES)[number]
-      )
-    ) {
-      toast.error("This inventory item cannot be added to an order");
-      return;
-    }
-    handleAddInventoryItems([selectedRow._raw]);
-  }, [handleAddInventoryItems, inventoryRows, selectedInventoryRowId]);
-
-  const selectedInventoryRow = useMemo(
-    () =>
-      selectedInventoryRowId
-        ? inventoryRows.find(row => row.identity.rowKey === selectedInventoryRowId)
-        : null,
-    [inventoryRows, selectedInventoryRowId]
-  );
-
-  const selectedInventoryBlocked = Boolean(
-    selectedInventoryRow &&
-      NON_SELLABLE_STATUSES.includes(
-        selectedInventoryRow.status as (typeof NON_SELLABLE_STATUSES)[number]
-      )
-  );
-
   const handleLoadView = useCallback(
     (view: {
       id?: number | null;
@@ -665,6 +635,99 @@ export function SalesOrderSurface() {
     filters.grades.length +
     filters.vendors.length +
     (filters.inStockOnly ? 1 : 0);
+  const documentContextLabel = draft.activeDraftId
+    ? `Draft #${draft.activeDraftId}`
+    : draft.isSalesSheetImport
+      ? "Catalogue import"
+      : "New draft";
+  const inventoryPanel = (
+    <div className="space-y-1">
+      <div>
+        <Input
+          value={searchTerm}
+          onChange={event => setSearchTerm(event.target.value)}
+          placeholder="Search SKU, batch, product..."
+          className="h-7 max-w-xs text-xs"
+        />
+      </div>
+      <PowersheetGrid
+        surfaceId="sales-order-inventory-browser"
+        requirementIds={["ORD-INV-001", "ORD-INV-002"]}
+        title="Inventory"
+        description="Pick rows from available inventory and add them to the order."
+        rows={inventoryRows}
+        columnDefs={inventoryColumnDefs}
+        getRowId={row => row.identity.rowKey}
+        selectedRowId={selectedInventoryRowId}
+        onSelectedRowChange={row =>
+          setSelectedInventoryRowId(row?.identity.rowKey ?? null)
+        }
+        selectionMode="cell-range"
+        enableFillHandle={false}
+        enableUndoRedo={false}
+        isLoading={inventoryQuery.isLoading}
+        errorMessage={inventoryQuery.error?.message ?? null}
+        emptyTitle="No inventory"
+        emptyDescription="This customer has no priced inventory available."
+        summary={
+          <span>
+            {inventoryRows.length} visible
+            {selectedClientName ? ` · ${selectedClientName}` : ""}
+          </span>
+        }
+        minHeight={420}
+      />
+    </div>
+  );
+  const documentPanel = (
+    <div className="flex flex-col gap-1">
+      <div className="rounded-lg border border-border/70 bg-background">
+        <OrdersDocumentLineItemsGrid
+          items={draft.items}
+          clientId={draft.clientId}
+          onChange={draft.setItems}
+          showCogsColumn={showCogs}
+          showMarginColumn={showMargin}
+        />
+        <InvoiceBottom
+          subtotal={orderTotals.subtotal}
+          adjustment={draft.adjustment as OrderAdjustment | null}
+          onAdjustmentChange={draft.setAdjustment}
+          showAdjustmentOnDocument={draft.showAdjustmentOnDocument}
+          onShowAdjustmentOnDocumentChange={draft.setShowAdjustmentOnDocument}
+          freight={draft.freight}
+          onFreightChange={draft.setFreight}
+          total={grandTotal}
+          paymentTerms={draft.paymentTerms}
+          onPaymentTermsChange={draft.setPaymentTerms}
+          creditAvailable={creditSummary.creditAvailable}
+          creditUtilizationPercent={creditSummary.utilizationPercent}
+          creditWarning={creditSummary.warning}
+          totalCogs={orderTotals.totalCogs}
+          totalMargin={orderTotals.totalMargin}
+          marginPercent={orderTotals.avgMarginPercent}
+          showCogs={showCogs}
+          showMargin={showMargin}
+        />
+      </div>
+
+      <OrderAdjustmentsBar
+        referredByClientId={draft.referredByClientId}
+        onReferredByChange={draft.setReferredByClientId}
+        clientId={draft.clientId}
+        notes={draft.notes}
+        onNotesChange={draft.setNotes}
+        activeDraftId={draft.activeDraftId}
+        isSaving={draft.isPersistingDraft}
+        hasUnsavedChanges={draft.hasUnsavedChanges}
+        onSaveDraft={() => draft.handleSaveDraft()}
+        onFinalize={() => void handleFinalizeRequest()}
+        isFinalizePending={isFinalizeBusy}
+        isSeededFromCatalogue={draft.isSalesSheetImport}
+        orderType={draft.orderType}
+      />
+    </div>
+  );
 
   return (
     <div {...keyboardProps} className="flex h-full flex-col gap-1">
@@ -679,14 +742,9 @@ export function SalesOrderSurface() {
           <ArrowLeft className="mr-1 h-3 w-3" />
           Queue
         </Button>
-        <Badge variant="secondary" className="text-[10px]">
-          Sales Order
-        </Badge>
-        {draft.isSalesSheetImport ? (
-          <Badge variant="outline" className="text-[10px]">
-            Seeded from catalogue
-          </Badge>
-        ) : null}
+        <span className="text-sm font-medium text-foreground">
+          {documentContextLabel}
+        </span>
         <div className="w-48">
           <ClientCombobox
             value={draft.clientId}
@@ -709,11 +767,6 @@ export function SalesOrderSurface() {
             <SelectItem value="QUOTE">Quote</SelectItem>
           </SelectContent>
         </Select>
-        {draft.activeDraftId ? (
-          <Badge variant="outline" className="text-[10px]">
-            Draft #{draft.activeDraftId}
-          </Badge>
-        ) : null}
         {draft.SaveStateIndicator}
         <div className="ml-auto flex items-center gap-1">
           <Button
@@ -742,16 +795,6 @@ export function SalesOrderSurface() {
       <div className="flex flex-wrap items-center gap-1.5 px-2 py-1">
         {draft.clientId && (
           <>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-6 px-2 text-[10px]"
-              disabled={!selectedInventoryRowId || selectedInventoryBlocked}
-              onClick={handleAddSelectedInventory}
-            >
-              Add Selected
-            </Button>
             <QuickViewSelector
               clientId={draft.clientId}
               onLoadView={handleLoadView}
@@ -797,106 +840,26 @@ export function SalesOrderSurface() {
       )}
 
       {draft.clientId ? (
-        <div className="grid flex-1 gap-1.5 px-1 lg:grid-cols-5">
-          <div className="lg:col-span-2">
-            <div className="mb-1">
-              <Input
-                value={searchTerm}
-                onChange={event => setSearchTerm(event.target.value)}
-                placeholder="Search SKU, batch, product..."
-                className="h-7 max-w-xs text-xs"
-              />
-            </div>
-            <PowersheetGrid
-              surfaceId="sales-order-inventory-browser"
-              requirementIds={["ORD-INV-001", "ORD-INV-002"]}
-              title="Inventory"
-              description="Pick rows from available inventory and add them to the order."
-              rows={inventoryRows}
-              columnDefs={inventoryColumnDefs}
-              getRowId={row => row.identity.rowKey}
-              selectedRowId={selectedInventoryRowId}
-              onSelectedRowChange={row =>
-                setSelectedInventoryRowId(row?.identity.rowKey ?? null)
-              }
-              selectionMode="cell-range"
-              enableFillHandle={false}
-              enableUndoRedo={false}
-              isLoading={inventoryQuery.isLoading}
-              errorMessage={inventoryQuery.error?.message ?? null}
-              emptyTitle="No inventory"
-              emptyDescription="This customer has no priced inventory available."
-              summary={
-                <span>
-                  {inventoryRows.length} visible
-                  {selectedClientName ? ` \u00b7 ${selectedClientName}` : ""}
-                </span>
-              }
-              minHeight={420}
-            />
-          </div>
-
-          <div className="flex flex-col gap-1 lg:col-span-3">
-            <div className="rounded-lg border border-border/70 bg-background">
-              <OrdersDocumentLineItemsGrid
-                items={draft.items}
-                clientId={draft.clientId}
-                onChange={draft.setItems}
-                onAddItem={() => {
-                  const firstAvailable = inventoryRows.find(row => !row.inOrder);
-                  if (firstAvailable) {
-                    draft.handleAddInventoryItems([firstAvailable._raw]);
-                  } else {
-                    toast.info("Use the inventory browser to add more items");
-                  }
-                }}
-                showCogsColumn={showCogs}
-                showMarginColumn={showMargin}
-              />
-              <InvoiceBottom
-                subtotal={orderTotals.subtotal}
-                adjustment={draft.adjustment as OrderAdjustment | null}
-                onAdjustmentChange={draft.setAdjustment}
-                showAdjustmentOnDocument={draft.showAdjustmentOnDocument}
-                onShowAdjustmentOnDocumentChange={draft.setShowAdjustmentOnDocument}
-                freight={draft.freight}
-                onFreightChange={draft.setFreight}
-                total={grandTotal}
-                paymentTerms={draft.paymentTerms}
-                onPaymentTermsChange={draft.setPaymentTerms}
-                creditAvailable={creditSummary.creditAvailable}
-                creditUtilizationPercent={creditSummary.utilizationPercent}
-                creditWarning={creditSummary.warning}
-                totalCogs={orderTotals.totalCogs}
-                totalMargin={orderTotals.totalMargin}
-                marginPercent={orderTotals.avgMarginPercent}
-                showCogs={showCogs}
-                showMargin={showMargin}
-              />
-            </div>
-
-            <OrderAdjustmentsBar
-              referredByClientId={draft.referredByClientId}
-              onReferredByChange={draft.setReferredByClientId}
-              clientId={draft.clientId}
-              notes={draft.notes}
-              onNotesChange={draft.setNotes}
-              activeDraftId={draft.activeDraftId}
-              isSaving={draft.isPersistingDraft}
-              hasUnsavedChanges={draft.hasUnsavedChanges}
-              onSaveDraft={() => draft.handleSaveDraft()}
-              onFinalize={() => void handleFinalizeRequest()}
-              isFinalizePending={isFinalizeBusy}
-              isSeededFromCatalogue={draft.isSalesSheetImport}
-              orderType={draft.orderType}
-            />
-          </div>
+        <div className="flex-1 px-1">
+          <AdaptiveSplitLayout
+            primary={inventoryPanel}
+            secondary={documentPanel}
+            autoSaveId="sales-order-surface-layout"
+            primaryDefaultSize={60}
+            primaryMinSize={44}
+            secondaryMinSize={28}
+            desktopClassName="min-h-[720px]"
+            primaryPanelClassName="min-w-0"
+            secondaryPanelClassName="min-w-0"
+          />
         </div>
       ) : (
         <div className="flex flex-1 items-center justify-center px-4 py-16 text-center text-muted-foreground">
           <div>
             <AlertTriangle className="mx-auto mb-3 h-10 w-10 opacity-40" />
-            <p className="text-sm">Select a customer to start the order sheet</p>
+            <p className="text-sm">
+              Select a customer to start the order sheet
+            </p>
           </div>
         </div>
       )}
@@ -950,13 +913,17 @@ export function SalesOrderSurface() {
             setPendingCreditOverrideReason(undefined);
           }
         }}
-        title={draft.orderType === "QUOTE" ? "Confirm quote?" : "Confirm order?"}
+        title={
+          draft.orderType === "QUOTE" ? "Confirm quote?" : "Confirm order?"
+        }
         description={
           draft.orderType === "QUOTE"
             ? "This will save the current draft and finalize it as a quote."
             : "This will save the current draft and finalize it as a sales order."
         }
-        confirmLabel={draft.orderType === "QUOTE" ? "Confirm Quote" : "Confirm Order"}
+        confirmLabel={
+          draft.orderType === "QUOTE" ? "Confirm Quote" : "Confirm Order"
+        }
         onConfirm={handleConfirmFinalize}
         isLoading={draft.isFinalizingDraft}
       />

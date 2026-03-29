@@ -15,7 +15,7 @@ import type {
   SendToClipboardParams,
   SuppressKeyboardEventParams,
 } from "ag-grid-community";
-import { Plus, Trash2, CopyX } from "lucide-react";
+import { Trash2, CopyX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   PowersheetGrid,
@@ -44,7 +44,6 @@ interface OrdersDocumentLineItemsGridProps {
   items: LineItem[];
   clientId: number | null;
   onChange: (items: LineItem[]) => void;
-  onAddItem?: () => void;
   showCogsColumn?: boolean;
   showMarginColumn?: boolean;
 }
@@ -593,14 +592,14 @@ export function OrdersDocumentLineItemsGrid({
   items,
   clientId,
   onChange,
-  onAddItem,
   showCogsColumn = true,
   showMarginColumn = true,
 }: OrdersDocumentLineItemsGridProps) {
   const [selectionSet, setSelectionSet] =
     useState<PowersheetSelectionSet | null>(null);
-  const [selectionSummary, setSelectionSummary] =
-    useState<PowersheetSelectionSummary | null>(null);
+  const [, setSelectionSummary] = useState<PowersheetSelectionSummary | null>(
+    null
+  );
   const [lastEditRejection, setLastEditRejection] =
     useState<PowersheetEditRejection | null>(null);
   const draftRowKeyCounterRef = useRef(0);
@@ -1211,15 +1210,6 @@ export function OrdersDocumentLineItemsGrid({
       <Button
         size="sm"
         variant="outline"
-        onClick={onAddItem}
-        disabled={!clientId}
-      >
-        <Plus className="mr-2 h-4 w-4" />
-        Add Item
-      </Button>
-      <Button
-        size="sm"
-        variant="outline"
         onClick={handleFillPriceDown}
         disabled={selectedCount < 2}
       >
@@ -1254,23 +1244,9 @@ export function OrdersDocumentLineItemsGrid({
     </div>
   );
 
-  const runningTotal = normalizedItems.reduce(
-    (sum, item) => sum + item.lineTotal,
-    0
-  );
-  const summary = (
-    <span>
-      {normalizedItems.length} line items · {selectedCount} selected rows ·
-      Running total {formatCurrency(runningTotal)}
-      {selectionSummary
-        ? ` · ${selectionSummary.selectedCellCount} selected cells`
-        : ""}
-      {lastEditRejection ? ` · blocked: ${lastEditRejection.message}` : ""}
-      {!lastEditRejection
-        ? " · Spreadsheet edits stay inside the grid; finalize and handoffs stay explicit below."
-        : ""}
-    </span>
-  );
+  const summary = lastEditRejection ? (
+    <span>Blocked: {lastEditRejection.message}</span>
+  ) : undefined;
 
   return (
     <PowersheetGrid
@@ -1293,7 +1269,6 @@ export function OrdersDocumentLineItemsGrid({
         "SALE-ORD-035",
       ]}
       title="Line Items"
-      description="The document grid keeps spreadsheet editing on approved fields while the existing Orders orchestration still owns pricing, autosave, undo, and finalize behavior."
       rows={normalizedItems}
       columnDefs={columnDefs}
       getRowId={row => getDocumentLineItemRowId(row)}

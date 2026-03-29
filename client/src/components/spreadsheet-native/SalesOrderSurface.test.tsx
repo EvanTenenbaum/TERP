@@ -160,8 +160,7 @@ vi.mock("@/lib/trpc", () => ({
         })),
       },
       getViews: {
-        useQuery: vi.fn(() => ({ data: [] }),
-        ),
+        useQuery: vi.fn(() => ({ data: [] })),
       },
     },
     organizationSettings: {
@@ -204,7 +203,9 @@ vi.mock("@/components/ui/client-combobox", () => ({
 }));
 
 vi.mock("@/components/orders", () => ({
-  OrdersDocumentLineItemsGrid: () => <div data-testid="document-grid">Document Grid</div>,
+  OrdersDocumentLineItemsGrid: () => (
+    <div data-testid="document-grid">Document Grid</div>
+  ),
   InvoiceBottom: () => <div data-testid="invoice-bottom">Invoice Bottom</div>,
   OrderAdjustmentsBar: () => (
     <div data-testid="order-adjustments">Order Adjustments</div>
@@ -253,7 +254,7 @@ describe("SalesOrderSurface", () => {
 
   it("renders the unified sales order toolbar", () => {
     render(<SalesOrderSurface />);
-    expect(screen.getAllByText("Sales Order").length).toBeGreaterThan(0);
+    expect(screen.getByText("New draft")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Queue" })).toBeInTheDocument();
     expect(screen.queryByText("Classic Composer")).not.toBeInTheDocument();
   });
@@ -280,6 +281,9 @@ describe("SalesOrderSurface", () => {
     expect(screen.getByTestId("document-grid")).toBeInTheDocument();
     expect(screen.getByTestId("invoice-bottom")).toBeInTheDocument();
     expect(screen.getByTestId("order-adjustments")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /add selected/i })
+    ).not.toBeInTheDocument();
   });
 
   it("clears route hydration params before switching clients", () => {
@@ -337,7 +341,9 @@ describe("SalesOrderSurface", () => {
 
     render(<SalesOrderSurface />);
 
-    expect(screen.getByRole("button", { name: "Confirm Order" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Confirm Order" })
+    ).toBeDisabled();
   });
 
   it("does not open finalize confirmation when the credit check errors", async () => {

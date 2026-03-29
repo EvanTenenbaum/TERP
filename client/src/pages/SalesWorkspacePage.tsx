@@ -131,12 +131,12 @@ export default function SalesWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={SALES_WORKSPACE.title}
-      description={SALES_WORKSPACE.description}
+      description=""
       section="Sell"
+      density="compact"
       activeTab={activeTab}
       tabs={SALES_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
-      meta={[{ label: "Primary flow", value: "Quote -> Order -> Shipping" }]}
       commandStrip={
         activeTab === "orders" ? (
           <SheetModeToggle

@@ -280,6 +280,29 @@
     color: var(--muted-foreground);
   }
 
+  .linear-workspace-shell[data-density="compact"] .linear-workspace-header {
+    gap: 0.45rem;
+    padding: 0.55rem 0.85rem 0.5rem;
+  }
+
+  .linear-workspace-shell[data-density="compact"] .linear-workspace-title-wrap {
+    gap: 0.15rem;
+  }
+
+  .linear-workspace-shell[data-density="compact"] .linear-workspace-eyebrow {
+    font-size: 0.58rem;
+    letter-spacing: 0.1em;
+  }
+
+  .linear-workspace-shell[data-density="compact"] .linear-workspace-title {
+    font-size: 1rem;
+  }
+
+  .linear-workspace-shell[data-density="compact"]
+    .linear-workspace-description {
+    font-size: 0.74rem;
+  }
+
   .linear-workspace-meta {
     display: flex;
     align-items: center;
@@ -330,6 +353,12 @@
     top: 0;
     z-index: 25;
     backdrop-filter: blur(10px);
+  }
+
+  .linear-workspace-shell[data-density="compact"] .linear-workspace-tab-row {
+    gap: 0.45rem;
+    padding: 0.35rem 0.85rem;
+    min-height: 40px;
   }
 
   .linear-workspace-tabs-scroller {
@@ -385,6 +414,10 @@
     background: color-mix(in oklab, var(--muted) 62%, transparent);
   }
 
+  .linear-workspace-shell[data-density="compact"] .linear-workspace-tabs-list {
+    height: 30px;
+  }
+
   .linear-workspace-tabs-trigger {
     min-width: 88px;
     white-space: nowrap;
@@ -392,6 +425,12 @@
     font-weight: 600;
     letter-spacing: 0.005em;
     border-radius: 7px;
+  }
+
+  .linear-workspace-shell[data-density="compact"]
+    .linear-workspace-tabs-trigger {
+    min-width: 78px;
+    font-size: 0.72rem;
   }
 
   .linear-workspace-command-strip {
@@ -403,6 +442,11 @@
     align-items: center;
     row-gap: 0.4rem;
     max-width: min(100%, 820px);
+  }
+
+  .linear-workspace-shell[data-density="compact"]
+    .linear-workspace-command-strip {
+    gap: 0.25rem;
   }
 
   .linear-workspace-content {
