@@ -148,7 +148,7 @@ TERP is configured for DigitalOcean App Platform deployment:
 3. **Configure Run**: Run command is `pnpm start:production`
 4. **Set Environment Variables**: Add all required variables in App Platform settings
 5. **Configure Database**: Attach managed MySQL database
-6. **Deploy**: App Platform automatically deploys on push to main
+6. **Deploy**: App Platform automatically deploys staging on push to `main`; production is a separate manual promotion path
 
 ### Manual Deployment
 

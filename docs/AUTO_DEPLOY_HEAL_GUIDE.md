@@ -12,7 +12,7 @@ The Auto Deploy Monitor & Self-Heal system automatically monitors DigitalOcean d
 
 ### Key Features
 
-✅ **Automatic Monitoring** - Starts after every push to main
+✅ **Automatic Monitoring** - Starts after every push to `main` (the current staging branch)
 ✅ **Intelligent Analysis** - Identifies common deployment issues
 ✅ **Self-Healing** - Attempts automatic fixes (up to 3 times)
 ✅ **Loop Prevention** - Stops if same error repeats
@@ -24,7 +24,7 @@ The Auto Deploy Monitor & Self-Heal system automatically monitors DigitalOcean d
 ## How It Works
 
 ```
-Push to main
+Push to main (staging)
     ↓
 Post-push hook triggers
     ↓
@@ -89,7 +89,7 @@ All attempts failed? → ❌ Create GitHub issue
 **Location**: `.github/workflows/auto-deploy-monitor.yml`
 
 **Features**:
-- Runs on every push to main
+- Runs on every push to `main` and monitors the resulting staging deployment
 - Monitors deployment from GitHub
 - Creates issues on failure
 - Comments on commits with status
@@ -136,7 +136,7 @@ All attempts failed? → ❌ Create GitHub issue
 
 ### Automatic (Recommended)
 
-Just push to main - the system handles everything:
+Just push to `main` and the staging deployment monitor handles the rest:
 
 ```bash
 git push origin main

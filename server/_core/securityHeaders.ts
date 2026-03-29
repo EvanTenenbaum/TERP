@@ -2,12 +2,37 @@ import helmet, { type HelmetOptions } from "helmet";
 
 import { isStagingAppId } from "./env";
 
-const AGENTATION_CONNECT_SOURCES = [
+const LOCAL_AGENTATION_CONNECT_SOURCES = [
   "http://localhost:4747",
   "http://127.0.0.1:4747",
   "ws://localhost:4747",
   "ws://127.0.0.1:4747",
 ];
+
+function getAgentationConnectSources(
+  endpoint: string | undefined = process.env.VITE_AGENTATION_ENDPOINT
+) {
+  const sources = new Set(LOCAL_AGENTATION_CONNECT_SOURCES);
+
+  if (!endpoint) {
+    return Array.from(sources);
+  }
+
+  try {
+    const url = new URL(endpoint);
+    sources.add(url.origin);
+
+    if (url.protocol === "https:") {
+      sources.add(`wss://${url.host}`);
+    } else if (url.protocol === "http:") {
+      sources.add(`ws://${url.host}`);
+    }
+  } catch {
+    // Ignore malformed overrides and keep the safe localhost defaults.
+  }
+
+  return Array.from(sources);
+}
 
 /**
  * Vite injects a small inline preamble in development for React refresh/HMR.
@@ -15,8 +40,12 @@ const AGENTATION_CONNECT_SOURCES = [
  */
 export function getHelmetConfig(
   nodeEnv: string | undefined = process.env.NODE_ENV,
-  appId: string | undefined = process.env.VITE_APP_ID
+  appId: string | undefined = process.env.VITE_APP_ID,
+  agentationEndpoint: string | undefined = process.env.VITE_AGENTATION_ENDPOINT
 ): HelmetOptions | undefined {
+  const agentationConnectSources =
+    getAgentationConnectSources(agentationEndpoint);
+
   if (nodeEnv === "development") {
     return {
       contentSecurityPolicy: {
@@ -28,7 +57,7 @@ export function getHelmetConfig(
             "https:",
             "ws:",
             "wss:",
-            ...AGENTATION_CONNECT_SOURCES,
+            ...agentationConnectSources,
           ],
         },
       },
@@ -44,7 +73,7 @@ export function getHelmetConfig(
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        "connect-src": ["'self'", ...AGENTATION_CONNECT_SOURCES],
+        "connect-src": ["'self'", ...agentationConnectSources],
       },
     },
   };

@@ -41,6 +41,30 @@ describe("getHelmetConfig", () => {
     });
   });
 
+  it("allows a remote Agentation endpoint on staging builds", () => {
+    expect(
+      getHelmetConfig(
+        "production",
+        "terp-staging",
+        "https://evans-mac-mini.tailbe55dd.ts.net"
+      )
+    ).toMatchObject({
+      contentSecurityPolicy: {
+        directives: {
+          "connect-src": expect.arrayContaining([
+            "'self'",
+            "http://localhost:4747",
+            "http://127.0.0.1:4747",
+            "ws://localhost:4747",
+            "ws://127.0.0.1:4747",
+            "https://evans-mac-mini.tailbe55dd.ts.net",
+            "wss://evans-mac-mini.tailbe55dd.ts.net",
+          ]),
+        },
+      },
+    });
+  });
+
   it("keeps default Helmet behavior outside development and staging", () => {
     expect(getHelmetConfig("production")).toBeUndefined();
     expect(getHelmetConfig("production", "terp-app")).toBeUndefined();

@@ -136,12 +136,13 @@ TERP/
 
 ## Deployment
 
-**Workflow:** `PR` → `main` → `staging` (auto) → verify → `production` (manual)
+**Workflow:** `PR` → `main` (staging auto-deploy) → verify → `production` (manual)
 
+- As of March 28, 2026, `main` is the current staging branch
 - Staging auto-deploys when code is pushed to `main`
 - **Staging URL:** `https://terp-staging-yicld.ondigitalocean.app`
 - Production promotion is manual (Evan only)
-- To skip staging deploy, add `[skip-staging-sync]` to commit message
+- For docs-only commits that should not redeploy staging, add `[skip-staging-sync]` to the commit message
 
 ```bash
 # Check deployment status

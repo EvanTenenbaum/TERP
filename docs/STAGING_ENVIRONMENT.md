@@ -9,26 +9,26 @@ This document describes the TERP staging environment, how to access it, and how 
 | **Application URL**          | `https://terp-staging-yicld.ondigitalocean.app` |
 | **DigitalOcean App ID**      | `62f2d9f8-3fb5-4576-9f7b-8dd91cf552a6`          |
 | **DigitalOcean Database ID** | `e4ee02f2-7e5c-4dc9-bf39-10207bfdb616`          |
-| **GitHub Branch**            | `staging`                                       |
+| **GitHub Branch**            | `main`                                          |
 | **Region**                   | NYC                                             |
 | **App Size**                 | `apps-s-1vcpu-1gb` (1 instance, no autoscaling) |
 | **Database Size**            | `db-s-1vcpu-1gb` (MySQL 8, 1 node)              |
 
 ## How It Works
 
-The staging environment is a complete, isolated replica of the TERP production system. It has its own DigitalOcean App Platform service and its own managed MySQL database. It deploys automatically from the `staging` branch whenever new commits are pushed.
+The staging environment is a complete, isolated replica of the TERP production system. It has its own DigitalOcean App Platform service and its own managed MySQL database. As of March 28, 2026, it deploys automatically from `main` whenever new commits are pushed there.
 
 ### Key Differences from Production
 
-| Setting            | Production         | Staging                  |
-| ------------------ | ------------------ | ------------------------ |
-| Branch             | `main`             | `staging`                |
-| `DEMO_MODE`        | `false`            | `true` (auto-login)      |
-| `QA_AUTH_ENABLED`  | `false`            | `true`                   |
-| `ENABLE_TEST_AUTH` | `false`            | `true`                   |
-| `VITE_APP_TITLE`   | `TERP`             | `TERP [STAGING]`         |
-| Instance Count     | 2 (autoscaled)     | 1 (fixed)                |
-| Database           | Production cluster | Separate staging cluster |
+| Setting            | Production                 | Staging                  |
+| ------------------ | -------------------------- | ------------------------ |
+| Deploy Path        | Manual promotion           | `main`                   |
+| `DEMO_MODE`        | `false`                    | `true` (auto-login)      |
+| `QA_AUTH_ENABLED`  | `false`                    | `true`                   |
+| `ENABLE_TEST_AUTH` | `false`                    | `true`                   |
+| `VITE_APP_TITLE`   | `TERP`                     | `TERP [STAGING]`         |
+| Instance Count     | 2 (autoscaled)            | 1 (fixed)                |
+| Database           | Production cluster         | Separate staging cluster |
 
 ## Access
 
@@ -67,33 +67,20 @@ Direct database access is available for debugging. Use a MySQL client with SSL e
 
 ### Deploying New Code
 
-To update the staging environment with the latest code from `main`:
+As of March 28, 2026, staging follows `main`. To update staging, land the approved change on `main` and let DigitalOcean deploy it automatically:
 
 ```bash
-git checkout staging
-git merge main
-git push origin staging
+git checkout main
+git pull origin main
+git merge feature/my-feature-branch
+git push origin main
 ```
 
 DigitalOcean will automatically build and deploy the new code within a few minutes.
 
 ### Deploying a Feature Branch for Testing
 
-To test a specific feature branch before merging to `main`:
-
-```bash
-git checkout staging
-git merge feature/my-feature-branch
-git push origin staging
-```
-
-After testing, reset staging back to `main`:
-
-```bash
-git checkout staging
-git reset --hard origin/main
-git push --force origin staging
-```
+Do not use the old `staging` branch sync flow. If you need to validate a feature before it lands in `main`, use your normal PR or worktree review path and let staging reflect the resulting `main` commit.
 
 ## Resetting Staging Data
 
