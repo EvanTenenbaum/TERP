@@ -3,16 +3,6 @@ import { loadCodexEnv } from "./spreadsheet-native/qaEnv";
 
 loadCodexEnv();
 
-interface GitHubRun {
-  html_url: string;
-  head_sha: string;
-  status: string;
-  conclusion: string | null;
-  created_at: string;
-  updated_at: string;
-  name: string;
-}
-
 interface DigitalOceanApp {
   id: string;
   spec?: { name?: string | null } | null;
@@ -87,17 +77,12 @@ function repoSlug() {
   return `${sshMatch[1]}/${sshMatch[2]}`;
 }
 
-function ghApiJson<T>(route: string) {
-  const raw = execFileSync("gh", ["api", route], {
-    encoding: "utf8",
-  });
-  return JSON.parse(raw) as T;
-}
-
 async function doFetchJson<T>(url: string) {
   const token = process.env.DIGITALOCEAN_ACCESS_TOKEN?.trim();
   if (!token) {
-    throw new Error("DIGITALOCEAN_ACCESS_TOKEN is required for proof:await-staging-build.");
+    throw new Error(
+      "DIGITALOCEAN_ACCESS_TOKEN is required for proof:await-staging-build."
+    );
   }
 
   const response = await fetch(url, {
@@ -107,7 +92,9 @@ async function doFetchJson<T>(url: string) {
   });
 
   if (!response.ok) {
-    throw new Error(`DigitalOcean API failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `DigitalOcean API failed: ${response.status} ${await response.text()}`
+    );
   }
 
   return (await response.json()) as T;
@@ -116,11 +103,11 @@ async function doFetchJson<T>(url: string) {
 async function findStagingApp(baseUrl: string) {
   const targetHost = new URL(baseUrl).host;
   const payload = await doFetchJson<{ apps?: DigitalOceanApp[] }>(
-    "https://api.digitalocean.com/v2/apps?per_page=200",
+    "https://api.digitalocean.com/v2/apps?per_page=200"
   );
 
   const app =
-    payload.apps?.find((item) => {
+    payload.apps?.find(item => {
       for (const candidate of [item.default_ingress, item.live_url]) {
         if (!candidate) {
           continue;
@@ -139,22 +126,17 @@ async function findStagingApp(baseUrl: string) {
     }) ?? null;
 
   if (!app) {
-    throw new Error(`Could not find a DigitalOcean app whose ingress matches ${targetHost}.`);
+    throw new Error(
+      `Could not find a DigitalOcean app whose ingress matches ${targetHost}.`
+    );
   }
 
   return app;
 }
 
-function findMatchingSyncRun(runs: GitHubRun[], commit: string) {
-  const prefix = commit.slice(0, 7);
-  return (
-    runs.find((run) => run.head_sha?.startsWith(commit) || run.head_sha?.startsWith(prefix)) ?? null
-  );
-}
-
 async function listDeployments(appId: string) {
   const payload = await doFetchJson<{ deployments?: DigitalOceanDeployment[] }>(
-    `https://api.digitalocean.com/v2/apps/${appId}/deployments?per_page=50`,
+    `https://api.digitalocean.com/v2/apps/${appId}/deployments?per_page=50`
   );
   return payload.deployments ?? [];
 }
@@ -166,19 +148,29 @@ async function fetchVersion(baseUrl: string) {
     },
   });
   if (!response.ok) {
-    throw new Error(`version.json fetch failed: ${response.status} ${await response.text()}`);
+    throw new Error(
+      `version.json fetch failed: ${response.status} ${await response.text()}`
+    );
   }
   return (await response.json()) as VersionPayload;
 }
 
-function versionLooksFresh(version: VersionPayload, deployment: DigitalOceanDeployment, initialRaw: string) {
+function versionLooksFresh(
+  version: VersionPayload,
+  deployment: DigitalOceanDeployment,
+  initialRaw: string
+) {
   const raw = JSON.stringify(version);
   if (raw !== initialRaw) {
     return true;
   }
 
-  const buildTime = version.buildTime ? Date.parse(version.buildTime) : Number.NaN;
-  const deploymentCreatedAt = deployment.created_at ? Date.parse(deployment.created_at) : Number.NaN;
+  const buildTime = version.buildTime
+    ? Date.parse(version.buildTime)
+    : Number.NaN;
+  const deploymentCreatedAt = deployment.created_at
+    ? Date.parse(deployment.created_at)
+    : Number.NaN;
   if (Number.isFinite(buildTime) && Number.isFinite(deploymentCreatedAt)) {
     return buildTime >= deploymentCreatedAt - 60_000;
   }
@@ -187,7 +179,7 @@ function versionLooksFresh(version: VersionPayload, deployment: DigitalOceanDepl
 }
 
 function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function main() {
@@ -199,42 +191,12 @@ async function main() {
   const deadline = Date.now() + options.timeoutSec * 1000;
 
   while (Date.now() < deadline) {
-    const workflowPayload = ghApiJson<{ workflow_runs?: GitHubRun[] }>(
-      `repos/${repo}/actions/workflows/sync-staging.yml/runs?branch=main&event=push&per_page=20`,
-    );
-    const syncRun = findMatchingSyncRun(workflowPayload.workflow_runs ?? [], options.commit);
-
-    if (!syncRun) {
-      await sleep(options.pollSec * 1000);
-      continue;
-    }
-
-    if (syncRun.conclusion === "failure" || syncRun.conclusion === "cancelled") {
-      console.log(
-        JSON.stringify(
-          {
-            ready: false,
-            blocker: "sync-staging-failed",
-            commit: options.commit,
-            sync_run: syncRun,
-          },
-          null,
-          2,
-        ),
-      );
-      process.exit(1);
-    }
-
-    if (syncRun.status !== "completed" || syncRun.conclusion !== "success") {
-      await sleep(options.pollSec * 1000);
-      continue;
-    }
-
     const deployments = await listDeployments(app.id);
     const deployment =
-      deployments.find((candidate) =>
-        JSON.stringify(candidate).includes(options.commit) ||
-        JSON.stringify(candidate).includes(options.commit.slice(0, 7)),
+      deployments.find(
+        candidate =>
+          JSON.stringify(candidate).includes(options.commit) ||
+          JSON.stringify(candidate).includes(options.commit.slice(0, 7))
       ) ?? null;
     if (!deployment) {
       await sleep(options.pollSec * 1000);
@@ -242,7 +204,7 @@ async function main() {
     }
 
     const latestActiveDeployment =
-      deployments.find((candidate) => candidate.phase === "ACTIVE") ?? null;
+      deployments.find(candidate => candidate.phase === "ACTIVE") ?? null;
 
     if (
       deployment.phase &&
@@ -250,13 +212,12 @@ async function main() {
       latestActiveDeployment &&
       latestActiveDeployment.id !== deployment.id
     ) {
-      console.log(
+      console.info(
         JSON.stringify(
           {
             ready: false,
             blocker: "superseded",
             commit: options.commit,
-            sync_run: syncRun,
             deployment: {
               id: deployment.id,
               phase: deployment.phase,
@@ -271,8 +232,8 @@ async function main() {
             },
           },
           null,
-          2,
-        ),
+          2
+        )
       );
       process.exit(1);
     }
@@ -288,20 +249,13 @@ async function main() {
       continue;
     }
 
-    console.log(
+    console.info(
       JSON.stringify(
         {
           ready: true,
           commit: options.commit,
           repo,
           base_url: options.baseUrl,
-          sync_run: {
-            name: syncRun.name,
-            status: syncRun.status,
-            conclusion: syncRun.conclusion,
-            html_url: syncRun.html_url,
-            updated_at: syncRun.updated_at,
-          },
           app: {
             id: app.id,
             spec_name: app.spec?.name ?? null,
@@ -314,16 +268,17 @@ async function main() {
             updated_at: deployment.updated_at ?? null,
           },
           version,
-          version_changed_since_start: JSON.stringify(version) !== initialVersionRaw,
+          version_changed_since_start:
+            JSON.stringify(version) !== initialVersionRaw,
         },
         null,
-        2,
-      ),
+        2
+      )
     );
     return;
   }
 
-  console.log(
+  console.info(
     JSON.stringify(
       {
         ready: false,
@@ -333,8 +288,8 @@ async function main() {
         base_url: options.baseUrl,
       },
       null,
-      2,
-    ),
+      2
+    )
   );
   process.exit(1);
 }

@@ -11,7 +11,7 @@ services:
   - name: web
     github:
       repo: EvanTenenbaum/TERP
-      branch: staging
+      branch: main
       deploy_on_push: true
     dockerfile_path: Dockerfile
 

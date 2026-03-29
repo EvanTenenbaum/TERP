@@ -105,13 +105,13 @@ All mutations MUST use `getAuthenticatedUserId(ctx)` — never `input.createdBy`
 
 ## Deployment
 
-`PR` → `main` (staging auto-deploy) → verify → `production` (manual promote by Evan)
+`PR` → `main` (auto-deploy to staging) → verify → `production` (manual promote by Evan)
 
-- As of March 28, 2026, `main` is the current staging branch
+- As of March 28, 2026, staging tracks `main` directly
 - Staging URL: `https://terp-staging-yicld.ondigitalocean.app`
-- Staging deploy is automatic on push to `main`
+- Staging tracks `main` directly, and deploy is automatic on push to `main`
 - Production is a manual promotion — agents never deploy to production
-- Add `[skip-staging-sync]` to the commit message for docs-only changes that should not redeploy staging
+- There is no staging-only sync branch or `[skip-staging-sync]` escape hatch in this mode
 
 ## Autonomy Modes
 

@@ -29,7 +29,7 @@
 
 ### Skip Deploy
 
-Add `[skip-staging-sync]` to the commit message for docs-only changes that should not redeploy staging.
+There is no `[skip-staging-sync]` bypass in the direct-to-`main` staging model. Any push to `main` will deploy staging.
 
 ## Post-Deploy Verification
 
