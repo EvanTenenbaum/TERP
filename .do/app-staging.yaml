@@ -4,7 +4,7 @@ region: nyc
 databases:
   - name: terp-staging-db
     engine: MYSQL
-    production: false
+    production: true
     cluster_name: terp-staging-db
 
 services:
@@ -42,6 +42,9 @@ services:
         scope: RUN_AND_BUILD_TIME
       - key: ENABLE_RBAC
         value: "true"
+        scope: RUN_AND_BUILD_TIME
+      - key: UPLOAD_DIR
+        value: /tmp/uploads
         scope: RUN_AND_BUILD_TIME
       - key: NODE_MEMORY_LIMIT
         value: "512000000"
@@ -90,6 +93,9 @@ services:
         scope: RUN_AND_BUILD_TIME
       - key: VITE_APP_ID
         value: terp-staging
+        scope: RUN_AND_BUILD_TIME
+      - key: VITE_AGENTATION_ENDPOINT
+        value: https://evans-mac-mini.tailbe55dd.ts.net
         scope: RUN_AND_BUILD_TIME
       - key: VITE_AG_GRID_LICENSE_KEY
         scope: RUN_AND_BUILD_TIME

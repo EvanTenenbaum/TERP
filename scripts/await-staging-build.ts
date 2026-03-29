@@ -155,6 +155,10 @@ async function fetchVersion(baseUrl: string) {
   return (await response.json()) as VersionPayload;
 }
 
+function isTerminalSupersededPhase(phase: string | null | undefined) {
+  return phase === "SUPERSEDED" || phase === "CANCELED" || phase === "ERROR";
+}
+
 function versionLooksFresh(
   version: VersionPayload,
   deployment: DigitalOceanDeployment,
@@ -208,7 +212,7 @@ async function main() {
 
     if (
       deployment.phase &&
-      deployment.phase !== "ACTIVE" &&
+      isTerminalSupersededPhase(deployment.phase) &&
       latestActiveDeployment &&
       latestActiveDeployment.id !== deployment.id
     ) {
