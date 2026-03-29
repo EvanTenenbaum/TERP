@@ -81,6 +81,7 @@ import {
   type RouteComponentProps as WouterRouteComponentProps,
 } from "wouter";
 import { VersionChecker } from "@/components/VersionChecker";
+import { StagingAgentation } from "@/components/staging/StagingAgentation";
 import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 import { PageLoading } from "@/components/ui/loading-state";
 
@@ -1041,6 +1042,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <VersionChecker />
+          <StagingAgentation />
           <Router />
           <CommandPalette
             open={showCommandPalette}
