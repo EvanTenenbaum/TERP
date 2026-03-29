@@ -8,15 +8,42 @@ describe("getHelmetConfig", () => {
       contentSecurityPolicy: {
         directives: {
           "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-          "connect-src": ["'self'", "http:", "https:", "ws:", "wss:"],
+          "connect-src": [
+            "'self'",
+            "http:",
+            "https:",
+            "ws:",
+            "wss:",
+            "http://localhost:4747",
+            "http://127.0.0.1:4747",
+            "ws://localhost:4747",
+            "ws://127.0.0.1:4747",
+          ],
         },
       },
       crossOriginEmbedderPolicy: false,
     });
   });
 
-  it("keeps default Helmet behavior outside development", () => {
+  it("allows Agentation localhost connections on staging builds", () => {
+    expect(getHelmetConfig("production", "terp-staging")).toMatchObject({
+      contentSecurityPolicy: {
+        directives: {
+          "connect-src": [
+            "'self'",
+            "http://localhost:4747",
+            "http://127.0.0.1:4747",
+            "ws://localhost:4747",
+            "ws://127.0.0.1:4747",
+          ],
+        },
+      },
+    });
+  });
+
+  it("keeps default Helmet behavior outside development and staging", () => {
     expect(getHelmetConfig("production")).toBeUndefined();
+    expect(getHelmetConfig("production", "terp-app")).toBeUndefined();
     expect(getHelmetConfig("test")).toBeUndefined();
   });
 });
