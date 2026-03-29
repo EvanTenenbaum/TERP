@@ -84,11 +84,8 @@ describe("consolidated navigation IA", () => {
 
     // Admin absorbed items
     expect(paths).toContain("/settings?tab=users");
-    expect(paths).toContain("/settings?tab=roles");
     expect(paths).toContain("/settings?tab=locations");
     expect(paths).toContain("/settings?tab=feature-flags");
-    expect(paths).toContain("/calendar?tab=invitations");
-    expect(paths).toContain("/admin/metrics");
     expect(paths).toContain("/scheduling");
     expect(paths).toContain("/time-clock");
     expect(paths).toContain("/todos");
@@ -106,11 +103,8 @@ describe("consolidated navigation IA", () => {
     expect(sidebarHiddenPaths).toContain("/inventory?tab=photography");
     expect(sidebarHiddenPaths).toContain("/inventory?tab=samples");
     expect(sidebarHiddenPaths).toContain("/settings?tab=users");
-    expect(sidebarHiddenPaths).toContain("/settings?tab=roles");
     expect(sidebarHiddenPaths).toContain("/settings?tab=locations");
     expect(sidebarHiddenPaths).toContain("/settings?tab=feature-flags");
-    expect(sidebarHiddenPaths).toContain("/calendar?tab=invitations");
-    expect(sidebarHiddenPaths).toContain("/admin/metrics");
     expect(sidebarHiddenPaths).toContain("/scheduling");
     expect(sidebarHiddenPaths).toContain("/time-clock");
     expect(sidebarHiddenPaths).toContain("/todos");
@@ -123,9 +117,6 @@ describe("consolidated navigation IA", () => {
     );
 
     expect(commandPaths).toContain("/inventory?tab=receiving");
-    expect(commandPaths).toContain("/calendar?tab=invitations");
-    expect(commandPaths).toContain("/settings?tab=roles");
-    expect(commandPaths).toContain("/admin/metrics");
     expect(commandPaths).not.toContain("/direct-intake");
   });
 

@@ -86,14 +86,14 @@ vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
   ),
 }));
 
-vi.mock("@/components/spreadsheet-native/SalesOrderSurface", () => ({
-  default: () => <div>SalesOrderSurface</div>,
-}));
-
 vi.mock("@/pages/ReturnsPage", () => ({
   default: ({ embedded }: { embedded?: boolean }) => (
     <div>Returns {embedded ? "Embedded" : "Standalone"}</div>
   ),
+}));
+
+vi.mock("@/pages/OrderCreatorPage", () => ({
+  default: () => <div>Order Creator</div>,
 }));
 
 describe("spreadsheet-native pilot rollout gating", () => {
@@ -162,7 +162,7 @@ describe("spreadsheet-native pilot rollout gating", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the unified create-order surface even when the pilot is enabled", async () => {
+  it("keeps create-order classic by default even when the pilot is enabled", () => {
     mockPath = "/sales";
     mockSearch = "?tab=create-order&draftId=91";
     mockActiveTab = "create-order";
@@ -170,11 +170,11 @@ describe("spreadsheet-native pilot rollout gating", () => {
 
     render(<SalesWorkspacePage />);
 
-    expect(await screen.findByText("SalesOrderSurface")).toBeInTheDocument();
+    expect(screen.getByText("Order Creator")).toBeInTheDocument();
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 
-  it("renders the unified create-order surface when sheet-native is explicitly requested", async () => {
+  it("renders the sheet-native document surface on create-order when sheet-native is explicitly requested", async () => {
     mockPath = "/sales";
     mockSearch =
       "?tab=create-order&surface=sheet-native&quoteId=91&mode=duplicate&fromSalesSheet=true";
@@ -184,7 +184,9 @@ describe("spreadsheet-native pilot rollout gating", () => {
     render(<SalesWorkspacePage />);
 
     await waitFor(() => {
-      expect(screen.getByText("SalesOrderSurface")).toBeInTheDocument();
+      expect(
+        screen.getByText("Orders Sheet Pilot Document")
+      ).toBeInTheDocument();
     });
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
@@ -223,7 +225,7 @@ describe("spreadsheet-native pilot rollout gating", () => {
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 
-  it("keeps create-order unified even when classic=true is requested", async () => {
+  it("preserves the classic create-order route when classic=true is requested", () => {
     mockPath = "/sales";
     mockSearch = "?tab=create-order&classic=true&draftId=91";
     mockActiveTab = "create-order";
@@ -231,7 +233,7 @@ describe("spreadsheet-native pilot rollout gating", () => {
 
     render(<SalesWorkspacePage />);
 
-    expect(await screen.findByText("SalesOrderSurface")).toBeInTheDocument();
+    expect(screen.getByText("Order Creator")).toBeInTheDocument();
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 });

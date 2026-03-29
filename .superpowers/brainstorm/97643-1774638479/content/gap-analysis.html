@@ -1,0 +1,261 @@
+<h2>Functionality Gap Analysis + Updated Catalogue Layout</h2>
+<p class="subtitle">Features from OrderCreatorPage audit that need a home in the new surfaces</p>
+
+<div class="section">
+  <h3>Features Not Yet Placed in Sales Order Layout</h3>
+  <table style="width: 100%; font-size: 12px; border-collapse: collapse;">
+    <tr style="background: #1a2332; color: #94a3b8;">
+      <th style="padding: 6px 10px; text-align: left; border: 1px solid #2a3a4a;">Feature</th>
+      <th style="padding: 6px 10px; text-align: left; border: 1px solid #2a3a4a;">Current Location</th>
+      <th style="padding: 6px 10px; text-align: left; border: 1px solid #2a3a4a;">Proposed Home</th>
+    </tr>
+    <tr>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Batch/Lot selection ("Change Lot" → explode row)</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Line item row button</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Right-click context menu or action bar when row selected in order grid</td>
+    </tr>
+    <tr>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Bulk Margin / Bulk COGS apply</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Selection toolbar above table</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Action bar — show when multi-row selected: "Apply Margin" / "Apply COGS" inputs</td>
+    </tr>
+    <tr>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Customer Drawer (credit detail + pricing profile)</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Side drawer (760px)</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Keep as drawer — triggered from customer name click or credit info click in invoice bottom</td>
+    </tr>
+    <tr>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Order Adjustment (Discount/Markup, %/$, show-on-doc)</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">OrderAdjustmentPanel</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Invoice bottom — Discount row becomes editable (click to toggle mode). Replaces vague "Margin Override" in adjustments bar.</td>
+    </tr>
+    <tr>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">COGS/Margin column visibility (permission-gated)</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Conditional columns in LineItemTable</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Order document grid — conditional ColDefs based on resolveOrderCostVisibility()</td>
+    </tr>
+    <tr>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Sample flag (isSample per line)</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Checkbox column in grid</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Keep as editable column in order document grid (existing in OrdersDocumentLineItemsGrid)</td>
+    </tr>
+    <tr>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Applied pricing rules display</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Badge/tooltip on line item</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Tooltip on price cell in order grid + visible in Customer Drawer pricing section</td>
+    </tr>
+    <tr>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Quote-specific UI (button labels, credit bypass)</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Conditional text in various places</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Document Mode selector already handles this — button labels + credit check conditional on order type</td>
+    </tr>
+    <tr>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Undo (10s window for line removal)</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">useUndo hook + keyboard</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">PowersheetGrid has enableUndoRedo — use built-in AG Grid undo. Toast with manual undo for row deletion.</td>
+    </tr>
+    <tr>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Unsaved changes navigation guard</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">useUnsavedChangesWarning</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">Same hook in new surface — no layout change needed</td>
+    </tr>
+    <tr style="background: #fef3c722;">
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a; font-weight: 600;">⚠ Payment Terms selector</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">NOT in current OrderCreatorPage</td>
+      <td style="padding: 5px 10px; border: 1px solid #2a3a4a;">NEW feature — Invoice bottom. Requires: terms schema, customer default storage, order payload field. Minimal scope: select dropdown + "save as default" action.</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section" style="margin-top: 1.5rem; padding: 1rem; background: #1a2332; border-radius: 8px; border: 1px solid #2a3a4a;">
+  <h3 style="margin-top: 0; color: #fcd34d;">Payment Terms — New Feature Flag</h3>
+  <p style="font-size: 12px;">The audit confirmed Payment Terms is NOT in the current OrderCreatorPage. This is genuinely new work. I recommend scoping it as:</p>
+  <ul style="font-size: 12px; line-height: 1.8;">
+    <li><strong>UI:</strong> Select dropdown in invoice-bottom (Net 15 / Net 30 / Net 45 / Net 60 / COD / Prepaid) + "★ Save default" button</li>
+    <li><strong>Schema:</strong> Add <code>paymentTerms</code> column to orders table + <code>defaultPaymentTerms</code> to clients table</li>
+    <li><strong>Server:</strong> Include in createDraftEnhanced/updateDraftEnhanced/finalizeDraft payloads</li>
+    <li><strong>Default:</strong> Auto-populate from customer profile on client selection, editable per order</li>
+    <li>Flag it separately in the plan so it can ship independently if needed</li>
+  </ul>
+</div>
+
+<hr style="margin: 2rem 0; border-color: #2a3a4a;">
+
+<h2>Updated Sales Catalogue Layout (Tight Padding)</h2>
+<p class="subtitle">Matches Sales Order density — minimal chrome, grids get maximum space</p>
+
+<div class="mockup">
+  <div class="mockup-header">SalesCatalogueSurface.tsx — Tight Density</div>
+  <div class="mockup-body" style="padding: 0; background: #f3f4f6; font-size: 12px;">
+
+    <!-- TOOLBAR -->
+    <div style="display: flex; align-items: center; gap: 6px; padding: 4px 8px; border-bottom: 1px solid #e2e8f0; background: #fff;">
+      <div style="background: #e2e8f0; border-radius: 4px; padding: 3px 8px; font-size: 11px; color: #475569;">← Orders</div>
+      <div style="background: #d1fae5; border-radius: 10px; padding: 2px 8px; font-size: 10px; color: #065f46; font-weight: 600;">Sales Catalogue</div>
+      <input style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 3px 8px; font-size: 11px; width: 150px;" placeholder="Draft name..." value="Golden State March Mix" />
+      <div style="border: 1px solid #e2e8f0; border-radius: 4px; padding: 3px 8px; font-size: 11px; min-width: 120px;">Golden State ▾</div>
+      <div style="margin-left: auto; display: flex; gap: 4px; align-items: center;">
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 2px 8px; font-size: 10px; line-height: 1.3;">
+          <span style="color: #6b7280; font-size: 9px; text-transform: uppercase;">AUTO</span><br/>
+          <span style="color: #065f46; font-weight: 700; font-size: 11px;">OK</span>
+        </div>
+        <div style="background: #fefce8; border: 1px solid #fde68a; border-radius: 6px; padding: 2px 8px; font-size: 10px; line-height: 1.3;">
+          <span style="color: #6b7280; font-size: 9px; text-transform: uppercase;">DIRTY</span><br/>
+          <span style="color: #92400e; font-weight: 700; font-size: 11px;">2</span>
+        </div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 8px; font-size: 11px; background: #fff;">Save Draft</div>
+      </div>
+    </div>
+
+    <!-- ACTION BAR -->
+    <div style="display: flex; align-items: center; gap: 6px; padding: 3px 8px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 11px;">
+      <span style="font-weight: 600;">Sheet</span>
+      <div style="background: #0f766e; color: white; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600;">+ Add</div>
+      <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 8px; font-size: 10px; background: #fff;">Remove</div>
+      <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 8px; font-size: 10px; background: #fff;">Quick View ▾</div>
+      <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 8px; font-size: 10px; background: #fff;">Save View</div>
+      <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 8px; font-size: 10px; background: #fff;">Filters</div>
+      <span style="margin-left: auto; color: #6b7280; font-size: 10px;">4 items · $3,140</span>
+    </div>
+
+    <!-- SPLIT GRIDS -->
+    <div style="display: grid; grid-template-columns: 3fr 1fr; gap: 6px; padding: 6px 6px 0 6px;">
+
+      <!-- LEFT: INVENTORY -->
+      <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+        <div style="padding: 3px 8px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 6px;">
+          <span style="font-weight: 700; font-size: 11px;">Inventory</span>
+          <input style="border: 1px solid #e2e8f0; border-radius: 3px; padding: 2px 6px; font-size: 10px; flex: 1;" placeholder="Search product, batch, supplier..." />
+        </div>
+        <div style="display: grid; grid-template-columns: 2fr 1fr 0.7fr 0.8fr 0.8fr 0.5fr; background: #f1f5f9; font-size: 10px; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0;">
+          <div style="padding: 3px 6px; border-right: 1px solid #e2e8f0;">Product</div>
+          <div style="padding: 3px 6px; border-right: 1px solid #e2e8f0;">Category</div>
+          <div style="padding: 3px 6px; border-right: 1px solid #e2e8f0;">Qty</div>
+          <div style="padding: 3px 6px; border-right: 1px solid #e2e8f0;">Retail</div>
+          <div style="padding: 3px 6px; border-right: 1px solid #e2e8f0;">COGS</div>
+          <div style="padding: 3px 6px;">✓</div>
+        </div>
+        <div style="font-size: 11px;">
+          <div style="display: grid; grid-template-columns: 2fr 1fr 0.7fr 0.8fr 0.8fr 0.5fr; border-bottom: 1px solid #f1f5f9;">
+            <div style="padding: 3px 6px; font-weight: 600;">Blue Dream 3.5g Jar</div>
+            <div style="padding: 3px 6px;">Flower</div>
+            <div style="padding: 3px 6px; font-family: monospace;">24</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">$42.50</div>
+            <div style="padding: 3px 6px;">$18.70</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">✓</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr 0.7fr 0.8fr 0.8fr 0.5fr; border-bottom: 1px solid #f1f5f9; background: #fafcfb;">
+            <div style="padding: 3px 6px; font-weight: 600;">Lemon Kush 7g</div>
+            <div style="padding: 3px 6px;">Flower</div>
+            <div style="padding: 3px 6px; font-family: monospace;">10</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">$68.00</div>
+            <div style="padding: 3px 6px;">$27.10</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">✓</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr 0.7fr 0.8fr 0.8fr 0.5fr; border-bottom: 1px solid #f1f5f9;">
+            <div style="padding: 3px 6px; font-weight: 600;">Edible 100mg</div>
+            <div style="padding: 3px 6px;">Edible</div>
+            <div style="padding: 3px 6px; font-family: monospace;">6</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">$90.00</div>
+            <div style="padding: 3px 6px;">$38.00</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">✓</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr 0.7fr 0.8fr 0.8fr 0.5fr; border-bottom: 1px solid #f1f5f9; background: #fafcfb;">
+            <div style="padding: 3px 6px; font-weight: 600;">Vape Cart 1g</div>
+            <div style="padding: 3px 6px;">Vape</div>
+            <div style="padding: 3px 6px; font-family: monospace;">8</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">$112.50</div>
+            <div style="padding: 3px 6px;">$31.40</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">✓</div>
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr 0.7fr 0.8fr 0.8fr 0.5fr;">
+            <div style="padding: 3px 6px; font-weight: 600;">Pre-roll 14 pack</div>
+            <div style="padding: 3px 6px;">Preroll</div>
+            <div style="padding: 3px 6px; font-family: monospace;">2</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">$84.00</div>
+            <div style="padding: 3px 6px;">$21.20</div>
+            <div style="padding: 3px 6px; color: #94a3b8;">—</div>
+          </div>
+        </div>
+        <div style="padding: 2px 8px; font-size: 9px; color: #6b7280; background: #f8fafc; border-top: 1px solid #e2e8f0;">
+          Client pricing applied · Default view · 6 visible
+        </div>
+      </div>
+
+      <!-- RIGHT: PREVIEW -->
+      <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; display: flex; flex-direction: column;">
+        <div style="padding: 3px 8px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between;">
+          <span style="font-weight: 700; font-size: 11px;">Preview</span>
+          <div style="font-size: 9px; color: #6b7280; border: 1px solid #e2e8f0; border-radius: 3px; padding: 1px 6px; cursor: pointer;">Clear</div>
+        </div>
+        <div style="font-size: 10px; flex: 1;">
+          <div style="display: grid; grid-template-columns: auto 1fr 0.5fr 0.7fr; background: #f1f5f9; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0;">
+            <div style="padding: 3px 6px;">#</div>
+            <div style="padding: 3px 6px;">Item</div>
+            <div style="padding: 3px 6px;">Qty</div>
+            <div style="padding: 3px 6px;">Total</div>
+          </div>
+          <div style="display: grid; grid-template-columns: auto 1fr 0.5fr 0.7fr; border-bottom: 1px solid #f1f5f9;">
+            <div style="padding: 3px 6px; font-family: monospace; color: #94a3b8;">1</div>
+            <div style="padding: 3px 6px;">Blue Dream</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">24</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">$1,020</div>
+          </div>
+          <div style="display: grid; grid-template-columns: auto 1fr 0.5fr 0.7fr; border-bottom: 1px solid #f1f5f9; background: #fafcfb;">
+            <div style="padding: 3px 6px; font-family: monospace; color: #94a3b8;">2</div>
+            <div style="padding: 3px 6px;">Lemon Kush</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">10</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">$680</div>
+          </div>
+          <div style="display: grid; grid-template-columns: auto 1fr 0.5fr 0.7fr; border-bottom: 1px solid #f1f5f9;">
+            <div style="padding: 3px 6px; font-family: monospace; color: #94a3b8;">3</div>
+            <div style="padding: 3px 6px;">Edible 100mg</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">6</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">$540</div>
+          </div>
+          <div style="display: grid; grid-template-columns: auto 1fr 0.5fr 0.7fr; border-bottom: 1px solid #f1f5f9; background: #fafcfb;">
+            <div style="padding: 3px 6px; font-family: monospace; color: #94a3b8;">4</div>
+            <div style="padding: 3px 6px;">Vape Cart 1g</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">8</div>
+            <div style="padding: 3px 6px; color: #0f766e; font-weight: 600;">$900</div>
+          </div>
+        </div>
+        <!-- Totals -->
+        <div style="border-top: 2px solid #e2e8f0; background: #fafbfc; padding: 4px 6px;">
+          <div style="display: flex; justify-content: space-between; font-size: 10px; color: #64748b;"><span>Items</span><span style="font-weight: 700; color: #1e293b;">48</span></div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-top: 2px;"><span>Value</span><span style="color: #0f766e;">$3,140</span></div>
+        </div>
+        <!-- Output actions -->
+        <div style="display: flex; gap: 3px; padding: 4px 6px; border-top: 1px solid #e2e8f0; flex-wrap: wrap;">
+          <div style="background: #0f766e; color: white; border-radius: 4px; padding: 3px 0; font-size: 10px; font-weight: 600; flex: 1; text-align: center;">Save</div>
+          <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 10px; background: #fff;">Share</div>
+          <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 10px; background: #fff;">PDF</div>
+          <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 6px; font-size: 10px; background: #fff;">Print</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HANDOFF BAR -->
+    <div style="display: flex; align-items: center; gap: 6px; padding: 4px 8px; margin: 6px 6px 0; background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 10px;">
+      <div style="background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; padding: 1px 6px; color: #92400e; font-weight: 600; font-size: 9px;">Dirty edits block share / convert</div>
+      <div style="margin-left: auto; display: flex; gap: 4px;">
+        <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600; background: #fff;">Share Link</div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600; background: #fff;">→ Sales Order</div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600; background: #fff;">→ Quote</div>
+        <div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600; background: #fff;">Live</div>
+      </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div style="display: flex; align-items: center; padding: 3px 8px; background: #f1f5f9; margin-top: 6px; font-size: 10px; color: #6b7280;">
+      <span>4 selected · default view · 2 dirty cells · Golden State</span>
+      <span style="margin-left: auto;">
+        <kbd style="background: #e2e8f0; padding: 0px 3px; border-radius: 2px; font-size: 9px;">⌘S</kbd> save
+        <span style="margin: 0 3px;">·</span>
+        <kbd style="background: #e2e8f0; padding: 0px 3px; border-radius: 2px; font-size: 9px;">⌘C</kbd> copy
+        <span style="margin: 0 3px;">·</span>
+        <kbd style="background: #e2e8f0; padding: 0px 3px; border-radius: 2px; font-size: 9px;">Click</kbd> select
+      </span>
+    </div>
+  </div>
+</div>

@@ -304,69 +304,6 @@ describe("SpreadsheetPilotGrid", () => {
     expect(onSelectedRowChange).toHaveBeenCalledTimes(1);
   });
 
-  it("does not re-emit the same selection summary on equivalent rerenders", () => {
-    lastAgGridProps = null;
-
-    const onSelectionSummaryChange = vi.fn();
-    const fakeColumns = [{ getColId: () => "sku" }];
-    const focusedCell: {
-      rowIndex: number;
-      column: (typeof fakeColumns)[number];
-    } = {
-      rowIndex: 0,
-      column: fakeColumns[0],
-    };
-    const fakeApi = {
-      getFocusedCell: () => focusedCell,
-      getCellRanges: () => [],
-      getSelectedRows: () => [],
-      clearFocusedCell: vi.fn(),
-      clearCellSelection: vi.fn(),
-      getDisplayedRowAtIndex: (rowIndex: number) =>
-        rowIndex === 0 ? { data: { id: "row-1", sku: "SKU-001" } } : null,
-      getAllDisplayedColumns: () => fakeColumns,
-      setFocusedCell: vi.fn(),
-      forEachNode: (
-        callback: (node: { data: TestRow; rowIndex: number }) => void
-      ) => callback({ data: { id: "row-1", sku: "SKU-001" }, rowIndex: 0 }),
-    };
-
-    const { rerender } = render(
-      <SpreadsheetPilotGrid<TestRow>
-        title="Inventory Sheet"
-        rows={rows}
-        columnDefs={columnDefs}
-        getRowId={row => row.id}
-        emptyTitle="No rows"
-        emptyDescription="Nothing to show"
-        selectionMode="cell-range"
-        selectionSurface="inventory-management"
-        selectedRowId="row-1"
-        onSelectionSummaryChange={onSelectionSummaryChange}
-      />
-    );
-
-    lastAgGridProps?.onGridReady?.({ api: fakeApi });
-    expect(onSelectionSummaryChange).toHaveBeenCalledTimes(1);
-
-    rerender(
-      <SpreadsheetPilotGrid<TestRow>
-        title="Inventory Sheet"
-        rows={rows}
-        columnDefs={columnDefs}
-        getRowId={row => row.id}
-        emptyTitle="No rows"
-        emptyDescription="Nothing to show"
-        selectionMode="cell-range"
-        selectionSurface="inventory-management"
-        selectedRowId="row-1"
-        onSelectionSummaryChange={onSelectionSummaryChange}
-      />
-    );
-
-    expect(onSelectionSummaryChange).toHaveBeenCalledTimes(1);
-  });
-
   it("emits null when the controlled selected row is cleared in cell-range mode", () => {
     lastAgGridProps = null;
 

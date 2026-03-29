@@ -204,13 +204,6 @@
       "when": 1773173200000,
       "tag": "0062_restore_range_cogs_native_flow",
       "breakpoints": true
-    },
-    {
-      "idx": 29,
-      "version": "5",
-      "when": 1774680000000,
-      "tag": "0064_add_orders_surface_fields",
-      "breakpoints": true
     }
   ]
 }

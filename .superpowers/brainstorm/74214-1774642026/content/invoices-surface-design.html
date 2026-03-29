@@ -1,0 +1,309 @@
+<h2>Phase 1: Invoices Surface Design</h2>
+<p class="subtitle">InvoicesSurface.tsx — replaces InvoicesPilotSurface + InvoicesWorkSurface + ClientLedgerPilotSurface</p>
+
+<div class="mockup">
+  <div class="mockup-header">InvoicesSurface — Full Layout (with inspector open + Client Ledger expanded)</div>
+  <div class="mockup-body" style="font-size:11px;line-height:1.4;padding:0">
+
+    <!-- 1. TOOLBAR -->
+    <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#f8f9fa;border-bottom:1px solid #e2e4e7">
+      <span style="font-weight:700;font-size:12px;letter-spacing:-0.3px">Invoices</span>
+      <!-- KPI badges inline -->
+      <span style="font-size:9px;padding:2px 7px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:4px;color:#2e7d32;font-weight:500">$24,500 AR</span>
+      <span style="font-size:9px;padding:2px 7px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:4px;color:#e65100;font-weight:500">3 overdue</span>
+      <span style="font-size:9px;padding:2px 7px;background:#e3f2fd;border:1px solid #bbdefb;border-radius:4px;color:#1565c0;font-weight:500">47 total</span>
+      <span style="flex:1"></span>
+      <!-- AR Aging toggle -->
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;cursor:pointer;color:#555">AR Aging ▾</span>
+      <!-- Search -->
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#999">🔍 Search invoices...</span>
+      <!-- Refresh -->
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;cursor:pointer;color:#555">↻</span>
+    </div>
+
+    <!-- 2. ACTION BAR -->
+    <div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:#fafbfc;border-bottom:1px solid #eee">
+      <!-- Status filter tabs -->
+      <span style="font-size:9px;padding:2px 8px;background:#1565c0;color:white;border-radius:3px;font-weight:500">All</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Draft</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Sent</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Viewed</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Partial</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Paid</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#e65100;border:1px solid #ffe0b2">Overdue</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Void</span>
+      <div style="flex:1"></div>
+      <!-- Context-sensitive actions -->
+      <span style="font-size:9px;padding:2px 7px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:4px;color:#2e7d32;font-weight:500;cursor:pointer">+ Create Invoice</span>
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">✉ Mark Sent</span>
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">⚡ Record Payment</span>
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#d32f2f;cursor:pointer">✕ Void</span>
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">↓ PDF</span>
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">🖨</span>
+    </div>
+
+    <!-- 3. GRID + COLLAPSIBLE INSPECTOR -->
+    <div style="display:flex;gap:0">
+      <!-- Main Grid (~75% when inspector open) -->
+      <div style="flex:3;background:white;border-right:1px solid #eee">
+        <div style="display:grid;grid-template-columns:85px 110px 70px 65px 75px 65px 55px 50px;gap:0;font-size:9px">
+          <!-- Header -->
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Invoice #</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Client</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Date</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Due</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee;text-align:right">Total</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee;text-align:right">Due Amt</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Status</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8">Days</div>
+
+          <!-- Row 1 — SELECTED (highlighted) -->
+          <div style="padding:4px 6px;background:#e3f2fd;font-family:monospace;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">INV-001</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;color:#1565c0;text-decoration:underline;cursor:pointer">Green Leaf Co</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">Mar 15</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;color:#d32f2f">Mar 15</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;text-align:right;font-family:monospace">$4,200</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;text-align:right;font-family:monospace;color:#d32f2f;font-weight:600">$4,200</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#fff3e0;color:#e65100;border:1px solid #ffe0b2;border-radius:3px">OVERDUE</span></div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3"><span style="font-size:8px;padding:1px 4px;background:#ffebee;color:#c62828;border-radius:3px">12d</span></div>
+
+          <!-- Row 2 -->
+          <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">INV-002</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Herbal Direct</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 18</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Apr 2</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$1,850</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace;color:#999">$0.00</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">PAID</span></div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;color:#ccc">—</div>
+
+          <!-- Row 3 -->
+          <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">INV-003</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Peak Cannabis</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 20</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Apr 4</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$6,100</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace;color:#f57f17">$3,050</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#fff8e1;color:#f57f17;border:1px solid #ffecb3;border-radius:3px">PARTIAL</span></div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;color:#ccc">—</div>
+
+          <!-- Row 4 -->
+          <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">INV-004</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Summit THC</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 22</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Apr 6</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$2,900</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$2,900</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#e3f2fd;color:#1565c0;border:1px solid #bbdefb;border-radius:3px">SENT</span></div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;color:#ccc">—</div>
+
+          <!-- Row 5 -->
+          <div style="padding:4px 6px;font-family:monospace;border-right:1px solid #eee">INV-005</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee">Emerald Farms</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee">Mar 25</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee">Apr 9</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee;text-align:right;font-family:monospace">$3,500</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee;text-align:right;font-family:monospace">$3,500</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#f5f5f5;color:#666;border:1px solid #e0e0e0;border-radius:3px">DRAFT</span></div>
+          <div style="padding:4px 6px;color:#ccc">—</div>
+        </div>
+      </div>
+
+      <!-- COLLAPSIBLE INSPECTOR (~25%) -->
+      <div style="flex:1;background:#fafbfc;padding:10px;font-size:9px;min-width:200px;border-left:1px solid #e8e8e8">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #e8e8e8">
+          <span style="font-weight:700;font-size:11px">INV-001</span>
+          <span style="cursor:pointer;color:#999;font-size:12px;padding:2px 4px;border-radius:3px;background:#f0f0f0" title="Close inspector (Esc)">✕</span>
+        </div>
+
+        <!-- Section: Overview -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:600">Overview</div>
+          <div style="display:grid;grid-template-columns:65px 1fr;gap:2px 8px;font-size:9px">
+            <span style="color:#888">Client</span>
+            <span style="color:#1565c0;text-decoration:underline;cursor:pointer">Green Leaf Co ↗</span>
+            <span style="color:#888">Date</span>
+            <span>Mar 15, 2026</span>
+            <span style="color:#888">Due</span>
+            <span style="color:#d32f2f;font-weight:500">Mar 15 (12d overdue)</span>
+            <span style="color:#888">Terms</span>
+            <span>Net 15</span>
+          </div>
+        </div>
+
+        <!-- Section: Amounts -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:600">Amounts</div>
+          <div style="display:grid;grid-template-columns:65px 1fr;gap:2px 8px;font-size:9px">
+            <span style="color:#888">Total</span>
+            <span style="font-family:monospace;font-weight:600">$4,200.00</span>
+            <span style="color:#888">Paid</span>
+            <span style="font-family:monospace">$0.00</span>
+            <span style="color:#888">Due</span>
+            <span style="font-family:monospace;color:#d32f2f;font-weight:600">$4,200.00</span>
+          </div>
+          <!-- Progress bar -->
+          <div style="margin-top:4px;background:#ffebee;height:4px;border-radius:2px;overflow:hidden">
+            <div style="width:0%;height:100%;background:#d32f2f;border-radius:2px"></div>
+          </div>
+          <div style="font-size:8px;color:#999;margin-top:2px">0% collected</div>
+        </div>
+
+        <!-- Section: GL Status -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:600">GL Status</div>
+          <span style="font-size:8px;padding:2px 6px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">POSTED</span>
+          <span style="font-size:8px;color:#888;margin-left:4px">Entry #GL-0421</span>
+        </div>
+
+        <!-- Section: Payment History -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:600">Payment History</div>
+          <div style="color:#999;font-style:italic;font-size:9px">No payments recorded</div>
+        </div>
+
+        <!-- Quick actions -->
+        <div style="border-top:1px solid #e8e8e8;padding-top:8px;display:flex;flex-wrap:wrap;gap:4px">
+          <span style="font-size:8px;padding:3px 8px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:4px;color:#2e7d32;cursor:pointer;font-weight:500">⚡ Record Payment</span>
+          <span style="font-size:8px;padding:3px 8px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">✉ Mark Sent</span>
+          <span style="font-size:8px;padding:3px 8px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">↓ PDF</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. AR AGING PANEL (collapsible, triggered from toolbar) -->
+    <div style="margin:6px 8px;padding:8px;background:#fff8f0;border:1px solid #ffe0b2;border-radius:6px;font-size:9px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-weight:600;font-size:10px;color:#e65100">AR Aging Summary</span>
+        <span style="flex:1"></span>
+        <span style="color:#888;cursor:pointer">▲ collapse</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+        <div style="padding:6px;background:white;border-radius:4px;border:1px solid #eee;text-align:center">
+          <div style="font-size:8px;color:#888;text-transform:uppercase">Current</div>
+          <div style="font-size:14px;font-weight:700;color:#2e7d32;font-family:monospace">$12,450</div>
+          <div style="font-size:8px;color:#888">18 invoices</div>
+        </div>
+        <div style="padding:6px;background:white;border-radius:4px;border:1px solid #eee;text-align:center">
+          <div style="font-size:8px;color:#888;text-transform:uppercase">1-30 days</div>
+          <div style="font-size:14px;font-weight:700;color:#f57f17;font-family:monospace">$6,800</div>
+          <div style="font-size:8px;color:#888">8 invoices</div>
+        </div>
+        <div style="padding:6px;background:white;border-radius:4px;border:1px solid #eee;text-align:center">
+          <div style="font-size:8px;color:#888;text-transform:uppercase">31-60 days</div>
+          <div style="font-size:14px;font-weight:700;color:#e65100;font-family:monospace">$3,200</div>
+          <div style="font-size:8px;color:#888">3 invoices</div>
+        </div>
+        <div style="padding:6px;background:white;border-radius:4px;border:1px solid #eee;text-align:center">
+          <div style="font-size:8px;color:#888;text-transform:uppercase">61-90 days</div>
+          <div style="font-size:14px;font-weight:700;color:#d32f2f;font-family:monospace">$1,500</div>
+          <div style="font-size:8px;color:#888">1 invoice</div>
+        </div>
+        <div style="padding:6px;background:white;border-radius:4px;border:1px solid #eee;text-align:center">
+          <div style="font-size:8px;color:#888;text-transform:uppercase">90+ days</div>
+          <div style="font-size:14px;font-weight:700;color:#b71c1c;font-family:monospace">$550</div>
+          <div style="font-size:8px;color:#888">1 invoice</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. CLIENT LEDGER SUB-VIEW (triggered when a row with client is selected) -->
+    <div style="margin:0 8px 6px;padding:8px;background:#f8fafe;border:1px solid #bbdefb;border-radius:6px;font-size:9px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-weight:600;font-size:10px">📒 Client Ledger: Green Leaf Co</span>
+        <span style="font-size:8px;padding:2px 6px;background:#ffebee;color:#c62828;border:1px solid #ffcdd2;border-radius:3px;font-weight:500">Balance: $4,200.00</span>
+        <span style="flex:1"></span>
+        <span style="font-size:8px;padding:2px 6px;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#555">+ Adjustment</span>
+        <span style="font-size:8px;padding:2px 6px;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#555">↓ Export</span>
+        <span style="font-size:8px;padding:2px 6px;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#555">Date range ▾</span>
+        <span style="color:#888;cursor:pointer">▲</span>
+      </div>
+      <div style="display:grid;grid-template-columns:70px 70px 1fr 75px 75px 80px;gap:0;font-size:8px;border:1px solid #e0e0e0;border-radius:4px;overflow:hidden">
+        <!-- Header -->
+        <div style="padding:3px 5px;background:#e8eaf6;font-weight:600;border-bottom:1px solid #d0d0d0;border-right:1px solid #e0e0e0">Date</div>
+        <div style="padding:3px 5px;background:#e8eaf6;font-weight:600;border-bottom:1px solid #d0d0d0;border-right:1px solid #e0e0e0">Type</div>
+        <div style="padding:3px 5px;background:#e8eaf6;font-weight:600;border-bottom:1px solid #d0d0d0;border-right:1px solid #e0e0e0">Description</div>
+        <div style="padding:3px 5px;background:#e8eaf6;font-weight:600;border-bottom:1px solid #d0d0d0;border-right:1px solid #e0e0e0;text-align:right">Debit</div>
+        <div style="padding:3px 5px;background:#e8eaf6;font-weight:600;border-bottom:1px solid #d0d0d0;border-right:1px solid #e0e0e0;text-align:right">Credit</div>
+        <div style="padding:3px 5px;background:#e8eaf6;font-weight:600;border-bottom:1px solid #d0d0d0;text-align:right">Balance</div>
+        <!-- Rows -->
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 15</div>
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee"><span style="padding:0 3px;background:#e3f2fd;border-radius:2px;color:#1565c0">INVOICE</span></div>
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">INV-001 — Product order</div>
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$4,200</div>
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;color:#ccc">—</div>
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;text-align:right;font-family:monospace;font-weight:600;color:#d32f2f">$4,200</div>
+
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 1</div>
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee"><span style="padding:0 3px;background:#e8f5e9;border-radius:2px;color:#2e7d32">PAYMENT</span></div>
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">PMT-RCV-015 — Wire transfer</div>
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;color:#ccc">—</div>
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$2,100</div>
+        <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;text-align:right;font-family:monospace">$2,100</div>
+
+        <div style="padding:3px 5px;border-right:1px solid #eee">Feb 15</div>
+        <div style="padding:3px 5px;border-right:1px solid #eee"><span style="padding:0 3px;background:#fff3e0;border-radius:2px;color:#e65100">ADJUST</span></div>
+        <div style="padding:3px 5px;border-right:1px solid #eee">Manual credit — returns</div>
+        <div style="padding:3px 5px;border-right:1px solid #eee;text-align:right;color:#ccc">—</div>
+        <div style="padding:3px 5px;border-right:1px solid #eee;text-align:right;font-family:monospace">$500</div>
+        <div style="padding:3px 5px;text-align:right;font-family:monospace">$0</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:8px;color:#888">
+        <span>3 transactions shown · Page 1 of 1</span>
+        <span>[ / ] to page · Click row to navigate to source</span>
+      </div>
+    </div>
+
+    <!-- 6. STATUS BAR -->
+    <div style="display:flex;align-items:center;padding:3px 8px;background:#f8f9fa;border-top:1px solid #e2e4e7;border-radius:0 0 6px 6px;font-size:9px;color:#888">
+      <span>1 selected · All invoices · 47 total · Green Leaf Co ledger</span>
+      <span style="flex:1"></span>
+      <span style="letter-spacing:0.3px">Click select · Shift+Click range · ⌘C copy · ⌘A all · Esc close inspector</span>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:20px">
+  <h3>Layout Zones (top → bottom)</h3>
+  <table style="width:100%;font-size:12px;border-collapse:collapse">
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px;font-weight:600;width:30%">1. Toolbar</td>
+      <td style="padding:6px">Title + KPI badges (AR total, overdue count, total invoices) + AR Aging toggle + search + refresh</td>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px;font-weight:600">2. Action Bar</td>
+      <td style="padding:6px">Status filter tabs (All/Draft/Sent/Viewed/Partial/Paid/Overdue/Void) + workflow actions (Create, Mark Sent, Record Payment, Void, PDF, Print)</td>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px;font-weight:600">3. Grid + Inspector</td>
+      <td style="padding:6px">PowersheetGrid (read-only, full-width by default) + collapsible InspectorPanel (~25% right, opens on row select, Esc to close)</td>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px;font-weight:600">4. AR Aging Panel</td>
+      <td style="padding:6px">Collapsible. 5 aging buckets (Current / 1-30 / 31-60 / 61-90 / 90+) with amounts and counts. From invoices.getARAging.</td>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px;font-weight:600">5. Client Ledger Sub-View</td>
+      <td style="padding:6px">Collapsible mini-grid. Appears when a row is selected. Shows selected client's transaction history (date, type, description, debit, credit, running balance). Actions: Add Adjustment, Export CSV, Date range filter. Paginated (50 rows, [/] shortcuts).</td>
+    </tr>
+    <tr>
+      <td style="padding:6px;font-weight:600">6. Status Bar</td>
+      <td style="padding:6px">Selection count + active filter + total count + ledger context | KeyboardHintBar</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section" style="margin-top:16px">
+  <h3>Key Behaviors</h3>
+  <ul style="font-size:12px;line-height:1.7">
+    <li><strong>Inspector opens on row select</strong> — grid animates from 100% to ~75% width. Close with ✕ or Esc.</li>
+    <li><strong>Client Ledger auto-populates</strong> — selecting any invoice row loads that client's ledger below. Different client = new ledger data.</li>
+    <li><strong>AR Aging is opt-in</strong> — collapsed by default, toggled from toolbar button. Persists toggle state in localStorage.</li>
+    <li><strong>Workflow actions are context-sensitive</strong> — buttons enable/disable based on selected row's status (e.g., can't Void a PAID invoice, can't Mark Sent a VOID invoice).</li>
+    <li><strong>InvoiceToPaymentFlow golden flow</strong> — "Record Payment" opens the existing sidecar dialog (941 lines, preserved as-is).</li>
+    <li><strong>Create Invoice dialog</strong> — existing dialog from pilot, uses accounting.invoices.generateNumber.</li>
+    <li><strong>Void with reason dialog</strong> — existing dialog from pilot, calls invoices.void with GL reversal.</li>
+    <li><strong>Deep-link support</strong> — ?invoiceId= selects that row and opens inspector on mount.</li>
+    <li><strong>Client name is clickable</strong> — navigates to client detail (or opens drawer).</li>
+  </ul>
+</div>

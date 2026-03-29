@@ -15,7 +15,7 @@
 import { useMemo, useState, useCallback } from "react";
 import type { ColDef, CellValueChangedEvent } from "ag-grid-community";
 import { toast } from "sonner";
-import { Download, RefreshCw, Search, CheckCircle } from "lucide-react";
+import { Download, Plus, RefreshCw, Search, CheckCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 import { Button } from "@/components/ui/button";
@@ -23,24 +23,26 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
-import {
-  KeyboardHintBar,
-  type KeyboardHint,
-} from "@/components/work-surface/KeyboardHintBar";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 
 import { PowersheetGrid } from "./PowersheetGrid";
-import type { PowersheetAffordance } from "./PowersheetGrid";
 import type {
   PowersheetSelectionSet,
   PowersheetSelectionSummary,
 } from "@/lib/powersheet/contracts";
+import {
+  fmtCurrency,
+  EDITABLE_AFFORDANCES,
+  EDITABLE_KEYBOARD_HINTS,
+} from "@/lib/powersheet/surface-helpers";
 
 // ============================================================================
 // TYPES
 // ============================================================================
 
 interface BankTransactionGridRow {
-  id: number;
+  id: number | string;
+  bankAccountId: number | null;
   transactionDate: string;
   transactionType: "DEPOSIT" | "WITHDRAWAL" | "TRANSFER" | "FEE";
   description: string;
@@ -49,17 +51,16 @@ interface BankTransactionGridRow {
   isReconciled: boolean;
 }
 
+function isNewRow(id: number | string): boolean {
+  return String(id).startsWith("new-");
+}
+
 type TypeTab = "ALL" | "DEPOSIT" | "WITHDRAWAL" | "TRANSFER" | "FEE";
 type ReconciledFilter = "ALL" | "RECONCILED" | "UNRECONCILED";
 
 // ============================================================================
 // CONSTANTS
 // ============================================================================
-
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const mod = isMac ? "\u2318" : "Ctrl";
 
 const TYPE_TABS: Array<{ value: TypeTab; label: string }> = [
   { value: "ALL", label: "All" },
@@ -76,30 +77,7 @@ const TYPE_BADGE_STYLES: Record<string, string> = {
   FEE: "bg-orange-100 text-orange-700 border-orange-200",
 };
 
-const editableAffordances: PowersheetAffordance[] = [
-  { label: "Select", available: true },
-  { label: "Multi-select", available: true },
-  { label: "Copy", available: true },
-  { label: "Paste", available: true },
-  { label: "Fill", available: true },
-  { label: "Edit", available: true },
-  { label: "Undo/Redo", available: true },
-];
-
-const keyboardHints: KeyboardHint[] = [
-  { key: "Click", label: "select cell" },
-  { key: "Double-click", label: "edit cell" },
-  { key: `${mod}+C`, label: "copy" },
-  { key: `${mod}+V`, label: "paste" },
-  { key: `${mod}+Z`, label: "undo" },
-  { key: "Escape", label: "cancel edit" },
-];
-
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
+const formatCurrency = fmtCurrency;
 
 // ============================================================================
 // COLUMN DEFINITIONS
@@ -188,6 +166,7 @@ export function BankTransactionsSurface() {
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [selectionSummary, setSelectionSummary] =
     useState<PowersheetSelectionSummary | null>(null);
+  const [localRows, setLocalRows] = useState<BankTransactionGridRow[]>([]);
 
   // ─── Queries ──────────────────────────────────────────────────────────────
 
@@ -221,13 +200,28 @@ export function BankTransactionsSurface() {
       onError: err => toast.error(`Reconcile failed: ${err.message}`),
     });
 
+  const createMutation =
+    trpc.accounting.bankTransactions.create.useMutation({
+      onSuccess: () => {
+        toast.success("Transaction created");
+        void utils.accounting.bankTransactions.list.invalidate();
+      },
+      onError: err => toast.error(`Create failed: ${err.message}`),
+    });
+
+  // Fetch bank accounts for the bankAccountId default on new rows
+  const bankAccountsQuery = trpc.accounting.bankAccounts.list.useQuery({
+    isActive: true,
+  });
+
   // ─── Derived Data ─────────────────────────────────────────────────────────
 
-  const gridRows: BankTransactionGridRow[] = useMemo(() => {
+  const serverRows: BankTransactionGridRow[] = useMemo(() => {
     const items = transactionsQuery.data?.items ?? [];
     return items.map(
       (item: {
         id: number;
+        bankAccountId: number;
         transactionDate: Date | string;
         transactionType: string;
         description: string | null;
@@ -236,6 +230,7 @@ export function BankTransactionsSurface() {
         isReconciled: boolean;
       }) => ({
         id: item.id,
+        bankAccountId: item.bankAccountId,
         transactionDate:
           typeof item.transactionDate === "string"
             ? item.transactionDate
@@ -249,6 +244,11 @@ export function BankTransactionsSurface() {
       })
     );
   }, [transactionsQuery.data]);
+
+  const gridRows = useMemo(() => {
+    const newRows = localRows.filter(r => isNewRow(r.id));
+    return [...serverRows, ...newRows];
+  }, [serverRows, localRows]);
 
   const filteredRows = useMemo(() => {
     let rows = gridRows;
@@ -284,12 +284,80 @@ export function BankTransactionsSurface() {
     []
   );
 
+  const handleAddRow = useCallback(() => {
+    const accounts = bankAccountsQuery.data?.items ?? [];
+    const defaultAccountId =
+      accounts.length > 0 ? (accounts[0] as { id: number }).id : null;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const newRow: BankTransactionGridRow = {
+      id: `new-${Date.now()}`,
+      bankAccountId: defaultAccountId,
+      transactionDate: today,
+      transactionType: "DEPOSIT",
+      description: "",
+      referenceNumber: "",
+      amount: "0.00",
+      isReconciled: false,
+    };
+    setLocalRows(prev => [...prev, newRow]);
+  }, [bankAccountsQuery.data]);
+
   const handleCellValueChanged = useCallback(
-    (_event: CellValueChangedEvent<BankTransactionGridRow>) => {
-      // Cell edits are handled inline; no server update for now
-      // (task spec only wires reconcile mutation for the action button)
+    (event: CellValueChangedEvent<BankTransactionGridRow>) => {
+      const row = event.data;
+      if (!row) return;
+      const field = event.colDef.field as
+        | keyof BankTransactionGridRow
+        | undefined;
+      if (!field) return;
+
+      if (isNewRow(row.id)) {
+        // Update local state for new rows
+        setLocalRows(prev =>
+          prev.map(r =>
+            r.id === row.id ? { ...r, [field]: event.newValue } : r
+          )
+        );
+
+        // Auto-create when required fields are filled
+        const txDate =
+          field === "transactionDate"
+            ? String(event.newValue)
+            : row.transactionDate;
+        const txType =
+          field === "transactionType"
+            ? (String(event.newValue) as BankTransactionGridRow["transactionType"])
+            : row.transactionType;
+        const amount =
+          field === "amount" ? String(event.newValue ?? "0") : row.amount;
+        const bankAccountId = row.bankAccountId;
+
+        if (bankAccountId && txDate && txType && parseFloat(amount) > 0) {
+          createMutation.mutate(
+            {
+              bankAccountId,
+              transactionDate: new Date(txDate),
+              transactionType: txType,
+              amount,
+              description: row.description || undefined,
+              referenceNumber: row.referenceNumber || undefined,
+            },
+            {
+              onSuccess: () => {
+                setLocalRows(prev => prev.filter(r => r.id !== row.id));
+              },
+            }
+          );
+        }
+      } else {
+        // No server update mutation exists for bank transactions.
+        // Persist the edit in local state so the grid stays consistent
+        // until the next refresh.
+        toast.info("Edit saved locally (refresh to sync with server)");
+      }
     },
-    []
+    [createMutation]
   );
 
   const handleToggleReconciled = useCallback(() => {
@@ -433,6 +501,14 @@ export function BankTransactionsSurface() {
           <Button
             size="sm"
             className="h-5 text-[9px] px-2"
+            onClick={handleAddRow}
+            data-testid="add-row-button"
+          >
+            <Plus className="h-3 w-3 mr-1" />+ Add Row
+          </Button>
+          <Button
+            size="sm"
+            className="h-5 text-[9px] px-2"
             onClick={handleToggleReconciled}
             disabled={!selectedRowId}
             data-testid="toggle-reconciled-button"
@@ -457,7 +533,7 @@ export function BankTransactionsSurface() {
       <PowersheetGrid<BankTransactionGridRow>
         surfaceId="bank-transactions"
         requirementIds={["TER-976-bank-transactions"]}
-        affordances={editableAffordances}
+        affordances={EDITABLE_AFFORDANCES}
         title="Bank Transactions"
         rows={filteredRows}
         columnDefs={columnDefs}
@@ -475,8 +551,7 @@ export function BankTransactionsSurface() {
       />
 
       {/* ── 4. Status Bar ── */}
-      <WorkSurfaceStatusBar left={statusBarLeft} />
-      <KeyboardHintBar hints={keyboardHints} />
+      <WorkSurfaceStatusBar left={statusBarLeft} right={<KeyboardHintBar hints={EDITABLE_KEYBOARD_HINTS} />} />
     </div>
   );
 }

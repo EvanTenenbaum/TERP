@@ -20,17 +20,22 @@ interface UseCatalogueDraftReturn {
   hasUnsavedChanges: boolean;
   lastSaveTime: Date | null;
   isSaving: boolean;
+  isDeleting: boolean;
 
   // Gating
   canShare: boolean;
   canConvert: boolean;
+  canGoLive: boolean;
   lastSavedSheetId: number | null;
+  isConverting: boolean;
 
   // Actions
   saveDraft: () => void;
   loadDraft: (draftId: number) => Promise<PricedInventoryItem[]>;
   deleteDraft: () => void;
-  handleConvertToOrder: () => void;
+  deleteDraftById: (draftId: number) => void;
+  handleConvertToOrder: () => Promise<boolean>;
+  markSheetAsLoaded: (sheetId: number | null) => void;
 
   // Share
   generateShareLink: () => Promise<void>;
@@ -54,16 +59,20 @@ export function useCatalogueDraft({
   const [draftName, setDraftName] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
+  const [isSaveLocked, setIsSaveLocked] = useState(false);
 
   // ── refs for stale-closure-safe auto-save ───────────────────────────────
   const isInitialLoad = useRef(true);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDeletingDraftRef = useRef(false);
+  const saveLockRef = useRef(false);
   const lastDeletedDraftIdRef = useRef<number | null>(null);
   const selectedItemsRef = useRef<PricedInventoryItem[]>([]);
   const draftNameRef = useRef("");
+  const previousDraftNameRef = useRef(draftName);
   const selectedClientIdRef = useRef<number | null>(null);
   const currentDraftIdRef = useRef<number | null>(null);
+  const contextTokenRef = useRef(0);
 
   // ── keep refs in sync ───────────────────────────────────────────────────
   useEffect(() => {
@@ -80,40 +89,28 @@ export function useCatalogueDraft({
   }, [currentDraftId]);
 
   // ── mutations ───────────────────────────────────────────────────────────
-  const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation({
-    onSuccess: data => {
-      // Server returns { draftId }, not { id }
-      if (data?.draftId && !currentDraftIdRef.current) {
-        setCurrentDraftId(data.draftId);
-      }
-      setHasUnsavedChanges(false);
-      setLastSaveTime(new Date());
-      void utils.salesSheets.getDrafts.invalidate();
-    },
-    onError: (error, variables) => {
-      if (
-        variables.draftId !== undefined &&
-        variables.draftId === lastDeletedDraftIdRef.current
-      ) {
-        return;
-      }
-      toast.error("Failed to save draft: " + error.message);
-    },
-  });
+  const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation();
 
   const deleteDraftMutation = trpc.salesSheets.deleteDraft.useMutation({
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       isDeletingDraftRef.current = false;
-      lastDeletedDraftIdRef.current = currentDraftIdRef.current;
-      if (autoSaveTimerRef.current) {
+      lastDeletedDraftIdRef.current = variables.draftId;
+      const deletedCurrentDraft = variables.draftId === currentDraftIdRef.current;
+
+      if (deletedCurrentDraft && autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
         autoSaveTimerRef.current = null;
       }
-      setCurrentDraftId(null);
-      currentDraftIdRef.current = null;
-      setDraftName("");
-      setLastSaveTime(null);
-      setHasUnsavedChanges(false);
+
+      if (deletedCurrentDraft) {
+        setCurrentDraftId(null);
+        currentDraftIdRef.current = null;
+        setDraftName("");
+        setLastSavedSheetId(null);
+        setLastSaveTime(null);
+        setHasUnsavedChanges(false);
+      }
+
       void utils.salesSheets.getDrafts.invalidate();
       toast.success("Draft deleted");
     },
@@ -129,35 +126,7 @@ export function useCatalogueDraft({
   // salesSheets.save returns a number (the sheetId), not an object.
   const [lastSavedSheetId, setLastSavedSheetId] = useState<number | null>(null);
 
-  const convertMutation = trpc.salesSheets.save.useMutation({
-    onSuccess: (sheetId: number) => {
-      setLastSavedSheetId(sheetId);
-      sessionStorage.setItem(
-        "salesSheetToQuote",
-        JSON.stringify({
-          clientId,
-          items: items.map(item => ({
-            id: item.id,
-            name: item.name,
-            basePrice: item.basePrice,
-            retailPrice: item.retailPrice,
-            quantity: item.quantity,
-            category: item.category,
-            vendor: item.vendor,
-            cogsMode: item.cogsMode,
-            unitCogs: item.unitCogs,
-            unitCogsMin: item.unitCogsMin,
-            unitCogsMax: item.unitCogsMax,
-            effectiveCogs: item.effectiveCogs,
-            effectiveCogsBasis: item.effectiveCogsBasis,
-          })),
-        })
-      );
-    },
-    onError: error => {
-      toast.error("Failed to convert: " + error.message);
-    },
-  });
+  const convertMutation = trpc.salesSheets.save.useMutation();
 
   // ── queries ─────────────────────────────────────────────────────────────
   const draftsQuery = trpc.salesSheets.getDrafts.useQuery(
@@ -183,20 +152,105 @@ export function useCatalogueDraft({
       isInitialLoad.current = false;
       return;
     }
-    if (items.length > 0) {
-      setHasUnsavedChanges(true);
-    }
+    setHasUnsavedChanges(true);
   }, [items]);
+
+  useEffect(() => {
+    if (draftName === previousDraftNameRef.current) return;
+
+    if (isInitialLoad.current) {
+      previousDraftNameRef.current = draftName;
+      return;
+    }
+
+    previousDraftNameRef.current = draftName;
+    setHasUnsavedChanges(true);
+  }, [draftName]);
+
+  const persistDraft = useCallback(
+    async ({
+      draftId,
+      clientId,
+      name,
+      items,
+    }: {
+      draftId?: number;
+      clientId: number;
+      name: string;
+      items: PricedInventoryItem[];
+    }) => {
+      if (saveLockRef.current) return false;
+
+      const contextToken = contextTokenRef.current;
+      saveLockRef.current = true;
+      setIsSaveLocked(true);
+
+      try {
+        const totalValue = items.reduce(
+          (sum, item) => sum + item.retailPrice * item.quantity,
+          0
+        );
+
+        const data = await saveDraftMutation.mutateAsync({
+          draftId,
+          clientId,
+          name,
+          items,
+          totalValue,
+        });
+
+        if (
+          contextToken !== contextTokenRef.current ||
+          clientId !== selectedClientIdRef.current
+        ) {
+          return false;
+        }
+
+        if (data?.draftId && !currentDraftIdRef.current) {
+          setCurrentDraftId(data.draftId);
+          currentDraftIdRef.current = data.draftId;
+        }
+
+        setHasUnsavedChanges(false);
+        setLastSaveTime(new Date());
+        void utils.salesSheets.getDrafts.invalidate();
+        return true;
+      } catch (error) {
+        if (
+          draftId !== undefined &&
+          draftId === lastDeletedDraftIdRef.current
+        ) {
+          return false;
+        }
+
+        if (contextToken === contextTokenRef.current) {
+          toast.error(
+            "Failed to save draft: " +
+              (error instanceof Error ? error.message : "Unknown error")
+          );
+        }
+        return false;
+      } finally {
+        saveLockRef.current = false;
+        setIsSaveLocked(false);
+      }
+    },
+    [saveDraftMutation, utils.salesSheets.getDrafts]
+  );
 
   // ── auto-save ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (
       isDeletingDraftRef.current ||
+      saveLockRef.current ||
       !hasUnsavedChanges ||
       !clientId ||
-      items.length === 0 ||
       !draftName.trim()
     ) {
+      return;
+    }
+
+    if (items.length === 0 && currentDraftIdRef.current === null) {
       return;
     }
 
@@ -210,19 +264,14 @@ export function useCatalogueDraft({
       const cid = selectedClientIdRef.current;
       const did = currentDraftIdRef.current;
 
-      if (!cid || currentItems.length === 0 || !name.trim()) return;
+      if (!cid || !name.trim()) return;
+      if (currentItems.length === 0 && did === null) return;
 
-      const totalValue = currentItems.reduce(
-        (sum, item) => sum + item.retailPrice * item.quantity,
-        0
-      );
-
-      saveDraftMutation.mutate({
+      void persistDraft({
         draftId: did ?? undefined,
         clientId: cid,
         name,
         items: currentItems,
-        totalValue,
       });
     }, AUTO_SAVE_INTERVAL_MS);
 
@@ -231,35 +280,45 @@ export function useCatalogueDraft({
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [hasUnsavedChanges, clientId, items, draftName, saveDraftMutation]);
+  }, [hasUnsavedChanges, clientId, items, draftName, persistDraft]);
 
   // ── actions ─────────────────────────────────────────────────────────────
   const saveDraft = useCallback(() => {
-    if (!clientId || items.length === 0 || !draftName.trim()) {
-      toast.error("Client and at least one item required to save");
+    if (saveLockRef.current) return;
+
+    if (!clientId) {
+      toast.error("Select a client before saving");
       return;
     }
 
-    const totalValue = items.reduce(
-      (sum, item) => sum + item.retailPrice * item.quantity,
-      0
-    );
+    if (items.length === 0 && currentDraftId === null) {
+      toast.error("Add at least one item before saving");
+      return;
+    }
 
-    saveDraftMutation.mutate({
+    if (!draftName.trim()) {
+      toast.error("Draft name is required to save");
+      return;
+    }
+
+    void persistDraft({
       draftId: currentDraftId ?? undefined,
       clientId,
       name: draftName,
       items,
-      totalValue,
     });
-  }, [clientId, items, draftName, currentDraftId, saveDraftMutation]);
+  }, [clientId, currentDraftId, draftName, items, persistDraft]);
 
   const loadDraft = useCallback(
     async (draftId: number): Promise<PricedInventoryItem[]> => {
+      contextTokenRef.current += 1;
       const result = await utils.salesSheets.getDraftById.fetch({ draftId });
       if (result) {
         setCurrentDraftId(result.id);
+        currentDraftIdRef.current = result.id;
         setDraftName(result.name ?? "");
+        previousDraftNameRef.current = result.name ?? "";
+        setLastSavedSheetId(null);
         setLastSaveTime(
           result.updatedAt
             ? new Date(result.updatedAt as unknown as string)
@@ -280,6 +339,14 @@ export function useCatalogueDraft({
     deleteDraftMutation.mutate({ draftId: currentDraftId });
   }, [currentDraftId, deleteDraftMutation]);
 
+  const deleteDraftById = useCallback(
+    (draftId: number) => {
+      isDeletingDraftRef.current = true;
+      deleteDraftMutation.mutate({ draftId });
+    },
+    [deleteDraftMutation]
+  );
+
   const generateShareLink = useCallback(async () => {
     // Share link requires a finalized sheet ID, not a draft ID.
     // salesSheets.generateShareLink operates on the salesSheetHistory table.
@@ -298,25 +365,67 @@ export function useCatalogueDraft({
     }
   }, [lastSavedSheetId, hasUnsavedChanges, shareLinkMutation]);
 
-  const handleConvertToOrder = useCallback(() => {
-    if (!clientId || items.length === 0 || hasUnsavedChanges) return;
+  const handleConvertToOrder = useCallback(async () => {
+    if (!clientId || items.length === 0 || hasUnsavedChanges || isSaveLocked) {
+      return false;
+    }
 
-    const totalValue = items.reduce(
+    const conversionItems = items.map(item => ({
+      id: item.id,
+      name: item.name,
+      basePrice: item.basePrice,
+      retailPrice: item.retailPrice,
+      quantity: item.quantity,
+      category: item.category,
+      vendor: item.vendor,
+      cogsMode: item.cogsMode,
+      unitCogs: item.unitCogs,
+      unitCogsMin: item.unitCogsMin,
+      unitCogsMax: item.unitCogsMax,
+      effectiveCogs: item.effectiveCogs,
+      effectiveCogsBasis: item.effectiveCogsBasis,
+    }));
+
+    const totalValue = conversionItems.reduce(
       (sum, item) => sum + item.retailPrice * item.quantity,
       0
     );
 
-    convertMutation.mutate({
-      clientId,
-      items,
-      totalValue,
-    });
-  }, [clientId, items, hasUnsavedChanges, convertMutation]);
+    try {
+      const sheetId = await convertMutation.mutateAsync({
+        clientId,
+        items: conversionItems,
+        totalValue,
+      });
+      setLastSavedSheetId(sheetId);
+      sessionStorage.setItem(
+        "salesSheetToQuote",
+        JSON.stringify({
+          clientId,
+          items: conversionItems,
+        })
+      );
+      return true;
+    } catch (error) {
+      toast.error(
+        "Failed to convert: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
+      return false;
+    }
+  }, [clientId, items, hasUnsavedChanges, convertMutation, isSaveLocked]);
+
+  const markSheetAsLoaded = useCallback((sheetId: number | null) => {
+    setLastSavedSheetId(sheetId);
+  }, []);
 
   const resetDraft = useCallback(() => {
+    contextTokenRef.current += 1;
     setCurrentDraftId(null);
     currentDraftIdRef.current = null;
     setDraftName("");
+    previousDraftNameRef.current = "";
+    setLastSavedSheetId(null);
     setLastSaveTime(null);
     setHasUnsavedChanges(false);
     isInitialLoad.current = true;
@@ -328,18 +437,24 @@ export function useCatalogueDraft({
     setDraftName,
     hasUnsavedChanges,
     lastSaveTime,
-    isSaving: saveDraftMutation.isPending,
+    isSaving: saveDraftMutation.isPending || isSaveLocked,
+    isDeleting: deleteDraftMutation.isPending,
     // Share requires a FINALIZED sheet ID (not a draft).
     // The generateShareLink API operates on salesSheetHistory, not drafts.
     // canShare is true only after salesSheets.save has been called and returned a sheetId.
     canShare:
       !hasUnsavedChanges && lastSavedSheetId !== null && items.length > 0,
     canConvert: !hasUnsavedChanges && clientId !== null && items.length > 0,
+    canGoLive:
+      !hasUnsavedChanges && lastSavedSheetId !== null && items.length > 0,
     lastSavedSheetId,
+    isConverting: convertMutation.isPending,
     saveDraft,
     loadDraft,
     deleteDraft,
+    deleteDraftById,
     handleConvertToOrder,
+    markSheetAsLoaded,
     generateShareLink,
     drafts,
     draftsLoading: draftsQuery.isLoading,

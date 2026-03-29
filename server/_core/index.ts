@@ -27,7 +27,6 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerSimpleAuthRoutes } from "./simpleAuth";
-import { registerQaAuthRoutes } from "./qaAuth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./vite";
@@ -364,12 +363,10 @@ async function startServer() {
 
     // Apply rate limiting to auth endpoints before registering auth routes
     app.use("/api/auth", authLimiter);
-    app.use("/api/qa-auth", authLimiter);
     app.use("/api/trpc/auth", authLimiter);
 
     // Simple auth routes under /api/auth
     registerSimpleAuthRoutes(app);
-    registerQaAuthRoutes(app);
 
     // Apply rate limiting to tRPC API
     app.use("/api/trpc", apiLimiter);

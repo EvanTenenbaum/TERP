@@ -48,6 +48,7 @@ export default defineConfig({
   testIgnore: [
     "**/.claude/worktrees/**",
     "**/.codex-worktrees/**",
+    "**/worktrees/**",
   ],
   testMatch: [
     "tests-e2e/**/*.spec.ts",

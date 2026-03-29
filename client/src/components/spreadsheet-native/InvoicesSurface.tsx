@@ -627,7 +627,6 @@ export function InvoicesSurface() {
 
   const selectedRow =
     gridRows.find(r => r.invoiceId === selectedInvoiceId) ?? null;
-  const inspectorDesktopOffsetClass = selectedRow ? "md:pr-[400px]" : "";
 
   // KPI values
   const summaryTotals = summaryQuery.data?.totals ?? {
@@ -971,7 +970,7 @@ export function InvoicesSurface() {
       if (
         e.target instanceof HTMLInputElement ||
         e.target instanceof HTMLTextAreaElement ||
-        e.target instanceof globalThis.HTMLSelectElement
+        e.target instanceof HTMLSelectElement
       )
         return;
       if (e.key === "[") {
@@ -1042,13 +1041,7 @@ export function InvoicesSurface() {
   return (
     <div className="flex flex-col">
       {/* ── 1. Toolbar ── */}
-      <div
-        className={cn(
-          "flex items-center gap-2 px-2 py-1 bg-muted/30 border-b transition-[padding] duration-200",
-          inspectorDesktopOffsetClass
-        )}
-        data-testid="invoices-toolbar"
-      >
+      <div className="flex items-center gap-2 px-2 py-1 bg-muted/30 border-b">
         <span className="font-bold text-xs">Invoices</span>
 
         {/* KPI badges */}
@@ -1109,13 +1102,7 @@ export function InvoicesSurface() {
       </div>
 
       {/* ── 2. Action Bar ── */}
-      <div
-        className={cn(
-          "flex items-center gap-1 px-2 py-0.5 bg-muted/10 border-b flex-wrap transition-[padding] duration-200",
-          inspectorDesktopOffsetClass
-        )}
-        data-testid="invoices-action-bar"
-      >
+      <div className="flex items-center gap-1 px-2 py-0.5 bg-muted/10 border-b flex-wrap">
         {/* Status filter tabs */}
         {INVOICE_STATUS_TABS.map(tab => (
           <Button
@@ -1204,10 +1191,7 @@ export function InvoicesSurface() {
 
       {(overdueCount > 0 || summaryTotals.overdueAmount > 0) && (
         <div
-          className={cn(
-            "mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-amber-300 bg-amber-50/80 px-2 py-1.5 transition-[padding] duration-200",
-            inspectorDesktopOffsetClass
-          )}
+          className="mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-amber-300 bg-amber-50/80 px-2 py-1.5"
           data-testid="overdue-follow-up-banner"
         >
           <Badge
@@ -1247,10 +1231,7 @@ export function InvoicesSurface() {
 
       {deepLink.openRecordPayment && selectedRow && (
         <div
-          className={cn(
-            "mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50/70 px-2 py-1.5 transition-[padding] duration-200",
-            inspectorDesktopOffsetClass
-          )}
+          className="mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50/70 px-2 py-1.5"
           data-testid="invoice-payment-handoff-banner"
         >
           <Badge

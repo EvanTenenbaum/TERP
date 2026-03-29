@@ -1,0 +1,279 @@
+<h2>Phase 1: Bills + Payments Surface Designs</h2>
+<p class="subtitle">Bills is the AP mirror of Invoices. Payments is a unified ledger of all money movement.</p>
+
+<!-- ================================================================ -->
+<!-- BILLS SURFACE -->
+<!-- ================================================================ -->
+<div class="section">
+  <h3>BillsSurface.tsx — NEW (replaces Bills.tsx classic page)</h3>
+  <div class="mockup">
+    <div class="mockup-header">BillsSurface — AP Twin of Invoices</div>
+    <div class="mockup-body" style="font-size:11px;line-height:1.4;padding:0">
+
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#f8f9fa;border-bottom:1px solid #e2e4e7">
+        <span style="font-weight:700;font-size:12px;letter-spacing:-0.3px">Bills</span>
+        <span style="font-size:9px;padding:2px 7px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:4px;color:#e65100;font-weight:500">$18,200 AP</span>
+        <span style="font-size:9px;padding:2px 7px;background:#ffebee;border:1px solid #ffcdd2;border-radius:4px;color:#c62828;font-weight:500">2 overdue</span>
+        <span style="font-size:9px;padding:2px 7px;background:#e3f2fd;border:1px solid #bbdefb;border-radius:4px;color:#1565c0;font-weight:500">31 total</span>
+        <span style="flex:1"></span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;cursor:pointer;color:#555">AP Aging ▾</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#999">🔍 Search bills...</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;cursor:pointer;color:#555">↻</span>
+      </div>
+
+      <!-- Action bar -->
+      <div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:#fafbfc;border-bottom:1px solid #eee">
+        <span style="font-size:9px;padding:2px 8px;background:#1565c0;color:white;border-radius:3px;font-weight:500">All</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Draft</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Submitted</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Approved</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Received</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Paid</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#c62828;border:1px solid #ffcdd2">Overdue</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Void</span>
+        <div style="flex:1"></div>
+        <span style="font-size:9px;padding:2px 7px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:4px;color:#2e7d32;font-weight:500">+ Create Bill</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#555">✓ Approve</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#555">💰 Pay Vendor</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#d32f2f">✕ Void</span>
+      </div>
+
+      <!-- Grid + Inspector -->
+      <div style="display:flex;gap:0">
+        <div style="flex:3;background:white;border-right:1px solid #eee">
+          <div style="display:grid;grid-template-columns:80px 110px 70px 65px 75px 65px 55px;gap:0;font-size:9px">
+            <!-- Header -->
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Bill #</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Vendor</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Date</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Due</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee;text-align:right">Total</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee;text-align:right">Due Amt</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8">Status</div>
+            <!-- Selected row -->
+            <div style="padding:4px 6px;background:#e3f2fd;font-family:monospace;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">BILL-018</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;color:#1565c0;text-decoration:underline;cursor:pointer">Alpine Growers</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">Mar 10</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;color:#d32f2f">Mar 25</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;text-align:right;font-family:monospace">$8,400</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;text-align:right;font-family:monospace;color:#d32f2f;font-weight:600">$8,400</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">APPROVED</span></div>
+            <!-- Row 2 -->
+            <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">BILL-019</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Canopy Supply</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 14</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 29</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$3,200</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$3,200</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0"><span style="font-size:8px;padding:1px 4px;background:#f5f5f5;color:#666;border:1px solid #e0e0e0;border-radius:3px">DRAFT</span></div>
+            <!-- Row 3 -->
+            <div style="padding:4px 6px;font-family:monospace;border-right:1px solid #eee">BILL-017</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee">Alpine Growers</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee">Mar 5</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee">Mar 20</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee;text-align:right;font-family:monospace">$5,600</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee;text-align:right;font-family:monospace;color:#999">$0.00</div>
+            <div style="padding:4px 6px"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">PAID</span></div>
+          </div>
+        </div>
+        <!-- Inspector -->
+        <div style="flex:1;background:#fafbfc;padding:10px;font-size:9px;min-width:190px;border-left:1px solid #e8e8e8">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #e8e8e8">
+            <span style="font-weight:700;font-size:11px">BILL-018</span>
+            <span style="cursor:pointer;color:#999;font-size:12px;padding:2px 4px;border-radius:3px;background:#f0f0f0">✕</span>
+          </div>
+          <div style="display:grid;grid-template-columns:60px 1fr;gap:2px 8px;font-size:9px;margin-bottom:8px">
+            <span style="color:#888">Vendor</span><span style="color:#1565c0;text-decoration:underline;cursor:pointer">Alpine Growers ↗</span>
+            <span style="color:#888">Bill Date</span><span>Mar 10, 2026</span>
+            <span style="color:#888">Due</span><span style="color:#d32f2f">Mar 25 (2d overdue)</span>
+            <span style="color:#888">Total</span><span style="font-family:monospace;font-weight:600">$8,400.00</span>
+            <span style="color:#888">Paid</span><span style="font-family:monospace">$0.00</span>
+            <span style="color:#888">Status</span><span><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">APPROVED</span></span>
+          </div>
+          <!-- Line items in inspector -->
+          <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;font-weight:600">Line Items</div>
+          <div style="font-size:8px;padding:3px;background:white;border:1px solid #eee;border-radius:3px;margin-bottom:6px">
+            <div>2x THCA Flower — $3,200</div>
+            <div style="border-top:1px solid #f0f0f0;margin-top:2px;padding-top:2px">1x Extract Concentrate — $5,200</div>
+          </div>
+          <!-- Status timeline -->
+          <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;font-weight:600">Timeline</div>
+          <div style="font-size:8px;color:#666;line-height:1.6">
+            <div>✓ Created — Mar 10</div>
+            <div>✓ Submitted — Mar 12</div>
+            <div>✓ Approved — Mar 13</div>
+            <div style="color:#ccc">○ Paid — pending</div>
+          </div>
+          <div style="border-top:1px solid #e8e8e8;padding-top:6px;margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">
+            <span style="font-size:8px;padding:3px 8px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:4px;color:#e65100;cursor:pointer;font-weight:500">💰 Pay Vendor</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AP Aging (collapsible) -->
+      <div style="margin:6px 8px;padding:8px;background:#fef3f0;border:1px solid #ffcdd2;border-radius:6px;font-size:9px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-weight:600;font-size:10px;color:#c62828">AP Aging Summary</span>
+          <span style="flex:1"></span>
+          <span style="color:#888;cursor:pointer">▲</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+          <div style="padding:5px;background:white;border-radius:4px;border:1px solid #eee;text-align:center">
+            <div style="font-size:8px;color:#888;text-transform:uppercase">Current</div>
+            <div style="font-size:13px;font-weight:700;color:#2e7d32;font-family:monospace">$9,800</div>
+          </div>
+          <div style="padding:5px;background:white;border-radius:4px;border:1px solid #eee;text-align:center">
+            <div style="font-size:8px;color:#888;text-transform:uppercase">1-30d</div>
+            <div style="font-size:13px;font-weight:700;color:#f57f17;font-family:monospace">$5,200</div>
+          </div>
+          <div style="padding:5px;background:white;border-radius:4px;border:1px solid #eee;text-align:center">
+            <div style="font-size:8px;color:#888;text-transform:uppercase">31-60d</div>
+            <div style="font-size:13px;font-weight:700;color:#e65100;font-family:monospace">$2,400</div>
+          </div>
+          <div style="padding:5px;background:white;border-radius:4px;border:1px solid #eee;text-align:center">
+            <div style="font-size:8px;color:#888;text-transform:uppercase">61-90d</div>
+            <div style="font-size:13px;font-weight:700;color:#d32f2f;font-family:monospace">$800</div>
+          </div>
+          <div style="padding:5px;background:white;border-radius:4px;border:1px solid #eee;text-align:center">
+            <div style="font-size:8px;color:#888;text-transform:uppercase">90+</div>
+            <div style="font-size:13px;font-weight:700;color:#b71c1c;font-family:monospace">$0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div style="display:flex;align-items:center;padding:3px 8px;background:#f8f9fa;border-top:1px solid #e2e4e7;border-radius:0 0 6px 6px;font-size:9px;color:#888">
+        <span>1 selected · All bills · 31 total</span>
+        <span style="flex:1"></span>
+        <span>Click select · ⌘C copy · Esc close</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- KEY DIFFERENCES: BILLS vs INVOICES -->
+<!-- ================================================================ -->
+<div class="section" style="margin-top:16px">
+  <h3>Bills vs Invoices — What's Different</h3>
+  <table style="width:100%;font-size:12px;border-collapse:collapse">
+    <tr style="background:#f8f9fa"><th style="padding:6px;text-align:left">Aspect</th><th style="padding:6px;text-align:left">Invoices (AR)</th><th style="padding:6px;text-align:left">Bills (AP)</th></tr>
+    <tr style="border-bottom:1px solid #eee"><td style="padding:6px">KPI badges</td><td style="padding:6px">$AR total, overdue, count</td><td style="padding:6px">$AP total, overdue, count</td></tr>
+    <tr style="border-bottom:1px solid #eee"><td style="padding:6px">Aging panel</td><td style="padding:6px">AR Aging (invoices.getARAging)</td><td style="padding:6px">AP Aging (bills.getAPAging)</td></tr>
+    <tr style="border-bottom:1px solid #eee"><td style="padding:6px">Status tabs</td><td style="padding:6px">Draft/Sent/Viewed/Partial/Paid/Overdue/Void</td><td style="padding:6px">Draft/Submitted/Approved/Received/Paid/Overdue/Void</td></tr>
+    <tr style="border-bottom:1px solid #eee"><td style="padding:6px">Workflow actions</td><td style="padding:6px">Create, Mark Sent, Record Payment, Void, PDF, Print</td><td style="padding:6px">Create Bill, Approve, Pay Vendor, Void</td></tr>
+    <tr style="border-bottom:1px solid #eee"><td style="padding:6px">Inspector extras</td><td style="padding:6px">Payment history, GL status, payment progress bar</td><td style="padding:6px">Line items, status timeline, GL status</td></tr>
+    <tr style="border-bottom:1px solid #eee"><td style="padding:6px">Sub-view</td><td style="padding:6px">Client Ledger (below grid)</td><td style="padding:6px">None (no vendor ledger equivalent)</td></tr>
+    <tr style="border-bottom:1px solid #eee"><td style="padding:6px">Golden flow</td><td style="padding:6px">InvoiceToPaymentFlow sidecar</td><td style="padding:6px">PayVendorModal sidecar</td></tr>
+    <tr><td style="padding:6px">Grid columns</td><td style="padding:6px">Invoice#, Client, Date, Due, Total, Due Amt, Status, Days</td><td style="padding:6px">Bill#, Vendor, Date, Due, Total, Due Amt, Status</td></tr>
+  </table>
+</div>
+
+<!-- ================================================================ -->
+<!-- PAYMENTS SURFACE -->
+<!-- ================================================================ -->
+<div class="section" style="margin-top:24px">
+  <h3>PaymentsSurface.tsx — replaces PaymentsPilotSurface + Payments.tsx classic</h3>
+  <div class="mockup">
+    <div class="mockup-header">PaymentsSurface — Unified Money Movement Ledger</div>
+    <div class="mockup-body" style="font-size:11px;line-height:1.4;padding:0">
+
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#f8f9fa;border-bottom:1px solid #e2e4e7">
+        <span style="font-weight:700;font-size:12px;letter-spacing:-0.3px">Payments</span>
+        <span style="font-size:9px;padding:2px 7px;background:#e3f2fd;border:1px solid #bbdefb;border-radius:4px;color:#1565c0;font-weight:500">142 total</span>
+        <span style="font-size:9px;padding:2px 7px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:4px;color:#2e7d32;font-weight:500">$86,400 received</span>
+        <span style="font-size:9px;padding:2px 7px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:4px;color:#e65100;font-weight:500">$42,100 sent</span>
+        <span style="flex:1"></span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#999">🔍 Search payments...</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;cursor:pointer;color:#555">↻</span>
+      </div>
+
+      <!-- Action bar -->
+      <div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:#fafbfc;border-bottom:1px solid #eee">
+        <span style="font-size:9px;padding:2px 8px;background:#1565c0;color:white;border-radius:3px;font-weight:500">All</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#2e7d32">↓ Received</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#e65100">↑ Sent</span>
+        <div style="flex:1"></div>
+        <span style="font-size:9px;padding:2px 7px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:4px;color:#2e7d32;font-weight:500">⚡ Record Payment</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#d32f2f">✕ Void</span>
+      </div>
+
+      <!-- Grid + Inspector -->
+      <div style="display:flex;gap:0">
+        <div style="flex:3;background:white;border-right:1px solid #eee">
+          <div style="display:grid;grid-template-columns:95px 70px 70px 80px 80px 90px 1fr;gap:0;font-size:9px">
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Payment #</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Date</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Type</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Method</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee;text-align:right">Amount</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Invoice</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8">Reference</div>
+            <!-- Selected row -->
+            <div style="padding:4px 6px;background:#e3f2fd;font-family:monospace;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">PMT-RCV-042</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">Mar 20</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">RECEIVED</span></div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">Wire</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;text-align:right;font-family:monospace;color:#2e7d32;font-weight:600">$1,850</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;font-family:monospace;color:#1565c0;text-decoration:underline;cursor:pointer">#INV-002</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;color:#888">WR-88412</div>
+            <!-- Row 2 -->
+            <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">PMT-SNT-019</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 18</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#ffebee;color:#c62828;border:1px solid #ffcdd2;border-radius:3px">SENT</span></div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Check</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace;color:#c62828">$5,600</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;color:#999">—</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;color:#888">CHK-1042</div>
+            <!-- Row 3 -->
+            <div style="padding:4px 6px;font-family:monospace;border-right:1px solid #eee">PMT-RCV-041</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee">Mar 15</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">RECEIVED</span></div>
+            <div style="padding:4px 6px;border-right:1px solid #eee">Cash</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee;text-align:right;font-family:monospace;color:#2e7d32;font-weight:600">$3,050</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee;font-family:monospace;color:#1565c0;text-decoration:underline;cursor:pointer">#INV-003</div>
+            <div style="padding:4px 6px;color:#888">CASH-0315</div>
+          </div>
+        </div>
+        <!-- Inspector -->
+        <div style="flex:1;background:#fafbfc;padding:10px;font-size:9px;min-width:190px;border-left:1px solid #e8e8e8">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #e8e8e8">
+            <span style="font-weight:700;font-size:11px">PMT-RCV-042</span>
+            <span style="cursor:pointer;color:#999;font-size:12px;padding:2px 4px;border-radius:3px;background:#f0f0f0">✕</span>
+          </div>
+          <div style="display:grid;grid-template-columns:60px 1fr;gap:2px 8px;font-size:9px">
+            <span style="color:#888">Type</span><span><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">RECEIVED</span></span>
+            <span style="color:#888">Date</span><span>Mar 20, 2026</span>
+            <span style="color:#888">Amount</span><span style="font-family:monospace;font-weight:700;color:#2e7d32">$1,850.00</span>
+            <span style="color:#888">Method</span><span>Wire Transfer</span>
+            <span style="color:#888">Reference</span><span style="font-family:monospace">WR-88412</span>
+            <span style="color:#888">Invoice</span><span style="color:#1565c0;text-decoration:underline;cursor:pointer">#INV-002 ↗</span>
+            <span style="color:#888">Notes</span><span style="color:#666">March payment — wire</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div style="display:flex;align-items:center;padding:3px 8px;background:#f8f9fa;border-top:1px solid #e2e4e7;border-radius:0 0 6px 6px;font-size:9px;color:#888">
+        <span>1 selected · All payments · 142 total</span>
+        <span style="flex:1"></span>
+        <span>Click select · ⌘C copy · Esc close</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px">
+  <h3>Payments — Key Design Notes</h3>
+  <ul style="font-size:12px;line-height:1.7">
+    <li><strong>No aging panel</strong> — Payments don't age. KPI badges show totals by direction (received vs sent).</li>
+    <li><strong>Simpler filter</strong> — just All / Received / Sent (not a full status machine).</li>
+    <li><strong>Invoice column is clickable</strong> — navigates to Invoices tab with ?invoiceId= deep-link.</li>
+    <li><strong>Amount color-coded</strong> — green for received, red for sent. Instant visual direction.</li>
+    <li><strong>Record Payment action</strong> — opens InvoiceToPaymentFlow golden flow (same sidecar as Invoices).</li>
+    <li><strong>Void action</strong> — existing void confirmation dialog from pilot.</li>
+    <li><strong>Deep-link support</strong> — ?id=, ?invoiceId=, ?orderId= from existing PaymentsPilotSurface.</li>
+  </ul>
+</div>

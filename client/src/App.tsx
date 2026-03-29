@@ -59,7 +59,6 @@ const CalendarPage = lazy(() => import("@/pages/CalendarPage"));
 const SchedulingPage = lazy(() => import("@/pages/SchedulingPage"));
 // MEET-048: Hour Tracking / Time Clock
 const TimeClockPage = lazy(() => import("@/pages/TimeClockPage"));
-const SystemMetricsPage = lazy(() => import("@/pages/SystemMetricsPage"));
 import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
@@ -405,22 +404,6 @@ function Router() {
                     lazy(() => import("@/pages/ProductsPage"))
                   )}
                 />
-                <Route
-                  path="/strains"
-                  component={RedirectWithSearch("/strains", "/products")}
-                />
-                <Route
-                  path="/strains/new"
-                  component={RedirectWithSearch("/strains/new", "/products")}
-                />
-                <Route
-                  path="/strains/:id"
-                  component={RedirectWithSearch("/strains/:id", "/products")}
-                />
-                <Route
-                  path="/admin/strains"
-                  component={RedirectWithSearch("/admin/strains", "/products")}
-                />
                 {/* Accounting workspace — all sub-pages as tabs */}
                 <Route
                   path="/accounting"
@@ -625,22 +608,6 @@ function Router() {
                   component={withErrorBoundary(Settings)}
                 />
                 <Route
-                  path="/admin/users"
-                  component={RedirectWithTab("/admin/users", "/settings", "users")}
-                />
-                <Route
-                  path="/admin/roles/new"
-                  component={RedirectWithTab(
-                    "/admin/roles/new",
-                    "/settings",
-                    "roles"
-                  )}
-                />
-                <Route
-                  path="/admin/metrics"
-                  component={withLazyErrorBoundary(SystemMetricsPage)}
-                />
-                <Route
                   path="/account"
                   component={withErrorBoundary(AccountPage)}
                 />
@@ -707,10 +674,9 @@ function Router() {
                 />
                 <Route
                   path="/procurement"
-                  component={RedirectWithTab(
+                  component={RedirectWithSearch(
                     "/procurement",
-                    "/purchase-orders",
-                    "purchase-orders"
+                    "/purchase-orders"
                   )}
                 />
                 <Route
@@ -851,14 +817,6 @@ function Router() {
                 <Route
                   path="/calendar"
                   component={withLazyErrorBoundary(CalendarPage)}
-                />
-                <Route
-                  path="/calendar/invitations"
-                  component={RedirectWithTab(
-                    "/calendar/invitations",
-                    "/calendar",
-                    "invitations"
-                  )}
                 />
                 {/* Sprint 4 Track D: Scheduling System */}
                 <Route

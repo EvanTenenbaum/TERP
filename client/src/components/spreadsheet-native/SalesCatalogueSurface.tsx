@@ -9,7 +9,7 @@
  * Spec: docs/superpowers/specs/2026-03-27-unified-sheet-native-sales-surfaces-design.md
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ColDef } from "ag-grid-community";
 import {
   ArrowRight,
@@ -67,7 +67,10 @@ interface InventoryBrowserRow {
   inventoryId: number;
   name: string;
   category: string;
+  strain: string;
   vendor: string;
+  basePrice: number;
+  markup: number;
   retailPrice: number;
   quantity: number;
   grade: string;
@@ -94,6 +97,19 @@ const formatCurrency = (value: number) =>
     value
   );
 
+export const escapeCsvField = (value: string) =>
+  value.replace(/\r\n|\n|\r/g, " ").replace(/"/g, "\"\"");
+
+export function buildCatalogueCsv(items: PricedInventoryItem[]) {
+  return [
+    "Product,Category,Qty,Retail Price",
+    ...items.map(
+      i =>
+        `"${escapeCsvField(i.name)}","${escapeCsvField(i.category ?? "")}",${i.quantity},${i.retailPrice}`
+    ),
+  ].join("\n");
+}
+
 const isMac =
   typeof navigator !== "undefined" &&
   /mac/i.test(navigator.platform || navigator.userAgent);
@@ -115,7 +131,10 @@ function mapInventoryToRows(
     inventoryId: item.id,
     name: item.name,
     category: item.category ?? "-",
+    strain: item.strain ?? item.strainFamily ?? "-",
     vendor: item.vendor ?? "-",
+    basePrice: item.basePrice,
+    markup: item.priceMarkup,
     retailPrice: item.retailPrice,
     quantity: item.quantity,
     grade: item.grade ?? "-",
@@ -138,6 +157,99 @@ function mapItemsToPreviewRows(
     lineTotal: item.retailPrice * item.quantity,
     _raw: item,
   }));
+}
+
+function coerceOptionalNumber(value: unknown): number | null | undefined {
+  if (value === null) return null;
+  if (value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function sanitizeLoadedSheetItems(items: unknown): PricedInventoryItem[] {
+  if (!Array.isArray(items)) return [];
+
+  return items.flatMap(item => {
+    if (!item || typeof item !== "object") return [];
+
+    const raw = item as Record<string, unknown>;
+    const id = Number(raw.id);
+    const name = typeof raw.name === "string" ? raw.name.trim() : "";
+    const basePrice = Number(raw.basePrice);
+    const retailPrice = Number(raw.retailPrice);
+    const quantity = Number(raw.quantity);
+
+    if (
+      !Number.isFinite(id) ||
+      !name ||
+      !Number.isFinite(basePrice) ||
+      !Number.isFinite(retailPrice) ||
+      !Number.isFinite(quantity)
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        id,
+        name,
+        category: typeof raw.category === "string" ? raw.category : undefined,
+        subcategory:
+          typeof raw.subcategory === "string" ? raw.subcategory : undefined,
+        strain: typeof raw.strain === "string" ? raw.strain : undefined,
+        strainId:
+          typeof raw.strainId === "number" ? raw.strainId : undefined,
+        strainFamily:
+          typeof raw.strainFamily === "string" ? raw.strainFamily : undefined,
+        basePrice,
+        cogsMode:
+          raw.cogsMode === "FIXED" || raw.cogsMode === "RANGE"
+            ? raw.cogsMode
+            : undefined,
+        unitCogs: coerceOptionalNumber(raw.unitCogs) ?? undefined,
+        unitCogsMin: coerceOptionalNumber(raw.unitCogsMin) ?? null,
+        unitCogsMax: coerceOptionalNumber(raw.unitCogsMax) ?? null,
+        effectiveCogs: coerceOptionalNumber(raw.effectiveCogs) ?? undefined,
+        effectiveCogsBasis:
+          raw.effectiveCogsBasis === "LOW" ||
+          raw.effectiveCogsBasis === "MID" ||
+          raw.effectiveCogsBasis === "HIGH" ||
+          raw.effectiveCogsBasis === "MANUAL"
+            ? raw.effectiveCogsBasis
+            : undefined,
+        retailPrice,
+        quantity,
+        grade: typeof raw.grade === "string" ? raw.grade : undefined,
+        vendor: typeof raw.vendor === "string" ? raw.vendor : undefined,
+        vendorId:
+          typeof raw.vendorId === "number" ? raw.vendorId : undefined,
+        priceMarkup: Number.isFinite(Number(raw.priceMarkup))
+          ? Number(raw.priceMarkup)
+          : 0,
+        appliedRules: Array.isArray(raw.appliedRules)
+          ? raw.appliedRules.flatMap(rule => {
+              if (!rule || typeof rule !== "object") return [];
+              const appliedRule = rule as Record<string, unknown>;
+              if (
+                typeof appliedRule.ruleId !== "number" ||
+                typeof appliedRule.ruleName !== "string" ||
+                typeof appliedRule.adjustment !== "string"
+              ) {
+                return [];
+              }
+              return [
+                {
+                  ruleId: appliedRule.ruleId,
+                  ruleName: appliedRule.ruleName,
+                  adjustment: appliedRule.adjustment,
+                },
+              ];
+            })
+          : [],
+        status: typeof raw.status === "string" ? raw.status : undefined,
+      },
+    ];
+  });
 }
 
 // ── component ────────────────────────────────────────────────────────────────
@@ -165,18 +277,24 @@ export function SalesCatalogueSurface() {
   const [currentViewId, setCurrentViewId] = useState<number | null>(null);
   const [showSaveViewDialog, setShowSaveViewDialog] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
 
   // ── dialogs ────────────────────────────────────────────────────────────
   const [showDeleteDraftDialog, setShowDeleteDraftDialog] = useState(false);
+  const [showSwitchClientDialog, setShowSwitchClientDialog] = useState(false);
   const [showDraftDialog, setShowDraftDialog] = useState(false);
   const [showSavedSheetsDialog, setShowSavedSheetsDialog] = useState(false);
+  const [pendingClientId, setPendingClientId] = useState<number | null>(null);
+  const defaultViewAppliedClientIdRef = useRef<number | null>(null);
 
   // ── draft hook ─────────────────────────────────────────────────────────
   const draft = useCatalogueDraft({
     clientId: selectedClientId,
     items: selectedItems,
   });
+  const resetCatalogueDraft = draft.resetDraft;
+  const saveCatalogueDraft = draft.saveDraft;
+  const convertCatalogueToOrder = draft.handleConvertToOrder;
+  const draftFileName = draft.draftName;
 
   // ── data ───────────────────────────────────────────────────────────────
   const clientsQuery = trpc.clients.list.useQuery({ limit: 1000 });
@@ -221,8 +339,10 @@ export function SalesCatalogueSurface() {
               session: data.sessionId,
             })
           );
+          toast.success("Live shopping session started");
+          return;
         }
-        toast.success("Live shopping session started");
+        toast.error("Live shopping session could not be started");
       },
       onError: error => {
         toast.error("Failed to start live session: " + error.message);
@@ -232,7 +352,13 @@ export function SalesCatalogueSurface() {
 
   // ── auto-load default view on client change ────────────────────────────
   useEffect(() => {
+    if (selectedClientId === null) {
+      defaultViewAppliedClientIdRef.current = null;
+      return;
+    }
     if (!selectedClientId || !savedViewsQuery.data) return;
+    if (defaultViewAppliedClientIdRef.current === selectedClientId) return;
+
     const views = Array.isArray(savedViewsQuery.data)
       ? savedViewsQuery.data
       : [];
@@ -253,10 +379,13 @@ export function SalesCatalogueSurface() {
           .columnVisibility ?? DEFAULT_COLUMN_VISIBILITY
       );
       setCurrentViewId(defaultView.id as number);
+      defaultViewAppliedClientIdRef.current = selectedClientId;
       toast.info(
         `Loaded default view: ${(defaultView as { name: string }).name}`
       );
+      return;
     }
+    defaultViewAppliedClientIdRef.current = selectedClientId;
   }, [selectedClientId, savedViewsQuery.data]);
 
   // ── row data ───────────────────────────────────────────────────────────
@@ -269,13 +398,14 @@ export function SalesCatalogueSurface() {
     let items = inventoryQuery.data ?? [];
 
     // Apply text search
-    const lower = searchTerm.trim().toLowerCase();
+    const lower = filters.search.trim().toLowerCase();
     if (lower) {
       items = items.filter(
         (item: PricedInventoryItem) =>
           item.name.toLowerCase().includes(lower) ||
           (item.category ?? "").toLowerCase().includes(lower) ||
-          (item.vendor ?? "").toLowerCase().includes(lower)
+          (item.vendor ?? "").toLowerCase().includes(lower) ||
+          (item.strain ?? item.strainFamily ?? "").toLowerCase().includes(lower)
       );
     }
 
@@ -295,6 +425,11 @@ export function SalesCatalogueSurface() {
         filters.vendors.includes(item.vendor ?? "")
       );
     }
+    if (filters.strainFamilies.length > 0) {
+      items = items.filter((item: PricedInventoryItem) =>
+        filters.strainFamilies.includes(item.strainFamily ?? "")
+      );
+    }
     if (filters.priceMin !== null) {
       const priceMin = filters.priceMin;
       items = items.filter(
@@ -311,12 +446,52 @@ export function SalesCatalogueSurface() {
       items = items.filter((item: PricedInventoryItem) => item.quantity > 0);
     }
 
-    return mapInventoryToRows(items, selectedItemIds);
-  }, [inventoryQuery.data, selectedItemIds, searchTerm, filters]);
+    const sortedItems = [...items].sort((a, b) => {
+      const getSortValue = (item: PricedInventoryItem) => {
+        switch (sort.field) {
+          case "category":
+            return item.category ?? "";
+          case "retailPrice":
+            return item.retailPrice;
+          case "quantity":
+            return item.quantity;
+          case "basePrice":
+            return item.basePrice;
+          case "grade":
+            return item.grade ?? "";
+          case "name":
+          default:
+            return item.name;
+        }
+      };
+
+      const aValue = getSortValue(a);
+      const bValue = getSortValue(b);
+      const direction = sort.direction === "asc" ? 1 : -1;
+
+      if (typeof aValue === "number" && typeof bValue === "number") {
+        return (aValue - bValue) * direction;
+      }
+
+      return String(aValue).localeCompare(String(bValue), undefined, {
+        sensitivity: "base",
+        numeric: true,
+      }) * direction;
+    });
+
+    return mapInventoryToRows(sortedItems, selectedItemIds);
+  }, [inventoryQuery.data, selectedItemIds, filters, sort]);
 
   const previewRows = useMemo(
     () => mapItemsToPreviewRows(selectedItems),
     [selectedItems]
+  );
+
+  const selectedInventoryRowStillVisible = useMemo(
+    () =>
+      selectedInventoryRowId !== null &&
+      inventoryRows.some(row => row.identity.rowKey === selectedInventoryRowId),
+    [inventoryRows, selectedInventoryRowId]
   );
 
   const totalSheetValue = useMemo(
@@ -377,6 +552,15 @@ export function SalesCatalogueSurface() {
         headerName: "Category",
         minWidth: 100,
         maxWidth: 130,
+        hide: !columnVisibility.category,
+        cellClass: "powersheet-cell--locked",
+      },
+      {
+        field: "strain",
+        headerName: "Strain",
+        minWidth: 110,
+        maxWidth: 140,
+        hide: !columnVisibility.strain,
         cellClass: "powersheet-cell--locked",
       },
       {
@@ -384,6 +568,16 @@ export function SalesCatalogueSurface() {
         headerName: "Vendor",
         minWidth: 90,
         maxWidth: 120,
+        hide: !columnVisibility.vendor,
+        cellClass: "powersheet-cell--locked",
+      },
+      {
+        field: "basePrice",
+        headerName: "Base",
+        minWidth: 80,
+        maxWidth: 100,
+        hide: !columnVisibility.basePrice,
+        valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
         cellClass: "powersheet-cell--locked",
       },
       {
@@ -391,7 +585,17 @@ export function SalesCatalogueSurface() {
         headerName: "Retail",
         minWidth: 85,
         maxWidth: 105,
+        hide: !columnVisibility.retailPrice,
         valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
+        cellClass: "powersheet-cell--locked",
+      },
+      {
+        field: "markup",
+        headerName: "Markup",
+        minWidth: 80,
+        maxWidth: 100,
+        hide: !columnVisibility.markup,
+        valueFormatter: params => `${Number(params.value ?? 0).toFixed(1)}%`,
         cellClass: "powersheet-cell--locked",
       },
       {
@@ -399,6 +603,7 @@ export function SalesCatalogueSurface() {
         headerName: "Qty",
         minWidth: 60,
         maxWidth: 80,
+        hide: !columnVisibility.quantity,
         cellClass: "powersheet-cell--locked",
       },
     ];
@@ -420,11 +625,12 @@ export function SalesCatalogueSurface() {
       headerName: "Grade",
       minWidth: 70,
       maxWidth: 90,
+      hide: !columnVisibility.grade,
       cellClass: "powersheet-cell--locked",
     });
 
     return cols;
-  }, [showCogs]);
+  }, [columnVisibility, showCogs]);
 
   const previewColumnDefs = useMemo<ColDef<SheetPreviewRow>[]>(
     () => [
@@ -461,20 +667,44 @@ export function SalesCatalogueSurface() {
   );
 
   // ── handlers ───────────────────────────────────────────────────────────
-  const handleClientChange = useCallback(
+  const performClientChange = useCallback(
     (clientId: number | null) => {
       setSelectedClientId(clientId);
       setSelectedItems([]);
       setSelectedInventoryRowId(null);
       setSelectedPreviewRowId(null);
-      setSearchTerm("");
       setFilters(DEFAULT_FILTERS);
       setSort(DEFAULT_SORT);
       setColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
       setCurrentViewId(null);
-      draft.resetDraft();
+      defaultViewAppliedClientIdRef.current = null;
+      resetCatalogueDraft();
     },
-    [draft]
+    [resetCatalogueDraft]
+  );
+
+  const handleClientChange = useCallback(
+    (clientId: number | null) => {
+      if (clientId === selectedClientId) return;
+
+      if (
+        selectedClientId !== null &&
+        draft.hasUnsavedChanges &&
+        selectedItems.length > 0
+      ) {
+        setPendingClientId(clientId);
+        setShowSwitchClientDialog(true);
+        return;
+      }
+
+      performClientChange(clientId);
+    },
+    [
+      draft.hasUnsavedChanges,
+      performClientChange,
+      selectedClientId,
+      selectedItems.length,
+    ]
   );
 
   const handleAddSelectedItem = useCallback(() => {
@@ -507,10 +737,12 @@ export function SalesCatalogueSurface() {
 
   const handleLoadView = useCallback(
     (view: {
+      id: number;
       filters: InventoryFilters;
       sort: InventorySortConfig;
       columnVisibility: ColumnVisibility;
     }) => {
+      setCurrentViewId(view.id);
       setFilters(view.filters);
       setSort(view.sort);
       setColumnVisibility(view.columnVisibility);
@@ -520,32 +752,50 @@ export function SalesCatalogueSurface() {
 
   const handleExport = useCallback(() => {
     if (selectedItems.length === 0) return;
-    const csv = [
-      "Product,Category,Qty,Retail Price",
-      ...selectedItems.map(
-        i => `"${i.name}","${i.category ?? ""}",${i.quantity},${i.retailPrice}`
-      ),
-    ].join("\n");
+    const csv = buildCatalogueCsv(selectedItems);
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${draft.draftName || "catalogue"}.csv`;
+    a.download = `${draftFileName || "catalogue"}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success("CSV exported");
-  }, [selectedItems, draft.draftName]);
+  }, [draftFileName, selectedItems]);
 
   const navigateToOrder = useCallback(
-    (fromSalesSheet: boolean) => {
-      if (!draft.canConvert) return;
-      draft.handleConvertToOrder();
-      setLocation(buildSalesWorkspacePath("create-order", { fromSalesSheet }));
+    async (fromSalesSheet: boolean, mode?: "quote") => {
+      if (!draft.canConvert || draft.isConverting) return;
+      const converted = await convertCatalogueToOrder();
+      if (!converted) return;
+      resetCatalogueDraft();
+      setSelectedItems([]);
+      setSelectedInventoryRowId(null);
+      setSelectedPreviewRowId(null);
+      setLocation(
+        buildSalesWorkspacePath("create-order", {
+          fromSalesSheet,
+          mode,
+        })
+      );
     },
-    [draft, setLocation]
+    [
+      convertCatalogueToOrder,
+      draft.canConvert,
+      draft.isConverting,
+      resetCatalogueDraft,
+      setLocation,
+    ]
   );
 
   // ── keyboard shortcuts ─────────────────────────────────────────────────
+  useEffect(() => {
+    if (!selectedInventoryRowId) return;
+    if (!selectedInventoryRowStillVisible) {
+      setSelectedInventoryRowId(null);
+    }
+  }, [selectedInventoryRowId, selectedInventoryRowStillVisible]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (
@@ -556,12 +806,12 @@ export function SalesCatalogueSurface() {
 
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
         e.preventDefault();
-        draft.saveDraft();
+        saveCatalogueDraft();
       }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [draft]);
+  }, [saveCatalogueDraft]);
 
   // ── selected client name ───────────────────────────────────────────────
   const selectedClientName = useMemo(() => {
@@ -571,7 +821,15 @@ export function SalesCatalogueSurface() {
 
   // ── active filter count badge ─────────────────────────────────────────
   const activeFilterCount =
-    filters.categories.length + filters.grades.length + filters.vendors.length;
+    filters.categories.length +
+    filters.grades.length +
+    filters.strainFamilies.length +
+    filters.vendors.length;
+  const draftNameMissingForSave =
+    selectedClientId !== null &&
+    selectedItems.length > 0 &&
+    draft.hasUnsavedChanges &&
+    draft.draftName.trim().length === 0;
 
   // ── render ─────────────────────────────────────────────────────────────
   return (
@@ -597,8 +855,14 @@ export function SalesCatalogueSurface() {
           onChange={e => draft.setDraftName(e.target.value)}
           placeholder="Draft name..."
           className="h-7 max-w-36 text-xs"
+          aria-invalid={draftNameMissingForSave}
           disabled={!selectedClientId}
         />
+        {draftNameMissingForSave && (
+          <span className="text-[10px] text-amber-700">
+            Draft name required to save
+          </span>
+        )}
         <div className="w-48">
           <ClientCombobox
             value={selectedClientId}
@@ -631,7 +895,7 @@ export function SalesCatalogueSurface() {
             size="sm"
             variant="outline"
             className="h-7 px-2 text-xs"
-            disabled={!selectedClientId}
+            disabled={!selectedClientId || draft.isSaving}
             onClick={draft.saveDraft}
           >
             <Save className="mr-1 h-3 w-3" />
@@ -643,6 +907,7 @@ export function SalesCatalogueSurface() {
             className="h-7 px-2 text-xs"
             disabled={!selectedClientId}
             onClick={handleRefresh}
+            aria-label="Refresh inventory"
           >
             <ArrowRight className="h-3 w-3 rotate-90" />
           </Button>
@@ -683,7 +948,7 @@ export function SalesCatalogueSurface() {
         <Button
           size="sm"
           className="h-6 px-2 text-[10px]"
-          disabled={!selectedInventoryRowId || !selectedClientId}
+          disabled={!selectedInventoryRowStillVisible || !selectedClientId}
           onClick={handleAddSelectedItem}
         >
           <Plus className="mr-1 h-3 w-3" />
@@ -753,8 +1018,10 @@ export function SalesCatalogueSurface() {
           <div className="lg:col-span-3">
             <div className="mb-1">
               <Input
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
+                value={filters.search}
+                onChange={e =>
+                  setFilters(prev => ({ ...prev, search: e.target.value }))
+                }
                 placeholder="Search product, vendor, category..."
                 className="h-7 max-w-xs text-xs"
               />
@@ -835,7 +1102,11 @@ export function SalesCatalogueSurface() {
               <Button
                 size="sm"
                 className="h-7 flex-1 text-[10px]"
-                disabled={!selectedClientId || selectedItems.length === 0}
+                disabled={
+                  !selectedClientId ||
+                  (selectedItems.length === 0 && !draft.currentDraftId) ||
+                  draft.isSaving
+                }
                 onClick={draft.saveDraft}
               >
                 <Save className="mr-1 h-3 w-3" />
@@ -847,6 +1118,7 @@ export function SalesCatalogueSurface() {
                 className="h-7 px-2 text-[10px]"
                 disabled={!draft.canShare}
                 onClick={() => void draft.generateShareLink()}
+                aria-label="Copy share link"
               >
                 <Link2 className="h-3 w-3" />
               </Button>
@@ -856,6 +1128,7 @@ export function SalesCatalogueSurface() {
                 className="h-7 px-2 text-[10px]"
                 disabled={selectedItems.length === 0}
                 onClick={handleExport}
+                aria-label="Export CSV"
               >
                 <Download className="h-3 w-3" />
               </Button>
@@ -895,8 +1168,8 @@ export function SalesCatalogueSurface() {
             size="sm"
             variant="outline"
             className="h-7 px-2 text-xs"
-            disabled={!draft.canConvert}
-            onClick={() => navigateToOrder(true)}
+            disabled={!draft.canConvert || draft.isConverting}
+            onClick={() => void navigateToOrder(true)}
           >
             &rarr; Sales Order
           </Button>
@@ -904,17 +1177,8 @@ export function SalesCatalogueSurface() {
             size="sm"
             variant="outline"
             className="h-7 px-2 text-xs"
-            disabled={!draft.canConvert}
-            onClick={() => {
-              if (!draft.canConvert) return;
-              draft.handleConvertToOrder();
-              setLocation(
-                buildSalesWorkspacePath("create-order", {
-                  fromSalesSheet: true,
-                  mode: "quote",
-                })
-              );
-            }}
+            disabled={!draft.canConvert || draft.isConverting}
+            onClick={() => void navigateToOrder(true, "quote")}
           >
             &rarr; Quote
           </Button>
@@ -922,9 +1186,9 @@ export function SalesCatalogueSurface() {
             size="sm"
             variant="outline"
             className="h-7 px-2 text-xs"
-            disabled={!draft.canConvert}
+            disabled={!draft.canGoLive || liveSessionMutation.isPending}
             onClick={() => {
-              if (!draft.canConvert) return;
+              if (!draft.canGoLive) return;
               if (!draft.lastSavedSheetId) {
                 toast.error("Save the catalogue before going live");
                 return;
@@ -964,6 +1228,24 @@ export function SalesCatalogueSurface() {
         }}
       />
 
+      <ConfirmDialog
+        open={showSwitchClientDialog}
+        onOpenChange={open => {
+          setShowSwitchClientDialog(open);
+          if (!open) {
+            setPendingClientId(null);
+          }
+        }}
+        title="Discard current catalogue changes?"
+        description="Switching clients will clear the current unsaved catalogue."
+        confirmLabel="Switch client"
+        onConfirm={() => {
+          performClientChange(pendingClientId);
+          setPendingClientId(null);
+          setShowSwitchClientDialog(false);
+        }}
+      />
+
       {selectedClientId && (
         <SaveViewDialog
           open={showSaveViewDialog}
@@ -988,10 +1270,9 @@ export function SalesCatalogueSurface() {
           setShowDraftDialog(false);
         }}
         onDeleteDraft={_draftId => {
-          // Only allow deleting non-current drafts from the dialog
-          toast.info("Delete drafts from the main toolbar");
+          draft.deleteDraftById(_draftId);
         }}
-        isDeleting={false}
+        isDeleting={draft.isDeleting}
       />
 
       <SavedSheetsDialog
@@ -1016,8 +1297,17 @@ export function SalesCatalogueSurface() {
         onLoadSavedSheet={async sheetId => {
           const result = await utils.salesSheets.getById.fetch({ sheetId });
           if (result) {
-            setSelectedItems(result.items as PricedInventoryItem[]);
+            const sanitizedItems = sanitizeLoadedSheetItems(result.items);
+            if (sanitizedItems.length === 0) {
+              toast.error("Saved sheet could not be loaded");
+              return;
+            }
+            if (Array.isArray(result.items) && sanitizedItems.length < result.items.length) {
+              toast.info("Some invalid saved sheet items were skipped");
+            }
+            setSelectedItems(sanitizedItems);
             draft.resetDraft();
+            draft.markSheetAsLoaded(sheetId);
             setShowSavedSheetsDialog(false);
             toast.success("Saved sheet loaded");
           }

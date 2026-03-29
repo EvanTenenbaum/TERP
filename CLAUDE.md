@@ -154,6 +154,14 @@ Domain knowledge is loaded on demand via `.claude/skills/`. Key skills:
 - **roadmap-management** — Linear integration, task IDs, estimation, session lifecycle
 - **deprecated-systems** — Migration status, replacement patterns, pre-work checklist
 
+Auto-use these TERP skills when the lane is clear:
+
+- Use `architecture` for "where does this live?", auth flow questions, schema/query shape questions, and codebase orientation.
+- Use `deprecated-systems` before touching legacy patterns, data-model migrations, `vendors` replacements, actor attribution, or risky old service/db code.
+- Use `roadmap-management` for Linear state, issue structure, session lifecycle, estimation, or roadmap/task-status questions.
+- Use `verification-protocol` when deciding the right QA gate, proving a done claim, or packaging evidence for completion.
+- Use `terp-long-run-autonomy` when the ask implies unattended execution, a multi-ticket remediation train, supervisor/worker coordination, or duplicate-sensitive parallel work.
+
 ## Audit System
 
 Before investigating any bug, check `.claude/known-bug-patterns.md` first. Run audits via:

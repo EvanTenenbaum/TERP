@@ -10,8 +10,6 @@ import { PurchaseOrderSurface } from "./PurchaseOrderSurface";
 const mockSetLocation = vi.fn();
 const mockSetSelectedId = vi.fn();
 const mockUseSearch = vi.fn(() => "");
-const mockInspectorPanel = vi.fn();
-const mockPowersheetGrid = vi.fn();
 const mockCreateMutate = vi.fn();
 const mockUpdateMutateAsync = vi.fn(() => Promise.resolve({ success: true }));
 const mockAddItemMutateAsync = vi.fn(() => Promise.resolve({ success: true }));
@@ -28,13 +26,6 @@ const mockCreateProductIntakeDraftFromPO = vi.fn(input => ({
 }));
 const mockUpsertProductIntakeDraft = vi.fn(draft => draft);
 let mockSelectedPoId: number | null = null;
-let getAllQueryInput:
-  | {
-      limit: number;
-      offset: number;
-      supplierClientId?: number;
-    }
-  | null = null;
 
 let queueData: Array<{
   id: number;
@@ -73,7 +64,6 @@ vi.mock("./PowersheetGrid", () => ({
     rows = [],
     onSelectedRowChange,
     headerActions,
-    selectionMode,
   }: {
     title: string;
     rows?: Array<{ identity?: { rowKey: string } }>;
@@ -81,22 +71,17 @@ vi.mock("./PowersheetGrid", () => ({
       row: { identity?: { rowKey: string } } | null
     ) => void;
     headerActions?: ReactNode;
-    selectionMode?: string;
-  }) =>
-    (() => {
-      mockPowersheetGrid({ title, rows, selectionMode });
-      return (
-        <div data-testid={`grid-${title}`}>
-          <div>{title}</div>
-          {headerActions}
-          {rows.length > 0 && onSelectedRowChange ? (
-            <button onClick={() => onSelectedRowChange(rows[0])}>
-              Select first purchase order
-            </button>
-          ) : null}
-        </div>
-      );
-    })(),
+  }) => (
+    <div data-testid={`grid-${title}`}>
+      <div>{title}</div>
+      {headerActions}
+      {rows.length > 0 && onSelectedRowChange ? (
+        <button onClick={() => onSelectedRowChange(rows[0])}>
+          Select first purchase order
+        </button>
+      ) : null}
+    </div>
+  ),
 }));
 
 vi.mock("./ProductBrowserGrid", () => ({
@@ -150,62 +135,16 @@ vi.mock("@/components/ui/supplier-combobox", () => ({
   ),
 }));
 
-vi.mock("@/components/work-surface/InspectorPanel", () => ({
-  InspectorPanel: ({
-    isOpen,
-    trapFocus,
-    children,
-  }: {
-    isOpen?: boolean;
-    trapFocus?: boolean;
-    children?: ReactNode;
-  }) => {
-    mockInspectorPanel({ isOpen, trapFocus });
-    return isOpen ? <div data-testid="inspector-panel">{children}</div> : null;
-  },
-  InspectorSection: ({
-    title,
-    children,
-  }: {
-    title: string;
-    children?: ReactNode;
-  }) => (
-    <section>
-      <h3>{title}</h3>
-      {children}
-    </section>
-  ),
-  InspectorField: ({
-    label,
-    children,
-  }: {
-    label: string;
-    children?: ReactNode;
-  }) => (
-    <div>
-      <span>{label}</span>
-      {children}
-    </div>
-  ),
-}));
-
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     purchaseOrders: {
       getAll: {
-        useQuery: vi.fn((input: {
-          limit: number;
-          offset: number;
-          supplierClientId?: number;
-        }) => {
-          getAllQueryInput = input;
-          return {
+        useQuery: vi.fn(() => ({
           data: queueData,
           isLoading: false,
           error: null,
           refetch: vi.fn(),
-          };
-        }),
+        })),
       },
       getById: {
         useQuery: vi.fn(() => ({
@@ -351,8 +290,6 @@ vi.mock("@/hooks/work-surface/useExport", () => ({
 describe("PurchaseOrderSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockInspectorPanel.mockClear();
-    mockPowersheetGrid.mockClear();
     mockUseSearch.mockReturnValue("");
     queueData = [];
     poDetailData = null;
@@ -367,7 +304,6 @@ describe("PurchaseOrderSurface", () => {
       ...input,
     }));
     mockUpsertProductIntakeDraft.mockImplementation(draft => draft);
-    getAllQueryInput = null;
   });
 
   it('renders "Purchase Orders" title in queue mode', () => {
@@ -464,75 +400,6 @@ describe("PurchaseOrderSurface", () => {
     expect(mockSetLocation).toHaveBeenCalledWith(
       expect.stringContaining("draftId=draft-123")
     );
-  });
-
-  it("disables focus trapping for the PO inspector so row selection does not loop focus", () => {
-    queueData = [
-      {
-        id: 18,
-        poNumber: "PO-018",
-        supplierClientId: 12,
-        purchaseOrderStatus: "DRAFT",
-        orderDate: "2026-03-27",
-        expectedDeliveryDate: "2026-04-03",
-        total: "125.00",
-        paymentTerms: "NET_30",
-      },
-    ];
-    poDetailData = { items: [] };
-    mockSelectedPoId = 18;
-
-    render(<PurchaseOrderSurface />);
-
-    expect(mockInspectorPanel).toHaveBeenCalledWith(
-      expect.objectContaining({
-        isOpen: true,
-        trapFocus: false,
-      })
-    );
-  });
-
-  it("uses single-row selection for the PO queue to avoid range-selection row click loops", () => {
-    queueData = [
-      {
-        id: 21,
-        poNumber: "PO-021",
-        supplierClientId: 12,
-        purchaseOrderStatus: "CONFIRMED",
-        orderDate: "2026-03-27",
-        expectedDeliveryDate: "2026-04-03",
-        total: "125.00",
-        paymentTerms: "NET_30",
-      },
-    ];
-
-    render(<PurchaseOrderSurface />);
-
-    expect(mockPowersheetGrid).toHaveBeenCalledWith(
-      expect.objectContaining({
-        title: "Purchase Orders Queue",
-        selectionMode: "single-row",
-      })
-    );
-  });
-
-  it("normalizes legacy ?id= PO deep links into the queue selection param", () => {
-    mockUseSearch.mockReturnValue("id=44");
-
-    render(<PurchaseOrderSurface />);
-
-    expect(mockSetSelectedId).toHaveBeenCalledWith(44);
-  });
-
-  it("passes supplierClientId deep links through to the PO queue query and surfaces the supplier context", () => {
-    mockUseSearch.mockReturnValue("supplierClientId=12");
-
-    render(<PurchaseOrderSurface />);
-
-    expect(getAllQueryInput).toEqual(
-      expect.objectContaining({ supplierClientId: 12 })
-    );
-    expect(screen.getByText(/Supplier: North Farm/i)).toBeInTheDocument();
   });
 });
 

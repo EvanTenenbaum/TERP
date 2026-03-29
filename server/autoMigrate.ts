@@ -880,22 +880,6 @@ export async function runAutoMigrations() {
       }
     }
 
-    try {
-      await db.execute(
-        sql`ALTER TABLE orders ADD COLUMN show_adjustment_on_document BOOLEAN NOT NULL DEFAULT TRUE`
-      );
-      console.info("  ✅ Added show_adjustment_on_document column to orders");
-    } catch (error) {
-      const errMsg = error instanceof Error ? error.message : String(error);
-      if (errMsg.includes("Duplicate column")) {
-        console.info(
-          "  ℹ️  orders.show_adjustment_on_document already exists"
-        );
-      } else {
-        console.info("  ⚠️  orders.show_adjustment_on_document:", errMsg);
-      }
-    }
-
     // REL-005: Add version column to payments table for optimistic locking (DATA-005)
     try {
       await db.execute(

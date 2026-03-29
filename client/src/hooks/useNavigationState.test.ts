@@ -181,10 +181,10 @@ describe("useNavigationState", () => {
       localStorageMock.getItem.mockReturnValueOnce("invalid-json");
 
       const { result } = renderHook(() =>
-        useNavigationState({ defaultPinnedPaths: ["/", "/sales?tab=create-order"] })
+        useNavigationState({ defaultPinnedPaths: ["/", "/orders/create"] })
       );
 
-      expect(result.current.pinnedPaths).toEqual(["/", "/sales?tab=create-order"]);
+      expect(result.current.pinnedPaths).toEqual(["/", "/orders/create"]);
       expect(result.current.isGroupCollapsed("sales")).toBe(false);
     });
 

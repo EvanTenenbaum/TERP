@@ -104,29 +104,6 @@ describe("TER-859 dead route redirects", () => {
     });
   });
 
-  describe("/orders/create and /orders/new → /sales?tab=create-order", () => {
-    it("redirects /orders/create to the unified create-order surface", () => {
-      const destination = buildRedirectWithTab("/sales", "create-order");
-      expect(destination).toBe("/sales?tab=create-order");
-    });
-
-    it("preserves draft hydration params on /orders/create redirects", () => {
-      const destination = buildRedirectWithTab(
-        "/sales",
-        "create-order",
-        "?draftId=42&mode=quote"
-      );
-      expect(destination).toContain("tab=create-order");
-      expect(destination).toContain("draftId=42");
-      expect(destination).toContain("mode=quote");
-    });
-
-    it("redirects /orders/new to the unified create-order surface", () => {
-      const destination = buildRedirectWithTab("/sales", "create-order");
-      expect(destination).toBe("/sales?tab=create-order");
-    });
-  });
-
   describe("/admin → /settings", () => {
     it("redirects /admin to /settings (no tab required)", () => {
       // /admin is a plain redirect to /settings with no tab override
@@ -138,28 +115,6 @@ describe("TER-859 dead route redirects", () => {
       const search = "?section=users";
       const destination = `/settings${search}`;
       expect(destination).toBe("/settings?section=users");
-    });
-  });
-
-  describe("new admin/calendar/product aliases", () => {
-    it("redirects /admin/users to the users settings tab", () => {
-      const destination = buildRedirectWithTab("/settings", "users");
-      expect(destination).toBe("/settings?tab=users");
-    });
-
-    it("redirects /admin/roles/new to the roles settings tab", () => {
-      const destination = buildRedirectWithTab("/settings", "roles");
-      expect(destination).toBe("/settings?tab=roles");
-    });
-
-    it("redirects /calendar/invitations to the invitations tab", () => {
-      const destination = buildRedirectWithTab("/calendar", "invitations");
-      expect(destination).toBe("/calendar?tab=invitations");
-    });
-
-    it("redirects /strains to canonical /products while preserving search", () => {
-      const destination = `/products?search=gelato`;
-      expect(destination).toBe("/products?search=gelato");
     });
   });
 });

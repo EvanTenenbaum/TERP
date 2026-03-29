@@ -99,7 +99,7 @@ const sourcePathForLedgerEntry = (
     case "PAYMENT":
       return `/accounting/payments?id=${entry.sourceId}`;
     case "PURCHASE_ORDER":
-      return `/purchase-orders?poId=${entry.sourceId}`;
+      return `/purchase-orders?id=${entry.sourceId}`;
     default:
       return null;
   }

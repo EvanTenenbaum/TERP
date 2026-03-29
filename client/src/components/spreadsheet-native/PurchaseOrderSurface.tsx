@@ -182,16 +182,23 @@ const PO_ALLOWED_TRANSITIONS: Record<string, POStatus[]> = {
   CANCELLED: [],
 };
 
+const isMac =
+  typeof navigator !== "undefined" &&
+  /mac/i.test(navigator.platform || navigator.userAgent);
+const mod = isMac ? "\u2318" : "Ctrl";
+
 const queueKeyboardHints: KeyboardHint[] = [
   { key: "Click", label: "select row" },
-  { key: "Enter", label: "focus selection" },
-  { key: "Esc", label: "clear dialogs" },
+  { key: "Shift+Click", label: "extend range" },
+  { key: `${mod}+Click`, label: "add to selection" },
+  { key: `${mod}+C`, label: "copy cells" },
+  { key: `${mod}+A`, label: "select all" },
 ];
 
 const queueAffordances: PowersheetAffordance[] = [
   { label: "Select", available: true },
-  { label: "Multi-select", available: false },
-  { label: "Copy", available: false },
+  { label: "Multi-select", available: true },
+  { label: "Copy", available: true },
   { label: "Paste", available: false },
   { label: "Fill", available: false },
   { label: "Edit", available: false },
@@ -350,10 +357,6 @@ export function PurchaseOrderSurface({
   const [, setLocation] = useLocation();
   const routeSearch = useSearch();
   const { user } = useAuth();
-  const deepLink = useMemo(
-    () => parsePurchaseOrderDeepLink(routeSearch),
-    [routeSearch]
-  );
   const { selectedId: selectedPoId, setSelectedId: setSelectedPoId } =
     useSpreadsheetSelectionParam("poId");
 
@@ -363,12 +366,6 @@ export function PurchaseOrderSurface({
     [routeSearch]
   );
   const poView = searchParams.get("poView");
-
-  useEffect(() => {
-    if (poView) return;
-    if (selectedPoId !== null || deepLink.poId === null) return;
-    setSelectedPoId(deepLink.poId);
-  }, [deepLink.poId, poView, selectedPoId, setSelectedPoId]);
 
   // If creation/edit mode, render the split-surface editor
   if (poView === "create" || poView === "edit") {
@@ -390,8 +387,6 @@ export function PurchaseOrderSurface({
       selectedPoId={selectedPoId}
       setSelectedPoId={setSelectedPoId}
       setLocation={setLocation}
-      routeSearch={routeSearch}
-      supplierFilterId={deepLink.supplierClientId}
       userId={user?.id ?? null}
     />
   );
@@ -1253,8 +1248,6 @@ function PurchaseOrderQueueMode({
   selectedPoId,
   setSelectedPoId,
   setLocation,
-  routeSearch,
-  supplierFilterId,
   userId,
 }: {
   defaultStatusFilter?: string[];
@@ -1262,8 +1255,6 @@ function PurchaseOrderQueueMode({
   selectedPoId: number | null;
   setSelectedPoId: (id: number | null) => void;
   setLocation: (path: string) => void;
-  routeSearch: string;
-  supplierFilterId: number | null;
   userId: number | null;
 }) {
   // Export hook
@@ -1316,7 +1307,6 @@ function PurchaseOrderQueueMode({
   const posQuery = trpc.purchaseOrders.getAll.useQuery({
     limit: 500,
     offset: 0,
-    supplierClientId: supplierFilterId ?? undefined,
   });
 
   const suppliersQuery = trpc.clients.list.useQuery({
@@ -1344,11 +1334,6 @@ function PurchaseOrderQueueMode({
     );
     return new Map(items.map(s => [s.id, s.name ?? "Unknown"]));
   }, [suppliersQuery.data]);
-
-  const supplierFilterName = useMemo(() => {
-    if (!supplierFilterId) return null;
-    return supplierNamesById.get(supplierFilterId) ?? `Supplier #${supplierFilterId}`;
-  }, [supplierFilterId, supplierNamesById]);
 
   const searchLower = searchTerm.trim().toLowerCase();
 
@@ -1475,7 +1460,8 @@ function PurchaseOrderQueueMode({
   // ---------------------------------------------------------------------------
 
   const handleNewPO = () => {
-    const params = new URLSearchParams(routeSearch);
+    // Set URL param to trigger creation mode (Task 4)
+    const params = new URLSearchParams(window.location.search);
     params.set("poView", "create");
     setLocation(`?${params.toString()}`);
   };
@@ -1786,11 +1772,6 @@ function PurchaseOrderQueueMode({
             {receivingCount} receiving
           </Badge>
         )}
-        {supplierFilterName ? (
-          <Badge variant="secondary" className="text-xs">
-            Supplier: {supplierFilterName}
-          </Badge>
-        ) : null}
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" onClick={handleNewPO}>
             <Plus className="mr-1 h-4 w-4" />+ New PO
@@ -1834,8 +1815,6 @@ function PurchaseOrderQueueMode({
         <span className="ml-auto text-xs text-muted-foreground">
           {selectedRow
             ? `${selectedRow.poNumber} selected`
-            : supplierFilterName
-              ? `Showing POs for ${supplierFilterName}`
             : "Select a row to see details and actions"}
         </span>
       </div>
@@ -1852,7 +1831,7 @@ function PurchaseOrderQueueMode({
         getRowId={row => row.identity.rowKey}
         selectedRowId={selectedRow?.identity.rowKey ?? null}
         onSelectedRowChange={row => setSelectedPoId(row?.poId ?? null)}
-        selectionMode="single-row"
+        selectionMode="cell-range"
         enableFillHandle={false}
         enableUndoRedo={false}
         onSelectionSummaryChange={setQueueSelectionSummary}
@@ -1930,7 +1909,9 @@ function PurchaseOrderQueueMode({
                     variant="outline"
                     className="h-7 text-xs"
                     onClick={() => {
-                      const params = new URLSearchParams(routeSearch);
+                      const params = new URLSearchParams(
+                        window.location.search
+                      );
                       params.set("poView", "edit");
                       params.set("poId", String(selectedRow.poId));
                       setLocation(`?${params.toString()}`);
@@ -2061,7 +2042,6 @@ function PurchaseOrderQueueMode({
         onClose={() => setSelectedPoId(null)}
         title={selectedRow?.poNumber ?? "PO Inspector"}
         subtitle={selectedRow?.supplierName ?? "Select a purchase order"}
-        trapFocus={false}
         headerActions={
           selectedRow ? (
             <Badge variant="outline">{selectedRow.statusLabel}</Badge>

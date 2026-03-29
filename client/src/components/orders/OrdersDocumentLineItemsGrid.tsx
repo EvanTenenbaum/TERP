@@ -38,7 +38,7 @@ import {
 } from "@/hooks/orders/useOrderCalculations";
 import { parsePositiveInteger } from "@/lib/quantity";
 import { toast } from "sonner";
-import type { LineItem } from "./types";
+import type { LineItem } from "./LineItemTable";
 
 interface OrdersDocumentLineItemsGridProps {
   items: LineItem[];

@@ -6,7 +6,6 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { env, shouldBlockDemoModeInProduction } from "./env";
 import { logger } from "./logger";
-import { getSessionCookieOptions } from "./cookies";
 import { invalidateToken } from "./tokenInvalidation";
 
 // JWT_SECRET is accessed lazily to prevent startup crashes
@@ -206,7 +205,9 @@ export function registerSimpleAuthRoutes(app: Express) {
 
       // Set session cookie
       res.cookie(COOKIE_NAME, token, {
-        ...getSessionCookieOptions(req),
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax", // Changed from 'none' - this is a same-origin app
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
 
@@ -239,7 +240,7 @@ export function registerSimpleAuthRoutes(app: Express) {
         reason: "LOGOUT",
       });
     }
-    res.clearCookie(COOKIE_NAME, getSessionCookieOptions(req));
+    res.clearCookie(COOKIE_NAME);
     res.json({ success: true });
   });
 

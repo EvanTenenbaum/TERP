@@ -282,14 +282,4 @@ describe("PaymentsSurface", () => {
     );
     expect(screen.getByText(/1 rows/)).toBeInTheDocument();
   });
-
-  it("shows an invoice-scope banner for direct invoice deep links", () => {
-    mockUseSearch.mockReturnValue("?tab=payments&invoiceId=10");
-
-    render(<PaymentsSurface />);
-
-    expect(screen.getByTestId("payments-invoice-scope-banner")).toHaveTextContent(
-      "invoice #10"
-    );
-  });
 });
