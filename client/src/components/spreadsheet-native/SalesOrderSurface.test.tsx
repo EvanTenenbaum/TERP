@@ -14,6 +14,7 @@ const { mockToastError } = vi.hoisted(() => ({
 
 const mockSetLocation = vi.fn();
 const mockBuildDocumentRoute = vi.fn(() => "/sales?tab=create-order");
+const mockUseOrderDraft = vi.fn();
 let mockSearch = "?tab=create-order";
 const mockCreditMutation = {
   mutateAsync: vi.fn(),
@@ -141,7 +142,8 @@ vi.mock("./PowersheetGrid", () => ({
 }));
 
 vi.mock("@/hooks/useOrderDraft", () => ({
-  useOrderDraft: () => mockDraftState,
+  useOrderDraft: (options?: { surfaceVariant?: string }) =>
+    mockUseOrderDraft(options),
   resolveOrderCostVisibility: () => mockCostVisibility,
   shouldBypassWorkSurfaceKeyboardForSpreadsheetTarget: () => false,
 }));
@@ -301,7 +303,24 @@ describe("SalesOrderSurface", () => {
       totalOwed: "200",
     };
     mockSetLocation.mockReset();
-    mockBuildDocumentRoute.mockClear();
+    mockBuildDocumentRoute.mockReset();
+    mockUseOrderDraft.mockReset();
+    mockUseOrderDraft.mockImplementation(
+      (options?: { surfaceVariant?: string }) => {
+        const surfaceVariant =
+          options?.surfaceVariant ?? "classic-create-order";
+        mockBuildDocumentRoute.mockImplementation(() =>
+          surfaceVariant === "sheet-native-orders"
+            ? "/sales?tab=orders&surface=sheet-native&ordersView=document"
+            : "/sales?tab=create-order"
+        );
+
+        return {
+          ...mockDraftState,
+          buildDocumentRoute: mockBuildDocumentRoute,
+        };
+      }
+    );
     mockToastError.mockReset();
     mockDraftState.handleAddInventoryItems.mockReset();
     mockSearch = "?tab=create-order";
@@ -381,9 +400,28 @@ describe("SalesOrderSurface", () => {
     render(<SalesOrderSurface />);
     fireEvent.click(screen.getByRole("button", { name: "Change Client" }));
 
+    expect(mockUseOrderDraft).toHaveBeenCalledWith({
+      surfaceVariant: "classic-create-order",
+    });
     expect(mockBuildDocumentRoute).toHaveBeenCalled();
     expect(mockSetLocation).toHaveBeenCalledWith("/sales?tab=create-order");
     expect(mockDraftState.resetComposerState).toHaveBeenCalled();
+    expect(mockDraftState.setClientId).toHaveBeenCalledWith(9);
+  });
+
+  it("keeps client changes inside the orders document route when opened from the orders surface", () => {
+    mockSearch = "?tab=orders&surface=sheet-native&ordersView=document";
+    mockDraftState.clientId = 7;
+
+    render(<SalesOrderSurface />);
+    fireEvent.click(screen.getByRole("button", { name: "Change Client" }));
+
+    expect(mockUseOrderDraft).toHaveBeenCalledWith({
+      surfaceVariant: "sheet-native-orders",
+    });
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/sales?tab=orders&surface=sheet-native&ordersView=document"
+    );
     expect(mockDraftState.setClientId).toHaveBeenCalledWith(9);
   });
 
