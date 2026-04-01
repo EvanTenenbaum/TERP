@@ -35,6 +35,7 @@
 
 ```bash
 # Development
+pnpm agent:prepare   # In local worktrees, link shared TERP node_modules and verify local bins
 pnpm install          # Install dependencies
 pnpm dev              # Start dev server (tsx watch)
 pnpm build            # Production build
@@ -50,6 +51,7 @@ pnpm build            # Build verification
 pnpm test:watch       # Watch mode
 pnpm test:coverage    # With coverage
 pnpm test:e2e         # Playwright E2E
+pnpm qa:human:flows -- --count 40 --seed "$(date +%Y%m%d)"   # Seeded confused-human packet for live browser QA
 
 # Database
 pnpm db:push          # Generate and run migrations
