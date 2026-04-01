@@ -74,6 +74,10 @@ export interface ClientComboboxProps {
    */
   disabled?: boolean;
   /**
+   * Fallback label to display while the selected client record hydrates.
+   */
+  selectedLabel?: string | null;
+  /**
    * Additional CSS classes for the trigger button
    */
   className?: string;
@@ -129,6 +133,7 @@ export function ClientCombobox({
   placeholder = "Select client...",
   emptyText = "No clients found",
   disabled = false,
+  selectedLabel,
   className,
   maxResults = 10,
   debounceMs = 300,
@@ -142,6 +147,14 @@ export function ClientCombobox({
   const selectedClient = useMemo(() => {
     return clients.find(client => client.id === value);
   }, [clients, value]);
+  const selectedDisplayLabel = useMemo(() => {
+    if (selectedClient?.name) {
+      return selectedClient.name;
+    }
+
+    const trimmedLabel = selectedLabel?.trim();
+    return trimmedLabel ? trimmedLabel : null;
+  }, [selectedClient?.name, selectedLabel]);
 
   // Filter clients based on search with case-insensitive matching
   const filteredClients = useMemo(() => {
@@ -204,7 +217,7 @@ export function ClientCombobox({
           onPointerDown={e => e.stopPropagation()}
           className={cn(
             "w-full justify-between font-normal",
-            !selectedClient && "text-muted-foreground",
+            !selectedDisplayLabel && "text-muted-foreground",
             className
           )}
         >
@@ -213,8 +226,8 @@ export function ClientCombobox({
             <span className="truncate">
               {isLoading
                 ? "Loading clients..."
-                : selectedClient
-                  ? selectedClient.name
+                : selectedDisplayLabel
+                  ? selectedDisplayLabel
                   : placeholder}
             </span>
           </div>

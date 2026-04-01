@@ -32,6 +32,13 @@ const mockCalculationState = {
   calculateLineItem: vi.fn(),
 };
 let mockCostVisibility = { showCogs: false, showMargin: false };
+let mockClientListData = [{ id: 7, name: "Acme", isBuyer: true }];
+let mockClientDetailsData = {
+  id: 7,
+  name: "Acme",
+  creditLimit: "1000",
+  totalOwed: "200",
+};
 let mockInventoryData = [
   {
     id: 11,
@@ -148,13 +155,13 @@ vi.mock("@/lib/trpc", () => ({
     clients: {
       list: {
         useQuery: vi.fn(() => ({
-          data: { items: [{ id: 7, name: "Acme", isBuyer: true }] },
+          data: { items: mockClientListData },
           isLoading: false,
         })),
       },
       getById: {
         useQuery: vi.fn(() => ({
-          data: { id: 7, name: "Acme", creditLimit: "1000", totalOwed: "200" },
+          data: mockClientDetailsData,
         })),
       },
     },
@@ -200,12 +207,17 @@ vi.mock("sonner", () => ({
 vi.mock("@/components/ui/client-combobox", () => ({
   ClientCombobox: ({
     onValueChange,
+    selectedLabel,
   }: {
     onValueChange: (value: number | null) => void;
+    selectedLabel?: string | null;
   }) => (
-    <button type="button" onClick={() => onValueChange(9)}>
-      Change Client
-    </button>
+    <div>
+      <div>Selected client: {selectedLabel ?? "none"}</div>
+      <button type="button" onClick={() => onValueChange(9)}>
+        Change Client
+      </button>
+    </div>
   ),
 }));
 
@@ -255,6 +267,13 @@ describe("SalesOrderSurface", () => {
     mockCreditMutation.mutateAsync.mockReset();
     mockCalculationState.isValid = false;
     mockCostVisibility = { showCogs: false, showMargin: false };
+    mockClientListData = [{ id: 7, name: "Acme", isBuyer: true }];
+    mockClientDetailsData = {
+      id: 7,
+      name: "Acme",
+      creditLimit: "1000",
+      totalOwed: "200",
+    };
     mockSetLocation.mockReset();
     mockBuildDocumentRoute.mockClear();
     mockToastError.mockReset();
@@ -286,6 +305,7 @@ describe("SalesOrderSurface", () => {
   it("renders inventory and document sections when a customer is selected", () => {
     mockDraftState.clientId = 7;
     const { container } = render(<SalesOrderSurface />);
+    expect(screen.getByText("Selected client: Acme")).toBeInTheDocument();
     expect(screen.getByTestId("grid-inventory")).toBeInTheDocument();
     expect(screen.getByTestId("document-grid")).toBeInTheDocument();
     expect(screen.getByTestId("invoice-bottom")).toBeInTheDocument();
@@ -318,6 +338,23 @@ describe("SalesOrderSurface", () => {
     expect(mockSetLocation).toHaveBeenCalledWith("/sales?tab=create-order");
     expect(mockDraftState.resetComposerState).toHaveBeenCalled();
     expect(mockDraftState.setClientId).toHaveBeenCalledWith(9);
+  });
+
+  it("passes the hydrated customer label even when the client list is stale", () => {
+    mockDraftState.clientId = 7;
+    mockClientListData = [{ id: 99, name: "Other Buyer", isBuyer: true }];
+    mockClientDetailsData = {
+      id: 7,
+      name: "Hydrated Acme",
+      creditLimit: "1000",
+      totalOwed: "200",
+    };
+
+    render(<SalesOrderSurface />);
+
+    expect(
+      screen.getByText("Selected client: Hydrated Acme")
+    ).toBeInTheDocument();
   });
 
   it("disables add for non-sellable inventory rows", () => {
