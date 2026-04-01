@@ -279,7 +279,15 @@ export function SalesOrderSurface() {
   const [, setLocation] = useLocation();
   const search = useSearch();
   const utils = trpc.useUtils();
-  const draft = useOrderDraft({ surfaceVariant: "sheet-native-orders" });
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const salesWorkspaceTab = searchParams.get("tab");
+  const routeMode = searchParams.get("mode");
+  const isCreateOrderEntry = salesWorkspaceTab === "create-order";
+  const draft = useOrderDraft({
+    surfaceVariant: isCreateOrderEntry
+      ? "classic-create-order"
+      : "sheet-native-orders",
+  });
   const handleAddInventoryItems = draft.handleAddInventoryItems;
   const resetComposerState = draft.resetComposerState;
   const setClientId = draft.setClientId;
@@ -310,10 +318,6 @@ export function SalesOrderSurface() {
   const [isCheckingCredit, setIsCheckingCredit] = useState(false);
   const defaultViewAppliedClientRef = useRef<number | null>(null);
   const skipNextDefaultViewApplyRef = useRef(false);
-  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
-  const salesWorkspaceTab = searchParams.get("tab");
-  const routeMode = searchParams.get("mode");
-  const isCreateOrderEntry = salesWorkspaceTab === "create-order";
   const isQuoteCreateEntry =
     isCreateOrderEntry &&
     (routeMode === "quote" || draft.orderType === "QUOTE");
