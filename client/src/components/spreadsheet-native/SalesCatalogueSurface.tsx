@@ -1315,6 +1315,7 @@ export function SalesCatalogueSurface() {
             isLoading={clientsQuery.isLoading}
             placeholder="Client..."
             emptyText="No clients"
+            selectedLabel={selectedClientName}
           />
         </div>
 

@@ -1011,6 +1011,7 @@ export function SalesOrderSurface() {
             isLoading={clientsQuery.isLoading}
             placeholder="Customer..."
             emptyText="No customers"
+            selectedLabel={selectedClientName}
           />
         </div>
         <Select
