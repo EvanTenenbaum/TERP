@@ -28,24 +28,22 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     rows = [],
-    onSelectedRowChange,
-    headerActions,
+    columnDefs = [],
   }: {
     title: string;
-    rows?: Array<{ identity: { rowKey: string } }>;
-    onSelectedRowChange?: (
-      row: { identity: { rowKey: string } } | null
-    ) => void;
-    headerActions?: ReactNode;
+    rows?: Array<Record<string, unknown>>;
+    columnDefs?: Array<{
+      headerName?: string;
+      cellRenderer?: (params: { data?: Record<string, unknown> }) => ReactNode;
+    }>;
   }) => (
     <div data-testid={`grid-${title}`}>
       <div>{title}</div>
-      {headerActions}
-      {rows.length > 0 && onSelectedRowChange ? (
-        <button onClick={() => onSelectedRowChange(rows[0])}>
-          Select first row
-        </button>
-      ) : null}
+      {rows.length > 0
+        ? columnDefs
+            .find(column => column.headerName === "Add")
+            ?.cellRenderer?.({ data: rows[0] })
+        : null}
     </div>
   ),
 }));
@@ -142,8 +140,10 @@ describe("ProductBrowserGrid", () => {
       />
     );
 
-    fireEvent.click(screen.getByText("Select first row"));
-    fireEvent.click(screen.getByRole("button", { name: /\+ add selected/i }));
+    fireEvent.change(screen.getByLabelText(/quantity for wedding cake/i), {
+      target: { value: "6" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /\+ add/i }));
 
     expect(onAddProduct).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -151,6 +151,7 @@ describe("ProductBrowserGrid", () => {
         productName: "Wedding Cake",
         category: "Flower",
         subcategory: "Top Shelf",
+        quantityOrdered: 6,
         cogsMode: "FIXED",
         unitCost: "2.40",
       })
@@ -181,8 +182,6 @@ describe("ProductBrowserGrid", () => {
       />
     );
 
-    fireEvent.click(screen.getByText("Select first row"));
-
     expect(screen.getByText("Added")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /added/i })).toBeDisabled();
   });
@@ -207,8 +206,7 @@ describe("ProductBrowserGrid", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: /catalog/i }));
-    fireEvent.click(screen.getByText("Select first row"));
-    fireEvent.click(screen.getByRole("button", { name: /\+ add selected/i }));
+    fireEvent.click(screen.getByRole("button", { name: /\+ add/i }));
 
     expect(onAddProduct).toHaveBeenCalledWith(
       expect.objectContaining({

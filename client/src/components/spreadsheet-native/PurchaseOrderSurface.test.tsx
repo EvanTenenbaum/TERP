@@ -28,13 +28,11 @@ const mockCreateProductIntakeDraftFromPO = vi.fn(input => ({
 }));
 const mockUpsertProductIntakeDraft = vi.fn(draft => draft);
 let mockSelectedPoId: number | null = null;
-let getAllQueryInput:
-  | {
-      limit: number;
-      offset: number;
-      supplierClientId?: number;
-    }
-  | null = null;
+let getAllQueryInput: {
+  limit: number;
+  offset: number;
+  supplierClientId?: number;
+} | null = null;
 
 let queueData: Array<{
   id: number;
@@ -108,6 +106,7 @@ vi.mock("./ProductBrowserGrid", () => ({
       productName: string | null;
       category: string | null;
       subcategory: string | null;
+      quantityOrdered?: number;
       cogsMode: "FIXED" | "RANGE";
       unitCost: string | null;
       unitCostMin: string | null;
@@ -122,6 +121,7 @@ vi.mock("./ProductBrowserGrid", () => ({
             productName: "Wedding Cake",
             category: "Flower",
             subcategory: "Top Shelf",
+            quantityOrdered: 6,
             cogsMode: "FIXED",
             unitCost: "2.40",
             unitCostMin: null,
@@ -193,19 +193,21 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     purchaseOrders: {
       getAll: {
-        useQuery: vi.fn((input: {
-          limit: number;
-          offset: number;
-          supplierClientId?: number;
-        }) => {
-          getAllQueryInput = input;
-          return {
-          data: queueData,
-          isLoading: false,
-          error: null,
-          refetch: vi.fn(),
-          };
-        }),
+        useQuery: vi.fn(
+          (input: {
+            limit: number;
+            offset: number;
+            supplierClientId?: number;
+          }) => {
+            getAllQueryInput = input;
+            return {
+              data: queueData,
+              isLoading: false,
+              error: null,
+              refetch: vi.fn(),
+            };
+          }
+        ),
       },
       getById: {
         useQuery: vi.fn(() => ({
@@ -594,6 +596,7 @@ describe("PurchaseOrderSurface — creation mode", () => {
           expect.objectContaining({
             productId: 91,
             productName: "Wedding Cake",
+            quantityOrdered: 6,
           }),
         ]),
       })
@@ -639,6 +642,7 @@ describe("PurchaseOrderSurface — creation mode", () => {
         expect.objectContaining({
           purchaseOrderId: 22,
           productId: 91,
+          quantityOrdered: 6,
         })
       );
       expect(mockDeleteItemMutateAsync).toHaveBeenCalledWith({ id: 501 });
