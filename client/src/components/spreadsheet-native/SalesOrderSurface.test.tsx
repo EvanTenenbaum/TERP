@@ -233,8 +233,27 @@ vi.mock("@/components/orders", () => ({
     <div data-testid="document-grid">Document Grid</div>
   ),
   InvoiceBottom: () => <div data-testid="invoice-bottom">Invoice Bottom</div>,
-  OrderAdjustmentsBar: () => (
-    <div data-testid="order-adjustments">Order Adjustments</div>
+  OrderAdjustmentsBar: ({
+    onSaveDraft,
+    onFinalize,
+    saveDraftDisabled,
+    finalizeDisabled,
+    orderType,
+  }: {
+    onSaveDraft: () => void;
+    onFinalize: () => void;
+    saveDraftDisabled?: boolean;
+    finalizeDisabled?: boolean;
+    orderType: "SALE" | "QUOTE";
+  }) => (
+    <div data-testid="order-adjustments">
+      <button type="button" disabled={saveDraftDisabled} onClick={onSaveDraft}>
+        Save Draft
+      </button>
+      <button type="button" disabled={finalizeDisabled} onClick={onFinalize}>
+        {orderType === "QUOTE" ? "Confirm Quote" : "Confirm Order"}
+      </button>
+    </div>
   ),
   CreditWarningDialog: () => null,
 }));
@@ -347,6 +366,12 @@ describe("SalesOrderSurface", () => {
     expect(
       within(panels[1] as HTMLElement).queryByTestId("order-adjustments")
     ).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Save Draft" })).toHaveLength(
+      1
+    );
+    expect(
+      screen.getAllByRole("button", { name: "Confirm Order" })
+    ).toHaveLength(1);
   });
 
   it("clears route hydration params before switching clients", () => {
@@ -393,10 +418,12 @@ describe("SalesOrderSurface", () => {
       screen.getByText(/customer record that is no longer in active clients/i)
     ).toBeInTheDocument();
     expect(screen.queryByTestId("grid-inventory")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Save Draft" })).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: "Confirm Order" })
-    ).toBeDisabled();
+      screen.queryByRole("button", { name: "Save Draft" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Confirm Order" })
+    ).not.toBeInTheDocument();
   });
 
   it("disables add for non-sellable inventory rows", () => {
@@ -468,6 +495,20 @@ describe("SalesOrderSurface", () => {
     expect(
       screen.getByRole("button", { name: "Confirm Order" })
     ).toBeDisabled();
+  });
+
+  it("renders a single quote action stack for quote mode", () => {
+    mockDraftState.clientId = 7;
+    mockDraftState.orderType = "QUOTE";
+
+    render(<SalesOrderSurface />);
+
+    expect(screen.getAllByRole("button", { name: "Save Draft" })).toHaveLength(
+      1
+    );
+    expect(
+      screen.getAllByRole("button", { name: "Confirm Quote" })
+    ).toHaveLength(1);
   });
 
   it("does not open finalize confirmation when the credit check errors", async () => {

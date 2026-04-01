@@ -7,7 +7,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import type { ColDef } from "ag-grid-community";
-import { AlertTriangle, ArrowLeft, Save } from "lucide-react";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -1036,6 +1036,16 @@ export function SalesOrderSurface() {
         hasUnsavedChanges={draft.hasUnsavedChanges}
         onSaveDraft={handleSaveDraftRequest}
         onFinalize={() => void handleFinalizeRequest()}
+        saveDraftDisabled={
+          draft.items.length === 0 ||
+          draft.isPersistingDraft ||
+          isUnavailableClientRoute
+        }
+        finalizeDisabled={
+          !calculationState.isValid ||
+          isFinalizeBusy ||
+          isUnavailableClientRoute
+        }
         isFinalizePending={isFinalizeBusy}
         isSeededFromCatalogue={draft.isSalesSheetImport}
         orderType={draft.orderType}
@@ -1083,36 +1093,6 @@ export function SalesOrderSurface() {
           </SelectContent>
         </Select>
         {draft.SaveStateIndicator}
-        <div className="ml-auto flex items-center gap-1">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={
-              draft.items.length === 0 ||
-              draft.isPersistingDraft ||
-              isUnavailableClientRoute
-            }
-            onClick={handleSaveDraftRequest}
-          >
-            <Save className="mr-1 h-3 w-3" />
-            Save Draft
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            disabled={
-              !calculationState.isValid ||
-              isFinalizeBusy ||
-              isUnavailableClientRoute
-            }
-            onClick={() => void handleFinalizeRequest()}
-          >
-            {draft.orderType === "QUOTE" ? "Confirm Quote" : "Confirm Order"}
-          </Button>
-        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 px-2 py-1">

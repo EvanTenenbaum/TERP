@@ -14,6 +14,8 @@ interface OrderAdjustmentsBarProps {
   hasUnsavedChanges: boolean;
   onSaveDraft: () => void;
   onFinalize: () => void;
+  saveDraftDisabled?: boolean;
+  finalizeDisabled?: boolean;
   isFinalizePending: boolean;
   isSeededFromCatalogue: boolean;
   orderType: "SALE" | "QUOTE";
@@ -30,6 +32,8 @@ export function OrderAdjustmentsBar({
   hasUnsavedChanges,
   onSaveDraft,
   onFinalize,
+  saveDraftDisabled = false,
+  finalizeDisabled = false,
   isFinalizePending,
   isSeededFromCatalogue,
   orderType,
@@ -94,13 +98,18 @@ export function OrderAdjustmentsBar({
         </div>
 
         <div className="mt-4 grid gap-2">
-          <Button type="button" variant="outline" onClick={onSaveDraft}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onSaveDraft}
+            disabled={saveDraftDisabled}
+          >
             Save Draft
           </Button>
           <Button
             type="button"
             onClick={onFinalize}
-            disabled={isFinalizePending}
+            disabled={isFinalizePending || finalizeDisabled}
           >
             {isFinalizePending
               ? orderType === "QUOTE"

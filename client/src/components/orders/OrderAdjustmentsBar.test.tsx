@@ -36,8 +36,12 @@ describe("OrderAdjustmentsBar", () => {
 
     expect(screen.getByText("Draft #88")).toBeInTheDocument();
     expect(screen.getByText("Seeded from catalogue")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Save Draft" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Confirm Order" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Save Draft" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Confirm Order" })
+    ).toBeInTheDocument();
   });
 
   it("propagates note edits and finalize action", () => {
@@ -69,5 +73,32 @@ describe("OrderAdjustmentsBar", () => {
 
     expect(onNotesChange).toHaveBeenCalledWith("Watch delivery window");
     expect(onFinalize).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables the action buttons when requested", () => {
+    render(
+      <OrderAdjustmentsBar
+        referredByClientId={null}
+        onReferredByChange={vi.fn()}
+        clientId={12}
+        notes=""
+        onNotesChange={vi.fn()}
+        activeDraftId={null}
+        isSaving={false}
+        hasUnsavedChanges={false}
+        onSaveDraft={vi.fn()}
+        onFinalize={vi.fn()}
+        saveDraftDisabled={true}
+        finalizeDisabled={true}
+        isFinalizePending={false}
+        isSeededFromCatalogue={false}
+        orderType="QUOTE"
+      />
+    );
+
+    expect(screen.getByRole("button", { name: "Save Draft" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Confirm Quote" })
+    ).toBeDisabled();
   });
 });
