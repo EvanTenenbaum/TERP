@@ -9,7 +9,7 @@ export interface LinearWorkspaceTab<T extends string = string> {
 
 interface LinearWorkspaceShellProps<T extends string> {
   title: string;
-  description: string;
+  description?: string;
   activeTab: T;
   tabs: readonly LinearWorkspaceTab<T>[];
   onTabChange: (tab: T) => void;
@@ -35,7 +35,9 @@ export function LinearWorkspaceShell<T extends string>({
   density = "default",
   section,
 }: LinearWorkspaceShellProps<T>) {
-  const showHeader = Boolean(title || description || section);
+  const showContext = Boolean(
+    title || description || section || meta.length > 0
+  );
   const showMeta = meta.length > 0;
   const showTabs = tabs.length > 1;
   const showTabRow = showTabs || Boolean(commandStrip);
@@ -75,80 +77,92 @@ export function LinearWorkspaceShell<T extends string>({
       data-single-tab={!showTabs}
       data-density={density}
     >
-      {showHeader && (
-        <header className="linear-workspace-header">
-          <div className="linear-workspace-title-wrap">
-            <p className="linear-workspace-eyebrow">
-              {section ? (
-                <>
-                  <span className="linear-workspace-eyebrow-section">
-                    {section}
-                  </span>
-                  <span className="linear-workspace-eyebrow-sep" aria-hidden>
-                    {" "}
-                    /{" "}
-                  </span>
-                </>
-              ) : null}
-              Workspace
-            </p>
-            <div>
-              <h1 className="linear-workspace-title">{title}</h1>
-              {description ? (
-                <p className="linear-workspace-description">{description}</p>
-              ) : null}
-            </div>
-          </div>
-        </header>
-      )}
-
-      {showMeta && (
-        <div className="linear-workspace-meta" aria-label="Workspace metadata">
-          {meta.map(item => (
-            <div key={item.label} className="linear-workspace-meta-item">
-              <span className="linear-workspace-meta-label">{item.label}</span>
-              <span className="linear-workspace-meta-value">{item.value}</span>
-            </div>
-          ))}
-        </div>
-      )}
-
       <Tabs
         value={activeTab}
         onValueChange={value => onTabChange(value as T)}
         className="linear-workspace-tabs"
       >
-        {showTabRow ? (
-          <div className="linear-workspace-tab-row">
-            {showTabs ? (
-              <div className="linear-workspace-tabs-stack">
-                <div
-                  ref={tabsScrollRef}
-                  className="linear-workspace-tabs-scroller scrollbar-hide"
-                  data-overflowing={showTabsOverflowCue}
-                >
-                  <TabsList className="linear-workspace-tabs-list">
-                    {tabs.map(tab => (
-                      <TabsTrigger
-                        key={tab.value}
-                        value={tab.value}
-                        className="linear-workspace-tabs-trigger"
-                      >
-                        {tab.label}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
+        {showContext || showTabRow ? (
+          <div className="linear-workspace-strip">
+            {showContext ? (
+              <div className="linear-workspace-strip-main">
+                <div className="linear-workspace-heading">
+                  {section ? (
+                    <span className="linear-workspace-section-pill">
+                      {section}
+                    </span>
+                  ) : null}
+                  <div className="linear-workspace-heading-copy">
+                    <div className="linear-workspace-title-line">
+                      <h1 className="linear-workspace-title">{title}</h1>
+                    </div>
+                    {description ? (
+                      <p className="linear-workspace-description">
+                        {description}
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
-                {showTabsOverflowCue ? (
-                  <p className="linear-workspace-tabs-overflow-hint">
-                    Swipe for more tabs
-                  </p>
+                {showMeta ? (
+                  <div
+                    className="linear-workspace-meta-cluster"
+                    aria-label="Workspace metadata"
+                  >
+                    {meta.map(item => (
+                      <div
+                        key={item.label}
+                        className="linear-workspace-meta-item"
+                      >
+                        <span className="linear-workspace-meta-label">
+                          {item.label}
+                        </span>
+                        <span className="linear-workspace-meta-value">
+                          {item.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 ) : null}
               </div>
-            ) : (
-              <div className="linear-workspace-tabs-spacer" aria-hidden />
-            )}
-            <div className="linear-workspace-command-strip">{commandStrip}</div>
+            ) : null}
+            {showTabRow ? (
+              <div
+                className="linear-workspace-tab-row"
+                data-has-context={showContext}
+              >
+                {showTabs ? (
+                  <div className="linear-workspace-tabs-stack">
+                    <div
+                      ref={tabsScrollRef}
+                      className="linear-workspace-tabs-scroller scrollbar-hide"
+                      data-overflowing={showTabsOverflowCue}
+                    >
+                      <TabsList className="linear-workspace-tabs-list">
+                        {tabs.map(tab => (
+                          <TabsTrigger
+                            key={tab.value}
+                            value={tab.value}
+                            className="linear-workspace-tabs-trigger"
+                          >
+                            {tab.label}
+                          </TabsTrigger>
+                        ))}
+                      </TabsList>
+                    </div>
+                    {showTabsOverflowCue ? (
+                      <p className="linear-workspace-tabs-overflow-hint">
+                        Swipe for more tabs
+                      </p>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="linear-workspace-tabs-spacer" aria-hidden />
+                )}
+                <div className="linear-workspace-command-strip">
+                  {commandStrip}
+                </div>
+              </div>
+            ) : null}
           </div>
         ) : null}
         {children}

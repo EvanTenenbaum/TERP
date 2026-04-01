@@ -18,13 +18,14 @@ export function SheetModeToggle({
 
   return (
     <div
-      className="linear-workspace-mode-toggle"
+      className="linear-workspace-mode-toggle rounded-full border border-border/70 bg-background/90 p-0.5 shadow-sm"
       role="group"
       aria-label="Surface mode"
     >
       <Button
         size="sm"
-        variant={surfaceMode === "sheet-native" ? "default" : "outline"}
+        variant={surfaceMode === "sheet-native" ? "default" : "ghost"}
+        className="h-8 rounded-full px-3 text-[11px] font-semibold"
         aria-pressed={surfaceMode === "sheet-native"}
         onClick={() => onSurfaceModeChange("sheet-native")}
       >
@@ -32,7 +33,8 @@ export function SheetModeToggle({
       </Button>
       <Button
         size="sm"
-        variant={surfaceMode === "classic" ? "default" : "outline"}
+        variant={surfaceMode === "classic" ? "default" : "ghost"}
+        className="h-8 rounded-full px-3 text-[11px] font-semibold"
         aria-pressed={surfaceMode === "classic"}
         onClick={() => onSurfaceModeChange("classic")}
       >
