@@ -765,7 +765,12 @@ export function SalesOrderSurface() {
 
   const handleClientChange = useCallback(
     (clientId: number | null) => {
-      setLocation(buildDocumentRoute());
+      setLocation(
+        buildDocumentRoute({
+          clientId,
+          mode: draft.orderType === "QUOTE" ? "quote" : undefined,
+        })
+      );
       resetComposerState();
       setClientId(clientId);
       setSelectedInventoryRowId(null);
@@ -778,7 +783,13 @@ export function SalesOrderSurface() {
       skipNextDefaultViewApplyRef.current = false;
       setPendingCreditOverrideReason(undefined);
     },
-    [buildDocumentRoute, resetComposerState, setClientId, setLocation]
+    [
+      buildDocumentRoute,
+      draft.orderType,
+      resetComposerState,
+      setClientId,
+      setLocation,
+    ]
   );
 
   const handleLoadView = useCallback(

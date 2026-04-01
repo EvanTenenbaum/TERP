@@ -309,10 +309,28 @@ describe("SalesOrderSurface", () => {
       (options?: { surfaceVariant?: string }) => {
         const surfaceVariant =
           options?.surfaceVariant ?? "classic-create-order";
-        mockBuildDocumentRoute.mockImplementation(() =>
-          surfaceVariant === "sheet-native-orders"
-            ? "/sales?tab=orders&surface=sheet-native&ordersView=document"
-            : "/sales?tab=create-order"
+        mockBuildDocumentRoute.mockImplementation(
+          (
+            params?: Record<
+              string,
+              string | number | boolean | null | undefined
+            >
+          ) => {
+            const searchParams = new URLSearchParams(
+              surfaceVariant === "sheet-native-orders"
+                ? "tab=orders&surface=sheet-native&ordersView=document"
+                : "tab=create-order"
+            );
+
+            if (params?.clientId !== null && params?.clientId !== undefined) {
+              searchParams.set("clientId", String(params.clientId));
+            }
+            if (params?.mode !== null && params?.mode !== undefined) {
+              searchParams.set("mode", String(params.mode));
+            }
+
+            return `/sales?${searchParams.toString()}`;
+          }
         );
 
         return {
@@ -403,8 +421,13 @@ describe("SalesOrderSurface", () => {
     expect(mockUseOrderDraft).toHaveBeenCalledWith({
       surfaceVariant: "classic-create-order",
     });
-    expect(mockBuildDocumentRoute).toHaveBeenCalled();
-    expect(mockSetLocation).toHaveBeenCalledWith("/sales?tab=create-order");
+    expect(mockBuildDocumentRoute).toHaveBeenCalledWith({
+      clientId: 9,
+      mode: undefined,
+    });
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/sales?tab=create-order&clientId=9"
+    );
     expect(mockDraftState.resetComposerState).toHaveBeenCalled();
     expect(mockDraftState.setClientId).toHaveBeenCalledWith(9);
   });
@@ -420,9 +443,26 @@ describe("SalesOrderSurface", () => {
       surfaceVariant: "sheet-native-orders",
     });
     expect(mockSetLocation).toHaveBeenCalledWith(
-      "/sales?tab=orders&surface=sheet-native&ordersView=document"
+      "/sales?tab=orders&surface=sheet-native&ordersView=document&clientId=9"
     );
     expect(mockDraftState.setClientId).toHaveBeenCalledWith(9);
+  });
+
+  it("preserves quote mode in the route when changing clients from a quote", () => {
+    mockSearch = "?tab=create-order&mode=quote";
+    mockDraftState.clientId = 7;
+    mockDraftState.orderType = "QUOTE";
+
+    render(<SalesOrderSurface />);
+    fireEvent.click(screen.getByRole("button", { name: "Change Client" }));
+
+    expect(mockBuildDocumentRoute).toHaveBeenCalledWith({
+      clientId: 9,
+      mode: "quote",
+    });
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/sales?tab=create-order&clientId=9&mode=quote"
+    );
   });
 
   it("passes the hydrated customer label even when the client list is stale", () => {
