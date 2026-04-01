@@ -1,5 +1,5 @@
 import { getDb } from "./db";
-import { eq, desc, inArray, and, sql, isNull } from "drizzle-orm";
+import { eq, desc, inArray, and, or, sql, isNull } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import {
   salesSheetHistory,
@@ -9,6 +9,7 @@ import {
   clients,
   orders,
   products,
+  productImages,
   lots,
   type SalesSheetHistory,
   type SalesSheetTemplate,
@@ -20,10 +21,7 @@ import {
 } from "../drizzle/schema-live-shopping";
 import * as pricingEngine from "./pricingEngine";
 import { logger } from "./_core/logger";
-import {
-  resolveBatchCogs,
-  type CogsRangeBasis,
-} from "./cogsCalculator";
+import { resolveBatchCogs, type CogsRangeBasis } from "./cogsCalculator";
 import { pricingService } from "./services/pricingService";
 
 // ============================================================================
@@ -48,6 +46,7 @@ export interface PricedInventoryItem {
   quantity: number;
   grade?: string;
   vendor?: string; // Supplier name for backward compatibility
+  imageUrl?: string;
   status?: string; // INV-CONSISTENCY-002: Include batch status for display/filtering
   priceMarkup: number;
   appliedRules: Array<{
@@ -67,6 +66,19 @@ export interface PricedInventoryItem {
 function parseNumber(value: unknown, defaultValue: number = 0): number {
   const parsed = parseFloat(value?.toString() || String(defaultValue));
   return isNaN(parsed) ? defaultValue : parsed;
+}
+
+function getMutationAffectedRows(result: unknown): number {
+  if (Array.isArray(result)) {
+    const header = result[0] as { affectedRows?: number } | undefined;
+    return header?.affectedRows ?? 0;
+  }
+
+  if (result && typeof result === "object" && "affectedRows" in result) {
+    return (result as { affectedRows?: number }).affectedRows ?? 0;
+  }
+
+  return 0;
 }
 
 // ============================================================================
@@ -224,6 +236,44 @@ export async function getInventoryWithPricing(
       return [];
     }
 
+    const batchIds = inventoryWithDetails.map(row => row.batchId);
+    const imageUrlByBatchId = new Map<number, string>();
+
+    if (batchIds.length > 0) {
+      const batchImages = await db
+        .select({
+          batchId: productImages.batchId,
+          imageUrl: productImages.imageUrl,
+        })
+        .from(productImages)
+        .where(
+          and(
+            inArray(productImages.batchId, batchIds),
+            or(
+              isNull(productImages.status),
+              eq(productImages.status, "APPROVED"),
+              eq(productImages.status, "PENDING")
+            ),
+            isNull(productImages.deletedAt)
+          )
+        )
+        .orderBy(
+          desc(productImages.isPrimary),
+          productImages.sortOrder,
+          productImages.id
+        );
+
+      for (const image of batchImages) {
+        if (
+          image.batchId !== null &&
+          !imageUrlByBatchId.has(image.batchId) &&
+          image.imageUrl
+        ) {
+          imageUrlByBatchId.set(image.batchId, image.imageUrl);
+        }
+      }
+    }
+
     // Get client pricing rules with error handling
     let clientRules: Awaited<
       ReturnType<typeof pricingEngine.getClientPricingRules>
@@ -283,6 +333,7 @@ export async function getInventoryWithPricing(
           quantity: parseNumber(row.batchOnHandQty, 0),
           grade: row.batchGrade || undefined,
           vendor: row.supplierName || undefined,
+          imageUrl: imageUrlByBatchId.get(row.batchId),
           status: row.batchStatus || undefined,
         };
       });
@@ -303,6 +354,7 @@ export async function getInventoryWithPricing(
         quantity: item.quantity || 0,
         // Preserve joined fields that pricing engine doesn't know about
         productId: inventoryItems[index].productId,
+        imageUrl: inventoryItems[index].imageUrl,
         status: inventoryItems[index].status,
       }));
     } catch (pricingError) {
@@ -375,7 +427,12 @@ export async function getSalesSheetHistory(
   return await db
     .select()
     .from(salesSheetHistory)
-    .where(eq(salesSheetHistory.clientId, clientId))
+    .where(
+      and(
+        eq(salesSheetHistory.clientId, clientId),
+        isNull(salesSheetHistory.deletedAt)
+      )
+    )
     .orderBy(desc(salesSheetHistory.createdAt))
     .limit(limit);
 }
@@ -436,24 +493,24 @@ export async function createTemplate(data: {
 
 export async function getTemplates(
   clientId?: number,
-  _includeUniversal: boolean = true
+  includeUniversal: boolean = true
 ): Promise<SalesSheetTemplate[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  if (!clientId) {
-    // Get all templates where clientId is null (universal templates)
-    return await db
-      .select()
-      .from(salesSheetTemplates)
-      .orderBy(desc(salesSheetTemplates.createdAt));
-  }
+  const templateFilter = clientId
+    ? includeUniversal
+      ? or(
+          eq(salesSheetTemplates.clientId, clientId),
+          isNull(salesSheetTemplates.clientId)
+        )
+      : eq(salesSheetTemplates.clientId, clientId)
+    : isNull(salesSheetTemplates.clientId);
 
-  // Get client-specific templates
   return await db
     .select()
     .from(salesSheetTemplates)
-    .where(eq(salesSheetTemplates.clientId, clientId))
+    .where(templateFilter)
     .orderBy(desc(salesSheetTemplates.createdAt));
 }
 
@@ -521,7 +578,7 @@ export async function saveDraft(data: {
 
   if (data.draftId) {
     // Update existing draft
-    await db
+    const result = await db
       .update(salesSheetDrafts)
       .set({
         name: data.name,
@@ -535,6 +592,13 @@ export async function saveDraft(data: {
           eq(salesSheetDrafts.createdBy, data.createdBy)
         )
       );
+
+    if (getMutationAffectedRows(result) === 0) {
+      throw new Error(
+        "Draft not found or you do not have permission to update it"
+      );
+    }
+
     return data.draftId;
   }
 
@@ -636,42 +700,68 @@ export async function convertDraftToSheet(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get the draft
-  const draft = await getDraftById(draftId, userId);
-  if (!draft) {
-    throw new Error("Draft not found");
-  }
+  return await db.transaction(async tx => {
+    const draftResult = await tx
+      .select()
+      .from(salesSheetDrafts)
+      .where(
+        and(
+          eq(salesSheetDrafts.id, draftId),
+          eq(salesSheetDrafts.createdBy, userId)
+        )
+      )
+      .limit(1);
 
-  // Recalculate total from items instead of trusting stored draft totalValue
-  interface DraftItem {
-    finalPrice?: number;
-    retailPrice?: number;
-    quantity?: number;
-  }
-  const draftItems = draft.items as unknown as DraftItem[];
-  const recalculatedTotal = Array.isArray(draftItems)
-    ? Math.round(
-        draftItems.reduce(
-          (sum, item) =>
-            sum +
-            (item.finalPrice ?? item.retailPrice ?? 0) * (item.quantity ?? 1),
-          0
-        ) * 100
-      ) / 100
-    : parseFloat(draft.totalValue);
+    const draft = draftResult[0];
+    if (!draft) {
+      throw new Error("Draft not found");
+    }
 
-  // Create the sales sheet
-  const sheetId = await saveSalesSheet({
-    clientId: draft.clientId,
-    items: draft.items as unknown[],
-    totalValue: recalculatedTotal,
-    createdBy: userId,
+    interface DraftSheetItem {
+      finalPrice?: number;
+      retailPrice?: number;
+      quantity?: number;
+    }
+
+    const draftItems = draft.items as unknown as DraftSheetItem[];
+    const recalculatedTotal = Array.isArray(draftItems)
+      ? Math.round(
+          draftItems.reduce(
+            (sum, item) =>
+              sum +
+              (item.finalPrice ?? item.retailPrice ?? 0) * (item.quantity ?? 1),
+            0
+          ) * 100
+        ) / 100
+      : parseFloat(draft.totalValue);
+
+    const insertResult = await tx.insert(salesSheetHistory).values({
+      clientId: draft.clientId,
+      items: draft.items as unknown[],
+      totalValue: recalculatedTotal.toString(),
+      itemCount: Array.isArray(draftItems)
+        ? draftItems.length
+        : draft.itemCount,
+      createdBy: userId,
+    });
+
+    const sheetId = Number(insertResult[0].insertId);
+
+    const deleteResult = await tx
+      .delete(salesSheetDrafts)
+      .where(
+        and(
+          eq(salesSheetDrafts.id, draftId),
+          eq(salesSheetDrafts.createdBy, userId)
+        )
+      );
+
+    if (getMutationAffectedRows(deleteResult) === 0) {
+      throw new Error("Draft could not be removed after conversion");
+    }
+
+    return sheetId;
   });
-
-  // Delete the draft
-  await deleteDraft(draftId, userId);
-
-  return sheetId;
 }
 
 // ============================================================================
@@ -768,7 +858,12 @@ export async function getSalesSheetByToken(
     })
     .from(salesSheetHistory)
     .innerJoin(clients, eq(salesSheetHistory.clientId, clients.id))
-    .where(eq(salesSheetHistory.shareToken, token))
+    .where(
+      and(
+        eq(salesSheetHistory.shareToken, token),
+        isNull(salesSheetHistory.deletedAt)
+      )
+    )
     .limit(1);
 
   if (result.length === 0) {

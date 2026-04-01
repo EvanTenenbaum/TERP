@@ -38,7 +38,7 @@ import type {
 interface QuickViewSelectorProps {
   clientId: number;
   onLoadView: (view: {
-    id?: number | null;
+    id: number;
     filters: InventoryFilters;
     sort: InventorySortConfig;
     columnVisibility: ColumnVisibility;
@@ -102,7 +102,7 @@ export function QuickViewSelector({
       const view = await utils.salesSheets.loadView.fetch({ viewId });
       if (view) {
         onLoadView({
-          id: view.id,
+          id: viewId,
           filters: view.filters,
           sort: view.sort as InventorySortConfig,
           columnVisibility: view.columnVisibility,
