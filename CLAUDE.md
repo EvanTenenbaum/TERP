@@ -11,6 +11,7 @@ TERP is a specialized ERP for THCA wholesale cannabis operations. React 19 + Tai
 ## Commands (Run Before Every Commit)
 
 ```bash
+pnpm agent:prepare   # In local worktrees, link shared TERP node_modules and verify local bins
 pnpm check          # TypeScript (zero errors policy)
 pnpm lint           # ESLint
 pnpm test           # Unit tests (Vitest)
@@ -36,6 +37,7 @@ All E2E tests use Playwright. The canonical reference is `docs/TESTING.md`.
 pnpm test:e2e:deep           # @deep tagged tests — full admin access
 pnpm test:e2e:deep:rbac      # @rbac tagged tests — role permission boundaries
 pnpm test:e2e:deep:all       # Both: business logic first, then RBAC
+pnpm qa:human:flows -- --count 40 --seed "$(date +%Y%m%d)"
 
 # Other E2E suites
 pnpm test:e2e                # All E2E tests

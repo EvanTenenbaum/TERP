@@ -1277,145 +1277,244 @@ export function SalesCatalogueSurface() {
 
   // ── render ─────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-1">
-      {/* ── TOOLBAR ──────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-1.5 px-2 py-1 border-b border-border/70 bg-background">
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
-          onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
-        >
-          &larr; Orders
-        </Button>
-        <Badge
-          variant="secondary"
-          className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]"
-        >
-          Sales Catalogue
-        </Badge>
-        <Input
-          value={draft.draftName}
-          onChange={e => draft.setDraftName(e.target.value)}
-          placeholder="Draft name..."
-          className="h-7 max-w-36 text-xs"
-          aria-invalid={draftNameMissingForSave}
-          disabled={!selectedClientId}
-        />
-        {draftNameMissingForSave && (
-          <span className="text-[10px] text-amber-700">
-            Draft name required to save
-          </span>
-        )}
-        <div className="w-48">
-          <ClientCombobox
-            value={selectedClientId}
-            onValueChange={handleClientChange}
-            clients={clientList}
-            isLoading={clientsQuery.isLoading}
-            placeholder="Client..."
-            emptyText="No clients"
-            selectedLabel={selectedClientName}
-          />
-        </div>
-
-        <div className="ml-auto flex items-center gap-1.5">
-          {draft.hasUnsavedChanges && (
-            <Badge
+    <div className="flex flex-col gap-3">
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-background/95 shadow-sm">
+        <div className="flex flex-wrap items-start gap-2.5 border-b border-border/60 px-3 py-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2.5">
+            <Button
+              size="sm"
               variant="outline"
-              className="text-amber-600 border-amber-300 bg-amber-50 text-[10px] h-5"
+              className="h-8 px-2.5 text-xs"
+              onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
             >
-              Unsaved
-            </Badge>
-          )}
-          {draft.lastSaveTime && !draft.hasUnsavedChanges && (
-            <Badge
-              variant="outline"
-              className="text-emerald-600 border-emerald-300 bg-emerald-50 text-[10px] h-5"
-            >
-              Saved
-            </Badge>
-          )}
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={!selectedClientId || draft.isSaving}
-            onClick={draft.saveDraft}
-          >
-            <Save className="mr-1 h-3 w-3" />
-            {draft.isSaving ? "Saving..." : "Save Draft"}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={!selectedClientId}
-            onClick={handleRefresh}
-            aria-label="Refresh inventory"
-          >
-            <ArrowRight className="h-3 w-3 rotate-90" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 px-2"
-                disabled={!selectedClientId}
-              >
-                <MoreHorizontal className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setShowDraftDialog(true)}>
-                Load Draft
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowSavedSheetsDialog(true)}>
-                Load Saved Sheet
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!draft.currentDraftId}
-                onClick={() => setShowDeleteDraftDialog(true)}
-                className="text-destructive"
-              >
-                <Trash2 className="mr-2 h-3 w-3" />
-                Delete Draft
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+              &larr; Orders
+            </Button>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge
+                  variant="secondary"
+                  className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700"
+                >
+                  Sales Catalogue
+                </Badge>
+                {draft.hasUnsavedChanges ? (
+                  <Badge
+                    variant="outline"
+                    className="h-5 border-amber-300 bg-amber-50 text-[10px] text-amber-700"
+                  >
+                    Unsaved
+                  </Badge>
+                ) : null}
+                {draft.lastSaveTime && !draft.hasUnsavedChanges ? (
+                  <Badge
+                    variant="outline"
+                    className="h-5 border-emerald-300 bg-emerald-50 text-[10px] text-emerald-700"
+                  >
+                    Saved
+                  </Badge>
+                ) : null}
+                {draftNameMissingForSave ? (
+                  <Badge
+                    variant="outline"
+                    className="h-5 border-amber-300 bg-amber-50 text-[10px] text-amber-700"
+                  >
+                    Draft name required to save
+                  </Badge>
+                ) : null}
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Build a client-ready sheet from live inventory, customer
+                pricing, and quick exports.
+              </p>
+            </div>
+          </div>
 
-      {/* ── ACTION BAR ───────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-1.5 px-2 py-0.5 rounded-md border border-border/70 bg-muted/30 mx-1">
-        <span className="text-xs font-medium">View</span>
-
-        {selectedClientId && (
-          <>
-            <QuickViewSelector
-              clientId={selectedClientId}
-              onLoadView={handleLoadView}
-              currentViewId={currentViewId}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-[12rem] flex-1 sm:flex-none sm:w-48">
+              <ClientCombobox
+                value={selectedClientId}
+                onValueChange={handleClientChange}
+                clients={clientList}
+                isLoading={clientsQuery.isLoading}
+                placeholder="Client..."
+                emptyText="No clients"
+                selectedLabel={selectedClientName}
+              />
+            </div>
+            <Input
+              value={draft.draftName}
+              onChange={e => draft.setDraftName(e.target.value)}
+              placeholder="Draft name..."
+              className="h-8 min-w-[11rem] flex-1 text-xs sm:max-w-44"
+              aria-invalid={draftNameMissingForSave}
+              disabled={!selectedClientId}
             />
             <Button
               size="sm"
               variant="outline"
-              className="h-6 px-2 text-[10px]"
-              onClick={() => setShowSaveViewDialog(true)}
+              className="h-8 px-2.5 text-xs"
+              disabled={!selectedClientId || draft.isSaving}
+              onClick={draft.saveDraft}
             >
-              Save View
+              <Save className="mr-1 h-3.5 w-3.5" />
+              {draft.isSaving ? "Saving..." : "Save Draft"}
             </Button>
             <Button
               size="sm"
               variant="outline"
-              className="h-6 px-2 text-[10px]"
-              onClick={() => setShowAdvancedFilters(prev => !prev)}
+              className="h-8 px-2.5 text-xs"
+              disabled={!selectedClientId}
+              onClick={handleRefresh}
+              aria-label="Refresh inventory"
             >
-              Filters{activeFilterCount > 0 ? " \u25cf" : ""}
+              <ArrowRight className="h-3.5 w-3.5 rotate-90" />
             </Button>
-          </>
-        )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-2.5"
+                  disabled={!selectedClientId}
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowDraftDialog(true)}>
+                  Load Draft
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setShowSavedSheetsDialog(true)}
+                >
+                  Load Saved Sheet
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={!draft.currentDraftId}
+                  onClick={() => setShowDeleteDraftDialog(true)}
+                  className="text-destructive"
+                >
+                  <Trash2 className="mr-2 h-3 w-3" />
+                  Delete Draft
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <Input
+              value={filters.search}
+              onChange={e =>
+                setFilters(prev => ({ ...prev, search: e.target.value }))
+              }
+              placeholder="Search product, vendor, category..."
+              className="h-8 w-full text-xs sm:max-w-xs"
+              disabled={!selectedClientId}
+            />
+            {selectedClientId ? (
+              <>
+                <QuickViewSelector
+                  clientId={selectedClientId}
+                  onLoadView={handleLoadView}
+                  currentViewId={currentViewId}
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-2.5 text-[11px]"
+                  onClick={() => setShowSaveViewDialog(true)}
+                >
+                  Save View
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 px-2.5 text-[11px]"
+                  onClick={() => setShowAdvancedFilters(prev => !prev)}
+                >
+                  Filters
+                  {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
+                </Button>
+              </>
+            ) : (
+              <span className="text-xs text-muted-foreground">
+                Choose a client to unlock views, filters, and pricing actions.
+              </span>
+            )}
+          </div>
+
+          <span className="text-[11px] text-muted-foreground">
+            {checkedVisibleRows.length} checked · {inventoryRows.length} visible
+            ·{" "}
+            {selectedItems.length > 0
+              ? `${selectedItems.length} items · ${formatCurrency(totalSheetValue)}`
+              : "No catalogue items"}
+          </span>
+
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Button
+              size="sm"
+              className="h-8 px-2.5 text-[11px]"
+              disabled={!selectedInventoryRowStillVisible || !selectedClientId}
+              onClick={handleAddSelectedItem}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
+              Add Row
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-2.5 text-[11px]"
+              disabled={checkedVisibleRows.length === 0}
+              onClick={handleBulkAddVisible}
+            >
+              Bulk Add
+              {checkedVisibleRows.length > 0
+                ? ` (${checkedVisibleRows.length})`
+                : ""}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-2.5 text-[11px]"
+              disabled={selectableInventoryRows.length === 0}
+              onClick={handleSelectAllVisible}
+            >
+              Select All
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-2.5 text-[11px]"
+              disabled={checkedVisibleRows.length === 0}
+              onClick={handleClearVisibleSelection}
+            >
+              Clear Checks
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-2.5 text-[11px]"
+              disabled={!selectedClientId}
+              onClick={handleManageClientPricing}
+            >
+              <Settings2 className="mr-1 h-3.5 w-3.5" />
+              Customer Pricing
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-2.5 text-[11px]"
+              disabled={selectedItems.length === 0}
+              onClick={handleReloadClientPricing}
+            >
+              <RotateCcw className="mr-1 h-3.5 w-3.5" />
+              Reload Pricing
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* ── ADVANCED FILTERS ─────────────────────────────────────────── */}
@@ -1436,83 +1535,6 @@ export function SalesCatalogueSurface() {
         <div className="grid gap-1 lg:grid-cols-4 px-1">
           {/* Left: Inventory Browser (3/4) */}
           <div className="lg:col-span-3 flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-1 rounded-md border border-border/70 bg-background px-2 py-1">
-              <Input
-                value={filters.search}
-                onChange={e =>
-                  setFilters(prev => ({ ...prev, search: e.target.value }))
-                }
-                placeholder="Search product, vendor, category..."
-                className="h-7 max-w-xs text-xs"
-              />
-              <Button
-                size="sm"
-                className="h-7 px-2 text-[10px]"
-                disabled={
-                  !selectedInventoryRowStillVisible || !selectedClientId
-                }
-                onClick={handleAddSelectedItem}
-              >
-                <Plus className="mr-1 h-3 w-3" />
-                Add Row
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 px-2 text-[10px]"
-                disabled={selectableInventoryRows.length === 0}
-                onClick={handleSelectAllVisible}
-              >
-                Select All In View
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 px-2 text-[10px]"
-                disabled={checkedVisibleRows.length === 0}
-                onClick={handleClearVisibleSelection}
-              >
-                Clear Checks
-              </Button>
-              <Button
-                size="sm"
-                className="h-7 px-2 text-[10px]"
-                disabled={checkedVisibleRows.length === 0}
-                onClick={handleBulkAddVisible}
-              >
-                Bulk Add{" "}
-                {checkedVisibleRows.length > 0
-                  ? `(${checkedVisibleRows.length})`
-                  : ""}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 px-2 text-[10px]"
-                disabled={!selectedClientId}
-                onClick={handleManageClientPricing}
-              >
-                <Settings2 className="mr-1 h-3 w-3" />
-                Customer Pricing
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 px-2 text-[10px]"
-                disabled={selectedItems.length === 0}
-                onClick={handleReloadClientPricing}
-              >
-                <RotateCcw className="mr-1 h-3 w-3" />
-                Reload Client Pricing
-              </Button>
-              <span className="ml-auto text-[10px] text-muted-foreground">
-                {checkedVisibleRows.length} checked · {inventoryRows.length}{" "}
-                visible ·{" "}
-                {selectedItems.length > 0
-                  ? `${selectedItems.length} items · ${formatCurrency(totalSheetValue)}`
-                  : "No catalogue items"}
-              </span>
-            </div>
             <PowersheetGrid
               surfaceId="catalogue-inventory-browser"
               requirementIds={["CAT-001", "CAT-002"]}
@@ -1716,6 +1738,67 @@ export function SalesCatalogueSurface() {
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      Next Step
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Turn this catalogue into a quote, an order, or a live
+                      selling session.
+                    </p>
+                  </div>
+                  {draft.hasUnsavedChanges && selectedItems.length > 0 ? (
+                    <Badge
+                      variant="outline"
+                      className="border-amber-300 bg-amber-50 text-[10px] text-amber-700"
+                    >
+                      Save sheet before handoff
+                    </Badge>
+                  ) : null}
+                </div>
+
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-[11px]"
+                    disabled={!draft.canConvert || draft.isConverting}
+                    onClick={() => void navigateToOrder(true)}
+                  >
+                    &rarr; Sales Order
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-[11px]"
+                    disabled={!draft.canConvert || draft.isConverting}
+                    onClick={() => void navigateToOrder(true, "quote")}
+                  >
+                    &rarr; Quote
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-[11px] sm:col-span-2"
+                    disabled={!draft.canGoLive || liveSessionMutation.isPending}
+                    onClick={() => {
+                      if (!draft.canGoLive) return;
+                      if (!draft.lastSavedSheetId) {
+                        toast.error("Save the catalogue before going live");
+                        return;
+                      }
+                      liveSessionMutation.mutate({
+                        sheetId: draft.lastSavedSheetId,
+                      });
+                    }}
+                  >
+                    Live
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-3 rounded-md border border-border/70 bg-background/70 p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                       Line Pricing
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -1764,70 +1847,65 @@ export function SalesCatalogueSurface() {
           </div>
         </div>
       ) : (
-        <div className="text-center py-16 text-muted-foreground">
-          <FileText className="h-10 w-10 mx-auto mb-3 opacity-40" />
-          <p className="text-sm">
-            Select a client to start building a catalogue
-          </p>
+        <div className="grid gap-4 px-1 py-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="flex min-h-[240px] flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-muted/20 px-6 text-center text-muted-foreground">
+            <FileText className="mb-3 h-10 w-10 opacity-40" />
+            <p className="text-sm">
+              Select a client to start building a catalogue
+            </p>
+          </div>
+          <div className="rounded-md border border-border/70 bg-card/80 p-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Next Step
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Load or finish a catalogue, then turn it into an order, a quote,
+                or a live selling session.
+              </p>
+            </div>
+
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-[11px]"
+                disabled={!draft.canConvert || draft.isConverting}
+                onClick={() => void navigateToOrder(true)}
+              >
+                &rarr; Sales Order
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-[11px]"
+                disabled={!draft.canConvert || draft.isConverting}
+                onClick={() => void navigateToOrder(true, "quote")}
+              >
+                &rarr; Quote
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-[11px] sm:col-span-2"
+                disabled={!draft.canGoLive || liveSessionMutation.isPending}
+                onClick={() => {
+                  if (!draft.canGoLive) return;
+                  if (!draft.lastSavedSheetId) {
+                    toast.error("Save the catalogue before going live");
+                    return;
+                  }
+                  liveSessionMutation.mutate({
+                    sheetId: draft.lastSavedSheetId,
+                  });
+                }}
+              >
+                Live
+              </Button>
+            </div>
+          </div>
         </div>
       )}
-
-      {/* ── HANDOFF BAR ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-1.5 px-2 py-1 mx-1 rounded-md border border-border/70 bg-background">
-        {draft.hasUnsavedChanges && selectedItems.length > 0 && (
-          <Badge
-            variant="outline"
-            className="text-amber-700 border-amber-300 bg-amber-50 text-[10px]"
-          >
-            Save the sheet before sharing or converting
-          </Badge>
-        )}
-        <div className="ml-auto flex gap-1">
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={!draft.canShare}
-            onClick={() => void draft.generateShareLink()}
-          >
-            Share Link
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={!draft.canConvert || draft.isConverting}
-            onClick={() => void navigateToOrder(true)}
-          >
-            &rarr; Sales Order
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={!draft.canConvert || draft.isConverting}
-            onClick={() => void navigateToOrder(true, "quote")}
-          >
-            &rarr; Quote
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={!draft.canGoLive || liveSessionMutation.isPending}
-            onClick={() => {
-              if (!draft.canGoLive) return;
-              if (!draft.lastSavedSheetId) {
-                toast.error("Save the catalogue before going live");
-                return;
-              }
-              liveSessionMutation.mutate({ sheetId: draft.lastSavedSheetId });
-            }}
-          >
-            Live
-          </Button>
-        </div>
-      </div>
 
       {/* ── STATUS BAR ───────────────────────────────────────────────── */}
       <WorkSurfaceStatusBar

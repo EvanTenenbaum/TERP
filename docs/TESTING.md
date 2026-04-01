@@ -16,6 +16,7 @@ Local TERP verification now auto-bootstrap the shared MySQL test DB by default.
 Useful commands:
 
 ```bash
+pnpm agent:prepare        # In local worktrees, link shared node_modules and verify local bins
 pnpm test:db:ensure        # Start/migrate/seed local DB only when needed
 pnpm test:db:fresh         # Force a clean light reset
 pnpm test:db:ensure:full   # Ensure full dataset is available
@@ -192,6 +193,25 @@ pnpm staging:load-test:quick # Quick 1-day simulation
 ```
 
 Chain definitions: `tests-e2e/chains/definitions/`
+
+### 5.5 Human QA Packet — `pnpm qa:human:flows`
+
+Seeded live-browser packet generation for confused-human exploratory QA.
+
+```bash
+pnpm qa:human:flows -- --help
+pnpm qa:human:flows -- --count 40 --seed "$(date +%Y%m%d)"
+pnpm qa:human:flows -- --count 60 --seed "$(date +%Y%m%d)" --format json --output "qa-results/confused-human/packet-$(date +%Y%m%d).json"
+pnpm qa:human:flows:check -- --help
+pnpm qa:human:flows:check -- --seed "$(date +%Y%m%d)"
+pnpm qa:human:flows:check -- --file "qa-results/confused-human/packet-20260401.json"
+```
+
+Validation rules:
+
+- `Candidate rows` must be non-zero
+- `Generated runs` must be non-zero
+- JSON packets must parse and expose `selectedCount > 0`
 
 ### 6. Stress Tests — `pnpm qa:stress`
 
