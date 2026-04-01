@@ -31,4 +31,21 @@ describe("ClientCombobox", () => {
     expect(screen.getByRole("combobox")).toHaveTextContent("Acme Holdings");
     expect(screen.getByRole("combobox")).not.toHaveTextContent("Acme Wellness");
   });
+
+  it("keeps the selected label visible while clients are still loading", () => {
+    render(
+      <ClientCombobox
+        value={7}
+        onValueChange={vi.fn()}
+        clients={[]}
+        isLoading
+        selectedLabel="Acme Wellness"
+      />
+    );
+
+    expect(screen.getByRole("combobox")).toHaveTextContent("Acme Wellness");
+    expect(screen.getByRole("combobox")).not.toHaveTextContent(
+      "Loading clients..."
+    );
+  });
 });

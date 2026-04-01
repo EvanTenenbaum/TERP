@@ -418,6 +418,25 @@ export function SalesOrderSurface() {
       clientList.find(client => client.id === draft.clientId)?.name
     );
   }, [clientDetailsQuery.data?.name, clientList, draft.clientId]);
+  const isUnavailableClientRoute =
+    draft.clientId !== null &&
+    !clientsQuery.isLoading &&
+    !clientDetailsQuery.isLoading &&
+    !selectedClientName?.trim();
+  const selectedClientLabel = useMemo(() => {
+    if (!draft.clientId) {
+      return undefined;
+    }
+
+    const trimmedName = selectedClientName?.trim();
+    if (trimmedName) {
+      return trimmedName;
+    }
+
+    return isUnavailableClientRoute
+      ? `Unavailable customer #${draft.clientId}`
+      : undefined;
+  }, [draft.clientId, isUnavailableClientRoute, selectedClientName]);
 
   const creditSummary = useMemo(() => {
     const client = clientDetailsQuery.data;
@@ -782,8 +801,22 @@ export function SalesOrderSurface() {
     defaultViewAppliedClientRef.current = draft.clientId;
   }, [draft.clientId, savedViewsQuery.data]);
 
+  const handleSaveDraftRequest = useCallback(() => {
+    if (isUnavailableClientRoute) {
+      toast.error("Select an active customer before saving this draft");
+      return;
+    }
+
+    draft.handleSaveDraft();
+  }, [draft, isUnavailableClientRoute]);
+
   const handleFinalizeRequest = useCallback(async () => {
     if (isCheckingCredit || creditCheckMutation.isPending) {
+      return;
+    }
+
+    if (isUnavailableClientRoute) {
+      toast.error("Select an active customer before finalizing this order");
       return;
     }
 
@@ -825,6 +858,7 @@ export function SalesOrderSurface() {
     draft.clientId,
     draft.orderType,
     grandTotal,
+    isUnavailableClientRoute,
     isCheckingCredit,
   ]);
 
@@ -853,11 +887,11 @@ export function SalesOrderSurface() {
     customHandlers: {
       "cmd+s": (event: ReactKeyboardEvent) => {
         event.preventDefault();
-        draft.handleSaveDraft();
+        handleSaveDraftRequest();
       },
       "ctrl+s": (event: ReactKeyboardEvent) => {
         event.preventDefault();
-        draft.handleSaveDraft();
+        handleSaveDraftRequest();
       },
       "cmd+enter": (event: ReactKeyboardEvent) => {
         event.preventDefault();
@@ -926,7 +960,7 @@ export function SalesOrderSurface() {
         summary={
           <span>
             {inventoryRows.length} visible
-            {selectedClientName ? ` · ${selectedClientName}` : ""}
+            {selectedClientLabel ? ` · ${selectedClientLabel}` : ""}
           </span>
         }
         minHeight={420}
@@ -978,7 +1012,7 @@ export function SalesOrderSurface() {
         activeDraftId={draft.activeDraftId}
         isSaving={draft.isPersistingDraft}
         hasUnsavedChanges={draft.hasUnsavedChanges}
-        onSaveDraft={() => draft.handleSaveDraft()}
+        onSaveDraft={handleSaveDraftRequest}
         onFinalize={() => void handleFinalizeRequest()}
         isFinalizePending={isFinalizeBusy}
         isSeededFromCatalogue={draft.isSalesSheetImport}
@@ -1011,7 +1045,7 @@ export function SalesOrderSurface() {
             isLoading={clientsQuery.isLoading}
             placeholder="Customer..."
             emptyText="No customers"
-            selectedLabel={selectedClientName}
+            selectedLabel={selectedClientLabel}
           />
         </div>
         <Select
@@ -1033,8 +1067,12 @@ export function SalesOrderSurface() {
             size="sm"
             variant="outline"
             className="h-7 px-2 text-xs"
-            disabled={draft.items.length === 0 || draft.isPersistingDraft}
-            onClick={() => draft.handleSaveDraft()}
+            disabled={
+              draft.items.length === 0 ||
+              draft.isPersistingDraft ||
+              isUnavailableClientRoute
+            }
+            onClick={handleSaveDraftRequest}
           >
             <Save className="mr-1 h-3 w-3" />
             Save Draft
@@ -1043,7 +1081,11 @@ export function SalesOrderSurface() {
             type="button"
             size="sm"
             className="h-7 px-2 text-xs"
-            disabled={!calculationState.isValid || isFinalizeBusy}
+            disabled={
+              !calculationState.isValid ||
+              isFinalizeBusy ||
+              isUnavailableClientRoute
+            }
             onClick={() => void handleFinalizeRequest()}
           >
             {draft.orderType === "QUOTE" ? "Confirm Quote" : "Confirm Order"}
@@ -1052,7 +1094,7 @@ export function SalesOrderSurface() {
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 px-2 py-1">
-        {draft.clientId && (
+        {draft.clientId && !isUnavailableClientRoute && (
           <>
             <QuickViewSelector
               clientId={draft.clientId}
@@ -1080,13 +1122,15 @@ export function SalesOrderSurface() {
           </>
         )}
         <span className="ml-auto text-[10px] text-muted-foreground">
-          {draft.items.length > 0
-            ? `${draft.items.length} lines \u00b7 ${formatCurrency(grandTotal)}`
-            : "No line items"}
+          {isUnavailableClientRoute
+            ? "Select an active customer to continue"
+            : draft.items.length > 0
+              ? `${draft.items.length} lines \u00b7 ${formatCurrency(grandTotal)}`
+              : "No line items"}
         </span>
       </div>
 
-      {showAdvancedFilters && draft.clientId && (
+      {showAdvancedFilters && draft.clientId && !isUnavailableClientRoute && (
         <AdvancedFilters
           filters={filters}
           sort={sort}
@@ -1099,20 +1143,40 @@ export function SalesOrderSurface() {
       )}
 
       {draft.clientId ? (
-        <div className="flex flex-1 flex-col gap-1 px-1">
-          <AdaptiveSplitLayout
-            primary={inventoryPanel}
-            secondary={documentPanel}
-            autoSaveId="sales-order-surface-layout"
-            primaryDefaultSize={60}
-            primaryMinSize={44}
-            secondaryMinSize={28}
-            desktopClassName="min-h-[560px] flex-1"
-            primaryPanelClassName="min-w-0"
-            secondaryPanelClassName="min-w-0"
-          />
-          {documentControlsBand}
-        </div>
+        isUnavailableClientRoute ? (
+          <div className="flex flex-1 items-center justify-center px-4 py-16">
+            <div className="max-w-xl rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-950 shadow-sm">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+                <div className="space-y-2">
+                  <p className="font-medium">
+                    {selectedClientLabel ?? "Selected customer"} is unavailable
+                  </p>
+                  <p className="text-amber-900/80">
+                    This route points to a customer record that is no longer in
+                    active clients. Pick an active customer before you build,
+                    save, or finalize this order.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-1 flex-col gap-1 px-1">
+            <AdaptiveSplitLayout
+              primary={inventoryPanel}
+              secondary={documentPanel}
+              autoSaveId="sales-order-surface-layout"
+              primaryDefaultSize={60}
+              primaryMinSize={44}
+              secondaryMinSize={28}
+              desktopClassName="min-h-[560px] flex-1"
+              primaryPanelClassName="min-w-0"
+              secondaryPanelClassName="min-w-0"
+            />
+            {documentControlsBand}
+          </div>
+        )
       ) : (
         <div className="flex flex-1 items-center justify-center px-4 py-16 text-center text-muted-foreground">
           <div>
@@ -1130,18 +1194,19 @@ export function SalesOrderSurface() {
             {draft.items.length} lines
             {draft.hasUnsavedChanges ? " \u00b7 unsaved" : " \u00b7 synced"}
             {currentViewId ? " \u00b7 saved view" : ""}
-            {selectedClientName ? ` \u00b7 ${selectedClientName}` : ""}
+            {selectedClientLabel ? ` \u00b7 ${selectedClientLabel}` : ""}
+            {isUnavailableClientRoute ? " \u00b7 action blocked" : ""}
           </span>
         }
         right={<KeyboardHintBar hints={keyboardHints} className="text-xs" />}
       />
 
-      {draft.clientId ? (
+      {draft.clientId && !isUnavailableClientRoute ? (
         <SaveViewDialog
           open={showSaveViewDialog}
           onOpenChange={setShowSaveViewDialog}
           clientId={draft.clientId}
-          clientName={selectedClientName}
+          clientName={selectedClientLabel}
           filters={filters}
           sort={sort}
           columnVisibility={columnVisibility}
@@ -1160,7 +1225,7 @@ export function SalesOrderSurface() {
         onOpenChange={setShowCreditWarning}
         creditCheck={creditCheckResult}
         orderTotal={grandTotal}
-        clientName={selectedClientName ?? "Selected customer"}
+        clientName={selectedClientLabel ?? "Selected customer"}
         onProceed={handleCreditProceed}
         onCancel={handleCreditCancel}
       />
