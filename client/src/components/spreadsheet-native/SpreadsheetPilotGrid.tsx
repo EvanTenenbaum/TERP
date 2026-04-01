@@ -192,6 +192,35 @@ function buildSelectionSummary<Row extends object>(
   };
 }
 
+function getCoordinateKey(
+  coordinate: PowersheetSelectionSet["focusedCell"]
+): string {
+  if (!coordinate) {
+    return "null";
+  }
+
+  return `${coordinate.rowIndex}:${coordinate.columnKey}`;
+}
+
+function getSelectionSetKey(selectionSet: PowersheetSelectionSet): string {
+  return JSON.stringify({
+    focusedCell: getCoordinateKey(selectionSet.focusedCell),
+    focusedRowId: selectionSet.focusedRowId,
+    anchorCell: getCoordinateKey(selectionSet.anchorCell),
+    ranges: selectionSet.ranges.map(range => ({
+      anchor: getCoordinateKey(range.anchor),
+      focus: getCoordinateKey(range.focus),
+    })),
+    selectedRowIds: [...selectionSet.selectedRowIds].sort(),
+  });
+}
+
+function getSelectionSummaryKey(
+  selectionSummary: PowersheetSelectionSummary
+): string {
+  return JSON.stringify(selectionSummary);
+}
+
 function focusSelectedRowCell<Row extends object>(
   gridApi: GridApi<Row>,
   selectedRowId: string | null,
@@ -342,6 +371,8 @@ export function SpreadsheetPilotGrid<Row extends object>({
 }: SpreadsheetPilotGridProps<Row>) {
   const gridApiRef = useRef<GridApi<Row> | null>(null);
   const lastEmittedRowIdRef = useRef<string | null>(null);
+  const lastSelectionSetKeyRef = useRef<string | null>(null);
+  const lastSelectionSummaryKeyRef = useRef<string | null>(null);
   const isCellRangeMode = selectionMode === "cell-range";
 
   useEffect(() => {
@@ -382,12 +413,23 @@ export function SpreadsheetPilotGrid<Row extends object>({
       }
 
       const selectionSet = buildSelectionSet(gridApi, getRowId);
-      onSelectionSetChange?.(selectionSet);
+      const selectionSetKey = getSelectionSetKey(selectionSet);
+      if (selectionSetKey !== lastSelectionSetKeyRef.current) {
+        lastSelectionSetKeyRef.current = selectionSetKey;
+        onSelectionSetChange?.(selectionSet);
+      }
 
       if (selectionSurface) {
-        onSelectionSummaryChange?.(
-          buildSelectionSummary(gridApi, selectionSet, selectionSurface)
+        const selectionSummary = buildSelectionSummary(
+          gridApi,
+          selectionSet,
+          selectionSurface
         );
+        const selectionSummaryKey = getSelectionSummaryKey(selectionSummary);
+        if (selectionSummaryKey !== lastSelectionSummaryKeyRef.current) {
+          lastSelectionSummaryKeyRef.current = selectionSummaryKey;
+          onSelectionSummaryChange?.(selectionSummary);
+        }
       }
 
       if (selectionSet.focusedCell) {
