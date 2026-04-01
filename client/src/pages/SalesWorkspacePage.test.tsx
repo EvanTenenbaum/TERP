@@ -162,4 +162,28 @@ describe("SalesWorkspacePage quote entry flow", () => {
     expect(await screen.findByTestId("sales-order-surface")).toBeInTheDocument();
     expect(screen.queryByText("quotes work surface")).not.toBeInTheDocument();
   });
+
+  it("renames the create-order tab to New Order for the default sales entry", () => {
+    mockActiveTab = "orders";
+    mockSearch = "?tab=orders";
+
+    render(<SalesWorkspacePage />);
+
+    expect(screen.getByText("New Order")).toBeInTheDocument();
+    expect(screen.queryByText("Create Order")).not.toBeInTheDocument();
+  });
+
+  it("redirects malformed sales-sheets document links into the orders document route", () => {
+    mockActiveTab = "sales-sheets";
+    mockSearch =
+      "?tab=sales-sheets&surface=sheet-native&ordersView=document&clientId=7&mode=quote";
+
+    render(<SalesWorkspacePage />);
+
+    expect(
+      screen.getByText(
+        "redirect:/sales?tab=orders&surface=sheet-native&ordersView=document&clientId=7&mode=quote"
+      )
+    ).toBeInTheDocument();
+  });
 });
