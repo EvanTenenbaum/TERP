@@ -34,7 +34,10 @@ async function findClientRouteCandidate(page: Page): Promise<{
 }> {
   await page.goto("/sales?tab=create-order");
   await page.getByRole("tab", { name: /^Create Order$/i }).click();
-  await page.getByRole("combobox", { name: /select a client/i }).click();
+  const clientTrigger = page.getByTestId("client-select");
+  await expect(clientTrigger).toBeVisible({ timeout: 15000 });
+  await expect(clientTrigger).toBeEnabled({ timeout: 15000 });
+  await clientTrigger.click();
 
   const options = page.locator("[cmdk-item][data-value]");
   const optionCount = Math.min(await options.count(), 8);
@@ -63,9 +66,7 @@ test.describe("Sheet-native order inline controls", () => {
     const selectedClient = await findClientRouteCandidate(page);
     await page.goto(`/sales?tab=create-order&clientId=${selectedClient.id}`);
     await page.getByRole("tab", { name: /^Create Order$/i }).click();
-    const hydratedClientTrigger = page.getByRole("combobox", {
-      name: /select a client/i,
-    });
+    const hydratedClientTrigger = page.getByTestId("client-select");
     await expect(hydratedClientTrigger).toBeVisible();
 
     await expect(hydratedClientTrigger).toContainText(selectedClient.label);
@@ -147,6 +148,28 @@ test.describe("Sheet-native order inline controls", () => {
     await expect(page.getByLabel(quantityLabel)).toBeDisabled();
     await expect(
       page.getByRole("button", { name: /^Added$/ }).first()
+    ).toBeVisible();
+  });
+
+  test("keeps quote mode on the shared sheet-native surface with inline pricing controls", async ({
+    page,
+  }) => {
+    const selectedClient = await findClientRouteCandidate(page);
+    await page.goto(
+      `/sales?tab=create-order&mode=quote&clientId=${selectedClient.id}`
+    );
+    await page.getByRole("tab", { name: /^New Quote$/i }).click();
+
+    const hydratedClientTrigger = page.getByTestId("client-select");
+    await expect(hydratedClientTrigger).toContainText(selectedClient.label);
+    await expect(
+      page.locator("button:not([disabled])", { hasText: "Confirm Quote" })
+    ).toBeVisible();
+    await expect(
+      page.locator('input[aria-label^="Quantity for "]').first()
+    ).toBeVisible();
+    await expect(
+      page.locator('input[aria-label^="Price for "]').first()
     ).toBeVisible();
   });
 });

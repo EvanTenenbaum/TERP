@@ -224,10 +224,10 @@ export function ClientCombobox({
           <div className="flex items-center gap-2 truncate">
             <Users className="h-4 w-4 shrink-0 opacity-50" />
             <span className="truncate">
-              {isLoading
-                ? "Loading clients..."
-                : selectedDisplayLabel
-                  ? selectedDisplayLabel
+              {selectedDisplayLabel
+                ? selectedDisplayLabel
+                : isLoading
+                  ? "Loading clients..."
                   : placeholder}
             </span>
           </div>

@@ -33,7 +33,12 @@ const mockCalculationState = {
 };
 let mockCostVisibility = { showCogs: false, showMargin: false };
 let mockClientListData = [{ id: 7, name: "Acme", isBuyer: true }];
-let mockClientDetailsData = {
+let mockClientDetailsData: {
+  id: number;
+  name: string;
+  creditLimit: string;
+  totalOwed: string;
+} | null = {
   id: 7,
   name: "Acme",
   creditLimit: "1000",
@@ -355,6 +360,26 @@ describe("SalesOrderSurface", () => {
     expect(
       screen.getByText("Selected client: Hydrated Acme")
     ).toBeInTheDocument();
+  });
+
+  it("shows an unavailable-customer warning when the route client cannot hydrate", () => {
+    mockDraftState.clientId = 7;
+    mockClientListData = [{ id: 99, name: "Other Buyer", isBuyer: true }];
+    mockClientDetailsData = null;
+
+    render(<SalesOrderSurface />);
+
+    expect(
+      screen.getByText("Selected client: Unavailable customer #7")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/customer record that is no longer in active clients/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("grid-inventory")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save Draft" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Confirm Order" })
+    ).toBeDisabled();
   });
 
   it("disables add for non-sellable inventory rows", () => {
