@@ -8,7 +8,7 @@ import {
 } from "react";
 import type { ColDef } from "ag-grid-community";
 import { AlertTriangle, ArrowLeft, Save } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { normalizePositiveIntegerWithin } from "@/lib/quantity";
@@ -277,6 +277,7 @@ function mapInventoryToRows(
 
 export function SalesOrderSurface() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const utils = trpc.useUtils();
   const draft = useOrderDraft({ surfaceVariant: "sheet-native-orders" });
   const handleAddInventoryItems = draft.handleAddInventoryItems;
@@ -309,6 +310,13 @@ export function SalesOrderSurface() {
   const [isCheckingCredit, setIsCheckingCredit] = useState(false);
   const defaultViewAppliedClientRef = useRef<number | null>(null);
   const skipNextDefaultViewApplyRef = useRef(false);
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const salesWorkspaceTab = searchParams.get("tab");
+  const routeMode = searchParams.get("mode");
+  const isCreateOrderEntry = salesWorkspaceTab === "create-order";
+  const isQuoteCreateEntry =
+    isCreateOrderEntry &&
+    (routeMode === "quote" || draft.orderType === "QUOTE");
 
   const clientsQuery = trpc.clients.list.useQuery({ limit: 1000 });
   const clientList = useMemo(() => {
@@ -927,7 +935,21 @@ export function SalesOrderSurface() {
     ? `Draft #${draft.activeDraftId}`
     : draft.isSalesSheetImport
       ? "Catalogue import"
-      : "New draft";
+      : isQuoteCreateEntry
+        ? "New quote"
+        : isCreateOrderEntry
+          ? "New order"
+          : "New draft";
+  const emptyStateTitle = isQuoteCreateEntry
+    ? "Select a customer to start this quote"
+    : isCreateOrderEntry
+      ? "Select a customer to start this order"
+      : "Select a customer to start the order sheet";
+  const emptyStateDescription = isQuoteCreateEntry
+    ? "Choose a customer above to begin a new quote without leaving the sales workspace."
+    : isCreateOrderEntry
+      ? "Choose a customer above to begin a new order without leaving the sales workspace."
+      : "Choose a customer above to begin.";
   const inventoryPanel = (
     <div className="space-y-1">
       <div>
@@ -1181,8 +1203,9 @@ export function SalesOrderSurface() {
         <div className="flex flex-1 items-center justify-center px-4 py-16 text-center text-muted-foreground">
           <div>
             <AlertTriangle className="mx-auto mb-3 h-10 w-10 opacity-40" />
-            <p className="text-sm">
-              Select a customer to start the order sheet
+            <p className="text-sm font-medium">{emptyStateTitle}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {emptyStateDescription}
             </p>
           </div>
         </div>

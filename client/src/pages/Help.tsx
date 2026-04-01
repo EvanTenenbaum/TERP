@@ -117,7 +117,7 @@ Each status change is timestamped and logged for tracking purposes.
 
 **Creating Orders**
 
-Navigate to "Create Order," select a client, add products, and save. The system automatically reserves inventory and calculates totals based on the client's pricing profile.
+Navigate to "New Order," select a client, add products, and save. The system automatically reserves inventory and calculates totals based on the client's pricing profile.
 
 **Working with Quotes**
 

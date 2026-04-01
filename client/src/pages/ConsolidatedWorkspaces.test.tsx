@@ -253,9 +253,7 @@ describe("Consolidated workspace pages", () => {
     render(<SalesWorkspacePage />);
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
     expect(screen.getByText("Quotes Surface")).toBeInTheDocument();
-    expect(
-      screen.getByRole("tab", { name: "Create Order" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "New Order" })).toBeInTheDocument();
   });
 
   it("renders Sales workspace with sheet-native pilot when enabled", async () => {

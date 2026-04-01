@@ -14,6 +14,7 @@ const { mockToastError } = vi.hoisted(() => ({
 
 const mockSetLocation = vi.fn();
 const mockBuildDocumentRoute = vi.fn(() => "/sales?tab=create-order");
+let mockSearch = "?tab=create-order";
 const mockCreditMutation = {
   mutateAsync: vi.fn(),
   isPending: false,
@@ -200,6 +201,7 @@ vi.mock("@/lib/trpc", () => ({
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/sales?tab=create-order", mockSetLocation],
+  useSearch: () => mockSearch,
 }));
 
 vi.mock("sonner", () => ({
@@ -283,11 +285,12 @@ describe("SalesOrderSurface", () => {
     mockBuildDocumentRoute.mockClear();
     mockToastError.mockReset();
     mockDraftState.handleAddInventoryItems.mockReset();
+    mockSearch = "?tab=create-order";
   });
 
   it("renders the unified sales order toolbar", () => {
     render(<SalesOrderSurface />);
-    expect(screen.getByText("New draft")).toBeInTheDocument();
+    expect(screen.getByText("New order")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Queue" })).toBeInTheDocument();
     expect(screen.queryByText("Classic Composer")).not.toBeInTheDocument();
   });
@@ -303,7 +306,21 @@ describe("SalesOrderSurface", () => {
   it("renders empty state when no customer is selected", () => {
     render(<SalesOrderSurface />);
     expect(
-      screen.getByText(/select a customer to start the order sheet/i)
+      screen.getByText(/select a customer to start this order/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/begin a new order without leaving the sales workspace/i)
+    ).toBeInTheDocument();
+  });
+
+  it("uses quote-specific entry copy when the create-order tab is opened in quote mode", () => {
+    mockSearch = "?tab=create-order&mode=quote";
+
+    render(<SalesOrderSurface />);
+
+    expect(screen.getByText("New quote")).toBeInTheDocument();
+    expect(
+      screen.getByText(/select a customer to start this quote/i)
     ).toBeInTheDocument();
   });
 
