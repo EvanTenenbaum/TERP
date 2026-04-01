@@ -31,6 +31,7 @@ const mockCalculationState = {
   isValid: false,
   calculateLineItem: vi.fn(),
 };
+let mockCostVisibility = { showCogs: false, showMargin: false };
 let mockInventoryData = [
   {
     id: 11,
@@ -128,7 +129,7 @@ vi.mock("./PowersheetGrid", () => ({
 
 vi.mock("@/hooks/useOrderDraft", () => ({
   useOrderDraft: () => mockDraftState,
-  resolveOrderCostVisibility: () => ({ showCogs: false, showMargin: false }),
+  resolveOrderCostVisibility: () => mockCostVisibility,
   shouldBypassWorkSurfaceKeyboardForSpreadsheetTarget: () => false,
 }));
 
@@ -253,9 +254,11 @@ describe("SalesOrderSurface", () => {
     mockCreditMutation.isPending = false;
     mockCreditMutation.mutateAsync.mockReset();
     mockCalculationState.isValid = false;
+    mockCostVisibility = { showCogs: false, showMargin: false };
     mockSetLocation.mockReset();
     mockBuildDocumentRoute.mockClear();
     mockToastError.mockReset();
+    mockDraftState.handleAddInventoryItems.mockReset();
   });
 
   it("renders the unified sales order toolbar", () => {
@@ -333,7 +336,31 @@ describe("SalesOrderSurface", () => {
 
     render(<SalesOrderSurface />);
 
-    expect(screen.getByRole("button", { name: "Add" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /add/i })).toBeDisabled();
+  });
+
+  it("applies staged quantity and markup before adding a row", () => {
+    mockDraftState.clientId = 7;
+    mockCostVisibility = { showCogs: false, showMargin: true };
+
+    render(<SalesOrderSurface />);
+
+    fireEvent.change(screen.getByLabelText(/quantity for blue dream/i), {
+      target: { value: "3" },
+    });
+    fireEvent.change(screen.getByLabelText(/markup for blue dream/i), {
+      target: { value: "50" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /\+ add/i }));
+
+    expect(mockDraftState.handleAddInventoryItems).toHaveBeenCalledWith([
+      expect.objectContaining({
+        id: 11,
+        orderQuantity: 3,
+        retailPrice: 15,
+        priceMarkup: 50,
+      }),
+    ]);
   });
 
   it("disables finalize while credit check is in flight", () => {

@@ -11,6 +11,7 @@ import { AlertTriangle, ArrowLeft, Save } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { normalizePositiveIntegerWithin } from "@/lib/quantity";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { useOrderCalculations } from "@/hooks/orders/useOrderCalculations";
 import {
@@ -57,6 +58,7 @@ import {
 } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import { AdaptiveSplitLayout } from "@/components/layout/AdaptiveSplitLayout";
+import InlineRowAddControls from "./InlineRowAddControls";
 import { PowersheetGrid } from "./PowersheetGrid";
 
 interface InventoryBrowserRow {
@@ -75,6 +77,13 @@ interface InventoryBrowserRow {
   _raw: PricedInventoryItem;
 }
 
+interface InventoryRowControls {
+  quantity: string;
+  retailPrice: string;
+  markup: string;
+  lastEdited: "retailPrice" | "markup" | null;
+}
+
 const isMac =
   typeof navigator !== "undefined" &&
   /mac/i.test(navigator.platform || navigator.userAgent);
@@ -91,6 +100,108 @@ const formatCurrency = (value: number) =>
     style: "currency",
     currency: "USD",
   }).format(value);
+
+const roundToCents = (value: number) => Math.round(value * 100) / 100;
+const roundToTenth = (value: number) => Math.round(value * 10) / 10;
+
+const calculateRetailFromMarkup = (basePrice: number, markup: number) =>
+  basePrice > 0 ? roundToCents(basePrice * (1 + markup / 100)) : 0;
+
+const calculateMarkupFromRetail = (basePrice: number, retailPrice: number) =>
+  basePrice > 0
+    ? roundToTenth(((retailPrice - basePrice) / basePrice) * 100)
+    : 0;
+
+const sanitizeQuantityInput = (value: string) => value.replace(/\D/g, "");
+
+const sanitizeDecimalInput = (value: string) => {
+  const cleaned = value.replace(/[^0-9.]/g, "");
+  const [whole, ...fraction] = cleaned.split(".");
+  return fraction.length > 0 ? `${whole}.${fraction.join("")}` : whole;
+};
+
+const parseNonNegativeNumber = (value: string): number | null => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+};
+
+const getInventoryCogsPerUnit = (item: PricedInventoryItem) =>
+  item.effectiveCogs ?? item.basePrice ?? item.unitCogs ?? 0;
+
+const getInventoryRetailPrice = (item: PricedInventoryItem) =>
+  roundToCents(item.retailPrice || item.basePrice || 0);
+
+const buildDefaultInventoryRowControls = (
+  row: InventoryBrowserRow
+): InventoryRowControls => {
+  const cogsPerUnit = getInventoryCogsPerUnit(row._raw);
+  const retailPrice = getInventoryRetailPrice(row._raw);
+  const markup =
+    row._raw.priceMarkup ?? calculateMarkupFromRetail(cogsPerUnit, retailPrice);
+  const availableUnits = Math.max(1, Math.floor(row.quantity || 1));
+
+  return {
+    quantity: String(
+      normalizePositiveIntegerWithin(row.quantity, availableUnits) ?? 1
+    ),
+    retailPrice: retailPrice.toFixed(2),
+    markup: roundToTenth(markup).toFixed(1),
+    lastEdited: null,
+  };
+};
+
+const normalizeInventoryControlsFromPrice = (
+  row: InventoryBrowserRow,
+  controls: InventoryRowControls
+): InventoryRowControls => {
+  const cogsPerUnit = getInventoryCogsPerUnit(row._raw);
+  const availableUnits = Math.max(1, Math.floor(row.quantity || 1));
+  const quantity =
+    normalizePositiveIntegerWithin(controls.quantity, availableUnits) ?? 1;
+  const retailPrice = roundToCents(
+    parseNonNegativeNumber(controls.retailPrice) ??
+      getInventoryRetailPrice(row._raw)
+  );
+  const markup = roundToTenth(
+    calculateMarkupFromRetail(cogsPerUnit, retailPrice)
+  );
+
+  return {
+    quantity: String(quantity),
+    retailPrice: retailPrice.toFixed(2),
+    markup: markup.toFixed(1),
+    lastEdited: null,
+  };
+};
+
+const normalizeInventoryControlsFromMarkup = (
+  row: InventoryBrowserRow,
+  controls: InventoryRowControls
+): InventoryRowControls => {
+  const cogsPerUnit = getInventoryCogsPerUnit(row._raw);
+  const availableUnits = Math.max(1, Math.floor(row.quantity || 1));
+  const quantity =
+    normalizePositiveIntegerWithin(controls.quantity, availableUnits) ?? 1;
+  const fallbackMarkup =
+    row._raw.priceMarkup ??
+    calculateMarkupFromRetail(cogsPerUnit, getInventoryRetailPrice(row._raw));
+  const markup = roundToTenth(
+    parseNonNegativeNumber(controls.markup) ?? fallbackMarkup
+  );
+  const retailPrice = calculateRetailFromMarkup(cogsPerUnit, markup);
+
+  return {
+    quantity: String(quantity),
+    retailPrice: retailPrice.toFixed(2),
+    markup: markup.toFixed(1),
+    lastEdited: null,
+  };
+};
 
 const getInventorySku = (item: PricedInventoryItem) => {
   const raw = item as PricedInventoryItem & {
@@ -186,6 +297,9 @@ export function SalesOrderSurface() {
   const [selectedInventoryRowId, setSelectedInventoryRowId] = useState<
     string | null
   >(null);
+  const [inventoryRowControls, setInventoryRowControls] = useState<
+    Record<number, InventoryRowControls>
+  >({});
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [showCreditWarning, setShowCreditWarning] = useState(false);
   const [creditCheckResult, setCreditCheckResult] =
@@ -289,6 +403,10 @@ export function SalesOrderSurface() {
     [filteredInventory, selectedBatchIds]
   );
 
+  useEffect(() => {
+    setInventoryRowControls({});
+  }, [draft.clientId]);
+
   const calculationState = useOrderCalculations(draft.items, draft.adjustment);
   const orderTotals = calculationState.totals;
   const grandTotal = orderTotals.total + draft.freight;
@@ -337,8 +455,164 @@ export function SalesOrderSurface() {
     isCheckingCredit ||
     creditCheckMutation.isPending;
 
+  const updateInventoryRowControls = useCallback(
+    (
+      row: InventoryBrowserRow,
+      updater: (current: InventoryRowControls) => InventoryRowControls
+    ) => {
+      setInventoryRowControls(current => ({
+        ...current,
+        [row.inventoryId]: updater(
+          current[row.inventoryId] ?? buildDefaultInventoryRowControls(row)
+        ),
+      }));
+    },
+    []
+  );
+
+  const handleInventoryQuantityChange = useCallback(
+    (row: InventoryBrowserRow, value: string) => {
+      updateInventoryRowControls(row, current => ({
+        ...current,
+        quantity: sanitizeQuantityInput(value),
+      }));
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleInventoryQuantityBlur = useCallback(
+    (row: InventoryBrowserRow) => {
+      updateInventoryRowControls(row, current => ({
+        ...current,
+        quantity: normalizeInventoryControlsFromPrice(row, current).quantity,
+      }));
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleInventoryPriceChange = useCallback(
+    (row: InventoryBrowserRow, value: string) => {
+      updateInventoryRowControls(row, current => ({
+        ...current,
+        retailPrice: sanitizeDecimalInput(value),
+        lastEdited: "retailPrice",
+      }));
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleInventoryPriceBlur = useCallback(
+    (row: InventoryBrowserRow) => {
+      updateInventoryRowControls(row, current =>
+        normalizeInventoryControlsFromPrice(row, current)
+      );
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleInventoryMarkupChange = useCallback(
+    (row: InventoryBrowserRow, value: string) => {
+      updateInventoryRowControls(row, current => ({
+        ...current,
+        markup: sanitizeDecimalInput(value),
+        lastEdited: "markup",
+      }));
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleInventoryMarkupBlur = useCallback(
+    (row: InventoryBrowserRow) => {
+      updateInventoryRowControls(row, current =>
+        normalizeInventoryControlsFromMarkup(row, current)
+      );
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleAddInventoryRow = useCallback(
+    (row: InventoryBrowserRow) => {
+      const stagedControls =
+        inventoryRowControls[row.inventoryId] ??
+        buildDefaultInventoryRowControls(row);
+      const normalizedControls =
+        stagedControls.lastEdited === "markup"
+          ? normalizeInventoryControlsFromMarkup(row, stagedControls)
+          : normalizeInventoryControlsFromPrice(row, stagedControls);
+
+      setInventoryRowControls(current => ({
+        ...current,
+        [row.inventoryId]: normalizedControls,
+      }));
+
+      handleAddInventoryItems([
+        {
+          ...row._raw,
+          orderQuantity: Number(normalizedControls.quantity),
+          retailPrice: Number(normalizedControls.retailPrice),
+          priceMarkup: Number(normalizedControls.markup),
+        },
+      ]);
+    },
+    [handleAddInventoryItems, inventoryRowControls]
+  );
+
   const inventoryColumnDefs = useMemo<ColDef<InventoryBrowserRow>[]>(() => {
     const cols: ColDef<InventoryBrowserRow>[] = [
+      {
+        field: "inOrder",
+        headerName: "Add",
+        minWidth: showMargin ? 292 : 224,
+        maxWidth: showMargin ? 292 : 224,
+        pinned: "left",
+        sortable: false,
+        filter: false,
+        resizable: false,
+        suppressNavigable: true,
+        headerTooltip:
+          "Set qty and pricing before adding this row to the order",
+        cellRenderer: (params: { data?: InventoryBrowserRow }) => {
+          const row = params.data;
+          if (!row) return null;
+          const controls =
+            inventoryRowControls[row.inventoryId] ??
+            buildDefaultInventoryRowControls(row);
+          const isNonSellable =
+            row.quantity < 1 ||
+            NON_SELLABLE_STATUSES.includes(
+              row.status as (typeof NON_SELLABLE_STATUSES)[number]
+            );
+
+          return (
+            <InlineRowAddControls
+              added={row.inOrder}
+              disabled={isNonSellable}
+              onAdd={() => handleAddInventoryRow(row)}
+              quantityValue={controls.quantity}
+              quantityLabel={`Quantity for ${row.name}`}
+              onQuantityChange={value =>
+                handleInventoryQuantityChange(row, value)
+              }
+              onQuantityBlur={() => handleInventoryQuantityBlur(row)}
+              priceValue={controls.retailPrice}
+              priceLabel={`Price for ${row.name}`}
+              onPriceChange={value => handleInventoryPriceChange(row, value)}
+              onPriceBlur={() => handleInventoryPriceBlur(row)}
+              markupValue={showMargin ? controls.markup : undefined}
+              markupLabel={showMargin ? `Markup for ${row.name}` : undefined}
+              onMarkupChange={
+                showMargin
+                  ? value => handleInventoryMarkupChange(row, value)
+                  : undefined
+              }
+              onMarkupBlur={
+                showMargin ? () => handleInventoryMarkupBlur(row) : undefined
+              }
+            />
+          );
+        },
+        cellClass: "powersheet-cell--locked",
+      },
       {
         field: "status",
         headerName: "",
@@ -443,40 +717,20 @@ export function SalesOrderSurface() {
       });
     }
 
-    cols.push({
-      field: "inOrder",
-      headerName: "Action",
-      minWidth: 90,
-      maxWidth: 110,
-      suppressNavigable: true,
-      sortable: false,
-      cellRenderer: (params: { data?: InventoryBrowserRow }) => {
-        const row = params.data;
-        if (!row) return null;
-        const isNonSellable = NON_SELLABLE_STATUSES.includes(
-          row.status as (typeof NON_SELLABLE_STATUSES)[number]
-        );
-        return (
-          <Button
-            type="button"
-            size="sm"
-            variant={row.inOrder ? "secondary" : "outline"}
-            className="h-6 px-2 text-[10px]"
-            disabled={row.inOrder || isNonSellable}
-            onClick={event => {
-              event.stopPropagation();
-              handleAddInventoryItems([row._raw]);
-            }}
-          >
-            {row.inOrder ? "Added" : "Add"}
-          </Button>
-        );
-      },
-      cellClass: "powersheet-cell--locked",
-    });
-
     return cols;
-  }, [columnVisibility, handleAddInventoryItems, showCogs]);
+  }, [
+    columnVisibility,
+    handleAddInventoryRow,
+    handleInventoryMarkupBlur,
+    handleInventoryMarkupChange,
+    handleInventoryPriceBlur,
+    handleInventoryPriceChange,
+    handleInventoryQuantityBlur,
+    handleInventoryQuantityChange,
+    inventoryRowControls,
+    showCogs,
+    showMargin,
+  ]);
 
   const handleClientChange = useCallback(
     (clientId: number | null) => {
@@ -654,7 +908,7 @@ export function SalesOrderSurface() {
         surfaceId="sales-order-inventory-browser"
         requirementIds={["ORD-INV-001", "ORD-INV-002"]}
         title="Inventory"
-        description="Pick rows from available inventory and add them to the order."
+        description="Set qty and price on the row, then add it to the order."
         rows={inventoryRows}
         columnDefs={inventoryColumnDefs}
         getRowId={row => row.identity.rowKey}
