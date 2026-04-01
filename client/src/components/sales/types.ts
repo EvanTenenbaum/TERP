@@ -24,6 +24,7 @@ export interface PricedInventoryItem {
   quantity: number;
   grade?: string;
   vendor?: string;
+  imageUrl?: string;
   vendorId?: number;
   priceMarkup: number;
   appliedRules: Array<{

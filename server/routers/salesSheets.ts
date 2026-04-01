@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   router,
+  publicProcedure,
   protectedProcedure,
   getAuthenticatedUserId,
 } from "../_core/trpc";
@@ -46,6 +47,7 @@ const salesSheetItemSchema = z.object({
   quantity: z.number().min(0).finite(),
   grade: z.string().optional(),
   vendor: z.string().optional(),
+  imageUrl: z.string().url().optional(),
   priceMarkup: z.number().finite(),
   appliedRules: z
     .array(
@@ -76,6 +78,7 @@ const draftItemSchema = z.object({
   quantity: z.number().min(0).finite(),
   grade: z.string().optional(),
   vendor: z.string().optional(),
+  imageUrl: z.string().url().optional(),
   priceMarkup: z.number().finite(),
   appliedRules: z
     .array(
@@ -119,21 +122,18 @@ export const salesSheetsRouter = router({
       const offset = input?.offset ?? 0;
       const clientId = input?.clientId;
 
-      // Fetch sales sheet history with optional client filter
-      const sheets = await salesSheetsDb.getSalesSheetHistory(
-        clientId ?? 0, // 0 means fetch all when supported
-        limit + offset // Fetch more to slice, since getSalesSheetHistory doesn't support offset directly
+      const { sheets, total } = await salesSheetsDb.listSalesSheets(
+        clientId,
+        limit,
+        offset
       );
 
-      // Apply offset manually
-      const paginatedSheets = sheets.slice(offset, offset + limit);
-
       return {
-        data: paginatedSheets,
-        total: sheets.length,
+        data: sheets,
+        total,
         limit,
         offset,
-        hasMore: offset + limit < sheets.length,
+        hasMore: offset + limit < total,
       };
     }),
 
@@ -389,7 +389,7 @@ export const salesSheetsRouter = router({
   /**
    * Get a sales sheet by share token (public - no auth required)
    */
-  getByToken: protectedProcedure
+  getByToken: publicProcedure
     .input(z.object({ token: z.string().min(1) }))
     .query(async ({ input }) => {
       const sheet = await salesSheetsDb.getSalesSheetByToken(input.token);
@@ -413,6 +413,7 @@ export const salesSheetsRouter = router({
             quantity: number;
             finalPrice?: number;
             retailPrice: number;
+            imageUrl?: string;
           }>
         ).map(item => ({
           id: item.id,
@@ -420,6 +421,7 @@ export const salesSheetsRouter = router({
           category: item.category,
           quantity: item.quantity,
           price: item.finalPrice ?? item.retailPrice,
+          imageUrl: item.imageUrl,
         })),
         totalValue: sheet.totalValue,
         itemCount: sheet.itemCount,

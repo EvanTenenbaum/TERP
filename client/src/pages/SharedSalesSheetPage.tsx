@@ -83,6 +83,8 @@ export default function SharedSalesSheetPage() {
     });
   };
 
+  const hasImages = sheet.items.some(item => Boolean(item.imageUrl));
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -150,6 +152,9 @@ export default function SharedSalesSheetPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
+                  {hasImages ? (
+                    <TableHead className="w-20 text-center">Image</TableHead>
+                  ) : null}
                   <TableHead>Item</TableHead>
                   <TableHead className="text-center">Category</TableHead>
                   <TableHead className="text-right">Qty Available</TableHead>
@@ -163,6 +168,24 @@ export default function SharedSalesSheetPage() {
                     <TableCell className="font-medium text-muted-foreground">
                       {index + 1}
                     </TableCell>
+                    {hasImages ? (
+                      <TableCell className="align-middle">
+                        {item.imageUrl ? (
+                          <div className="mx-auto h-14 w-14 overflow-hidden rounded-md border border-border/70 bg-muted/30">
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        ) : (
+                          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-border/70 text-[10px] text-muted-foreground">
+                            No image
+                          </div>
+                        )}
+                      </TableCell>
+                    ) : null}
                     <TableCell className="font-medium">{item.name}</TableCell>
                     <TableCell className="text-center">
                       {item.category ? (
