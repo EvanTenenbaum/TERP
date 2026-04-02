@@ -49,13 +49,13 @@ jobs:
           --health-retries=5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -125,7 +125,7 @@ jobs:
 
       - name: Upload Playwright report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nightly-e2e-report-${{ steps.suite.outputs.suite }}
           path: playwright-report/
@@ -133,7 +133,7 @@ jobs:
 
       - name: Upload test results JSON
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nightly-e2e-results-${{ steps.suite.outputs.suite }}
           path: test-results.json
@@ -141,7 +141,7 @@ jobs:
 
       - name: Create issue on failure
         if: steps.e2e.outputs.status == 'failed'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
