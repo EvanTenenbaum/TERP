@@ -1,0 +1,45 @@
+name: Temp Authorize TERP GH Runner Key
+
+on:
+  workflow_dispatch:
+
+jobs:
+  authorize:
+    runs-on: [self-hosted, do, mega-qa]
+    timeout-minutes: 10
+
+    steps:
+      - name: Install local public key on terp-gh-runner-1
+        env:
+          TARGET_HOST: 167.71.255.38
+          TARGET_USER: root
+          PUBKEY_B64: c3NoLWVkMjU1MTkgQUFBQUMzTnphQzFsWkRJMU5URTVBQUFBSUJxakpjb2c2ajJacHovQUNkM25UK0d1dlRHSFN1bUV4dVd0d09FMFN0Sk8gZXZhbgo=
+        run: |
+          set -euo pipefail
+
+          ssh_opts=(
+            -o BatchMode=yes
+            -o ConnectTimeout=10
+            -o StrictHostKeyChecking=accept-new
+          )
+
+          chosen_key=""
+          for key in "$HOME/.ssh/id_ed25519" "$HOME/.ssh/id_rsa" "$HOME/.ssh/github_actions" "$HOME/.ssh/terp-gh-runner"; do
+            [ -f "$key" ] || continue
+            if ssh -i "$key" "${ssh_opts[@]}" "${TARGET_USER}@${TARGET_HOST}" "echo SSH_OK" >/tmp/ssh-probe.out 2>/tmp/ssh-probe.err; then
+              chosen_key="$key"
+              break
+            fi
+          done
+
+          if [ -z "$chosen_key" ]; then
+            echo "No working SSH identity found on runner."
+            echo "--- ~/.ssh ---"
+            ls -la "$HOME/.ssh" || true
+            echo "--- probe stderr ---"
+            cat /tmp/ssh-probe.err || true
+            exit 1
+          fi
+
+          ssh -i "$chosen_key" "${ssh_opts[@]}" "${TARGET_USER}@${TARGET_HOST}" \
+            "PUBKEY_B64='${PUBKEY_B64}' bash -lc 'set -euo pipefail; PUBKEY=\$(printf %s \"\$PUBKEY_B64\" | base64 -d); mkdir -p ~/.ssh; chmod 700 ~/.ssh; touch ~/.ssh/authorized_keys; chmod 600 ~/.ssh/authorized_keys; grep -qxF \"\$PUBKEY\" ~/.ssh/authorized_keys || printf \"%s\n\" \"\$PUBKEY\" >> ~/.ssh/authorized_keys; echo KEY_INSTALLED'"
