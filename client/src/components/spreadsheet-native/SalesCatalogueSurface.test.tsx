@@ -7,6 +7,7 @@ import {
   applyCatalogueLineRetail,
   buildCatalogueCsv,
   buildPrintableCatalogueHtml,
+  sanitizeLoadedSheetItems,
   sanitizePrintableImageUrl,
 } from "./SalesCatalogueSurface";
 import { toast } from "sonner";
@@ -202,6 +203,7 @@ vi.mock("sonner", () => ({
     success: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
+    warning: vi.fn(),
   },
 }));
 
@@ -286,7 +288,7 @@ describe("SalesCatalogueSurface", () => {
   });
 
   it("keeps handoff actions disabled until a finalized sheet id exists", () => {
-    draftState.canConvert = true;
+    draftState.canConvert = false;
     draftState.canGoLive = false;
 
     render(<SalesCatalogueSurface />);
@@ -294,6 +296,20 @@ describe("SalesCatalogueSurface", () => {
     expect(screen.getByRole("button", { name: "Live" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "→ Sales Order" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "→ Quote" })).toBeDisabled();
+  });
+
+  it("rejects malformed saved-sheet items that use a zero id", () => {
+    expect(
+      sanitizeLoadedSheetItems([
+        {
+          id: 0,
+          name: "Corrupt Item",
+          basePrice: 10,
+          retailPrice: 20,
+          quantity: 1,
+        },
+      ])
+    ).toEqual([]);
   });
 
   it("preserves loaded retail when a zero-base row is repriced by markup", () => {
@@ -571,5 +587,66 @@ describe("SalesCatalogueSurface", () => {
     fireEvent.click(screen.getByText("Delete Draft 42"));
 
     expect(deleteDraftById).toHaveBeenCalledWith(42);
+  });
+
+  it("blocks non-sellable rows from being added from the selected-row action", () => {
+    inventoryItems = [{ ...defaultInventoryItem, status: "QUARANTINED" }];
+
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
+
+    expect(toast.warning).toHaveBeenCalledWith(
+      "Only sellable inventory can be added to the catalogue"
+    );
+    expect(screen.queryByText(/1 items ·/)).not.toBeInTheDocument();
+  });
+
+  it("skips non-sellable rows during bulk add while still adding sellable items", () => {
+    inventoryItems = [
+      { ...defaultInventoryItem, id: 1, status: "QUARANTINED" },
+      { ...defaultInventoryItem, id: 2, name: "Sellable Item", status: "LIVE" },
+    ];
+
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByRole("button", { name: "Select All" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bulk Add (2)" }));
+
+    expect(toast.warning).toHaveBeenCalledWith(
+      "Only sellable inventory can be added to the catalogue"
+    );
+    expect(screen.getByText(/1 items ·/)).toBeInTheDocument();
+  });
+
+  it("clears the local catalogue after a successful quote handoff", async () => {
+    draftState.canConvert = true;
+    draftState.lastSavedSheetId = 202;
+    handleConvertToOrder.mockImplementation(async onReady => {
+      await onReady();
+      return true;
+    });
+
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
+
+    expect(screen.getByText(/1 items ·/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "→ Quote" }));
+
+    await waitFor(() => {
+      expect(handleConvertToOrder).toHaveBeenCalledTimes(1);
+      expect(draftState.resetDraft).toHaveBeenCalledTimes(1);
+      expect(setLocation).toHaveBeenCalledWith(
+        expect.stringContaining("fromSalesSheet=true")
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/1 items ·/)).not.toBeInTheDocument();
+    });
   });
 });
