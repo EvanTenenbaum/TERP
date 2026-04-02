@@ -3,8 +3,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import {
   SalesCatalogueSurface,
+  applyCatalogueLineMarkup,
+  applyCatalogueLineRetail,
   buildCatalogueCsv,
+  buildPrintableCatalogueHtml,
+  sanitizePrintableImageUrl,
 } from "./SalesCatalogueSurface";
+import { toast } from "sonner";
 
 const setLocation = vi.fn();
 const deleteDraftById = vi.fn();
@@ -12,6 +17,18 @@ const saveDraft = vi.fn();
 const saveSheet = vi.fn(async () => 202);
 const generateShareLink = vi.fn();
 const handleConvertToOrder = vi.fn(async () => true);
+const defaultInventoryItem = {
+  id: 1,
+  name: '3.5g "Loud" Pack',
+  category: 'Flower "Top Shelf"',
+  basePrice: 10,
+  retailPrice: 20,
+  quantity: 2,
+  priceMarkup: 0,
+  appliedRules: [],
+  status: "LIVE",
+};
+let inventoryItems = [defaultInventoryItem];
 
 const draftState = {
   currentDraftId: null,
@@ -114,14 +131,21 @@ vi.mock("@/components/sales/SavedSheetsDialog", () => ({
 vi.mock("@/components/common/UnifiedExportMenu", () => ({
   UnifiedExportMenu: ({
     onExportCSV,
+    onExportPDF,
     disabled,
   }: {
     onExportCSV?: () => void;
+    onExportPDF?: () => void;
     disabled?: boolean;
   }) => (
-    <button disabled={disabled} onClick={onExportCSV} type="button">
-      Export CSV
-    </button>
+    <div>
+      <button disabled={disabled} onClick={onExportCSV} type="button">
+        Export CSV
+      </button>
+      <button disabled={disabled} onClick={onExportPDF} type="button">
+        Export PDF
+      </button>
+    </div>
   ),
 }));
 
@@ -186,19 +210,7 @@ vi.mock("@/lib/trpc", () => ({
     salesSheets: {
       getInventory: {
         useQuery: vi.fn(() => ({
-          data: [
-            {
-              id: 1,
-              name: '3.5g "Loud" Pack',
-              category: 'Flower "Top Shelf"',
-              basePrice: 10,
-              retailPrice: 20,
-              quantity: 2,
-              priceMarkup: 0,
-              appliedRules: [],
-              status: "LIVE",
-            },
-          ],
+          data: inventoryItems,
           isLoading: false,
           refetch: vi.fn(),
         })),
@@ -254,6 +266,7 @@ describe("SalesCatalogueSurface", () => {
     draftState.isConverting = false;
     draftState.drafts = [];
     draftState.draftsLoading = false;
+    inventoryItems = [{ ...defaultInventoryItem }];
   });
 
   it("renders toolbar with Sales Catalogue badge", () => {
@@ -272,16 +285,68 @@ describe("SalesCatalogueSurface", () => {
     expect(screen.getByText("Draft name required to save")).toBeInTheDocument();
   });
 
-  it("keeps Live disabled until a finalized sheet id exists", () => {
+  it("keeps handoff actions disabled until a finalized sheet id exists", () => {
     draftState.canConvert = true;
     draftState.canGoLive = false;
 
     render(<SalesCatalogueSurface />);
 
     expect(screen.getByRole("button", { name: "Live" })).toBeDisabled();
-    expect(
-      screen.getByRole("button", { name: "→ Sales Order" })
-    ).not.toBeDisabled();
+    expect(screen.getByRole("button", { name: "→ Sales Order" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "→ Quote" })).toBeDisabled();
+  });
+
+  it("preserves loaded retail when a zero-base row is repriced by markup", () => {
+    const repriced = applyCatalogueLineMarkup(
+      {
+        ...defaultInventoryItem,
+        basePrice: 0,
+        retailPrice: 36,
+        priceMarkup: 18,
+      },
+      24
+    );
+
+    expect(repriced.priceMarkup).toBe(24);
+    expect(repriced.retailPrice).toBe(36);
+  });
+
+  it("preserves loaded markup when a zero-base row is repriced by retail", () => {
+    const repriced = applyCatalogueLineRetail(
+      {
+        ...defaultInventoryItem,
+        basePrice: 0,
+        retailPrice: 36,
+        priceMarkup: 18,
+      },
+      42
+    );
+
+    expect(repriced.retailPrice).toBe(42);
+    expect(repriced.priceMarkup).toBe(18);
+  });
+
+  it("sanitizes printable image urls before writing the print document", () => {
+    expect(sanitizePrintableImageUrl("/catalogue/item.png")).toBe(
+      "http://localhost:3000/catalogue/item.png"
+    );
+    expect(sanitizePrintableImageUrl("javascript:alert(1)")).toBeNull();
+
+    const html = buildPrintableCatalogueHtml({
+      title: "Spring Menu",
+      clientName: "Golden State",
+      includeImages: true,
+      totalValue: 20,
+      items: [
+        {
+          ...defaultInventoryItem,
+          imageUrl: "javascript:alert(1)",
+        },
+      ],
+    });
+
+    expect(html).not.toContain("javascript:alert(1)");
+    expect(html).toContain("No image");
   });
 
   it("clears stale inventory selection when filters hide the selected row", async () => {
@@ -351,6 +416,57 @@ describe("SalesCatalogueSurface", () => {
 
     createObjectURL.mockRestore();
     revokeObjectURL.mockRestore();
+  });
+
+  it("only reports PDF export success when the print window opens", () => {
+    const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
+    fireEvent.click(screen.getByRole("button", { name: "Export PDF" }));
+
+    expect(toast.error).toHaveBeenCalledWith(
+      "Allow pop-ups to print the catalogue"
+    );
+    expect(toast.success).not.toHaveBeenCalledWith(
+      "Print dialog opened. Use Save as PDF to export."
+    );
+
+    openSpy.mockRestore();
+  });
+
+  it("fails loudly when opening the shared view is blocked", () => {
+    const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
+    draftState.canShare = true;
+    draftState.lastSavedSheetId = 202;
+    draftState.lastShareUrl = "http://localhost:3000/shared/sales-sheet/test";
+
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open Shared View" }));
+
+    expect(toast.error).toHaveBeenCalledWith(
+      "Allow pop-ups to open the shared view"
+    );
+
+    openSpy.mockRestore();
+  });
+
+  it("proactively warns that share and export actions open a new browser tab or window", () => {
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
+
+    expect(
+      screen.getByText(
+        "Shared view, PDF export, and print open a new browser tab or window."
+      )
+    ).toBeInTheDocument();
   });
 
   it("confirms before switching clients with unsaved work", () => {
