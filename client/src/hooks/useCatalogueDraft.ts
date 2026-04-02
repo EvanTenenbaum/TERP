@@ -46,6 +46,10 @@ function buildItemsFingerprint(sourceItems: PricedInventoryItem[]) {
   return JSON.stringify(buildSheetItems(sourceItems));
 }
 
+function buildAutoDraftName(now = new Date()) {
+  return `Sales Catalogue ${now.toISOString().slice(0, 16).replace("T", " ")}`;
+}
+
 interface UseCatalogueDraftOptions {
   clientId: number | null;
   items: PricedInventoryItem[];
@@ -141,12 +145,17 @@ export function useCatalogueDraft({
 
   // ── mutations ───────────────────────────────────────────────────────────
   const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation();
+  const saveSheetMutation = trpc.salesSheets.save.useMutation();
   const saveDraftMutateAsyncRef = useRef(saveDraftMutation.mutateAsync);
+  const saveSheetMutateAsyncRef = useRef(saveSheetMutation.mutateAsync);
   const invalidateDraftsRef = useRef(utils.salesSheets.getDrafts.invalidate);
 
   useEffect(() => {
     saveDraftMutateAsyncRef.current = saveDraftMutation.mutateAsync;
   }, [saveDraftMutation.mutateAsync]);
+  useEffect(() => {
+    saveSheetMutateAsyncRef.current = saveSheetMutation.mutateAsync;
+  }, [saveSheetMutation.mutateAsync]);
   useEffect(() => {
     invalidateDraftsRef.current = utils.salesSheets.getDrafts.invalidate;
   }, [utils.salesSheets.getDrafts.invalidate]);
@@ -187,8 +196,6 @@ export function useCatalogueDraft({
   // Track the last finalized sheet ID — needed for share link generation.
   // salesSheets.save returns a number (the sheetId), not an object.
   const [lastSavedSheetId, setLastSavedSheetId] = useState<number | null>(null);
-
-  const saveSheetMutation = trpc.salesSheets.save.useMutation();
 
   // ── queries ─────────────────────────────────────────────────────────────
   const draftsQuery = trpc.salesSheets.getDrafts.useQuery(
@@ -413,26 +420,41 @@ export function useCatalogueDraft({
   );
 
   const saveSheet = useCallback(async () => {
-    if (
-      !clientId ||
-      items.length === 0 ||
-      saveLockRef.current ||
-      sheetSaveLockRef.current
-    ) {
+    if (!clientId || items.length === 0 || sheetSaveLockRef.current) {
+      return null;
+    }
+
+    if (saveLockRef.current) {
+      toast.error("Draft save is already in progress");
       return null;
     }
 
     const contextToken = contextTokenRef.current;
+    const normalizedDraftName = draftName.trim();
+    const finalDraftName = normalizedDraftName || buildAutoDraftName();
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
     sheetSaveLockRef.current = true;
     setIsFinalizingLocked(true);
     try {
-      if (draftName.trim()) {
-        await persistDraft({
-          draftId: currentDraftId ?? undefined,
-          clientId,
-          name: draftName,
-          items,
-        });
+      const draftPersisted = await persistDraft({
+        draftId: currentDraftId ?? undefined,
+        clientId,
+        name: finalDraftName,
+        items,
+      });
+
+      if (!draftPersisted) {
+        return null;
+      }
+
+      if (!normalizedDraftName) {
+        previousDraftNameRef.current = finalDraftName;
+        setDraftName(finalDraftName);
       }
 
       if (
@@ -448,7 +470,7 @@ export function useCatalogueDraft({
         0
       );
 
-      const sheetId = await saveSheetMutation.mutateAsync({
+      const sheetId = await saveSheetMutateAsyncRef.current({
         clientId,
         items: sheetItems,
         totalValue,
@@ -490,7 +512,6 @@ export function useCatalogueDraft({
     draftName,
     items,
     persistDraft,
-    saveSheetMutation,
   ]);
 
   const generateShareLink = useCallback(async () => {
@@ -526,49 +547,49 @@ export function useCatalogueDraft({
 
   const handleConvertToOrder = useCallback(
     async (onReady: () => void | Promise<void>) => {
-    if (
-      !clientId ||
-      items.length === 0 ||
-      hasUnsavedChanges ||
-      saveLockRef.current ||
-      sheetSaveLockRef.current ||
-      convertToOrderLockRef.current ||
-      !lastSavedSheetId
-    ) {
-      return false;
-    }
-
-    convertToOrderLockRef.current = true;
-    setIsConvertingToOrder(true);
-
-    const conversionItems = buildSheetItems(items);
-
-    const handoffPayload = JSON.stringify({
-      clientId,
-      items: conversionItems,
-    });
-    let handoffPrepared = false;
-
-    try {
-      sessionStorage.setItem("salesSheetToQuote", handoffPayload);
-
-      if (sessionStorage.getItem("salesSheetToQuote") !== handoffPayload) {
-        throw new Error("conversion handoff could not be verified");
+      if (
+        !clientId ||
+        items.length === 0 ||
+        hasUnsavedChanges ||
+        saveLockRef.current ||
+        sheetSaveLockRef.current ||
+        convertToOrderLockRef.current ||
+        !lastSavedSheetId
+      ) {
+        return false;
       }
 
-      handoffPrepared = true;
-      await onReady();
-      return true;
-    } catch (error) {
-      toast.error(
-        `${handoffPrepared ? "Failed to complete" : "Failed to prepare"} order handoff: ` +
-          (error instanceof Error ? error.message : "Unknown error")
-      );
-      return false;
-    } finally {
-      convertToOrderLockRef.current = false;
-      setIsConvertingToOrder(false);
-    }
+      convertToOrderLockRef.current = true;
+      setIsConvertingToOrder(true);
+
+      const conversionItems = buildSheetItems(items);
+
+      const handoffPayload = JSON.stringify({
+        clientId,
+        items: conversionItems,
+      });
+      let handoffPrepared = false;
+
+      try {
+        sessionStorage.setItem("salesSheetToQuote", handoffPayload);
+
+        if (sessionStorage.getItem("salesSheetToQuote") !== handoffPayload) {
+          throw new Error("conversion handoff could not be verified");
+        }
+
+        handoffPrepared = true;
+        await onReady();
+        return true;
+      } catch (error) {
+        toast.error(
+          `${handoffPrepared ? "Failed to complete" : "Failed to prepare"} order handoff: ` +
+            (error instanceof Error ? error.message : "Unknown error")
+        );
+        return false;
+      } finally {
+        convertToOrderLockRef.current = false;
+        setIsConvertingToOrder(false);
+      }
     },
     [clientId, lastSavedSheetId, items, hasUnsavedChanges]
   );
@@ -614,8 +635,7 @@ export function useCatalogueDraft({
     canGoLive:
       !hasUnsavedChanges && lastSavedSheetId !== null && items.length > 0,
     lastSavedSheetId,
-    isConverting:
-      saveSheetMutation.isPending || isFinalizingLocked || isConvertingToOrder,
+    isConverting: isConvertingToOrder,
     saveDraft,
     saveSheet,
     loadDraft,

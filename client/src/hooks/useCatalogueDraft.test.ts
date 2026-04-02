@@ -248,6 +248,36 @@ describe("useCatalogueDraft", () => {
     expect(saveDraftMutate).not.toHaveBeenCalled();
   });
 
+  it("auto-generates a draft name before finalizing an unnamed catalogue", async () => {
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    await act(async () => {
+      await result.current.saveSheet();
+    });
+
+    expect(saveDraftMutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: expect.stringMatching(/^Sales Catalogue \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/),
+      })
+    );
+    expect(result.current.draftName).toMatch(
+      /^Sales Catalogue \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/
+    );
+  });
+
   it("serializes concurrent saves so only one draft request is fired", async () => {
     let resolveSave: ((value: { draftId: number }) => void) | undefined;
     saveDraftMutateAsync.mockImplementation(
@@ -282,6 +312,52 @@ describe("useCatalogueDraft", () => {
     });
 
     expect(saveDraftMutateAsync).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveSave?.({ draftId: 333 });
+    });
+  });
+
+  it("blocks sheet finalization while a draft save is already in progress", async () => {
+    let resolveSave: ((value: { draftId: number }) => void) | undefined;
+    saveDraftMutateAsync.mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolveSave = resolve;
+        })
+    );
+
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    act(() => {
+      result.current.setDraftName("March Mix");
+    });
+
+    act(() => {
+      result.current.saveDraft();
+    });
+
+    let finalizedSheetId = 999;
+    await act(async () => {
+      finalizedSheetId = (await result.current.saveSheet()) ?? 0;
+    });
+
+    expect(finalizedSheetId).toBe(0);
+    expect(convertMutateAsync).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledWith("Draft save is already in progress");
 
     await act(async () => {
       resolveSave?.({ draftId: 333 });
@@ -365,7 +441,9 @@ describe("useCatalogueDraft", () => {
       secondSave = result.current.saveSheet();
     });
 
-    expect(convertMutateAsync).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(convertMutateAsync).toHaveBeenCalledTimes(1);
+    });
 
     await act(async () => {
       resolveSheet?.(202);
@@ -448,7 +526,11 @@ describe("useCatalogueDraft", () => {
     });
 
     expect(result.current.isFinalizing).toBe(true);
-    expect(result.current.isConverting).toBe(true);
+    expect(result.current.isConverting).toBe(false);
+
+    await waitFor(() => {
+      expect(convertMutateAsync).toHaveBeenCalledTimes(1);
+    });
 
     await act(async () => {
       resolveSheet?.(202);
