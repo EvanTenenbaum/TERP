@@ -1304,19 +1304,20 @@ export function SalesCatalogueSurface() {
         );
         return;
       }
-      const converted = await convertCatalogueToOrder();
+      const converted = await convertCatalogueToOrder(async () => {
+        resetCatalogueDraft();
+        setSelectedItems([]);
+        setSelectedInventoryRowId(null);
+        setSelectedPreviewRowId(null);
+        setCheckedInventoryIds(new Set());
+        setLocation(
+          buildSalesWorkspacePath("create-order", {
+            fromSalesSheet,
+            mode,
+          })
+        );
+      });
       if (!converted) return;
-      resetCatalogueDraft();
-      setSelectedItems([]);
-      setSelectedInventoryRowId(null);
-      setSelectedPreviewRowId(null);
-      setCheckedInventoryIds(new Set());
-      setLocation(
-        buildSalesWorkspacePath("create-order", {
-          fromSalesSheet,
-          mode,
-        })
-      );
     },
     [
       convertCatalogueToOrder,

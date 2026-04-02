@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import type { PricedInventoryItem, DraftInfo } from "@/components/sales/types";
@@ -15,6 +15,35 @@ function toAbsoluteShareUrl(path: string): string {
   }
 
   return new URL(path, window.location.origin).toString();
+}
+
+function buildSheetItemSnapshot(item: PricedInventoryItem) {
+  return {
+    id: item.id,
+    name: item.name,
+    basePrice: item.basePrice,
+    retailPrice: item.retailPrice,
+    quantity: item.quantity,
+    category: item.category,
+    vendor: item.vendor,
+    imageUrl: item.imageUrl,
+    cogsMode: item.cogsMode,
+    unitCogs: item.unitCogs,
+    unitCogsMin: item.unitCogsMin,
+    unitCogsMax: item.unitCogsMax,
+    effectiveCogs: item.effectiveCogs,
+    effectiveCogsBasis: item.effectiveCogsBasis,
+    priceMarkup: item.priceMarkup,
+    appliedRules: item.appliedRules,
+  };
+}
+
+function buildSheetItems(sourceItems: PricedInventoryItem[]) {
+  return sourceItems.map(buildSheetItemSnapshot);
+}
+
+function buildItemsFingerprint(sourceItems: PricedInventoryItem[]) {
+  return JSON.stringify(buildSheetItems(sourceItems));
 }
 
 interface UseCatalogueDraftOptions {
@@ -49,7 +78,7 @@ interface UseCatalogueDraftReturn {
   loadDraft: (draftId: number) => Promise<PricedInventoryItem[]>;
   deleteDraft: () => void;
   deleteDraftById: (draftId: number) => void;
-  handleConvertToOrder: () => Promise<boolean>;
+  handleConvertToOrder: (onReady: () => void | Promise<void>) => Promise<boolean>;
   markSheetAsLoaded: (sheetId: number | null) => void;
 
   // Share
@@ -76,6 +105,7 @@ export function useCatalogueDraft({
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [isSaveLocked, setIsSaveLocked] = useState(false);
   const [isFinalizingLocked, setIsFinalizingLocked] = useState(false);
+  const [isConvertingToOrder, setIsConvertingToOrder] = useState(false);
   const [lastShareUrl, setLastShareUrl] = useState<string | null>(null);
 
   // ── refs for stale-closure-safe auto-save ───────────────────────────────
@@ -84,6 +114,7 @@ export function useCatalogueDraft({
   const isDeletingDraftRef = useRef(false);
   const saveLockRef = useRef(false);
   const sheetSaveLockRef = useRef(false);
+  const convertToOrderLockRef = useRef(false);
   const lastDeletedDraftIdRef = useRef<number | null>(null);
   const selectedItemsRef = useRef<PricedInventoryItem[]>([]);
   const draftNameRef = useRef("");
@@ -105,6 +136,8 @@ export function useCatalogueDraft({
   useEffect(() => {
     currentDraftIdRef.current = currentDraftId;
   }, [currentDraftId]);
+
+  const itemsFingerprint = useMemo(() => buildItemsFingerprint(items), [items]);
 
   // ── mutations ───────────────────────────────────────────────────────────
   const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation();
@@ -183,7 +216,7 @@ export function useCatalogueDraft({
     }
     setLastShareUrl(null);
     setHasUnsavedChanges(true);
-  }, [items]);
+  }, [itemsFingerprint]);
 
   useEffect(() => {
     if (draftName === previousDraftNameRef.current) return;
@@ -197,29 +230,6 @@ export function useCatalogueDraft({
     setLastShareUrl(null);
     setHasUnsavedChanges(true);
   }, [draftName]);
-
-  const buildSheetItems = useCallback(
-    (sourceItems: PricedInventoryItem[]) =>
-      sourceItems.map(item => ({
-        id: item.id,
-        name: item.name,
-        basePrice: item.basePrice,
-        retailPrice: item.retailPrice,
-        quantity: item.quantity,
-        category: item.category,
-        vendor: item.vendor,
-        imageUrl: item.imageUrl,
-        cogsMode: item.cogsMode,
-        unitCogs: item.unitCogs,
-        unitCogsMin: item.unitCogsMin,
-        unitCogsMax: item.unitCogsMax,
-        effectiveCogs: item.effectiveCogs,
-        effectiveCogsBasis: item.effectiveCogsBasis,
-        priceMarkup: item.priceMarkup,
-        appliedRules: item.appliedRules,
-      })),
-    []
-  );
 
   const persistDraft = useCallback(
     async ({
@@ -304,7 +314,7 @@ export function useCatalogueDraft({
       return;
     }
 
-    if (items.length === 0 && currentDraftIdRef.current === null) {
+    if (itemsFingerprint === "[]" && currentDraftIdRef.current === null) {
       return;
     }
 
@@ -334,7 +344,7 @@ export function useCatalogueDraft({
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [hasUnsavedChanges, clientId, items, draftName, persistDraft]);
+  }, [hasUnsavedChanges, clientId, itemsFingerprint, draftName, persistDraft]);
 
   // ── actions ─────────────────────────────────────────────────────────────
   const saveDraft = useCallback(() => {
@@ -412,6 +422,7 @@ export function useCatalogueDraft({
       return null;
     }
 
+    const contextToken = contextTokenRef.current;
     sheetSaveLockRef.current = true;
     setIsFinalizingLocked(true);
     try {
@@ -422,6 +433,13 @@ export function useCatalogueDraft({
           name: draftName,
           items,
         });
+      }
+
+      if (
+        contextToken !== contextTokenRef.current ||
+        clientId !== selectedClientIdRef.current
+      ) {
+        return null;
       }
 
       const sheetItems = buildSheetItems(items);
@@ -435,6 +453,14 @@ export function useCatalogueDraft({
         items: sheetItems,
         totalValue,
       });
+
+      if (
+        contextToken !== contextTokenRef.current ||
+        clientId !== selectedClientIdRef.current
+      ) {
+        return null;
+      }
+
       setLastSavedSheetId(sheetId);
       setLastShareUrl(null);
       setLastSaveTime(new Date());
@@ -442,6 +468,13 @@ export function useCatalogueDraft({
       toast.success("Catalogue saved for sharing");
       return sheetId;
     } catch (error) {
+      if (
+        contextToken !== contextTokenRef.current ||
+        clientId !== selectedClientIdRef.current
+      ) {
+        return null;
+      }
+
       toast.error(
         "Failed to save sheet: " +
           (error instanceof Error ? error.message : "Unknown error")
@@ -452,7 +485,6 @@ export function useCatalogueDraft({
       setIsFinalizingLocked(false);
     }
   }, [
-    buildSheetItems,
     clientId,
     currentDraftId,
     draftName,
@@ -492,17 +524,22 @@ export function useCatalogueDraft({
     }
   }, [lastSavedSheetId, hasUnsavedChanges, shareLinkMutation]);
 
-  const handleConvertToOrder = useCallback(async () => {
+  const handleConvertToOrder = useCallback(
+    async (onReady: () => void | Promise<void>) => {
     if (
       !clientId ||
       items.length === 0 ||
       hasUnsavedChanges ||
       saveLockRef.current ||
       sheetSaveLockRef.current ||
+      convertToOrderLockRef.current ||
       !lastSavedSheetId
     ) {
       return false;
     }
+
+    convertToOrderLockRef.current = true;
+    setIsConvertingToOrder(true);
 
     const conversionItems = buildSheetItems(items);
 
@@ -510,6 +547,7 @@ export function useCatalogueDraft({
       clientId,
       items: conversionItems,
     });
+    let handoffPrepared = false;
 
     try {
       sessionStorage.setItem("salesSheetToQuote", handoffPayload);
@@ -518,21 +556,22 @@ export function useCatalogueDraft({
         throw new Error("conversion handoff could not be verified");
       }
 
+      handoffPrepared = true;
+      await onReady();
       return true;
     } catch (error) {
       toast.error(
-        "Failed to prepare order handoff: " +
+        `${handoffPrepared ? "Failed to complete" : "Failed to prepare"} order handoff: ` +
           (error instanceof Error ? error.message : "Unknown error")
       );
       return false;
+    } finally {
+      convertToOrderLockRef.current = false;
+      setIsConvertingToOrder(false);
     }
-  }, [
-    buildSheetItems,
-    clientId,
-    lastSavedSheetId,
-    items,
-    hasUnsavedChanges,
-  ]);
+    },
+    [clientId, lastSavedSheetId, items, hasUnsavedChanges]
+  );
 
   const markSheetAsLoaded = useCallback((sheetId: number | null) => {
     setLastSavedSheetId(sheetId);
@@ -575,7 +614,8 @@ export function useCatalogueDraft({
     canGoLive:
       !hasUnsavedChanges && lastSavedSheetId !== null && items.length > 0,
     lastSavedSheetId,
-    isConverting: saveSheetMutation.isPending || isFinalizingLocked,
+    isConverting:
+      saveSheetMutation.isPending || isFinalizingLocked || isConvertingToOrder,
     saveDraft,
     saveSheet,
     loadDraft,
