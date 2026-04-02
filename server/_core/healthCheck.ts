@@ -5,6 +5,7 @@ import { spawn } from "child_process";
 import { getMemoryStats } from "../utils/memoryOptimizer";
 import * as fs from "fs";
 import * as path from "path";
+import { parseDfDiskUsageOutput, type DiskUsageSnapshot } from "./diskHealth";
 
 interface VersionInfo {
   version: string;
@@ -72,6 +73,9 @@ export interface HealthCheckResult {
     };
     disk?: {
       status: "ok" | "warning" | "critical";
+      totalMb: number;
+      usedMb: number;
+      availableMb: number;
       usedPercent: number;
     };
     connectionPool?: {
@@ -191,6 +195,9 @@ export async function performHealthCheck(): Promise<HealthCheckResult> {
       ...(diskCheck && {
         disk: {
           status: diskCheck.status,
+          totalMb: diskCheck.totalMb,
+          usedMb: diskCheck.usedMb,
+          availableMb: diskCheck.availableMb,
           usedPercent: diskCheck.usedPercent,
         },
       }),
@@ -342,6 +349,9 @@ async function checkRedis(): Promise<{
  */
 async function checkDiskAsync(): Promise<{
   status: "ok" | "warning" | "critical";
+  totalMb: number;
+  usedMb: number;
+  availableMb: number;
   usedPercent: number;
 } | null> {
   return new Promise(resolve => {
@@ -369,24 +379,7 @@ async function checkDiskAsync(): Promise<{
         }
 
         try {
-          const lines = output.trim().split("\n");
-          if (lines.length < 2) {
-            resolve(null);
-            return;
-          }
-
-          const parts = lines[1].split(/\s+/);
-          const percentStr = parts[4];
-          const usedPercent = parseInt(percentStr.replace("%", ""));
-
-          let status: "ok" | "warning" | "critical" = "ok";
-          if (usedPercent > 90) {
-            status = "critical";
-          } else if (usedPercent > 80) {
-            status = "warning";
-          }
-
-          resolve({ status, usedPercent });
+          resolve(parseDfDiskUsageOutput(output));
         } catch {
           resolve(null);
         }
@@ -474,7 +467,7 @@ export async function readinessCheck(): Promise<{
  * SECURITY: Detailed metrics - ONLY for authenticated admin endpoints
  * Contains sensitive information that should not be publicly exposed
  */
-export function getHealthMetrics(): {
+export async function getHealthMetrics(): Promise<{
   uptime: number;
   memory: {
     heapUsedMb: number;
@@ -482,8 +475,11 @@ export function getHealthMetrics(): {
     rssMb: number;
   };
   cpu: ReturnType<typeof process.cpuUsage>;
-} {
+  disk?: DiskUsageSnapshot;
+}> {
   const memUsage = process.memoryUsage();
+  const disk = await checkDiskAsync();
+
   return {
     uptime: process.uptime(),
     memory: {
@@ -492,6 +488,7 @@ export function getHealthMetrics(): {
       rssMb: Math.round(memUsage.rss / 1024 / 1024),
     },
     cpu: process.cpuUsage(),
+    ...(disk && { disk }),
     // SECURITY: Removed PID and nodeVersion - sensitive info
   };
 }

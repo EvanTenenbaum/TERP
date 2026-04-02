@@ -29,6 +29,18 @@ function formatUptime(seconds: number) {
   return `${remainingSeconds}s`;
 }
 
+function formatMegabytes(value?: number) {
+  if (!Number.isFinite(value)) {
+    return "Unknown";
+  }
+
+  if ((value ?? 0) >= 1024) {
+    return `${((value ?? 0) / 1024).toFixed(1)} GB`;
+  }
+
+  return `${value} MB`;
+}
+
 export default function SystemMetricsPage() {
   const { data, isLoading, error, refetch } = trpc.health.metrics.useQuery();
 
@@ -71,9 +83,7 @@ export default function SystemMetricsPage() {
 
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Heap Used
-                </CardTitle>
+                <CardTitle className="text-sm font-medium">Heap Used</CardTitle>
                 <CardDescription>Active memory in use</CardDescription>
               </CardHeader>
               <CardContent className="text-2xl font-semibold">
@@ -102,6 +112,58 @@ export default function SystemMetricsPage() {
                 {data?.memory.rssMb ?? 0} MB
               </CardContent>
             </Card>
+
+            {data?.disk ? (
+              <>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Disk Used
+                    </CardTitle>
+                    <CardDescription>
+                      Local container filesystem usage
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-2xl font-semibold">
+                    {formatMegabytes(data.disk.usedMb)} ({data.disk.usedPercent}
+                    %)
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Disk Free
+                    </CardTitle>
+                    <CardDescription>
+                      Remaining local disk space
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-2xl font-semibold">
+                    {formatMegabytes(data.disk.availableMb)}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Disk Status
+                    </CardTitle>
+                    <CardDescription>
+                      Total local disk footprint
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-1">
+                    <div className="text-2xl font-semibold capitalize">
+                      {data.disk.status}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {formatMegabytes(data.disk.totalMb)} total
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            ) : null}
           </div>
 
           <Card>
