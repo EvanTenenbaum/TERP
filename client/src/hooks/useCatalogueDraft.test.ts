@@ -501,4 +501,56 @@ describe("useCatalogueDraft", () => {
     );
     expect(toastSuccess).toHaveBeenCalledWith("Share link copied to clipboard");
   });
+
+  it("returns the share link even when clipboard copy is unavailable", async () => {
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    Object.defineProperty(navigator, "clipboard", {
+      value: {
+        writeText: vi
+          .fn()
+          .mockRejectedValue(new Error("clipboard access denied")),
+      },
+      configurable: true,
+    });
+
+    const { result } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    await act(async () => {
+      await result.current.saveSheet();
+    });
+
+    await waitFor(() => {
+      expect(result.current.lastSavedSheetId).toBe(202);
+      expect(result.current.canShare).toBe(true);
+    });
+
+    let shareUrl: string | null = null;
+    await act(async () => {
+      shareUrl = await result.current.generateShareLink();
+    });
+
+    expect(shareUrl).toBe(
+      "http://localhost:3000/shared/sales-sheet/test-token"
+    );
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      "http://localhost:3000/shared/sales-sheet/test-token"
+    );
+    expect(result.current.lastShareUrl).toBe(
+      "http://localhost:3000/shared/sales-sheet/test-token"
+    );
+    expect(toastSuccess).toHaveBeenCalledWith("Share link ready");
+    expect(toastError).not.toHaveBeenCalledWith("Failed to generate share link");
+  });
 });
