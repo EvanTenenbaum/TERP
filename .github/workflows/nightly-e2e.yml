@@ -91,6 +91,7 @@ jobs:
       - name: Run E2E tests
         id: e2e
         run: |
+          set -o pipefail
           SUITE="${{ steps.suite.outputs.suite }}"
 
           case "$SUITE" in
@@ -122,6 +123,15 @@ jobs:
         env:
           CI: true
         continue-on-error: true
+
+      - name: Upload raw E2E output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nightly-e2e-output-${{ steps.suite.outputs.suite }}
+          path: e2e-output.txt
+          if-no-files-found: warn
+          retention-days: 30
 
       - name: Upload Playwright report
         if: always()
