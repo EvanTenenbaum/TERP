@@ -474,8 +474,12 @@ export function useCatalogueDraft({
         const absoluteShareUrl = toAbsoluteShareUrl(result.shareUrl);
         setLastShareUrl(absoluteShareUrl);
         if (navigator.clipboard?.writeText) {
-          await navigator.clipboard.writeText(absoluteShareUrl);
-          toast.success("Share link copied to clipboard");
+          try {
+            await navigator.clipboard.writeText(absoluteShareUrl);
+            toast.success("Share link copied to clipboard");
+          } catch {
+            toast.success("Share link ready");
+          }
         } else {
           toast.success("Share link ready");
         }
