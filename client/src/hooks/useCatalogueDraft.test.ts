@@ -424,6 +424,51 @@ describe("useCatalogueDraft", () => {
     expect(result.current.canConvert).toBe(false);
   });
 
+  it("keeps unsaved changes flagged when items change during an in-flight draft save", async () => {
+    let resolveSave: ((value: { draftId: number }) => void) | undefined;
+    saveDraftMutateAsync.mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolveSave = resolve;
+        })
+    );
+
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result, rerender } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    act(() => {
+      result.current.setDraftName("March Mix");
+    });
+
+    act(() => {
+      result.current.saveDraft();
+    });
+
+    rerender({
+      items: [{ ...item, retailPrice: 24 }] as never[],
+    });
+
+    expect(result.current.hasUnsavedChanges).toBe(true);
+
+    await act(async () => {
+      resolveSave?.({ draftId: 333 });
+    });
+
+    expect(result.current.hasUnsavedChanges).toBe(true);
+  });
+
   it("blocks sheet finalization while a draft save is already in progress", async () => {
     let resolveSave: ((value: { draftId: number }) => void) | undefined;
     saveDraftMutateAsync.mockImplementation(

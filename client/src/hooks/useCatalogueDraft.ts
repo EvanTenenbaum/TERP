@@ -258,16 +258,20 @@ export function useCatalogueDraft({
       name,
       items,
       invalidateFinalizedSheetState = false,
+      savedNameForDirtyCheck,
     }: {
       draftId?: number;
       clientId: number;
       name: string;
       items: PricedInventoryItem[];
       invalidateFinalizedSheetState?: boolean;
+      savedNameForDirtyCheck?: string;
     }) => {
       if (saveLockRef.current) return false;
 
       const contextToken = contextTokenRef.current;
+      const savedItemsFingerprint = buildItemsFingerprint(items);
+      const savedDraftNameForDirtyCheck = savedNameForDirtyCheck ?? name;
       saveLockRef.current = true;
       setIsSaveLocked(true);
 
@@ -300,14 +304,19 @@ export function useCatalogueDraft({
         if (
           invalidateFinalizedSheetState &&
           finalizedItemsFingerprintRef.current !== null &&
-          buildItemsFingerprint(items) !== finalizedItemsFingerprintRef.current
+          savedItemsFingerprint !== finalizedItemsFingerprintRef.current
         ) {
           setLastSavedSheetId(null);
           finalizedItemsFingerprintRef.current = null;
           setLastShareUrl(null);
         }
 
-        setHasUnsavedChanges(false);
+        const draftStillMatchesSavedSnapshot =
+          buildItemsFingerprint(selectedItemsRef.current) ===
+            savedItemsFingerprint &&
+          draftNameRef.current === savedDraftNameForDirtyCheck;
+
+        setHasUnsavedChanges(!draftStillMatchesSavedSnapshot);
         setLastSaveTime(new Date());
         void invalidateDraftsRef.current();
         return true;
@@ -484,6 +493,9 @@ export function useCatalogueDraft({
         name: finalDraftName,
         items,
         invalidateFinalizedSheetState: false,
+        savedNameForDirtyCheck: normalizedDraftName
+          ? finalDraftName
+          : draftNameRef.current,
       });
 
       if (!draftPersisted) {
