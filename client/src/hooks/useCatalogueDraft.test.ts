@@ -5,19 +5,25 @@ import { useCatalogueDraft } from "./useCatalogueDraft";
 const {
   toastError,
   toastSuccess,
+  toastInfo,
   saveDraftMutate,
   saveDraftMutateAsync,
   deleteDraftMutate,
   convertMutateAsync,
   shareLinkMutateAsync,
+  fetchDraftById,
+  invalidateDrafts,
 } = vi.hoisted(() => ({
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
+  toastInfo: vi.fn(),
   saveDraftMutate: vi.fn(),
   saveDraftMutateAsync: vi.fn(),
   deleteDraftMutate: vi.fn(),
   convertMutateAsync: vi.fn(),
   shareLinkMutateAsync: vi.fn(),
+  fetchDraftById: vi.fn(),
+  invalidateDrafts: vi.fn(),
 }));
 
 // Mock tRPC
@@ -50,7 +56,10 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
     useUtils: vi.fn(() => ({
-      salesSheets: { getDrafts: { invalidate: vi.fn() } },
+      salesSheets: {
+        getDrafts: { invalidate: invalidateDrafts },
+        getDraftById: { fetch: fetchDraftById },
+      },
     })),
   },
 }));
@@ -59,6 +68,7 @@ vi.mock("sonner", () => ({
   toast: {
     error: toastError,
     success: toastSuccess,
+    info: toastInfo,
   },
 }));
 
@@ -70,6 +80,7 @@ describe("useCatalogueDraft", () => {
     shareLinkMutateAsync.mockResolvedValue({
       shareUrl: "/shared/sales-sheet/test-token",
     });
+    fetchDraftById.mockResolvedValue(null);
     sessionStorage.clear();
     Object.defineProperty(navigator, "clipboard", {
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -312,10 +323,105 @@ describe("useCatalogueDraft", () => {
     });
 
     expect(saveDraftMutateAsync).toHaveBeenCalledTimes(1);
+    expect(toastInfo).toHaveBeenCalledWith("Save already in progress");
 
     await act(async () => {
       resolveSave?.({ draftId: 333 });
     });
+  });
+
+  it("keeps the finalized share state only when a draft save still matches the finalized sheet", async () => {
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    act(() => {
+      result.current.setDraftName("March Mix");
+    });
+
+    await act(async () => {
+      await result.current.saveSheet();
+    });
+
+    await waitFor(() => {
+      expect(result.current.lastSavedSheetId).toBe(202);
+      expect(result.current.canShare).toBe(true);
+    });
+
+    act(() => {
+      result.current.setDraftName("March Mix v2");
+    });
+
+    await act(async () => {
+      result.current.saveDraft();
+    });
+
+    await waitFor(() => {
+      expect(result.current.hasUnsavedChanges).toBe(false);
+    });
+
+    expect(result.current.lastSavedSheetId).toBe(202);
+    expect(result.current.canShare).toBe(true);
+    expect(result.current.canConvert).toBe(true);
+  });
+
+  it("clears finalized share state after a draft-only save with changed items", async () => {
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result, rerender } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    act(() => {
+      result.current.setDraftName("March Mix");
+    });
+
+    await act(async () => {
+      await result.current.saveSheet();
+    });
+
+    await waitFor(() => {
+      expect(result.current.lastSavedSheetId).toBe(202);
+      expect(result.current.canShare).toBe(true);
+    });
+
+    rerender({
+      items: [{ ...item, retailPrice: 24 }] as never[],
+    });
+
+    expect(result.current.hasUnsavedChanges).toBe(true);
+
+    await act(async () => {
+      result.current.saveDraft();
+    });
+
+    await waitFor(() => {
+      expect(result.current.hasUnsavedChanges).toBe(false);
+    });
+
+    expect(result.current.lastSavedSheetId).toBeNull();
+    expect(result.current.canShare).toBe(false);
+    expect(result.current.canConvert).toBe(false);
   });
 
   it("blocks sheet finalization while a draft save is already in progress", async () => {
@@ -494,6 +600,42 @@ describe("useCatalogueDraft", () => {
     expect(result.current.lastSavedSheetId).toBeNull();
     expect(result.current.canShare).toBe(false);
     expect(toastSuccess).not.toHaveBeenCalledWith("Catalogue saved for sharing");
+  });
+
+  it("keeps a freshly loaded draft clean when items and name arrive together", async () => {
+    const loadedItem = {
+      id: 9,
+      name: "Loaded Draft Item",
+      basePrice: 8,
+      retailPrice: 16,
+      quantity: 3,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    fetchDraftById.mockResolvedValue({
+      id: 88,
+      name: "Loaded Draft",
+      updatedAt: new Date("2026-04-02T07:00:00.000Z"),
+      items: [loadedItem],
+    });
+
+    const { result, rerender } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [] as never[] } }
+    );
+
+    let loadedItems: never[] = [];
+    await act(async () => {
+      loadedItems = (await result.current.loadDraft(88)) as never[];
+    });
+
+    rerender({ items: loadedItems });
+
+    expect(result.current.currentDraftId).toBe(88);
+    expect(result.current.draftName).toBe("Loaded Draft");
+    expect(result.current.hasUnsavedChanges).toBe(false);
+    expect(saveDraftMutateAsync).not.toHaveBeenCalled();
   });
 
   it("flags finalization immediately while a sheet save is in flight", async () => {
@@ -682,6 +824,45 @@ describe("useCatalogueDraft", () => {
         value: originalSessionStorage,
       });
     }
+  });
+
+  it("clears the handoff payload when the draft context changes mid-conversion", async () => {
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    await act(async () => {
+      await result.current.saveSheet();
+    });
+
+    await waitFor(() => {
+      expect(result.current.lastSavedSheetId).toBe(202);
+      expect(result.current.canConvert).toBe(true);
+    });
+
+    let converted = true;
+    await act(async () => {
+      converted = await result.current.handleConvertToOrder(() => {
+        result.current.resetDraft();
+      });
+    });
+
+    expect(converted).toBe(false);
+    expect(sessionStorage.getItem("salesSheetToQuote")).toBeNull();
+    expect(toastError).toHaveBeenCalledWith(
+      "Failed to complete order handoff: catalogue context changed"
+    );
   });
 
   it("copies an absolute share link after a finalized save", async () => {

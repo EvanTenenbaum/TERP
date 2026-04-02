@@ -462,6 +462,12 @@ function sanitizeLoadedSheetItems(items: unknown): PricedInventoryItem[] {
   });
 }
 
+function isNonSellableInventoryStatus(status: string | null | undefined) {
+  return NON_SELLABLE_STATUSES.includes(
+    (status ?? "LIVE") as (typeof NON_SELLABLE_STATUSES)[number]
+  );
+}
+
 // ── component ────────────────────────────────────────────────────────────────
 
 export function SalesCatalogueSurface() {
@@ -1032,13 +1038,30 @@ export function SalesCatalogueSurface() {
     []
   );
 
+  const getSellableItemsForCatalogue = useCallback(
+    (itemsToAdd: PricedInventoryItem[]) => {
+      const sellableItems = itemsToAdd.filter(
+        item => !isNonSellableInventoryStatus(item.status)
+      );
+
+      if (sellableItems.length !== itemsToAdd.length) {
+        toast.warning("Only sellable inventory can be added to the catalogue");
+      }
+
+      return sellableItems;
+    },
+    []
+  );
+
   const handleAddSelectedItem = useCallback(() => {
     if (!selectedInventoryRowId) return;
     const row = inventoryRows.find(
       r => r.identity.rowKey === selectedInventoryRowId
     );
     if (!row || selectedItemIds.has(row.inventoryId)) return;
-    appendItemsToCatalogue([row._raw]);
+    const sellableItems = getSellableItemsForCatalogue([row._raw]);
+    if (sellableItems.length === 0) return;
+    appendItemsToCatalogue(sellableItems);
     setCheckedInventoryIds(prev => {
       const next = new Set(prev);
       next.delete(row.inventoryId);
@@ -1046,25 +1069,34 @@ export function SalesCatalogueSurface() {
     });
   }, [
     appendItemsToCatalogue,
+    getSellableItemsForCatalogue,
     selectedInventoryRowId,
     inventoryRows,
     selectedItemIds,
   ]);
 
   const handleBulkAddVisible = useCallback(() => {
-    const itemsToAdd = checkedVisibleRows
+    const requestedItems = checkedVisibleRows
       .filter(row => !selectedItemIds.has(row.inventoryId))
       .map(row => row._raw);
 
+    if (requestedItems.length === 0) return;
+
+    const itemsToAdd = getSellableItemsForCatalogue(requestedItems);
     if (itemsToAdd.length === 0) return;
 
     appendItemsToCatalogue(itemsToAdd);
     setCheckedInventoryIds(prev => {
       const next = new Set(prev);
-      itemsToAdd.forEach(item => next.delete(item.id));
+      requestedItems.forEach(item => next.delete(item.id));
       return next;
     });
-  }, [appendItemsToCatalogue, checkedVisibleRows, selectedItemIds]);
+  }, [
+    appendItemsToCatalogue,
+    checkedVisibleRows,
+    getSellableItemsForCatalogue,
+    selectedItemIds,
+  ]);
 
   const handleSelectAllVisible = useCallback(() => {
     setCheckedInventoryIds(
@@ -1087,7 +1119,9 @@ export function SalesCatalogueSurface() {
 
       if (event.colDef.field === "inSheet") {
         if (row.inSheet) return;
-        appendItemsToCatalogue([row._raw]);
+        const sellableItems = getSellableItemsForCatalogue([row._raw]);
+        if (sellableItems.length === 0) return;
+        appendItemsToCatalogue(sellableItems);
         return;
       }
 
@@ -1104,7 +1138,7 @@ export function SalesCatalogueSurface() {
         });
       }
     },
-    [appendItemsToCatalogue]
+    [appendItemsToCatalogue, getSellableItemsForCatalogue]
   );
 
   const handleRemoveSelectedItem = useCallback(() => {
@@ -1305,11 +1339,6 @@ export function SalesCatalogueSurface() {
         return;
       }
       const converted = await convertCatalogueToOrder(async () => {
-        resetCatalogueDraft();
-        setSelectedItems([]);
-        setSelectedInventoryRowId(null);
-        setSelectedPreviewRowId(null);
-        setCheckedInventoryIds(new Set());
         setLocation(
           buildSalesWorkspacePath("create-order", {
             fromSalesSheet,
@@ -1318,6 +1347,11 @@ export function SalesCatalogueSurface() {
         );
       });
       if (!converted) return;
+      resetCatalogueDraft();
+      setSelectedItems([]);
+      setSelectedInventoryRowId(null);
+      setSelectedPreviewRowId(null);
+      setCheckedInventoryIds(new Set());
     },
     [
       convertCatalogueToOrder,
@@ -2117,7 +2151,7 @@ export function SalesCatalogueSurface() {
             }
             setSelectedItems(sanitizedItems);
             draft.resetDraft();
-            draft.markSheetAsLoaded(sheetId);
+            draft.markSheetAsLoaded(sheetId, sanitizedItems);
             setShowSavedSheetsDialog(false);
             toast.success("Saved sheet loaded");
           }

@@ -83,7 +83,10 @@ interface UseCatalogueDraftReturn {
   deleteDraft: () => void;
   deleteDraftById: (draftId: number) => void;
   handleConvertToOrder: (onReady: () => void | Promise<void>) => Promise<boolean>;
-  markSheetAsLoaded: (sheetId: number | null) => void;
+  markSheetAsLoaded: (
+    sheetId: number | null,
+    sheetItems?: PricedInventoryItem[]
+  ) => void;
 
   // Share
   generateShareLink: () => Promise<string | null>;
@@ -113,7 +116,8 @@ export function useCatalogueDraft({
   const [lastShareUrl, setLastShareUrl] = useState<string | null>(null);
 
   // ── refs for stale-closure-safe auto-save ───────────────────────────────
-  const isInitialLoad = useRef(true);
+  const isItemsInitialLoadRef = useRef(true);
+  const isDraftNameInitialLoadRef = useRef(true);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDeletingDraftRef = useRef(false);
   const saveLockRef = useRef(false);
@@ -126,6 +130,7 @@ export function useCatalogueDraft({
   const selectedClientIdRef = useRef<number | null>(null);
   const currentDraftIdRef = useRef<number | null>(null);
   const contextTokenRef = useRef(0);
+  const finalizedItemsFingerprintRef = useRef<string | null>(null);
 
   // ── keep refs in sync ───────────────────────────────────────────────────
   useEffect(() => {
@@ -177,6 +182,7 @@ export function useCatalogueDraft({
         currentDraftIdRef.current = null;
         setDraftName("");
         setLastSavedSheetId(null);
+        finalizedItemsFingerprintRef.current = null;
         setLastShareUrl(null);
         setLastSaveTime(null);
         setHasUnsavedChanges(false);
@@ -217,8 +223,8 @@ export function useCatalogueDraft({
 
   // ── mark dirty on item changes ──────────────────────────────────────────
   useEffect(() => {
-    if (isInitialLoad.current) {
-      isInitialLoad.current = false;
+    if (isItemsInitialLoadRef.current) {
+      isItemsInitialLoadRef.current = false;
       return;
     }
     setLastShareUrl(null);
@@ -226,12 +232,13 @@ export function useCatalogueDraft({
   }, [itemsFingerprint]);
 
   useEffect(() => {
-    if (draftName === previousDraftNameRef.current) return;
-
-    if (isInitialLoad.current) {
+    if (isDraftNameInitialLoadRef.current) {
+      isDraftNameInitialLoadRef.current = false;
       previousDraftNameRef.current = draftName;
       return;
     }
+
+    if (draftName === previousDraftNameRef.current) return;
 
     previousDraftNameRef.current = draftName;
     setLastShareUrl(null);
@@ -244,11 +251,13 @@ export function useCatalogueDraft({
       clientId,
       name,
       items,
+      invalidateFinalizedSheetState = false,
     }: {
       draftId?: number;
       clientId: number;
       name: string;
       items: PricedInventoryItem[];
+      invalidateFinalizedSheetState?: boolean;
     }) => {
       if (saveLockRef.current) return false;
 
@@ -280,6 +289,16 @@ export function useCatalogueDraft({
         if (data?.draftId && !currentDraftIdRef.current) {
           setCurrentDraftId(data.draftId);
           currentDraftIdRef.current = data.draftId;
+        }
+
+        if (
+          invalidateFinalizedSheetState &&
+          finalizedItemsFingerprintRef.current !== null &&
+          buildItemsFingerprint(items) !== finalizedItemsFingerprintRef.current
+        ) {
+          setLastSavedSheetId(null);
+          finalizedItemsFingerprintRef.current = null;
+          setLastShareUrl(null);
         }
 
         setHasUnsavedChanges(false);
@@ -343,6 +362,7 @@ export function useCatalogueDraft({
         clientId: cid,
         name,
         items: currentItems,
+        invalidateFinalizedSheetState: true,
       });
     }, AUTO_SAVE_INTERVAL_MS);
 
@@ -355,7 +375,10 @@ export function useCatalogueDraft({
 
   // ── actions ─────────────────────────────────────────────────────────────
   const saveDraft = useCallback(() => {
-    if (saveLockRef.current) return;
+    if (saveLockRef.current) {
+      toast.info("Save already in progress");
+      return;
+    }
 
     if (!clientId) {
       toast.error("Select a client before saving");
@@ -377,6 +400,7 @@ export function useCatalogueDraft({
       clientId,
       name: draftName,
       items,
+      invalidateFinalizedSheetState: true,
     });
   }, [clientId, currentDraftId, draftName, items, persistDraft]);
 
@@ -390,6 +414,7 @@ export function useCatalogueDraft({
         setDraftName(result.name ?? "");
         previousDraftNameRef.current = result.name ?? "";
         setLastSavedSheetId(null);
+        finalizedItemsFingerprintRef.current = null;
         setLastShareUrl(null);
         setLastSaveTime(
           result.updatedAt
@@ -397,7 +422,8 @@ export function useCatalogueDraft({
             : null
         );
         setHasUnsavedChanges(false);
-        isInitialLoad.current = true;
+        isItemsInitialLoadRef.current = true;
+        isDraftNameInitialLoadRef.current = true;
         return result.items as PricedInventoryItem[];
       }
       return [];
@@ -446,6 +472,7 @@ export function useCatalogueDraft({
         clientId,
         name: finalDraftName,
         items,
+        invalidateFinalizedSheetState: false,
       });
 
       if (!draftPersisted) {
@@ -484,6 +511,7 @@ export function useCatalogueDraft({
       }
 
       setLastSavedSheetId(sheetId);
+      finalizedItemsFingerprintRef.current = itemsFingerprint;
       setLastShareUrl(null);
       setLastSaveTime(new Date());
       setHasUnsavedChanges(false);
@@ -511,6 +539,7 @@ export function useCatalogueDraft({
     currentDraftId,
     draftName,
     items,
+    itemsFingerprint,
     persistDraft,
   ]);
 
@@ -562,6 +591,7 @@ export function useCatalogueDraft({
       convertToOrderLockRef.current = true;
       setIsConvertingToOrder(true);
 
+      const contextToken = contextTokenRef.current;
       const conversionItems = buildSheetItems(items);
 
       const handoffPayload = JSON.stringify({
@@ -579,8 +609,23 @@ export function useCatalogueDraft({
 
         handoffPrepared = true;
         await onReady();
+
+        if (
+          contextToken !== contextTokenRef.current ||
+          clientId !== selectedClientIdRef.current
+        ) {
+          sessionStorage.removeItem("salesSheetToQuote");
+          toast.error(
+            "Failed to complete order handoff: catalogue context changed"
+          );
+          return false;
+        }
+
         return true;
       } catch (error) {
+        if (handoffPrepared) {
+          sessionStorage.removeItem("salesSheetToQuote");
+        }
         toast.error(
           `${handoffPrepared ? "Failed to complete" : "Failed to prepare"} order handoff: ` +
             (error instanceof Error ? error.message : "Unknown error")
@@ -594,10 +639,17 @@ export function useCatalogueDraft({
     [clientId, lastSavedSheetId, items, hasUnsavedChanges]
   );
 
-  const markSheetAsLoaded = useCallback((sheetId: number | null) => {
-    setLastSavedSheetId(sheetId);
-    setLastShareUrl(null);
-  }, []);
+  const markSheetAsLoaded = useCallback(
+    (sheetId: number | null, sheetItems?: PricedInventoryItem[]) => {
+      setLastSavedSheetId(sheetId);
+      finalizedItemsFingerprintRef.current =
+        sheetId === null
+          ? null
+          : buildItemsFingerprint(sheetItems ?? selectedItemsRef.current);
+      setLastShareUrl(null);
+    },
+    []
+  );
 
   const resetDraft = useCallback(() => {
     contextTokenRef.current += 1;
@@ -606,10 +658,12 @@ export function useCatalogueDraft({
     setDraftName("");
     previousDraftNameRef.current = "";
     setLastSavedSheetId(null);
+    finalizedItemsFingerprintRef.current = null;
     setLastShareUrl(null);
     setLastSaveTime(null);
     setHasUnsavedChanges(false);
-    isInitialLoad.current = true;
+    isItemsInitialLoadRef.current = true;
+    isDraftNameInitialLoadRef.current = true;
   }, []);
 
   return {
