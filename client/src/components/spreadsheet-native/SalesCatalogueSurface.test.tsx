@@ -456,6 +456,71 @@ describe("SalesCatalogueSurface", () => {
     openSpy.mockRestore();
   });
 
+  it("opens the shared view after generating a share link asynchronously", async () => {
+    const mockWindow = {
+      location: { href: "" },
+      close: vi.fn(),
+      opener: window,
+    };
+    const openSpy = vi.spyOn(window, "open").mockReturnValue(mockWindow);
+    generateShareLink.mockResolvedValue(
+      "http://localhost:3000/shared/sales-sheet/generated"
+    );
+    draftState.canShare = true;
+    draftState.lastSavedSheetId = 202;
+    draftState.lastShareUrl = null;
+
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open Shared View" }));
+
+    await waitFor(() => {
+      expect(generateShareLink).toHaveBeenCalled();
+      expect(openSpy).toHaveBeenCalledWith("", "_blank");
+      expect(mockWindow.location.href).toBe(
+        "http://localhost:3000/shared/sales-sheet/generated"
+      );
+    });
+
+    expect(mockWindow.close).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalledWith(
+      "Could not open the shared view"
+    );
+
+    openSpy.mockRestore();
+  });
+
+  it("closes the pre-opened window when shared view generation fails", async () => {
+    const mockWindow = {
+      location: { href: "" },
+      close: vi.fn(),
+      opener: window,
+    };
+    const openSpy = vi.spyOn(window, "open").mockReturnValue(mockWindow);
+    generateShareLink.mockResolvedValue(null);
+    draftState.canShare = true;
+    draftState.lastSavedSheetId = 202;
+    draftState.lastShareUrl = null;
+
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open Shared View" }));
+
+    await waitFor(() => {
+      expect(generateShareLink).toHaveBeenCalled();
+      expect(mockWindow.close).toHaveBeenCalled();
+      expect(toast.error).toHaveBeenCalledWith(
+        "Could not open the shared view"
+      );
+    });
+
+    openSpy.mockRestore();
+  });
+
   it("proactively warns that share and export actions open a new browser tab or window", () => {
     render(<SalesCatalogueSurface />);
     fireEvent.click(screen.getByText("Select Client 1"));

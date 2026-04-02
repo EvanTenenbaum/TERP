@@ -1268,15 +1268,30 @@ export function SalesCatalogueSurface() {
       return;
     }
 
-    const shareUrl = draft.lastShareUrl ?? (await draft.generateShareLink());
-    if (!shareUrl) {
-      toast.error("Could not open the shared view");
+    const shareWindow = window.open("", "_blank");
+    if (!shareWindow) {
+      toast.error("Allow pop-ups to open the shared view");
       return;
     }
 
-    const shareWindow = window.open(shareUrl, "_blank", "noopener,noreferrer");
-    if (!shareWindow) {
-      toast.error("Allow pop-ups to open the shared view");
+    try {
+      shareWindow.opener = null;
+    } catch {
+      // Ignore browsers that disallow setting opener on the returned handle.
+    }
+
+    try {
+      const shareUrl = draft.lastShareUrl ?? (await draft.generateShareLink());
+      if (!shareUrl) {
+        shareWindow.close();
+        toast.error("Could not open the shared view");
+        return;
+      }
+
+      shareWindow.location.href = shareUrl;
+    } catch {
+      shareWindow.close();
+      toast.error("Could not open the shared view");
     }
   }, [draft]);
 
