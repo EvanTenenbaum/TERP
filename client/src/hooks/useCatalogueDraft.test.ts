@@ -159,6 +159,35 @@ describe("useCatalogueDraft", () => {
     await waitFor(() => {
       expect(result.current.lastSavedSheetId).toBe(202);
       expect(result.current.canShare).toBe(true);
+      expect(result.current.canConvert).toBe(true);
+    });
+  });
+
+  it("keeps conversion gated off until the catalogue has been finalized", async () => {
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    expect(result.current.canConvert).toBe(false);
+
+    await act(async () => {
+      await result.current.saveSheet();
+    });
+
+    await waitFor(() => {
+      expect(result.current.lastSavedSheetId).toBe(202);
+      expect(result.current.canConvert).toBe(true);
     });
   });
 
@@ -224,7 +253,122 @@ describe("useCatalogueDraft", () => {
     });
   });
 
-  it("writes session storage from the conversion snapshot", async () => {
+  it("keeps the auto-save timer stable across no-op rerenders", async () => {
+    vi.useFakeTimers();
+    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
+
+    try {
+      const items = [
+        {
+          id: 1,
+          name: "Blue Dream",
+          basePrice: 10,
+          retailPrice: 20,
+          quantity: 2,
+          priceMarkup: 0,
+          appliedRules: [],
+        } as never,
+      ] as never[];
+
+      const { result, rerender } = renderHook(
+        ({ currentItems }) =>
+          useCatalogueDraft({ clientId: 1, items: currentItems }),
+        { initialProps: { currentItems: items } }
+      );
+
+      act(() => {
+        result.current.setDraftName("March Mix");
+      });
+
+      expect(result.current.hasUnsavedChanges).toBe(true);
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+
+      rerender({ currentItems: items });
+      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
+    } finally {
+      setTimeoutSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it("serializes concurrent sheet finalization so only one save request is fired", async () => {
+    let resolveSheet: ((value: number) => void) | undefined;
+    convertMutateAsync.mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolveSheet = resolve;
+        })
+    );
+
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    let firstSave!: Promise<number | null>;
+    let secondSave!: Promise<number | null>;
+    act(() => {
+      firstSave = result.current.saveSheet();
+      secondSave = result.current.saveSheet();
+    });
+
+    expect(convertMutateAsync).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveSheet?.(202);
+      await Promise.all([firstSave, secondSave]);
+    });
+  });
+
+  it("flags finalization immediately while a sheet save is in flight", async () => {
+    let resolveSheet: ((value: number) => void) | undefined;
+    convertMutateAsync.mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolveSheet = resolve;
+        })
+    );
+
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    let savePromise!: Promise<number | null>;
+    act(() => {
+      savePromise = result.current.saveSheet();
+    });
+
+    expect(result.current.isFinalizing).toBe(true);
+    expect(result.current.isConverting).toBe(true);
+
+    await act(async () => {
+      resolveSheet?.(202);
+      await savePromise;
+    });
+  });
+
+  it("writes session storage from the finalized conversion snapshot", async () => {
     const item = {
       id: 1,
       name: "Blue Dream",
@@ -237,9 +381,19 @@ describe("useCatalogueDraft", () => {
       appliedRules: [],
     } as never;
 
-    const { result } = renderHook(() =>
-      useCatalogueDraft({ clientId: 7, items: [item] })
+    const { result } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 7, items }),
+      { initialProps: { items: [item] as never[] } }
     );
+
+    await act(async () => {
+      await result.current.saveSheet();
+    });
+
+    await waitFor(() => {
+      expect(result.current.lastSavedSheetId).toBe(202);
+      expect(result.current.canConvert).toBe(true);
+    });
 
     await act(async () => {
       await result.current.handleConvertToOrder();
@@ -251,6 +405,59 @@ describe("useCatalogueDraft", () => {
     );
     expect(sessionStorage.getItem("salesSheetToQuote")).toContain("Blue Dream");
     expect(result.current.lastSavedSheetId).toBe(202);
+  });
+
+  it("fails conversion preparation loudly when session storage cannot be written", async () => {
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const originalSessionStorage = window.sessionStorage;
+    const corruptedStorage = {
+      setItem: vi.fn(),
+      getItem: vi.fn(() => "corrupted"),
+      removeItem: vi.fn(),
+      clear: vi.fn(),
+      key: vi.fn(),
+      length: 0,
+    } as unknown as typeof window.sessionStorage;
+
+    Object.defineProperty(window, "sessionStorage", {
+      configurable: true,
+      value: corruptedStorage,
+    });
+
+    try {
+      const { result } = renderHook(
+        ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+        { initialProps: { items: [item] as never[] } }
+      );
+
+      await act(async () => {
+        await result.current.saveSheet();
+      });
+
+      let converted = true;
+      await act(async () => {
+        converted = await result.current.handleConvertToOrder();
+      });
+
+      expect(converted).toBe(false);
+      expect(toastError).toHaveBeenCalledWith(
+        "Failed to prepare order handoff: conversion handoff could not be verified"
+      );
+    } finally {
+      Object.defineProperty(window, "sessionStorage", {
+        configurable: true,
+        value: originalSessionStorage,
+      });
+    }
   });
 
   it("copies an absolute share link after a finalized save", async () => {

@@ -120,6 +120,46 @@ const calculateMarkupFromRetail = (basePrice: number, retailPrice: number) =>
     ? roundToTenth(((retailPrice - basePrice) / basePrice) * 100)
     : 0;
 
+export function applyCatalogueLineMarkup(
+  item: PricedInventoryItem,
+  markup: number
+): PricedInventoryItem {
+  const nextMarkup = roundToTenth(markup);
+
+  if (item.basePrice <= 0) {
+    return {
+      ...item,
+      priceMarkup: nextMarkup,
+    };
+  }
+
+  return {
+    ...item,
+    priceMarkup: nextMarkup,
+    retailPrice: calculateRetailFromMarkup(item.basePrice, nextMarkup),
+  };
+}
+
+export function applyCatalogueLineRetail(
+  item: PricedInventoryItem,
+  retailPrice: number
+): PricedInventoryItem {
+  const nextRetail = roundToCents(retailPrice);
+
+  if (item.basePrice <= 0) {
+    return {
+      ...item,
+      retailPrice: nextRetail,
+    };
+  }
+
+  return {
+    ...item,
+    retailPrice: nextRetail,
+    priceMarkup: calculateMarkupFromRetail(item.basePrice, nextRetail),
+  };
+}
+
 const escapeHtml = (value: string) =>
   value
     .replace(/&/g, "&amp;")
@@ -127,6 +167,28 @@ const escapeHtml = (value: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+
+export function sanitizePrintableImageUrl(
+  value: string | null | undefined
+): string | null {
+  const trimmed = value?.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed =
+      typeof window !== "undefined"
+        ? new URL(trimmed, window.location.origin)
+        : new URL(trimmed);
+
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
 
 export function buildCatalogueCsv(items: PricedInventoryItem[]) {
   return [
@@ -165,7 +227,7 @@ function downloadBlob(content: string, type: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function buildPrintableCatalogueHtml({
+export function buildPrintableCatalogueHtml({
   title,
   clientName,
   items,
@@ -179,14 +241,16 @@ function buildPrintableCatalogueHtml({
   totalValue: number;
 }) {
   const itemMarkup = items
-    .map(
-      item => `
+    .map(item => {
+      const printableImageUrl = sanitizePrintableImageUrl(item.imageUrl);
+
+      return `
         <article class="catalogue-row">
           ${
             includeImages
               ? `<div class="catalogue-image">${
-                  item.imageUrl
-                    ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" />`
+                  printableImageUrl
+                    ? `<img src="${escapeHtml(printableImageUrl)}" alt="${escapeHtml(item.name)}" />`
                     : `<div class="catalogue-image-fallback">No image</div>`
                 }</div>`
               : ""
@@ -205,7 +269,7 @@ function buildPrintableCatalogueHtml({
           </div>
         </article>
       `
-    )
+    })
     .join("");
 
   return `
@@ -1096,24 +1160,30 @@ export function SalesCatalogueSurface() {
   }, [draftFileName, selectedItems]);
 
   const handlePrintCatalogue = useCallback(() => {
-    if (selectedItems.length === 0) return;
+    if (selectedItems.length === 0) return false;
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Allow pop-ups to print the catalogue");
-      return;
+      return false;
     }
 
-    printWindow.document.write(
-      buildPrintableCatalogueHtml({
-        title: draftFileName || "Sales Catalogue",
-        clientName: selectedClientName,
-        items: selectedItems,
-        includeImages: includeImagesInPreview,
-        totalValue: totalSheetValue,
-      })
-    );
-    printWindow.document.close();
+    try {
+      printWindow.document.write(
+        buildPrintableCatalogueHtml({
+          title: draftFileName || "Sales Catalogue",
+          clientName: selectedClientName,
+          items: selectedItems,
+          includeImages: includeImagesInPreview,
+          totalValue: totalSheetValue,
+        })
+      );
+      printWindow.document.close();
+      return true;
+    } catch {
+      toast.error("Failed to prepare the printable catalogue");
+      return false;
+    }
   }, [
     draftFileName,
     includeImagesInPreview,
@@ -1123,7 +1193,7 @@ export function SalesCatalogueSurface() {
   ]);
 
   const handleExportPdf = useCallback(() => {
-    handlePrintCatalogue();
+    if (!handlePrintCatalogue()) return;
     toast.success("Print dialog opened. Use Save as PDF to export.");
   }, [handlePrintCatalogue]);
 
@@ -1154,14 +1224,7 @@ export function SalesCatalogueSurface() {
       setSelectedItems(prev =>
         prev.map(item =>
           item.id === selectedPreviewItem.id
-            ? {
-                ...item,
-                priceMarkup: roundToTenth(nextMarkup),
-                retailPrice: calculateRetailFromMarkup(
-                  item.basePrice,
-                  nextMarkup
-                ),
-              }
+            ? applyCatalogueLineMarkup(item, nextMarkup)
             : item
         )
       );
@@ -1178,14 +1241,7 @@ export function SalesCatalogueSurface() {
       setSelectedItems(prev =>
         prev.map(item =>
           item.id === selectedPreviewItem.id
-            ? {
-                ...item,
-                retailPrice: roundToCents(nextRetail),
-                priceMarkup: calculateMarkupFromRetail(
-                  item.basePrice,
-                  nextRetail
-                ),
-              }
+            ? applyCatalogueLineRetail(item, nextRetail)
             : item
         )
       );
@@ -1207,14 +1263,32 @@ export function SalesCatalogueSurface() {
   }, [inventoryQuery.data, selectedPreviewItem]);
 
   const handleOpenSharePreview = useCallback(async () => {
+    if (!draft.lastSavedSheetId || draft.hasUnsavedChanges) {
+      toast.error("Save the catalogue before opening the shared view");
+      return;
+    }
+
     const shareUrl = draft.lastShareUrl ?? (await draft.generateShareLink());
-    if (!shareUrl) return;
-    window.open(shareUrl, "_blank", "noopener,noreferrer");
+    if (!shareUrl) {
+      toast.error("Could not open the shared view");
+      return;
+    }
+
+    const shareWindow = window.open(shareUrl, "_blank", "noopener,noreferrer");
+    if (!shareWindow) {
+      toast.error("Allow pop-ups to open the shared view");
+    }
   }, [draft]);
 
   const navigateToOrder = useCallback(
     async (fromSalesSheet: boolean, mode?: "quote") => {
       if (!draft.canConvert || draft.isConverting) return;
+      if (!draft.lastSavedSheetId) {
+        toast.error(
+          "Save the catalogue before converting it into an order or quote"
+        );
+        return;
+      }
       const converted = await convertCatalogueToOrder();
       if (!converted) return;
       resetCatalogueDraft();
@@ -1233,6 +1307,7 @@ export function SalesCatalogueSurface() {
       convertCatalogueToOrder,
       draft.canConvert,
       draft.isConverting,
+      draft.lastSavedSheetId,
       resetCatalogueDraft,
       setLocation,
     ]
@@ -1269,6 +1344,11 @@ export function SalesCatalogueSurface() {
     filters.grades.length +
     filters.strainFamilies.length +
     filters.vendors.length;
+  const canHandoffToOrder =
+    draft.canConvert && draft.lastSavedSheetId !== null;
+  const needsSavedSheetForHandoff =
+    selectedItems.length > 0 &&
+    (draft.hasUnsavedChanges || draft.lastSavedSheetId === null);
   const draftNameMissingForSave =
     selectedClientId !== null &&
     selectedItems.length > 0 &&
@@ -1734,6 +1814,11 @@ export function SalesCatalogueSurface() {
                 ) : null}
               </div>
 
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                Shared view, PDF export, and print open a new browser tab or
+                window.
+              </p>
+
               <div className="mt-3 rounded-md border border-border/70 bg-background/70 p-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <div>
@@ -1745,7 +1830,7 @@ export function SalesCatalogueSurface() {
                       selling session.
                     </p>
                   </div>
-                  {draft.hasUnsavedChanges && selectedItems.length > 0 ? (
+                  {needsSavedSheetForHandoff ? (
                     <Badge
                       variant="outline"
                       className="border-amber-300 bg-amber-50 text-[10px] text-amber-700"
@@ -1760,7 +1845,7 @@ export function SalesCatalogueSurface() {
                     size="sm"
                     variant="outline"
                     className="h-8 text-[11px]"
-                    disabled={!draft.canConvert || draft.isConverting}
+                    disabled={!canHandoffToOrder || draft.isConverting}
                     onClick={() => void navigateToOrder(true)}
                   >
                     &rarr; Sales Order
@@ -1769,7 +1854,7 @@ export function SalesCatalogueSurface() {
                     size="sm"
                     variant="outline"
                     className="h-8 text-[11px]"
-                    disabled={!draft.canConvert || draft.isConverting}
+                    disabled={!canHandoffToOrder || draft.isConverting}
                     onClick={() => void navigateToOrder(true, "quote")}
                   >
                     &rarr; Quote
@@ -1870,7 +1955,7 @@ export function SalesCatalogueSurface() {
                 size="sm"
                 variant="outline"
                 className="h-8 text-[11px]"
-                disabled={!draft.canConvert || draft.isConverting}
+                disabled={!canHandoffToOrder || draft.isConverting}
                 onClick={() => void navigateToOrder(true)}
               >
                 &rarr; Sales Order
@@ -1879,7 +1964,7 @@ export function SalesCatalogueSurface() {
                 size="sm"
                 variant="outline"
                 className="h-8 text-[11px]"
-                disabled={!draft.canConvert || draft.isConverting}
+                disabled={!canHandoffToOrder || draft.isConverting}
                 onClick={() => void navigateToOrder(true, "quote")}
               >
                 &rarr; Quote

@@ -75,6 +75,7 @@ export function useCatalogueDraft({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [isSaveLocked, setIsSaveLocked] = useState(false);
+  const [isFinalizingLocked, setIsFinalizingLocked] = useState(false);
   const [lastShareUrl, setLastShareUrl] = useState<string | null>(null);
 
   // ── refs for stale-closure-safe auto-save ───────────────────────────────
@@ -82,6 +83,7 @@ export function useCatalogueDraft({
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDeletingDraftRef = useRef(false);
   const saveLockRef = useRef(false);
+  const sheetSaveLockRef = useRef(false);
   const lastDeletedDraftIdRef = useRef<number | null>(null);
   const selectedItemsRef = useRef<PricedInventoryItem[]>([]);
   const draftNameRef = useRef("");
@@ -106,6 +108,15 @@ export function useCatalogueDraft({
 
   // ── mutations ───────────────────────────────────────────────────────────
   const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation();
+  const saveDraftMutateAsyncRef = useRef(saveDraftMutation.mutateAsync);
+  const invalidateDraftsRef = useRef(utils.salesSheets.getDrafts.invalidate);
+
+  useEffect(() => {
+    saveDraftMutateAsyncRef.current = saveDraftMutation.mutateAsync;
+  }, [saveDraftMutation.mutateAsync]);
+  useEffect(() => {
+    invalidateDraftsRef.current = utils.salesSheets.getDrafts.invalidate;
+  }, [utils.salesSheets.getDrafts.invalidate]);
 
   const deleteDraftMutation = trpc.salesSheets.deleteDraft.useMutation({
     onSuccess: (_data, variables) => {
@@ -129,7 +140,7 @@ export function useCatalogueDraft({
         setHasUnsavedChanges(false);
       }
 
-      void utils.salesSheets.getDrafts.invalidate();
+      void invalidateDraftsRef.current();
       toast.success("Draft deleted");
     },
     onError: error => {
@@ -234,7 +245,7 @@ export function useCatalogueDraft({
           0
         );
 
-        const data = await saveDraftMutation.mutateAsync({
+        const data = await saveDraftMutateAsyncRef.current({
           draftId,
           clientId,
           name,
@@ -256,7 +267,7 @@ export function useCatalogueDraft({
 
         setHasUnsavedChanges(false);
         setLastSaveTime(new Date());
-        void utils.salesSheets.getDrafts.invalidate();
+        void invalidateDraftsRef.current();
         return true;
       } catch (error) {
         if (
@@ -278,7 +289,7 @@ export function useCatalogueDraft({
         setIsSaveLocked(false);
       }
     },
-    [saveDraftMutation, utils.salesSheets.getDrafts]
+    []
   );
 
   // ── auto-save ───────────────────────────────────────────────────────────
@@ -392,26 +403,33 @@ export function useCatalogueDraft({
   );
 
   const saveSheet = useCallback(async () => {
-    if (!clientId || items.length === 0 || isSaveLocked) {
+    if (
+      !clientId ||
+      items.length === 0 ||
+      saveLockRef.current ||
+      sheetSaveLockRef.current
+    ) {
       return null;
     }
 
-    if (draftName.trim()) {
-      await persistDraft({
-        draftId: currentDraftId ?? undefined,
-        clientId,
-        name: draftName,
-        items,
-      });
-    }
-
-    const sheetItems = buildSheetItems(items);
-    const totalValue = sheetItems.reduce(
-      (sum, item) => sum + item.retailPrice * item.quantity,
-      0
-    );
-
+    sheetSaveLockRef.current = true;
+    setIsFinalizingLocked(true);
     try {
+      if (draftName.trim()) {
+        await persistDraft({
+          draftId: currentDraftId ?? undefined,
+          clientId,
+          name: draftName,
+          items,
+        });
+      }
+
+      const sheetItems = buildSheetItems(items);
+      const totalValue = sheetItems.reduce(
+        (sum, item) => sum + item.retailPrice * item.quantity,
+        0
+      );
+
       const sheetId = await saveSheetMutation.mutateAsync({
         clientId,
         items: sheetItems,
@@ -429,6 +447,9 @@ export function useCatalogueDraft({
           (error instanceof Error ? error.message : "Unknown error")
       );
       return null;
+    } finally {
+      sheetSaveLockRef.current = false;
+      setIsFinalizingLocked(false);
     }
   }, [
     buildSheetItems,
@@ -436,7 +457,6 @@ export function useCatalogueDraft({
     currentDraftId,
     draftName,
     items,
-    isSaveLocked,
     persistDraft,
     saveSheetMutation,
   ]);
@@ -469,28 +489,35 @@ export function useCatalogueDraft({
   }, [lastSavedSheetId, hasUnsavedChanges, shareLinkMutation]);
 
   const handleConvertToOrder = useCallback(async () => {
-    if (!clientId || items.length === 0 || hasUnsavedChanges || isSaveLocked) {
+    if (
+      !clientId ||
+      items.length === 0 ||
+      hasUnsavedChanges ||
+      saveLockRef.current ||
+      sheetSaveLockRef.current ||
+      !lastSavedSheetId
+    ) {
       return false;
     }
 
     const conversionItems = buildSheetItems(items);
 
+    const handoffPayload = JSON.stringify({
+      clientId,
+      items: conversionItems,
+    });
+
     try {
-      const sheetId = await saveSheet();
-      if (!sheetId) {
-        return false;
+      sessionStorage.setItem("salesSheetToQuote", handoffPayload);
+
+      if (sessionStorage.getItem("salesSheetToQuote") !== handoffPayload) {
+        throw new Error("conversion handoff could not be verified");
       }
-      sessionStorage.setItem(
-        "salesSheetToQuote",
-        JSON.stringify({
-          clientId,
-          items: conversionItems,
-        })
-      );
+
       return true;
     } catch (error) {
       toast.error(
-        "Failed to convert: " +
+        "Failed to prepare order handoff: " +
           (error instanceof Error ? error.message : "Unknown error")
       );
       return false;
@@ -498,10 +525,9 @@ export function useCatalogueDraft({
   }, [
     buildSheetItems,
     clientId,
+    lastSavedSheetId,
     items,
     hasUnsavedChanges,
-    isSaveLocked,
-    saveSheet,
   ]);
 
   const markSheetAsLoaded = useCallback((sheetId: number | null) => {
@@ -530,18 +556,22 @@ export function useCatalogueDraft({
     lastSaveTime,
     isSaving: saveDraftMutation.isPending || isSaveLocked,
     isDeleting: deleteDraftMutation.isPending,
-    isFinalizing: saveSheetMutation.isPending,
+    isFinalizing: saveSheetMutation.isPending || isFinalizingLocked,
     lastShareUrl,
     // Share requires a FINALIZED sheet ID (not a draft).
     // The generateShareLink API operates on salesSheetHistory, not drafts.
     // canShare is true only after salesSheets.save has been called and returned a sheetId.
     canShare:
       !hasUnsavedChanges && lastSavedSheetId !== null && items.length > 0,
-    canConvert: !hasUnsavedChanges && clientId !== null && items.length > 0,
+    canConvert:
+      !hasUnsavedChanges &&
+      clientId !== null &&
+      lastSavedSheetId !== null &&
+      items.length > 0,
     canGoLive:
       !hasUnsavedChanges && lastSavedSheetId !== null && items.length > 0,
     lastSavedSheetId,
-    isConverting: saveSheetMutation.isPending,
+    isConverting: saveSheetMutation.isPending || isFinalizingLocked,
     saveDraft,
     saveSheet,
     loadDraft,
