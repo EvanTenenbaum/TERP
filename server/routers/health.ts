@@ -1,12 +1,12 @@
-import { router, publicProcedure, protectedProcedure } from '../_core/trpc';
-import { requirePermission } from '../_core/permissionMiddleware';
+import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
+import { requirePermission } from "../_core/permissionMiddleware";
 import {
   performHealthCheck,
   performPublicHealthCheck,
   livenessCheck,
   readinessCheck,
-  getHealthMetrics
-} from '../_core/healthCheck';
+  getHealthMetrics,
+} from "../_core/healthCheck";
 
 /**
  * Health Router
@@ -66,7 +66,7 @@ export const healthRouter = router({
    */
   metrics: protectedProcedure
     .use(requirePermission("system:metrics"))
-    .query(() => {
+    .query(async () => {
       return getHealthMetrics();
     }),
 });
