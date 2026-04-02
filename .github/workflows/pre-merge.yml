@@ -22,15 +22,16 @@ jobs:
           egress-policy: audit
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Extract Task ID
         id: extract_task
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
         run: |
-          BRANCH_NAME="${{ github.head_ref }}"
-          if [[ $BRANCH_NAME =~ ^claude/([A-Z]+-([0-9]+|[0-9]{8}-[0-9]{3}))-[0-9]{8}- ]]; then
+          if [[ "$BRANCH_NAME" =~ ^claude/([A-Z]+-([0-9]+|[0-9]{8}-[0-9]{3}))-[0-9]{8}- ]]; then
             echo "task_id=${BASH_REMATCH[1]}" >> $GITHUB_OUTPUT
           else
             echo "task_id=" >> $GITHUB_OUTPUT
@@ -108,8 +109,10 @@ jobs:
 
       - name: Check for Hotfix Bypass
         id: check_hotfix
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          if [[ "${{ github.event.pull_request.title }}" == *"[HOTFIX]"* ]]; then
+          if [[ "$PR_TITLE" == *"[HOTFIX]"* ]]; then
             echo "is_hotfix=true" >> $GITHUB_OUTPUT
           else
             echo "is_hotfix=false" >> $GITHUB_OUTPUT
@@ -167,7 +170,7 @@ jobs:
           fi
 
       - name: Post Status Comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const isHotfix = '${{ steps.check_hotfix.outputs.is_hotfix }}' === 'true';
@@ -261,15 +264,15 @@ jobs:
   static-analysis:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -293,13 +296,13 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -323,15 +326,15 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
