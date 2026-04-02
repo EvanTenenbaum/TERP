@@ -5,6 +5,10 @@ import type { PricedInventoryItem, DraftInfo } from "@/components/sales/types";
 
 const AUTO_SAVE_INTERVAL_MS = 30_000;
 
+function padDatePart(value: number) {
+  return value.toString().padStart(2, "0");
+}
+
 function toAbsoluteShareUrl(path: string): string {
   if (path.startsWith("http://") || path.startsWith("https://")) {
     return path;
@@ -47,7 +51,7 @@ function buildItemsFingerprint(sourceItems: PricedInventoryItem[]) {
 }
 
 function buildAutoDraftName(now = new Date()) {
-  return `Sales Catalogue ${now.toISOString().slice(0, 16).replace("T", " ")}`;
+  return `Sales Catalogue ${now.getFullYear()}-${padDatePart(now.getMonth() + 1)}-${padDatePart(now.getDate())} ${padDatePart(now.getHours())}:${padDatePart(now.getMinutes())}`;
 }
 
 interface UseCatalogueDraftOptions {
@@ -151,8 +155,10 @@ export function useCatalogueDraft({
   // ── mutations ───────────────────────────────────────────────────────────
   const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation();
   const saveSheetMutation = trpc.salesSheets.save.useMutation();
+  const shareLinkMutation = trpc.salesSheets.generateShareLink.useMutation();
   const saveDraftMutateAsyncRef = useRef(saveDraftMutation.mutateAsync);
   const saveSheetMutateAsyncRef = useRef(saveSheetMutation.mutateAsync);
+  const shareLinkMutateAsyncRef = useRef(shareLinkMutation.mutateAsync);
   const invalidateDraftsRef = useRef(utils.salesSheets.getDrafts.invalidate);
 
   useEffect(() => {
@@ -161,6 +167,9 @@ export function useCatalogueDraft({
   useEffect(() => {
     saveSheetMutateAsyncRef.current = saveSheetMutation.mutateAsync;
   }, [saveSheetMutation.mutateAsync]);
+  useEffect(() => {
+    shareLinkMutateAsyncRef.current = shareLinkMutation.mutateAsync;
+  }, [shareLinkMutation.mutateAsync]);
   useEffect(() => {
     invalidateDraftsRef.current = utils.salesSheets.getDrafts.invalidate;
   }, [utils.salesSheets.getDrafts.invalidate]);
@@ -196,9 +205,6 @@ export function useCatalogueDraft({
       toast.error("Failed to delete draft: " + error.message);
     },
   });
-
-  const shareLinkMutation = trpc.salesSheets.generateShareLink.useMutation();
-
   // Track the last finalized sheet ID — needed for share link generation.
   // salesSheets.save returns a number (the sheetId), not an object.
   const [lastSavedSheetId, setLastSavedSheetId] = useState<number | null>(null);
@@ -446,7 +452,12 @@ export function useCatalogueDraft({
   );
 
   const saveSheet = useCallback(async () => {
-    if (!clientId || items.length === 0 || sheetSaveLockRef.current) {
+    if (!clientId || items.length === 0) {
+      return null;
+    }
+
+    if (sheetSaveLockRef.current) {
+      toast.info("Save already in progress");
       return null;
     }
 
@@ -548,7 +559,7 @@ export function useCatalogueDraft({
     // salesSheets.generateShareLink operates on the salesSheetHistory table.
     if (!lastSavedSheetId || hasUnsavedChanges) return null;
     try {
-      const result = await shareLinkMutation.mutateAsync({
+      const result = await shareLinkMutateAsyncRef.current({
         sheetId: lastSavedSheetId,
         expiresInDays: 7,
       });
@@ -572,7 +583,7 @@ export function useCatalogueDraft({
       toast.error("Failed to generate share link");
       return null;
     }
-  }, [lastSavedSheetId, hasUnsavedChanges, shareLinkMutation]);
+  }, [lastSavedSheetId, hasUnsavedChanges]);
 
   const handleConvertToOrder = useCallback(
     async (onReady: () => void | Promise<void>) => {

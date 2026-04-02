@@ -377,7 +377,7 @@ function coerceOptionalNumber(value: unknown): number | null | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function sanitizeLoadedSheetItems(items: unknown): PricedInventoryItem[] {
+export function sanitizeLoadedSheetItems(items: unknown): PricedInventoryItem[] {
   if (!Array.isArray(items)) return [];
 
   return items.flatMap(item => {
@@ -391,7 +391,8 @@ function sanitizeLoadedSheetItems(items: unknown): PricedInventoryItem[] {
     const quantity = Number(raw.quantity);
 
     if (
-      !Number.isFinite(id) ||
+      !Number.isInteger(id) ||
+      id <= 0 ||
       !name ||
       !Number.isFinite(basePrice) ||
       !Number.isFinite(retailPrice) ||

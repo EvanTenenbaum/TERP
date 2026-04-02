@@ -7,6 +7,7 @@ import {
   applyCatalogueLineRetail,
   buildCatalogueCsv,
   buildPrintableCatalogueHtml,
+  sanitizeLoadedSheetItems,
   sanitizePrintableImageUrl,
 } from "./SalesCatalogueSurface";
 import { toast } from "sonner";
@@ -287,7 +288,7 @@ describe("SalesCatalogueSurface", () => {
   });
 
   it("keeps handoff actions disabled until a finalized sheet id exists", () => {
-    draftState.canConvert = true;
+    draftState.canConvert = false;
     draftState.canGoLive = false;
 
     render(<SalesCatalogueSurface />);
@@ -295,6 +296,20 @@ describe("SalesCatalogueSurface", () => {
     expect(screen.getByRole("button", { name: "Live" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "→ Sales Order" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "→ Quote" })).toBeDisabled();
+  });
+
+  it("rejects malformed saved-sheet items that use a zero id", () => {
+    expect(
+      sanitizeLoadedSheetItems([
+        {
+          id: 0,
+          name: "Corrupt Item",
+          basePrice: 10,
+          retailPrice: 20,
+          quantity: 1,
+        },
+      ])
+    ).toEqual([]);
   });
 
   it("preserves loaded retail when a zero-base row is repriced by markup", () => {

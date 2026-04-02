@@ -550,6 +550,7 @@ describe("useCatalogueDraft", () => {
     await waitFor(() => {
       expect(convertMutateAsync).toHaveBeenCalledTimes(1);
     });
+    expect(toastInfo).toHaveBeenCalledWith("Save already in progress");
 
     await act(async () => {
       resolveSheet?.(202);
