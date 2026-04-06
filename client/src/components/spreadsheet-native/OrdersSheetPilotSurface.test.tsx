@@ -10,6 +10,7 @@ import { OrdersSheetPilotSurface } from "./OrdersSheetPilotSurface";
 
 const mockSetLocation = vi.fn();
 const mockSetSelectedId = vi.fn();
+let mockSelectedId: number | null = 2;
 const {
   mockClientsListUseQuery,
   mockOrdersGetAllUseQuery,
@@ -122,6 +123,14 @@ vi.mock("@/lib/trpc", () => ({
                       clientId: 1,
                       orderType: "SALE",
                       total: "400",
+                      items: [
+                        {
+                          batchId: 10,
+                          quantity: 1,
+                          unitPrice: 400,
+                          unitCogs: 250,
+                        },
+                      ],
                       lineItems: [{ id: 10 }],
                       createdAt: "2026-03-10T00:00:00.000Z",
                       confirmedAt: null,
@@ -221,7 +230,7 @@ vi.mock("@/lib/spreadsheet-native", async () => {
   return {
     ...actual,
     useSpreadsheetSelectionParam: () => ({
-      selectedId: 2,
+      selectedId: mockSelectedId,
       setSelectedId: mockSetSelectedId,
     }),
   };
@@ -289,10 +298,16 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
 }));
 
 describe("OrdersSheetPilotSurface", () => {
+  const getLatestGridProps = (title: string) =>
+    mockPowersheetGrid.mock.calls
+      .filter(([props]) => props.title === title)
+      .at(-1)?.[0];
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockSearch = "";
     mockQueueSelectionSummary = null;
+    mockSelectedId = 2;
   });
 
   it("renders one dominant queue with linked detail and selection actions", () => {
@@ -309,16 +324,21 @@ describe("OrdersSheetPilotSurface", () => {
       screen.getByRole("button", { name: /fulfillment/i })
     ).toBeInTheDocument();
     expect(
+      screen.getByRole("button", { name: /new order/i })
+    ).toBeInTheDocument();
+    expect(
       screen.getByRole("button", { name: /new draft/i })
     ).toBeInTheDocument();
     expect(screen.getByText("Issued #55")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /filter drafts/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /filter confirmed/i })
+    ).toBeInTheDocument();
 
-    const queueCall = mockPowersheetGrid.mock.calls.find(
-      ([props]) => props.title === "Orders Queue"
-    )?.[0];
-    const supportCall = mockPowersheetGrid.mock.calls.find(
-      ([props]) => props.title === "Selected Order Lines"
-    )?.[0];
+    const queueCall = getLatestGridProps("Orders Queue");
+    const supportCall = getLatestGridProps("Selected Order Lines");
 
     expect(queueCall?.selectionMode).toBe("cell-range");
     expect(queueCall?.enableFillHandle).toBe(false);
@@ -326,6 +346,20 @@ describe("OrdersSheetPilotSurface", () => {
     expect(supportCall?.selectionMode).toBe("cell-range");
     expect(supportCall?.enableFillHandle).toBe(false);
     expect(supportCall?.enableUndoRedo).toBe(false);
+    expect(queueCall?.description).toBeUndefined();
+    expect(queueCall?.columnDefs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ headerName: "Created", field: "createdAt" }),
+      ])
+    );
+    expect(queueCall?.rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          orderNumber: "SO-001",
+          nextStepLabel: "Confirm",
+        }),
+      ])
+    );
   });
 
   it("locks row-scoped workflow actions when queue selection spans multiple rows", () => {
@@ -390,12 +424,8 @@ describe("OrdersSheetPilotSurface", () => {
   it("passes the same shared PowersheetGrid contract to queue and support grids (SALE-ORD-023)", () => {
     render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
 
-    const queueCall = mockPowersheetGrid.mock.calls.find(
-      ([props]) => props.title === "Orders Queue"
-    )?.[0];
-    const supportCall = mockPowersheetGrid.mock.calls.find(
-      ([props]) => props.title === "Selected Order Lines"
-    )?.[0];
+    const queueCall = getLatestGridProps("Orders Queue");
+    const supportCall = getLatestGridProps("Selected Order Lines");
 
     expect(queueCall).toBeTruthy();
     expect(supportCall).toBeTruthy();
@@ -418,9 +448,7 @@ describe("OrdersSheetPilotSurface", () => {
   it("renders queue keyboard hints and affordance visibility cues", () => {
     render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
 
-    const queueCall = mockPowersheetGrid.mock.calls.find(
-      ([props]) => props.title === "Orders Queue"
-    )?.[0];
+    const queueCall = getLatestGridProps("Orders Queue");
 
     expect(screen.getByLabelText("Keyboard shortcuts")).toBeInTheDocument();
     expect(
@@ -478,6 +506,37 @@ describe("OrdersSheetPilotSurface", () => {
     expect(mockSetLocation).toHaveBeenCalledWith(
       "/accounting?tab=invoices&from=sales&invoiceId=55&orderId=2"
     );
+  });
+
+  it("routes the primary New Order action to the create-order tab", () => {
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /new order/i }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith("/sales?tab=create-order");
+  });
+
+  it("filters the queue when the summary pills are clicked", () => {
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /filter drafts/i }));
+
+    const filteredQueueCall = getLatestGridProps("Orders Queue");
+    expect(filteredQueueCall?.rows).toEqual(
+      expect.arrayContaining([expect.objectContaining({ lane: "drafts" })])
+    );
+    expect(filteredQueueCall?.rows).toHaveLength(1);
+  });
+
+  it("keeps the linked lines panel collapsed until an order is selected", () => {
+    mockSelectedId = null;
+
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(
+      screen.getByText("Select an order to expand the linked line-item table.")
+    ).toBeInTheDocument();
+    expect(getLatestGridProps("Selected Order Lines")).toBeUndefined();
   });
 
   it("can be forced into document mode without the ordersView query param", () => {

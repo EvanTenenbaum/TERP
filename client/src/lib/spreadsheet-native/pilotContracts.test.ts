@@ -343,6 +343,66 @@ describe("spreadsheet-native pilot contracts", () => {
     ).toEqual([]);
   });
 
+  it("derives draft next-step cues from draft completeness", () => {
+    const rows = mapOrdersToPilotRows({
+      orders: [
+        {
+          id: 70,
+          orderNumber: "SO-70",
+          clientId: 8,
+          orderType: "SALE",
+          total: "0",
+          items: [],
+          lineItems: [],
+          createdAt: "2026-03-01T00:00:00.000Z",
+          version: 1,
+        } as never,
+        {
+          id: 71,
+          orderNumber: "SO-71",
+          clientId: 8,
+          orderType: "SALE",
+          total: "400",
+          items: [
+            {
+              batchId: 12,
+              quantity: 1,
+              unitPrice: 400,
+              unitCogs: 0,
+            },
+          ],
+          createdAt: "2026-03-01T00:00:00.000Z",
+          version: 1,
+        } as never,
+        {
+          id: 72,
+          orderNumber: "SO-72",
+          clientId: 8,
+          orderType: "SALE",
+          total: "400",
+          items: [
+            {
+              batchId: 12,
+              quantity: 1,
+              unitPrice: 400,
+              unitCogs: 250,
+            },
+          ],
+          createdAt: "2026-03-01T00:00:00.000Z",
+          version: 1,
+        } as never,
+      ],
+      clientNamesById: new Map([[8, "Atlas Labs"]]),
+      lane: "drafts",
+    });
+
+    expect(rows.map(row => row.nextStepLabel)).toEqual([
+      "Add products",
+      "Review pricing",
+      "Confirm",
+    ]);
+  });
+
   it("builds a deep-link fallback inventory row from detail data", () => {
     const detailRow = mapInventoryDetailToPilotRow({
       batch: {
