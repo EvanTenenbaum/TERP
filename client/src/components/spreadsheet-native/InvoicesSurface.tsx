@@ -51,6 +51,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import {
   InspectorPanel,
@@ -1304,40 +1306,59 @@ export function InvoicesSurface() {
       {/* ── 3. Grid + Collapsible Inspector ── */}
       <div className="flex flex-1 min-h-0">
         <div className={cn("flex-1", selectedRow && "flex-[3]")}>
-          <PowersheetGrid
-            surfaceId="invoices-unified"
-            requirementIds={[
-              "INV-001",
-              "INV-002",
-              "INV-003",
-              "INV-009",
-              "INV-020",
-            ]}
-            affordances={registryAffordances}
-            title="Invoices"
-            rows={gridRows}
-            columnDefs={invoiceColumnDefs}
-            getRowId={row => row.rowKey}
-            selectedRowId={selectedRow?.rowKey ?? null}
-            onSelectedRowChange={row =>
-              setSelectedInvoiceId(row?.invoiceId ?? null)
-            }
-            selectionMode="cell-range"
-            enableFillHandle={false}
-            enableUndoRedo={false}
-            onSelectionSummaryChange={setSelectionSummary}
-            isLoading={invoicesQuery.isLoading}
-            errorMessage={invoicesQuery.error?.message ?? null}
-            emptyTitle="No invoices match"
-            emptyDescription="Adjust the search or status filter, or create a new invoice."
-            summary={
-              <span className="text-[10px]">
-                {gridRows.length} visible · {invoicesQuery.data?.total ?? 0}{" "}
-                total · {statusFilter !== "ALL" ? statusFilter : "All statuses"}
-              </span>
-            }
-            minHeight={320}
-          />
+          {!invoicesQuery.isLoading &&
+          !invoicesQuery.error &&
+          gridRows.length === 0 ? (
+            <Card className="border-border/70 shadow-sm">
+              <CardContent className="pt-6">
+                <EmptyState
+                  variant="invoices"
+                  title="No invoices match"
+                  description="Clear the filters or create a new invoice so accounting can start collecting against it."
+                  action={{
+                    label: "Create Invoice",
+                    onClick: () => setShowCreateDialog(true),
+                  }}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <PowersheetGrid
+              surfaceId="invoices-unified"
+              requirementIds={[
+                "INV-001",
+                "INV-002",
+                "INV-003",
+                "INV-009",
+                "INV-020",
+              ]}
+              affordances={registryAffordances}
+              title="Invoices"
+              rows={gridRows}
+              columnDefs={invoiceColumnDefs}
+              getRowId={row => row.rowKey}
+              selectedRowId={selectedRow?.rowKey ?? null}
+              onSelectedRowChange={row =>
+                setSelectedInvoiceId(row?.invoiceId ?? null)
+              }
+              selectionMode="cell-range"
+              enableFillHandle={false}
+              enableUndoRedo={false}
+              onSelectionSummaryChange={setSelectionSummary}
+              isLoading={invoicesQuery.isLoading}
+              errorMessage={invoicesQuery.error?.message ?? null}
+              emptyTitle="No invoices match"
+              emptyDescription="Adjust the search or status filter, or create a new invoice."
+              summary={
+                <span className="text-[10px]">
+                  {gridRows.length} visible · {invoicesQuery.data?.total ?? 0}{" "}
+                  total ·{" "}
+                  {statusFilter !== "ALL" ? statusFilter : "All statuses"}
+                </span>
+              }
+              minHeight={320}
+            />
+          )}
         </div>
 
         {/* Inspector panel (~25% right) */}

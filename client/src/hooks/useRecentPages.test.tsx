@@ -56,4 +56,28 @@ describe("useRecentPages", () => {
       label: "Product Intake",
     });
   });
+
+  it("labels draft order routes as records instead of the generic composer", () => {
+    mockUseLocation.mockReturnValue(["/sales", vi.fn()]);
+    mockUseSearch.mockReturnValue("?tab=create-order&draftId=55");
+
+    const { result } = renderHook(() => useRecentPages());
+
+    expect(result.current.recentPages[0]).toMatchObject({
+      path: "/sales?tab=create-order&draftId=55",
+      label: "Draft Order #55",
+    });
+  });
+
+  it("labels invoice deep links as record-level recent items", () => {
+    mockUseLocation.mockReturnValue(["/accounting", vi.fn()]);
+    mockUseSearch.mockReturnValue("?tab=invoices&id=91");
+
+    const { result } = renderHook(() => useRecentPages());
+
+    expect(result.current.recentPages[0]).toMatchObject({
+      path: "/accounting?tab=invoices&id=91",
+      label: "Invoice #91",
+    });
+  });
 });

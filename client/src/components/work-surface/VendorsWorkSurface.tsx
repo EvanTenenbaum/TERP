@@ -61,6 +61,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
+import { getRelationshipSummary } from "@/lib/relationshipSummary";
 
 // ============================================================================
 // TYPES
@@ -130,16 +131,21 @@ function VendorTypeBadges({ vendor }: { vendor: Vendor }) {
     badges.push({ label: "Brand", className: "bg-purple-100 text-purple-800" });
 
   return (
-    <div className="flex gap-1 flex-wrap">
-      {badges.map(badge => (
-        <Badge
-          key={badge.label}
-          variant="outline"
-          className={cn("text-xs", badge.className)}
-        >
-          {badge.label}
-        </Badge>
-      ))}
+    <div className="space-y-1">
+      <p className="text-sm font-medium text-foreground">
+        {getRelationshipSummary(vendor)}
+      </p>
+      <div className="flex gap-1 flex-wrap">
+        {badges.map(badge => (
+          <Badge
+            key={badge.label}
+            variant="outline"
+            className={cn("text-xs", badge.className)}
+          >
+            {badge.label}
+          </Badge>
+        ))}
+      </div>
     </div>
   );
 }
@@ -615,7 +621,7 @@ export function VendorsWorkSurface() {
                         Name <SortIcon column="name" />
                       </span>
                     </TableHead>
-                    <TableHead>Type</TableHead>
+                    <TableHead>Relationship</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead
                       className="cursor-pointer text-right"

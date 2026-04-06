@@ -41,6 +41,8 @@ const PATH_LABELS: Record<string, string> = {
   "/accounting?tab=payments": "Payments",
   "/accounting?tab=credits": "Credits",
   "/relationships": "Relationships",
+  "/relationships?tab=clients": "Clients",
+  "/relationships?tab=suppliers": "Suppliers",
   "/calendar": "Calendar",
   "/notifications": "Notifications",
   "/analytics": "Analytics",
@@ -56,7 +58,29 @@ const PATH_LABELS: Record<string, string> = {
 function getLabelForPath(path: string): string {
   if (PATH_LABELS[path]) return PATH_LABELS[path];
 
-  const [pathname] = path.split("?");
+  const url = new URL(path, "https://terp.local");
+  const pathname = url.pathname;
+  const tab = url.searchParams.get("tab");
+  const draftId = url.searchParams.get("draftId");
+  const quoteId = url.searchParams.get("quoteId");
+  const invoiceId =
+    url.searchParams.get("invoiceId") ?? url.searchParams.get("id");
+  const paymentId = tab === "payments" ? url.searchParams.get("id") : null;
+
+  if (pathname === "/sales" && tab === "create-order") {
+    if (draftId) return `Draft Order #${draftId}`;
+    if (quoteId) return `Quote #${quoteId}`;
+    return "New Sales Order";
+  }
+
+  if (pathname === "/accounting" && tab === "invoices" && invoiceId) {
+    return `Invoice #${invoiceId}`;
+  }
+
+  if (pathname === "/accounting" && tab === "payments" && paymentId) {
+    return `Payment #${paymentId}`;
+  }
+
   if (PATH_LABELS[pathname]) return PATH_LABELS[pathname];
 
   // Client profile: /clients/123

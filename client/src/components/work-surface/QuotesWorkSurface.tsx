@@ -51,6 +51,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -526,6 +527,22 @@ export function QuotesWorkSurface() {
     () => displayQuotes.find(q => q.id === selectedQuoteId) || null,
     [displayQuotes, selectedQuoteId]
   );
+  const quoteEmptyStateAction = useMemo(() => {
+    if (search || statusFilter !== "ALL") {
+      return {
+        label: "Clear Filters",
+        onClick: () => {
+          setSearch("");
+          setStatusFilter("ALL");
+        },
+      };
+    }
+
+    return {
+      label: "Create Quote",
+      onClick: () => setLocation(buildQuoteComposerPath()),
+    };
+  }, [search, setLocation, statusFilter]);
 
   // Statistics
   const stats = useMemo(
@@ -744,15 +761,16 @@ export function QuotesWorkSurface() {
             </div>
           ) : displayQuotes.length === 0 ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="font-medium">No quotes found</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {search
-                    ? "Try adjusting your search"
-                    : "Create your first quote"}
-                </p>
-              </div>
+              <EmptyState
+                variant="reports"
+                title="No quotes found"
+                description={
+                  search || statusFilter !== "ALL"
+                    ? "No quotes match the current filters. Clear them to see the full registry again."
+                    : "Create the first quote here so sales can send pricing without leaving the workspace."
+                }
+                action={quoteEmptyStateAction}
+              />
             </div>
           ) : (
             <Table>
