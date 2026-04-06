@@ -91,6 +91,7 @@ import {
 import { cn } from "@/lib/utils";
 import { parseInvoiceDeepLink } from "@/components/work-surface/invoiceDeepLink";
 import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
+import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
 
 // ============================================================================
 // TYPES
@@ -277,7 +278,7 @@ function mapInvoicesToGridRows(
     return {
       rowKey: String(item.id),
       invoiceId: item.id,
-      invoiceNumber: item.invoiceNumber ?? "-",
+      invoiceNumber: formatInvoiceNumberForDisplay(item.invoiceNumber),
       clientName,
       customerId,
       invoiceDate: formatDate(item.invoiceDate),
@@ -610,13 +611,20 @@ export function InvoicesSurface() {
     const q = searchTerm.trim().toLowerCase();
     return rawItems.filter(item => {
       const invNum = (item.invoiceNumber ?? "").toLowerCase();
+      const displayInvoiceNumber = formatInvoiceNumberForDisplay(
+        item.invoiceNumber
+      ).toLowerCase();
       const clientName = (
         (item as InvoiceItem & { client?: { name?: string | null } }).client
           ?.name ??
         clientNamesById.get(item.customerId ?? 0) ??
         ""
       ).toLowerCase();
-      return invNum.includes(q) || clientName.includes(q);
+      return (
+        invNum.includes(q) ||
+        displayInvoiceNumber.includes(q) ||
+        clientName.includes(q)
+      );
     });
   }, [rawItems, searchTerm, clientNamesById]);
 
@@ -795,7 +803,8 @@ export function InvoicesSurface() {
       void utils.invoices.getSummary.invalidate();
       void utils.accounting.invoices.getARAging.invalidate();
     },
-    onError: err => toast.error(err.message || "Failed to refresh overdue status"),
+    onError: err =>
+      toast.error(err.message || "Failed to refresh overdue status"),
   });
 
   const adjustmentMutation = trpc.clientLedger.addLedgerAdjustment.useMutation({
@@ -856,7 +865,11 @@ export function InvoicesSurface() {
   }, [selectedRow]);
 
   const handleAdjustmentSubmit = useCallback(() => {
-    if (!selectedClientId || !adjustmentForm.amount || !adjustmentForm.description)
+    if (
+      !selectedClientId ||
+      !adjustmentForm.amount ||
+      !adjustmentForm.description
+    )
       return;
     adjustmentMutation.mutate({
       clientId: selectedClientId,
@@ -1239,7 +1252,9 @@ export function InvoicesSurface() {
               disabled={checkOverdueMutation.isPending}
               data-testid="refresh-overdue-button"
             >
-              {checkOverdueMutation.isPending ? "Checking..." : "Refresh Overdue"}
+              {checkOverdueMutation.isPending
+                ? "Checking..."
+                : "Refresh Overdue"}
             </Button>
           </div>
         </div>
@@ -1956,9 +1971,7 @@ export function InvoicesSurface() {
               <div className="p-3 bg-muted/50 rounded-md space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Client</span>
-                  <span className="font-medium">
-                    {selectedRow?.clientName}
-                  </span>
+                  <span className="font-medium">{selectedRow?.clientName}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Type</span>

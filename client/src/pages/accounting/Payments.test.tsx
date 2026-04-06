@@ -91,22 +91,22 @@ vi.mock("@/lib/trpc", () => ({
 
 describe("parsePaymentRouteContext", () => {
   it("hydrates payment ids and invoice ids from query params", () => {
-    expect(parsePaymentRouteContext("?tab=payments&id=42&invoiceId=77")).toEqual(
-      {
-        paymentId: 42,
-        invoiceId: 77,
-        orderId: null,
-        initialSearchQuery: "42",
-      }
-    );
+    expect(
+      parsePaymentRouteContext("?tab=payments&id=42&invoiceId=77")
+    ).toEqual({
+      paymentId: 42,
+      invoiceId: 77,
+      orderId: null,
+      initialSearchQuery: "42",
+    });
   });
 
-  it("falls back to orderId search context when no exact payment id is present", () => {
+  it("keeps orderId handoffs out of the free-text search context", () => {
     expect(parsePaymentRouteContext("?tab=payments&orderId=5001")).toEqual({
       paymentId: null,
       invoiceId: null,
       orderId: "5001",
-      initialSearchQuery: "5001",
+      initialSearchQuery: "",
     });
   });
 });
@@ -151,15 +151,13 @@ describe("Payments", () => {
     });
   });
 
-  it("hydrates orderId handoffs into the search context", () => {
+  it("does not preload a hidden order search when routed from sales", () => {
     mockUseSearch.mockReturnValue("?tab=payments&orderId=5001");
 
     render(<Payments embedded />);
 
-    expect(screen.getByTestId("payment-search-value")).toHaveTextContent(
-      "5001"
-    );
+    expect(screen.getByTestId("payment-search-value")).toHaveTextContent("");
     expect(screen.getByText("PMT-042")).toBeInTheDocument();
-    expect(screen.queryByText("PMT-007")).not.toBeInTheDocument();
+    expect(screen.getByText("PMT-007")).toBeInTheDocument();
   });
 });

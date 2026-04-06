@@ -20,6 +20,7 @@ import { logger } from "../_core/logger";
 import { getFiscalPeriodIdOrDefault } from "../_core/fiscalPeriod";
 import { getAccountIdByName, ACCOUNT_NAMES } from "../_core/accountLookup";
 import type { DbTransaction } from "../_core/dbTransaction";
+import { generateInvoiceNumber } from "../arApDb";
 
 interface OrderItem {
   batchId: number;
@@ -63,7 +64,7 @@ export async function createInvoiceFromOrder(
 
   const {
     orderId,
-    orderNumber,
+    orderNumber: _orderNumber,
     clientId,
     items,
     subtotal,
@@ -74,7 +75,7 @@ export async function createInvoiceFromOrder(
   } = input;
 
   // Generate invoice number and dates outside transaction
-  const invoiceNumber = `INV-${orderNumber.replace(/^[A-Z]-/, "")}`;
+  const invoiceNumber = await generateInvoiceNumber();
   const invoiceDate = new Date();
   const dueDateValue =
     dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default NET 30
@@ -643,7 +644,7 @@ export async function createInvoiceFromOrderTx(
 ): Promise<number> {
   const {
     orderId,
-    orderNumber,
+    orderNumber: _orderNumber,
     clientId,
     items,
     subtotal,
@@ -654,7 +655,7 @@ export async function createInvoiceFromOrderTx(
   } = input;
 
   // Generate invoice number and dates
-  const invoiceNumber = `INV-${orderNumber.replace(/^[A-Z]-/, "")}`;
+  const invoiceNumber = await generateInvoiceNumber();
   const invoiceDate = new Date();
   const dueDateValue =
     dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // Default NET 30

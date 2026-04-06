@@ -19,7 +19,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -192,6 +192,25 @@ const formatDate = (dateString: string | undefined): string => {
   }
 };
 
+const getQuoteValidUntilDisplay = (
+  validUntil: string | undefined,
+  createdAt: string | undefined
+): string => {
+  if (validUntil) {
+    return formatDate(validUntil);
+  }
+
+  if (createdAt) {
+    try {
+      return format(addDays(new Date(createdAt), 30), "MMM d, yyyy");
+    } catch {
+      return "30 days from creation";
+    }
+  }
+
+  return "30 days from creation";
+};
+
 const getEffectiveQuoteStatus = (quote: Pick<Quote, "quoteStatus">) =>
   quote.quoteStatus ?? "UNSENT";
 
@@ -295,11 +314,11 @@ function QuoteInspectorContent({
           <InspectorField label="Created">
             <p>{formatDate(quote.createdAt)}</p>
           </InspectorField>
-          {quote.validUntil && (
-            <InspectorField label="Valid Until">
-              <p>{formatDate(quote.validUntil)}</p>
-            </InspectorField>
-          )}
+          <InspectorField label="Valid Until">
+            <p>
+              {getQuoteValidUntilDisplay(quote.validUntil, quote.createdAt)}
+            </p>
+          </InspectorField>
         </div>
       </InspectorSection>
 
@@ -769,7 +788,12 @@ export function QuotesWorkSurface() {
                     </TableCell>
                     <TableCell>{getClientName(quote.clientId)}</TableCell>
                     <TableCell>{formatDate(quote.createdAt)}</TableCell>
-                    <TableCell>{formatDate(quote.validUntil)}</TableCell>
+                    <TableCell>
+                      {getQuoteValidUntilDisplay(
+                        quote.validUntil,
+                        quote.createdAt
+                      )}
+                    </TableCell>
                     <TableCell>
                       <QuoteStatusBadge status={quote.quoteStatus} />
                     </TableCell>

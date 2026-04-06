@@ -38,6 +38,7 @@ import {
   isReadyForPackingLikeStatus,
   normalizeFulfillmentStatus,
 } from "./lib/fulfillmentStatusCompatibility";
+import { resolveQuoteValidUntilDate } from "./lib/quoteValidity";
 import { parseMoneyOrNull, parseMoneyOrZero } from "./utils/money";
 // MEET-005: Import payables service for tracking vendor payables when inventory is sold
 import * as payablesService from "./services/payablesService";
@@ -561,9 +562,9 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       totalMargin: totalMargin.toString(),
       avgMarginPercent: avgMarginPercent.toString(),
       validUntil: input.validUntil
-        ? new Date(input.validUntil)
+        ? resolveQuoteValidUntilDate(input.validUntil)
         : input.orderType === "QUOTE"
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          ? resolveQuoteValidUntilDate()
           : undefined,
       quoteStatus: input.orderType === "QUOTE" ? "UNSENT" : undefined,
       paymentTerms: input.paymentTerms || "NET_30",
@@ -1858,7 +1859,7 @@ export async function updateDraftOrder(input: {
           totalMargin: totalMargin.toString(),
           avgMarginPercent: avgMarginPercent.toString(),
           validUntil: input.validUntil
-            ? new Date(input.validUntil)
+            ? resolveQuoteValidUntilDate(input.validUntil)
             : draft.validUntil,
           notes: input.notes || draft.notes,
         })

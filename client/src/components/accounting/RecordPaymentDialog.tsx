@@ -18,6 +18,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { format } from "date-fns";
+import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
 
 interface RecordPaymentDialogProps {
   open: boolean;
@@ -194,7 +195,8 @@ export function RecordPaymentDialog({
             Record Payment
           </h2>
           <p className="text-sm text-muted-foreground">
-            Record a payment for invoice {invoice.invoiceNumber}
+            Record a payment for invoice{" "}
+            {formatInvoiceNumberForDisplay(invoice.invoiceNumber)}
           </p>
         </div>
 

@@ -57,7 +57,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 import { trpc } from "@/lib/trpc";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { Badge } from "@/components/ui/badge";
@@ -252,8 +252,30 @@ const getItemLineTotal = (
   return unitPrice !== null ? item.quantity * unitPrice : null;
 };
 
-const getExpiryLabel = (validUntil: string | null | undefined): string => {
-  if (!validUntil) return "No expiry";
+const getQuoteValidUntilDisplay = (
+  validUntil: string | null | undefined,
+  createdAt: string | null | undefined
+): string => {
+  if (validUntil) {
+    return formatDate(validUntil);
+  }
+
+  if (createdAt) {
+    try {
+      return format(addDays(new Date(createdAt), 30), "MMM d, yyyy");
+    } catch {
+      return "30 days from creation";
+    }
+  }
+
+  return "30 days from creation";
+};
+
+const getExpiryLabel = (
+  validUntil: string | null | undefined,
+  createdAt: string | null | undefined
+): string => {
+  if (!validUntil) return createdAt ? "Default 30-day window" : "30-day window";
   try {
     const d = new Date(validUntil);
     if (Number.isNaN(d.getTime())) return "—";
@@ -292,7 +314,7 @@ function mapQuoteToRegistryRow(
     lineItemCount: items.length,
     createdAt: q.createdAt ?? null,
     validUntil: q.validUntil ?? null,
-    expiryLabel: getExpiryLabel(q.validUntil),
+    expiryLabel: getExpiryLabel(q.validUntil, q.createdAt ?? null),
   };
 }
 
@@ -392,17 +414,15 @@ function QuoteInspectorContent({
           </InspectorField>
           <InspectorField label="Valid Until">
             <p className="text-sm">
-              {quote.validUntil ? formatDate(quote.validUntil) : "No expiry"}
+              {getQuoteValidUntilDisplay(quote.validUntil, quote.createdAt)}
             </p>
           </InspectorField>
         </div>
-        {quote.validUntil && (
-          <InspectorField label="Expiry">
-            <p className="text-sm text-muted-foreground">
-              {getExpiryLabel(quote.validUntil)}
-            </p>
-          </InspectorField>
-        )}
+        <InspectorField label="Expiry">
+          <p className="text-sm text-muted-foreground">
+            {getExpiryLabel(quote.validUntil, quote.createdAt)}
+          </p>
+        </InspectorField>
       </InspectorSection>
 
       <InspectorSection title={`Line Items (${items.length})`} defaultOpen>

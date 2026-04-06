@@ -44,6 +44,8 @@ import {
 import { getFiscalPeriodIdOrDefault } from "../_core/fiscalPeriod";
 import { getAccountIdByName, ACCOUNT_NAMES } from "../_core/accountLookup";
 import * as payablesService from "./payablesService";
+import { resolveQuoteValidUntilDate } from "../lib/quoteValidity";
+import { generateInvoiceNumber } from "../arApDb";
 
 // ============================================================================
 // TYPES
@@ -382,7 +384,10 @@ export class OrderOrchestrator {
         totalCogs: totalCogs.toString(),
         totalMargin: totalMargin.toString(),
         avgMarginPercent: avgMarginPercent.toString(),
-        validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
+        validUntil:
+          input.orderType === "QUOTE"
+            ? resolveQuoteValidUntilDate(input.validUntil)
+            : undefined,
         quoteStatus: input.orderType === "QUOTE" ? "UNSENT" : undefined,
         paymentTerms: "NET_30",
         notes: input.notes,
@@ -1305,7 +1310,7 @@ export class OrderOrchestrator {
   private async createInvoiceWithGL(
     tx: NonNullable<Awaited<ReturnType<typeof getDb>>>,
     orderId: number,
-    orderNumber: string,
+    _orderNumber: string,
     clientId: number,
     items: OrderItem[],
     total: number,
@@ -1321,7 +1326,7 @@ export class OrderOrchestrator {
     );
     const fiscalPeriodId = await getFiscalPeriodIdOrDefault(new Date(), 1);
 
-    const invoiceNumber = `INV-${orderNumber.replace(/^[A-Z]-/, "")}`;
+    const invoiceNumber = await generateInvoiceNumber();
     const invoiceDate = new Date();
     const dueDateValue =
       dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);

@@ -6,6 +6,7 @@ export type AgingBucket = "current" | "30" | "60" | "90" | "90+";
 interface AgingBadgeProps {
   bucket: AgingBucket | string;
   amount?: number;
+  count?: number;
   currency?: string;
   className?: string;
 }
@@ -22,6 +23,7 @@ interface AgingBadgeProps {
 export function AgingBadge({
   bucket,
   amount,
+  count,
   currency: _currency = "$",
   className,
 }: AgingBadgeProps) {
@@ -78,6 +80,11 @@ export function AgingBadge({
       {config.label}
       {amount !== undefined && amount > 0 && (
         <span className="ml-1 font-semibold">{formatAmount(amount)}</span>
+      )}
+      {count !== undefined && (
+        <span className="ml-1 rounded-full border border-current/20 px-1.5 py-0.5 text-[10px] leading-none">
+          {count}
+        </span>
       )}
     </Badge>
   );
