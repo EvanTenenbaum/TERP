@@ -361,10 +361,10 @@ describe("IntakePilotSurface", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the Submit All Pending button", () => {
+  it("renders the primary Product Intake submit button", () => {
     render(<IntakePilotSurface onOpenClassic={vi.fn()} />);
     expect(
-      screen.getByRole("button", { name: /submit all pending/i })
+      screen.getByRole("button", { name: /submit all product intake/i })
     ).toBeInTheDocument();
   });
 

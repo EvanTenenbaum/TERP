@@ -177,6 +177,7 @@ export default function InventoryWorkspacePage() {
         ) : (
           <PurchaseOrderSurface
             defaultStatusFilter={["CONFIRMED", "RECEIVING"]}
+            autoLaunchReceivingOnRowClick
           />
         )}
       </LinearWorkspacePanel>

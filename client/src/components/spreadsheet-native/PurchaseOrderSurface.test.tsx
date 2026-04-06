@@ -13,6 +13,7 @@ const mockUseSearch = vi.fn(() => "");
 const mockInspectorPanel = vi.fn();
 const mockPowersheetGrid = vi.fn();
 const mockCreateMutate = vi.fn();
+const mockFetchPoDetail = vi.fn();
 const mockUpdateMutateAsync = vi.fn(() => Promise.resolve({ success: true }));
 const mockAddItemMutateAsync = vi.fn(() => Promise.resolve({ success: true }));
 const mockUpdateItemMutateAsync = vi.fn(() =>
@@ -72,6 +73,7 @@ vi.mock("./PowersheetGrid", () => ({
     title,
     rows = [],
     onSelectedRowChange,
+    onRowClicked,
     headerActions,
     selectionMode,
   }: {
@@ -80,6 +82,9 @@ vi.mock("./PowersheetGrid", () => ({
     onSelectedRowChange?: (
       row: { identity?: { rowKey: string } } | null
     ) => void;
+    onRowClicked?: (event: {
+      data: { identity?: { rowKey: string } } | undefined;
+    }) => void;
     headerActions?: ReactNode;
     selectionMode?: string;
   }) =>
@@ -92,6 +97,11 @@ vi.mock("./PowersheetGrid", () => ({
           {rows.length > 0 && onSelectedRowChange ? (
             <button onClick={() => onSelectedRowChange(rows[0])}>
               Select first purchase order
+            </button>
+          ) : null}
+          {rows.length > 0 && onRowClicked ? (
+            <button onClick={() => onRowClicked({ data: rows[0] })}>
+              Click first purchase order row
             </button>
           ) : null}
         </div>
@@ -191,6 +201,13 @@ vi.mock("@/components/work-surface/InspectorPanel", () => ({
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    useUtils: vi.fn(() => ({
+      purchaseOrders: {
+        getById: {
+          fetch: mockFetchPoDetail,
+        },
+      },
+    })),
     purchaseOrders: {
       getAll: {
         useQuery: vi.fn((input: {
@@ -362,6 +379,7 @@ describe("PurchaseOrderSurface", () => {
     mockAddItemMutateAsync.mockClear();
     mockUpdateItemMutateAsync.mockClear();
     mockDeleteItemMutateAsync.mockClear();
+    mockFetchPoDetail.mockImplementation(async () => poDetailData);
     mockCreateProductIntakeDraftFromPO.mockImplementation(input => ({
       id: "draft-123",
       ...input,
@@ -449,21 +467,85 @@ describe("PurchaseOrderSurface", () => {
     fireEvent.click(
       screen.getAllByRole("button", { name: /start receiving/i })[0]
     );
-    fireEvent.click(screen.getByRole("button", { name: /go to receiving/i }));
 
-    expect(mockCreateProductIntakeDraftFromPO).toHaveBeenCalledWith(
-      expect.objectContaining({
-        poId: 33,
-        poNumber: "PO-033",
-      })
+    return waitFor(() => {
+      expect(mockCreateProductIntakeDraftFromPO).toHaveBeenCalledWith(
+        expect.objectContaining({
+          poId: 33,
+          poNumber: "PO-033",
+        })
+      );
+      expect(mockUpsertProductIntakeDraft).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "draft-123" }),
+        1
+      );
+      expect(mockSetLocation).toHaveBeenCalledWith(
+        expect.stringContaining("draftId=draft-123")
+      );
+    });
+  });
+
+  it("opens receiving from a row click when auto-launch is enabled", async () => {
+    queueData = [
+      {
+        id: 44,
+        poNumber: "PO-044",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: "2026-04-03",
+        total: "175.00",
+        paymentTerms: "NET_15",
+      },
+    ];
+    poDetailData = {
+      poNumber: "PO-044",
+      supplier: { email: "ops@northfarm.test", phone: "555-0100" },
+      items: [
+        {
+          id: 502,
+          productId: 92,
+          productName: "Blue Dream",
+          category: "Flower",
+          subcategory: "Indoor",
+          quantityOrdered: "10",
+          quantityReceived: "0",
+          cogsMode: "RANGE",
+          unitCost: "0",
+          unitCostMin: "1.20",
+          unitCostMax: "1.80",
+        },
+      ],
+    };
+
+    render(
+      <PurchaseOrderSurface
+        defaultStatusFilter={["CONFIRMED"]}
+        autoLaunchReceivingOnRowClick
+      />
     );
-    expect(mockUpsertProductIntakeDraft).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "draft-123" }),
-      1
-    );
-    expect(mockSetLocation).toHaveBeenCalledWith(
-      expect.stringContaining("draftId=draft-123")
-    );
+
+    fireEvent.click(screen.getByText("Click first purchase order row"));
+
+    await waitFor(() => {
+      expect(mockFetchPoDetail).toHaveBeenCalledWith({ id: 44 });
+      expect(mockCreateProductIntakeDraftFromPO).toHaveBeenCalledWith(
+        expect.objectContaining({
+          poId: 44,
+          poNumber: "PO-044",
+          lines: expect.arrayContaining([
+            expect.objectContaining({
+              cogsMode: "RANGE",
+              unitCostMin: 1.2,
+              unitCostMax: 1.8,
+            }),
+          ]),
+        })
+      );
+      expect(mockSetLocation).toHaveBeenCalledWith(
+        expect.stringContaining("draftId=draft-123")
+      );
+    });
   });
 
   it("disables focus trapping for the PO inspector so row selection does not loop focus", () => {
