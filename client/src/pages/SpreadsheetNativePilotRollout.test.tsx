@@ -154,11 +154,12 @@ describe("spreadsheet-native pilot rollout gating", () => {
     await waitFor(() => {
       expect(screen.getByText("Orders Sheet Pilot")).toBeInTheDocument();
     });
+    expect(screen.getByText("View Mode")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Spreadsheet View" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Classic Surface" })
+      screen.getByRole("button", { name: "Standard View" })
     ).toBeInTheDocument();
   });
 

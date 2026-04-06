@@ -10,8 +10,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { DollarSign, CreditCard, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  DollarSign,
+  CreditCard,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { format } from "date-fns";
+import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
 
 interface RecordPaymentDialogProps {
   open: boolean;
@@ -47,7 +54,9 @@ export function RecordPaymentDialog({
   const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
   const [referenceNumber, setReferenceNumber] = useState("");
   const [notes, setNotes] = useState("");
-  const [paymentDate, setPaymentDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [paymentDate, setPaymentDate] = useState(
+    format(new Date(), "yyyy-MM-dd")
+  );
 
   const utils = trpc.useUtils();
 
@@ -86,7 +95,7 @@ export function RecordPaymentDialog({
   }, [open, onOpenChange]);
 
   const recordPaymentMutation = trpc.payments.recordPayment.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(
         <div className="flex flex-col gap-1">
           <span className="font-medium">Payment Recorded</span>
@@ -95,7 +104,8 @@ export function RecordPaymentDialog({
           </span>
           <span className="text-sm text-muted-foreground">
             Invoice status: {data.invoiceStatus}
-            {data.amountDue > 0 && ` (${formatCurrency(data.amountDue)} remaining)`}
+            {data.amountDue > 0 &&
+              ` (${formatCurrency(data.amountDue)} remaining)`}
           </span>
         </div>
       );
@@ -104,7 +114,7 @@ export function RecordPaymentDialog({
       onOpenChange(false);
       onSuccess?.();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to record payment");
     },
   });
@@ -130,14 +140,23 @@ export function RecordPaymentDialog({
 
     const amountDue = parseFloat(invoice.amountDue);
     if (paymentAmount > amountDue) {
-      toast.error(`Payment amount cannot exceed amount due (${formatCurrency(amountDue)})`);
+      toast.error(
+        `Payment amount cannot exceed amount due (${formatCurrency(amountDue)})`
+      );
       return;
     }
 
     recordPaymentMutation.mutate({
       invoiceId: invoice.id,
       amount: paymentAmount,
-      paymentMethod: paymentMethod as "CASH" | "CHECK" | "WIRE" | "ACH" | "CREDIT_CARD" | "DEBIT_CARD" | "OTHER",
+      paymentMethod: paymentMethod as
+        | "CASH"
+        | "CHECK"
+        | "WIRE"
+        | "ACH"
+        | "CREDIT_CARD"
+        | "DEBIT_CARD"
+        | "OTHER",
       referenceNumber: referenceNumber || undefined,
       notes: notes || undefined,
       paymentDate: paymentDate,
@@ -176,7 +195,8 @@ export function RecordPaymentDialog({
             Record Payment
           </h2>
           <p className="text-sm text-muted-foreground">
-            Record a payment for invoice {invoice.invoiceNumber}
+            Record a payment for invoice{" "}
+            {formatInvoiceNumberForDisplay(invoice.invoiceNumber)}
           </p>
         </div>
 
@@ -215,7 +235,7 @@ export function RecordPaymentDialog({
                 min="0.01"
                 max={amountDue}
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={e => setAmount(e.target.value)}
                 className="pl-7"
                 placeholder="0.00"
                 required
@@ -226,13 +246,16 @@ export function RecordPaymentDialog({
                 {isFullPayment ? (
                   <>
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span className="text-green-600">Full payment - invoice will be marked as paid</span>
+                    <span className="text-green-600">
+                      Full payment - invoice will be marked as paid
+                    </span>
                   </>
                 ) : (
                   <>
                     <AlertCircle className="h-4 w-4 text-amber-600" />
                     <span className="text-amber-600">
-                      Partial payment - {formatCurrency(remainingAfterPayment)} will remain due
+                      Partial payment - {formatCurrency(remainingAfterPayment)}{" "}
+                      will remain due
                     </span>
                   </>
                 )}
@@ -264,7 +287,7 @@ export function RecordPaymentDialog({
               id="paymentDate"
               type="date"
               value={paymentDate}
-              onChange={(e) => setPaymentDate(e.target.value)}
+              onChange={e => setPaymentDate(e.target.value)}
             />
           </div>
 
@@ -274,7 +297,7 @@ export function RecordPaymentDialog({
             <Input
               id="referenceNumber"
               value={referenceNumber}
-              onChange={(e) => setReferenceNumber(e.target.value)}
+              onChange={e => setReferenceNumber(e.target.value)}
               placeholder="Check #, Transaction ID, etc."
             />
           </div>
@@ -285,7 +308,7 @@ export function RecordPaymentDialog({
             <Textarea
               id="notes"
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={e => setNotes(e.target.value)}
               placeholder="Optional notes about this payment..."
               rows={2}
             />
@@ -302,7 +325,11 @@ export function RecordPaymentDialog({
             </Button>
             <Button
               type="submit"
-              disabled={recordPaymentMutation.isPending || !amount || parseFloat(amount) <= 0}
+              disabled={
+                recordPaymentMutation.isPending ||
+                !amount ||
+                parseFloat(amount) <= 0
+              }
             >
               {recordPaymentMutation.isPending ? (
                 <>

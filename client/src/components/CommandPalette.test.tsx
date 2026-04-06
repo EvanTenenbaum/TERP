@@ -13,6 +13,7 @@ let mockSpreadsheetEnabled = true;
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/", mockSetLocation] as const,
+  useSearch: () => "",
 }));
 
 vi.mock("@/hooks/useFeatureFlag", () => ({
@@ -24,6 +25,19 @@ vi.mock("@/hooks/useFeatureFlag", () => ({
       key === "spreadsheet-view" && mockSpreadsheetEnabled,
     isModuleEnabled: () => true,
     refetch: vi.fn(),
+  }),
+}));
+
+vi.mock("@/hooks/useRecentPages", () => ({
+  useRecentPages: () => ({
+    recentPages: [
+      {
+        path: "/clients/42",
+        label: "Client #42",
+        visitedAt: Date.now() - 1000,
+      },
+    ],
+    recordPage: vi.fn(),
   }),
 }));
 
@@ -149,6 +163,15 @@ describe("CommandPalette", () => {
 
     expect(screen.getByText("Record Receiving")).toBeInTheDocument();
     expect(screen.getByText("Inventory")).toBeInTheDocument();
+  });
+
+  it("shows recently opened records in the command palette", () => {
+    render(<CommandPalette open onOpenChange={() => {}} />);
+
+    expect(
+      screen.getByTestId("command-group-Recently Opened")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Client #42")).toBeInTheDocument();
   });
 
   it("routes the New Sales Order action to the unified sales workspace surface", () => {

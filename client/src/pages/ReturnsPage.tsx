@@ -297,7 +297,10 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
                         {returnRecord.returnReason}
                       </span>
                     </TableCell>
-                    <TableCell>User #{returnRecord.processedBy}</TableCell>
+                    <TableCell>
+                      {returnRecord.processedByName ||
+                        `User #${returnRecord.processedBy}`}
+                    </TableCell>
                     <TableCell>
                       {new Date(returnRecord.processedAt).toLocaleDateString()}
                     </TableCell>

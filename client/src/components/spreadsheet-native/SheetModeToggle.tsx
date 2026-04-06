@@ -18,15 +18,15 @@ export function SheetModeToggle({
 
   return (
     <div
-      className="linear-workspace-mode-toggle rounded-full border border-border/70 bg-background/90 p-0.5 shadow-sm"
-      role="group"
-      aria-label="Surface mode"
+      className="inline-flex items-center gap-2"
+      aria-label="View mode toggle"
     >
+      <span className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        View Mode
+      </span>
       <Button
         size="sm"
-        variant={surfaceMode === "sheet-native" ? "default" : "ghost"}
-        className="h-8 rounded-full px-3 text-[11px] font-semibold"
-        aria-pressed={surfaceMode === "sheet-native"}
+        variant={surfaceMode === "sheet-native" ? "default" : "outline"}
         onClick={() => onSurfaceModeChange("sheet-native")}
       >
         Spreadsheet View
@@ -34,11 +34,9 @@ export function SheetModeToggle({
       <Button
         size="sm"
         variant={surfaceMode === "classic" ? "default" : "ghost"}
-        className="h-8 rounded-full px-3 text-[11px] font-semibold"
-        aria-pressed={surfaceMode === "classic"}
         onClick={() => onSurfaceModeChange("classic")}
       >
-        Classic Surface
+        Standard View
       </Button>
     </div>
   );

@@ -165,7 +165,7 @@ export const navigationItems: NavigationItem[] = [
     sidebarVisible: true,
   },
   {
-    name: "Intake",
+    name: "Direct Intake",
     path: "/direct-intake",
     icon: Download,
     group: "operations",
@@ -192,7 +192,7 @@ export const navigationItems: NavigationItem[] = [
   },
   // TERP-0005: Receiving absorbed into Operations workspace
   {
-    name: "Receiving",
+    name: "Product Intake",
     path: "/inventory?tab=receiving",
     icon: Download,
     group: "operations",

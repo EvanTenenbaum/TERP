@@ -1,0 +1,206 @@
+<h2>Bills Surface — Revised Inspector + Actions</h2>
+<p class="subtitle">Inspector shows vendor-level AP context. Action bar focuses on what you do with existing bills.</p>
+
+<div class="mockup">
+  <div class="mockup-header">BillsSurface v2 — Vendor AP context in inspector, practical actions</div>
+  <div class="mockup-body" style="font-size:11px;line-height:1.4;padding:0">
+
+    <!-- Toolbar (unchanged) -->
+    <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#f8f9fa;border-bottom:1px solid #e2e4e7">
+      <span style="font-weight:700;font-size:12px;letter-spacing:-0.3px">Bills</span>
+      <span style="font-size:9px;padding:2px 7px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:4px;color:#e65100;font-weight:500">$18,200 AP</span>
+      <span style="font-size:9px;padding:2px 7px;background:#ffebee;border:1px solid #ffcdd2;border-radius:4px;color:#c62828;font-weight:500">2 overdue</span>
+      <span style="font-size:9px;padding:2px 7px;background:#e3f2fd;border:1px solid #bbdefb;border-radius:4px;color:#1565c0;font-weight:500">31 total</span>
+      <span style="flex:1"></span>
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;cursor:pointer;color:#555">AP Aging ▾</span>
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#999">🔍 Search bills...</span>
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;cursor:pointer;color:#555">↻</span>
+    </div>
+
+    <!-- REVISED Action bar — practical actions only -->
+    <div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:#fafbfc;border-bottom:1px solid #eee">
+      <span style="font-size:9px;padding:2px 8px;background:#1565c0;color:white;border-radius:3px;font-weight:500">All</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Draft</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Submitted</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Approved</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Received</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Paid</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#c62828;border:1px solid #ffcdd2">Overdue</span>
+      <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Void</span>
+      <div style="flex:1"></div>
+      <!-- Primary: pay this bill. Secondary: void, mark received -->
+      <span style="font-size:9px;padding:2px 7px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:4px;color:#e65100;font-weight:500;cursor:pointer">💰 Pay Vendor</span>
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">📦 Mark Received</span>
+      <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#d32f2f;cursor:pointer">✕ Void</span>
+    </div>
+
+    <!-- Grid + REVISED Inspector -->
+    <div style="display:flex;gap:0">
+      <!-- Grid -->
+      <div style="flex:3;background:white;border-right:1px solid #eee">
+        <div style="display:grid;grid-template-columns:80px 110px 70px 65px 75px 65px 55px;gap:0;font-size:9px">
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Bill #</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Vendor</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Date</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Due</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee;text-align:right">Total</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee;text-align:right">Due Amt</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8">Status</div>
+          <!-- Selected -->
+          <div style="padding:4px 6px;background:#e3f2fd;font-family:monospace;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">BILL-018</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;color:#1565c0;text-decoration:underline;cursor:pointer">Alpine Growers</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">Mar 10</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;color:#d32f2f">Mar 25</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;text-align:right;font-family:monospace">$8,400</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;text-align:right;font-family:monospace;color:#d32f2f;font-weight:600">$8,400</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">APPROVED</span></div>
+          <!-- Row 2 -->
+          <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">BILL-019</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Canopy Supply</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 14</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 29</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$3,200</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$3,200</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0"><span style="font-size:8px;padding:1px 4px;background:#e3f2fd;color:#1565c0;border:1px solid #bbdefb;border-radius:3px">SUBMITTED</span></div>
+          <!-- Row 3 -->
+          <div style="padding:4px 6px;font-family:monospace;border-right:1px solid #eee">BILL-017</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee">Alpine Growers</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee">Mar 5</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee">Mar 20</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee;text-align:right;font-family:monospace">$5,600</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee;text-align:right;font-family:monospace;color:#999">$0.00</div>
+          <div style="padding:4px 6px"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">PAID</span></div>
+        </div>
+      </div>
+
+      <!-- REVISED Inspector: bill detail + vendor AP context -->
+      <div style="flex:1;background:#fafbfc;padding:10px;font-size:9px;min-width:200px;border-left:1px solid #e8e8e8">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #e8e8e8">
+          <span style="font-weight:700;font-size:11px">BILL-018</span>
+          <span style="cursor:pointer;color:#999;font-size:12px;padding:2px 4px;border-radius:3px;background:#f0f0f0">✕</span>
+        </div>
+
+        <!-- Bill details -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;font-weight:600">This Bill</div>
+          <div style="display:grid;grid-template-columns:55px 1fr;gap:2px 8px;font-size:9px">
+            <span style="color:#888">Vendor</span>
+            <span style="color:#1565c0;text-decoration:underline;cursor:pointer">Alpine Growers ↗</span>
+            <span style="color:#888">Date</span>
+            <span>Mar 10, 2026</span>
+            <span style="color:#888">Due</span>
+            <span style="color:#d32f2f;font-weight:500">Mar 25 (2d overdue)</span>
+            <span style="color:#888">Total</span>
+            <span style="font-family:monospace;font-weight:600">$8,400.00</span>
+            <span style="color:#888">Paid</span>
+            <span style="font-family:monospace">$0.00</span>
+            <span style="color:#888">Due</span>
+            <span style="font-family:monospace;color:#d32f2f;font-weight:600">$8,400.00</span>
+            <span style="color:#888">Status</span>
+            <span><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">APPROVED</span></span>
+            <span style="color:#888">GL</span>
+            <span><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">POSTED</span></span>
+          </div>
+        </div>
+
+        <!-- Line items -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;font-weight:600">Line Items</div>
+          <div style="font-size:8px;padding:4px;background:white;border:1px solid #eee;border-radius:4px">
+            <div style="display:flex;justify-content:space-between;padding:2px 0">
+              <span>2x THCA Flower</span>
+              <span style="font-family:monospace">$3,200</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:2px 0;border-top:1px solid #f5f5f5">
+              <span>1x Extract Concentrate</span>
+              <span style="font-family:monospace">$5,200</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- VENDOR AP CONTEXT — the new part -->
+        <div style="margin-bottom:10px;padding:8px;background:#fff8f0;border:1px solid #ffe0b2;border-radius:5px">
+          <div style="font-size:8px;color:#e65100;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px;font-weight:600">Vendor: Alpine Growers</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:9px">
+            <div>
+              <div style="font-size:8px;color:#888">Total Owed</div>
+              <div style="font-size:14px;font-weight:700;color:#e65100;font-family:monospace">$14,000</div>
+            </div>
+            <div>
+              <div style="font-size:8px;color:#888">Open Bills</div>
+              <div style="font-size:14px;font-weight:700;color:#555">3</div>
+            </div>
+          </div>
+          <div style="margin-top:6px;font-size:8px;border-top:1px solid #ffe0b2;padding-top:5px">
+            <div style="font-size:8px;color:#888;margin-bottom:3px">Other open bills from this vendor:</div>
+            <div style="display:flex;justify-content:space-between;padding:2px 0">
+              <span style="color:#1565c0;cursor:pointer">BILL-020</span>
+              <span>Due Apr 5</span>
+              <span style="font-family:monospace">$3,200</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:2px 0;border-top:1px solid #fff3e0">
+              <span style="color:#1565c0;cursor:pointer">BILL-016</span>
+              <span style="color:#d32f2f">5d overdue</span>
+              <span style="font-family:monospace">$2,400</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick actions -->
+        <div style="border-top:1px solid #e8e8e8;padding-top:8px;display:flex;flex-wrap:wrap;gap:4px">
+          <span style="font-size:8px;padding:3px 8px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:4px;color:#e65100;cursor:pointer;font-weight:500">💰 Pay This Bill</span>
+          <span style="font-size:8px;padding:3px 8px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">💰 Pay All Open</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- AP Aging (same as before, collapsed) -->
+    <div style="margin:6px 8px;padding:6px 8px;background:#fef3f0;border:1px solid #ffcdd2;border-radius:6px;font-size:9px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-weight:600;font-size:10px;color:#c62828">AP Aging Summary</span>
+        <span style="flex:1"></span>
+        <span style="color:#888;cursor:pointer">▼ expand</span>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div style="display:flex;align-items:center;padding:3px 8px;background:#f8f9fa;border-top:1px solid #e2e4e7;border-radius:0 0 6px 6px;font-size:9px;color:#888">
+      <span>1 selected · All bills · 31 total · Alpine Growers: $14,000 owed</span>
+      <span style="flex:1"></span>
+      <span>Click select · ⌘C copy · Esc close</span>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px">
+  <h3>What Changed from v1</h3>
+  <table style="width:100%;font-size:12px;border-collapse:collapse">
+    <tr style="background:#f8f9fa"><th style="padding:6px;text-align:left;width:25%">Area</th><th style="padding:6px;text-align:left">Before (v1)</th><th style="padding:6px;text-align:left">After (v2)</th></tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px;font-weight:600">Action bar</td>
+      <td style="padding:6px;color:#999;text-decoration:line-through">+ Create Bill, ✓ Approve, 💰 Pay Vendor, ✕ Void</td>
+      <td style="padding:6px">💰 Pay Vendor, 📦 Mark Received, ✕ Void</td>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px;font-weight:600">Inspector: timeline</td>
+      <td style="padding:6px;color:#999;text-decoration:line-through">Status timeline (Created → Submitted → Approved → Paid)</td>
+      <td style="padding:6px">Removed — not useful</td>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px;font-weight:600">Inspector: vendor context</td>
+      <td style="padding:6px;color:#999">Not present</td>
+      <td style="padding:6px;font-weight:500;color:#e65100">NEW — Total owed to vendor, open bill count, list of other open bills from same vendor with due dates and amounts</td>
+    </tr>
+    <tr>
+      <td style="padding:6px;font-weight:600">Inspector: quick actions</td>
+      <td style="padding:6px;color:#999">Pay Vendor only</td>
+      <td style="padding:6px">"Pay This Bill" + "Pay All Open" (batch pay all open bills from this vendor)</td>
+    </tr>
+  </table>
+</div>
+
+<div class="section" style="margin-top:16px">
+  <h3>Vendor AP Context — What It Shows</h3>
+  <p style="font-size:12px;line-height:1.6">When you select a bill, the inspector shows this bill's details <strong>plus</strong> a vendor context card that answers: "How much do we owe this vendor total? What other bills are open?" This gives Evan the full picture without navigating away. The other open bills are clickable (selects that row in the grid).</p>
+  <p style="font-size:12px;line-height:1.6;margin-top:8px">Data comes from filtering the existing <code>accounting.bills.list</code> response by vendor ID — no new tRPC endpoint needed.</p>
+</div>

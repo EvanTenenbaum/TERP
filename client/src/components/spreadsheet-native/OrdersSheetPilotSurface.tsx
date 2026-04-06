@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import {
   buildOperationsWorkspacePath,
+  buildSalesWorkspacePath,
   buildSheetNativeOrdersDocumentPath,
 } from "@/lib/workspaceRoutes";
 import { getFulfillmentDisplayLabel } from "@/lib/fulfillmentDisplay";
@@ -89,6 +90,15 @@ const formatDate = (value: string | null) => {
 
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? "-" : parsed.toLocaleString();
+};
+
+const formatShortDate = (value: string | null) => {
+  if (!value) {
+    return "-";
+  }
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? "-" : parsed.toLocaleDateString();
 };
 
 /**
@@ -176,6 +186,9 @@ export function OrdersSheetPilotSurface({
   const lastEmittedRowIdRef = useRef<number | null>(null);
 
   const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "drafts" | "confirmed"
+  >("all");
   const draftIdFromRoute = parsePositiveIntegerParam(
     searchParams.get("draftId")
   );
@@ -313,14 +326,16 @@ export function OrdersSheetPilotSurface({
 
   const queueRows = useMemo(
     () =>
-      [...draftRows, ...confirmedRows].sort((left, right) => {
-        if (left.lane !== right.lane) {
-          return left.lane === "drafts" ? -1 : 1;
-        }
+      [...draftRows, ...confirmedRows]
+        .filter(row => statusFilter === "all" || row.lane === statusFilter)
+        .sort((left, right) => {
+          if (left.lane !== right.lane) {
+            return left.lane === "drafts" ? -1 : 1;
+          }
 
-        return (right.createdAt ?? "").localeCompare(left.createdAt ?? "");
-      }),
-    [confirmedRows, draftRows]
+          return (right.createdAt ?? "").localeCompare(left.createdAt ?? "");
+        }),
+    [confirmedRows, draftRows, statusFilter]
   );
 
   const selectedOrderRow =
@@ -382,6 +397,14 @@ export function OrdersSheetPilotSurface({
         minWidth: 200,
       },
       {
+        field: "createdAt",
+        headerName: "Created",
+        minWidth: 110,
+        maxWidth: 140,
+        sortable: true,
+        valueFormatter: params => formatShortDate(params.value ?? null),
+      },
+      {
         field: "lineItemCount",
         headerName: "Lines",
         minWidth: 90,
@@ -441,7 +464,7 @@ export function OrdersSheetPilotSurface({
       {queueSelectionSummary
         ? ` · queue ${queueSelectionSummary.selectedCellCount} cells / ${queueSelectionSummary.selectedRowCount} rows`
         : ""}
-      {supportSelectionSummary
+      {selectedOrderRow && supportSelectionSummary
         ? ` · support ${supportSelectionSummary.selectedCellCount} cells`
         : ""}
     </span>
@@ -492,6 +515,7 @@ export function OrdersSheetPilotSurface({
     selectedOrderRow?.lane === "confirmed" && selectedOrderInvoiceId
   );
   const rowScopedActionsBlocked = queueSelectionTouchesMultipleRows;
+  const totalOrderCount = draftRows.length + confirmedRows.length;
   if (currentDocumentMode) {
     return <SalesOrderSurface />;
   }
@@ -521,7 +545,11 @@ export function OrdersSheetPilotSurface({
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button size="sm" onClick={() => openDocumentMode()}>
+          <Button
+            size="sm"
+            className="shadow-sm"
+            onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}
+          >
             <Plus className="mr-2 h-4 w-4" />
             New Order
           </Button>
@@ -538,7 +566,7 @@ export function OrdersSheetPilotSurface({
           <Button
             size="sm"
             variant={
-              selectedOrderRow?.lane === "drafts" ? "default" : "outline"
+              selectedOrderRow?.lane === "drafts" ? "secondary" : "outline"
             }
             disabled={rowScopedActionsBlocked}
             onClick={() =>
@@ -551,7 +579,9 @@ export function OrdersSheetPilotSurface({
             }
           >
             <Plus className="mr-2 h-4 w-4" />
-            {selectedOrderRow?.lane === "drafts" ? "Edit Draft" : "New Draft"}
+            {selectedOrderRow?.lane === "drafts"
+              ? "Continue Draft"
+              : "New Draft"}
           </Button>
           <Button
             size="sm"
@@ -639,7 +669,6 @@ export function OrdersSheetPilotSurface({
         requirementIds={["ORD-WF-001", "ORD-WF-006", "ORD-WF-007"]}
         affordances={queueAffordances}
         title="Orders Queue"
-        description="One dominant queue keeps stage, client, lines, total, and next-step cues visible so the inspector is only for deeper context."
         rows={queueRows}
         columnDefs={orderColumnDefs}
         getRowId={row => row.identity.rowKey}
@@ -656,10 +685,42 @@ export function OrdersSheetPilotSurface({
         emptyTitle="No orders match this queue"
         emptyDescription="Adjust the search or open the document sheet to create a new draft."
         summary={
-          <span>
-            {queueRows.length} visible orders · {draftRows.length} drafts ·{" "}
-            {confirmedRows.length} confirmed
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span>{queueRows.length} visible orders</span>
+            <Button
+              type="button"
+              size="sm"
+              variant={statusFilter === "all" ? "secondary" : "outline"}
+              className="h-7 rounded-full px-3"
+              aria-label={`Filter all orders (${totalOrderCount})`}
+              aria-pressed={statusFilter === "all"}
+              onClick={() => setStatusFilter("all")}
+            >
+              All {totalOrderCount}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={statusFilter === "drafts" ? "secondary" : "outline"}
+              className="h-7 rounded-full px-3"
+              aria-label={`Filter drafts (${draftRows.length})`}
+              aria-pressed={statusFilter === "drafts"}
+              onClick={() => setStatusFilter("drafts")}
+            >
+              {draftRows.length} {draftRows.length === 1 ? "draft" : "drafts"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={statusFilter === "confirmed" ? "secondary" : "outline"}
+              className="h-7 rounded-full px-3"
+              aria-label={`Filter confirmed (${confirmedRows.length})`}
+              aria-pressed={statusFilter === "confirmed"}
+              onClick={() => setStatusFilter("confirmed")}
+            >
+              {confirmedRows.length} confirmed
+            </Button>
+          </div>
         }
         minHeight={360}
       />
@@ -734,33 +795,42 @@ export function OrdersSheetPilotSurface({
           </div>
         )}
 
-      <PowersheetGrid
-        surfaceId="orders-support-grid"
-        requirementIds={["ORD-WF-002"]}
-        affordances={supportAffordances}
-        title="Selected Order Lines"
-        description="This supporting table stays selection-driven and compact, which is closer to the final document-sheet model than a second full queue."
-        rows={lineItemRows}
-        columnDefs={lineItemColumnDefs}
-        getRowId={row => row.identity.rowKey}
-        selectionMode="cell-range"
-        enableFillHandle={false}
-        enableUndoRedo={false}
-        onSelectionSummaryChange={setSupportSelectionSummary}
-        isLoading={detailQuery.isLoading}
-        errorMessage={detailQuery.error?.message ?? null}
-        emptyTitle="No order selected"
-        emptyDescription="Select a draft or confirmed row above to populate the linked line-item table."
-        summary={
-          selectedOrderRow ? (
+      {selectedOrderRow ? (
+        <PowersheetGrid
+          surfaceId="orders-support-grid"
+          requirementIds={["ORD-WF-002"]}
+          affordances={supportAffordances}
+          title="Selected Order Lines"
+          description="This supporting table stays selection-driven and compact, which is closer to the final document-sheet model than a second full queue."
+          rows={lineItemRows}
+          columnDefs={lineItemColumnDefs}
+          getRowId={row => row.identity.rowKey}
+          selectionMode="cell-range"
+          enableFillHandle={false}
+          enableUndoRedo={false}
+          onSelectionSummaryChange={setSupportSelectionSummary}
+          isLoading={detailQuery.isLoading}
+          errorMessage={detailQuery.error?.message ?? null}
+          emptyTitle="No linked lines found"
+          emptyDescription="This order does not have any linked line items yet."
+          summary={
             <span>
               {selectedOrderRow.orderNumber} · {lineItemRows.length} linked line
               items
             </span>
-          ) : undefined
-        }
-        minHeight={220}
-      />
+          }
+          minHeight={220}
+        />
+      ) : (
+        <div className="rounded-lg border border-border/70 bg-muted/20 px-4 py-3">
+          <div className="text-sm font-medium text-foreground">
+            Selected Order Lines
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Select an order to expand the linked line-item table.
+          </p>
+        </div>
+      )}
 
       <WorkSurfaceStatusBar
         left={statusBarLeft}

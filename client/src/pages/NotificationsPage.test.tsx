@@ -19,8 +19,8 @@ vi.mock("@/components/common/BackButton", () => ({
   BackButton: ({ label }: { label: string }) => <button>{label}</button>,
 }));
 
-vi.mock("@/components/inbox/InboxPanel", () => ({
-  InboxPanel: () => <div>Mock Inbox Panel</div>,
+vi.mock("@/components/notifications/InlineNotificationPanel", () => ({
+  InlineNotificationPanel: () => <div>Mock Notification Panel</div>,
 }));
 
 vi.mock("@/components/alerts/AlertsPanel", () => ({
@@ -48,7 +48,7 @@ describe("NotificationsPage", () => {
     expect(
       screen.getByRole("tab", { name: "System Notifications" })
     ).toHaveAttribute("data-state", "active");
-    expect(screen.getByText("Mock Inbox Panel")).toBeInTheDocument();
+    expect(screen.getByText("Mock Notification Panel")).toBeInTheDocument();
   });
 
   it("opens the alerts tab from the query string", () => {
@@ -67,6 +67,6 @@ describe("NotificationsPage", () => {
     expect(
       screen.getByRole("tab", { name: "System Notifications" })
     ).toHaveAttribute("data-state", "active");
-    expect(screen.getByText("Mock Inbox Panel")).toBeInTheDocument();
+    expect(screen.getByText("Mock Notification Panel")).toBeInTheDocument();
   });
 });

@@ -2101,11 +2101,16 @@ export function InventoryWorkSurface() {
               <EmptyState
                 variant="inventory"
                 title="No inventory found"
-                description="Receive products to start managing stock, locations, and availability."
+                description="Receive products to start managing stock, availability, and movement history from one sheet."
                 action={{
                   label: "Open Receiving Queue",
                   onClick: () =>
                     setLocation(buildOperationsWorkspacePath("receiving")),
+                }}
+                secondaryAction={{
+                  label: "Start Direct Intake",
+                  onClick: () =>
+                    setLocation(buildOperationsWorkspacePath("intake")),
                 }}
               />
             )

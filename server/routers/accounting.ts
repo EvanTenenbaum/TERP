@@ -62,6 +62,52 @@ export const accountingRouter = router({
             clientId: invoices.customerId,
             clientName: clients.name,
             totalOwed: sql<number>`SUM(CAST(${invoices.amountDue} AS DECIMAL(15,2)))`,
+            currentAmount: sql<number>`
+              SUM(
+                CASE
+                  WHEN ${invoices.dueDate} IS NULL OR ${invoices.dueDate} >= CURDATE()
+                    THEN CAST(${invoices.amountDue} AS DECIMAL(15,2))
+                  ELSE 0
+                END
+              )
+            `,
+            days30Amount: sql<number>`
+              SUM(
+                CASE
+                  WHEN ${invoices.dueDate} < CURDATE()
+                    AND DATEDIFF(CURDATE(), ${invoices.dueDate}) <= 30
+                    THEN CAST(${invoices.amountDue} AS DECIMAL(15,2))
+                  ELSE 0
+                END
+              )
+            `,
+            days60Amount: sql<number>`
+              SUM(
+                CASE
+                  WHEN DATEDIFF(CURDATE(), ${invoices.dueDate}) BETWEEN 31 AND 60
+                    THEN CAST(${invoices.amountDue} AS DECIMAL(15,2))
+                  ELSE 0
+                END
+              )
+            `,
+            days90Amount: sql<number>`
+              SUM(
+                CASE
+                  WHEN DATEDIFF(CURDATE(), ${invoices.dueDate}) BETWEEN 61 AND 90
+                    THEN CAST(${invoices.amountDue} AS DECIMAL(15,2))
+                  ELSE 0
+                END
+              )
+            `,
+            days90PlusAmount: sql<number>`
+              SUM(
+                CASE
+                  WHEN DATEDIFF(CURDATE(), ${invoices.dueDate}) > 90
+                    THEN CAST(${invoices.amountDue} AS DECIMAL(15,2))
+                  ELSE 0
+                END
+              )
+            `,
           })
           .from(invoices)
           .leftJoin(clients, eq(invoices.customerId, clients.id))
@@ -104,6 +150,13 @@ export const accountingRouter = router({
             clientId: d.clientId,
             clientName: d.clientName,
             totalOwed: Number(d.totalOwed || 0),
+            agingBreakdown: {
+              current: Number(d.currentAmount || 0),
+              days30: Number(d.days30Amount || 0),
+              days60: Number(d.days60Amount || 0),
+              days90: Number(d.days90Amount || 0),
+              days90Plus: Number(d.days90PlusAmount || 0),
+            },
           })),
           invoiceCount: outstanding.invoices.length,
           statusCounts: statusCounts.reduce(

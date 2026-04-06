@@ -14,6 +14,22 @@ const mockInspector = {
   open: vi.fn(),
   close: vi.fn(),
 };
+const mockQuotes = vi.hoisted(() => ({
+  items: [
+    {
+      id: 91,
+      orderNumber: "QUO-091",
+      clientId: 10,
+      quoteStatus: "UNSENT",
+      total: "250.00",
+      subtotal: "220.00",
+      tax: "30.00",
+      discount: "0.00",
+      createdAt: "2026-03-01T00:00:00.000Z",
+      validUntil: "2026-04-01T00:00:00.000Z",
+    },
+  ],
+}));
 
 function getSearchParams(path: string) {
   const [, query = ""] = path.split("?");
@@ -45,20 +61,7 @@ vi.mock("@/lib/trpc", () => ({
       getAll: {
         useQuery: () => ({
           data: {
-            items: [
-              {
-                id: 91,
-                orderNumber: "QUO-091",
-                clientId: 10,
-                quoteStatus: "UNSENT",
-                total: "250.00",
-                subtotal: "220.00",
-                tax: "30.00",
-                discount: "0.00",
-                createdAt: "2026-03-01T00:00:00.000Z",
-                validUntil: "2026-04-01T00:00:00.000Z",
-              },
-            ],
+            items: mockQuotes.items,
           },
           isLoading: false,
           refetch: vi.fn(),
@@ -145,6 +148,20 @@ describe("QuotesWorkSurface quote routing", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockInspector.isOpen = false;
+    mockQuotes.items = [
+      {
+        id: 91,
+        orderNumber: "QUO-091",
+        clientId: 10,
+        quoteStatus: "UNSENT",
+        total: "250.00",
+        subtotal: "220.00",
+        tax: "30.00",
+        discount: "0.00",
+        createdAt: "2026-03-01T00:00:00.000Z",
+        validUntil: "2026-04-01T00:00:00.000Z",
+      },
+    ];
   });
 
   it("routes the New Quote button into the quote composer", () => {
@@ -180,5 +197,16 @@ describe("QuotesWorkSurface quote routing", () => {
     expect(params.get("tab")).toBe("create-order");
     expect(params.get("quoteId")).toBe("91");
     expect(params.get("mode")).toBe("quote");
+  });
+
+  it("shows the guided empty state when no quotes exist", () => {
+    mockQuotes.items = [];
+
+    render(<QuotesWorkSurface />);
+
+    expect(screen.getByText("No quotes found")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Create Quote" })
+    ).toBeInTheDocument();
   });
 });

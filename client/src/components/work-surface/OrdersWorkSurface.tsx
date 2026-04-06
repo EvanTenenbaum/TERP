@@ -63,6 +63,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -1202,6 +1203,30 @@ export function OrdersWorkSurface() {
     });
   }, [activeTab, draftOrders, confirmedOrders, search, getClientName, sortKey]);
 
+  const orderEmptyStateAction = useMemo(() => {
+    if (search || statusFilter !== "ALL") {
+      return {
+        label: "Clear Filters",
+        onClick: () => {
+          setSearch("");
+          setStatusFilter("ALL");
+        },
+      };
+    }
+
+    if (activeTab === "draft") {
+      return {
+        label: "Create Order",
+        onClick: () => setLocation(buildSalesWorkspacePath("create-order")),
+      };
+    }
+
+    return {
+      label: "View Draft Orders",
+      onClick: () => setActiveTab("draft"),
+    };
+  }, [activeTab, search, setLocation, statusFilter]);
+
   // Selected order
   const selectedOrderSummary = useMemo(
     () =>
@@ -1838,21 +1863,20 @@ export function OrdersWorkSurface() {
               ) : displayOrders.length === 0 ? (
                 <TableRow data-testid="orders-empty-state">
                   <TableCell colSpan={7} className="h-64 text-center">
-                    <div className="mx-auto max-w-xl">
-                      <div className="flex items-center justify-center gap-2 text-foreground">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <p className="font-medium">No orders found</p>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        {search
-                          ? "Try adjusting your search"
+                    <EmptyState
+                      variant="orders"
+                      title="No orders found"
+                      description={
+                        search
+                          ? "No orders match this search yet. Clear the filters and try a broader lookup."
                           : statusFilter !== "ALL"
-                            ? `No ${statusFilter.toLowerCase()} orders. Try switching to "All" status.`
+                            ? `No ${statusFilter.toLowerCase()} orders match the current status filter.`
                             : activeTab === "draft"
-                              ? "No draft orders. Create a new order to get started."
-                              : "No confirmed orders yet. Confirm a draft order to see it here."}
-                      </p>
-                    </div>
+                              ? "Create a sales order draft so pricing, review, and final confirmation can all happen from one place."
+                              : "Confirmed orders appear here once a draft is finalized."
+                      }
+                      action={orderEmptyStateAction}
+                    />
                   </TableCell>
                 </TableRow>
               ) : (

@@ -12,6 +12,7 @@ const mockSearchGlobal = vi.fn();
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/", mockSetLocation] as const,
+  useSearch: () => "",
 }));
 
 vi.mock("@/hooks/useFeatureFlag", () => ({
@@ -22,6 +23,13 @@ vi.mock("@/hooks/useFeatureFlag", () => ({
     isEnabled: () => true,
     isModuleEnabled: () => true,
     refetch: vi.fn(),
+  }),
+}));
+
+vi.mock("@/hooks/useRecentPages", () => ({
+  useRecentPages: () => ({
+    recentPages: [],
+    recordPage: vi.fn(),
   }),
 }));
 

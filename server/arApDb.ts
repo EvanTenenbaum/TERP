@@ -388,8 +388,16 @@ export async function calculateARAging() {
     });
 
     return {
-      current, days30, days60, days90, days90Plus,
-      currentCount, days30Count, days60Count, days90Count, days90PlusCount,
+      current,
+      days30,
+      days60,
+      days90,
+      days90Plus,
+      currentCount,
+      days30Count,
+      days60Count,
+      days90Count,
+      days90PlusCount,
     };
   } catch (error) {
     // Log the error for debugging but rethrow for frontend to handle
@@ -768,6 +776,11 @@ export async function calculateAPAging() {
     let days60 = 0;
     let days90 = 0;
     let days90Plus = 0;
+    let currentCount = 0;
+    let days30Count = 0;
+    let days60Count = 0;
+    let days90Count = 0;
+    let days90PlusCount = 0;
 
     result.forEach(bill => {
       const amountDue = Number(bill.amountDue) || 0;
@@ -778,18 +791,34 @@ export async function calculateAPAging() {
 
       if (daysPastDue < 0) {
         current += amountDue;
+        currentCount++;
       } else if (daysPastDue <= 30) {
         days30 += amountDue;
+        days30Count++;
       } else if (daysPastDue <= 60) {
         days60 += amountDue;
+        days60Count++;
       } else if (daysPastDue <= 90) {
         days90 += amountDue;
+        days90Count++;
       } else {
         days90Plus += amountDue;
+        days90PlusCount++;
       }
     });
 
-    return { current, days30, days60, days90, days90Plus };
+    return {
+      current,
+      days30,
+      days60,
+      days90,
+      days90Plus,
+      currentCount,
+      days30Count,
+      days60Count,
+      days90Count,
+      days90PlusCount,
+    };
   } catch (error) {
     // Log the error for debugging but rethrow for frontend to handle
     console.error("[arApDb] calculateAPAging error:", error);

@@ -14,6 +14,19 @@ import MatchmakingServicePage, {
 } from "./MatchmakingServicePage";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 
+let mockSupplyItems = [
+  {
+    id: 77,
+    vendorName: "",
+    category: "Flower",
+    grade: "A",
+    productName: "Blue Dream",
+    buyerCount: 0,
+    quantityAvailable: "5",
+    unitPrice: "1200",
+  },
+];
+
 // Mock wouter's useLocation hook
 const mockSetLocation = vi.fn();
 vi.mock("wouter", () => ({
@@ -65,7 +78,7 @@ vi.mock("@/lib/trpc", () => ({
     vendorSupply: {
       getAllWithMatches: {
         useQuery: () => ({
-          data: { items: [], totalCount: 0 },
+          data: { data: mockSupplyItems },
           isLoading: false,
           error: null,
         }),
@@ -160,6 +173,18 @@ vi.mock("@/lib/trpc", () => ({
 describe("MatchmakingServicePage - Button Navigation", () => {
   beforeEach(() => {
     mockSetLocation.mockClear();
+    mockSupplyItems = [
+      {
+        id: 77,
+        vendorName: "",
+        category: "Flower",
+        grade: "A",
+        productName: "Blue Dream",
+        buyerCount: 0,
+        quantityAvailable: "5",
+        unitPrice: "1200",
+      },
+    ];
   });
 
   it("should render the page with Add Need and Add Supply buttons", () => {
@@ -235,5 +260,18 @@ describe("MatchmakingServicePage - Button Navigation", () => {
         clientId: 7,
       })
     );
+  });
+
+  it("shows fallback supplier text plus quantity context on supply cards", () => {
+    render(<MatchmakingServicePage />);
+
+    expect(screen.getByText("Supplier: Unknown supplier")).toBeInTheDocument();
+    expect(screen.getAllByText(/5 lbs available/i).length).toBeGreaterThan(0);
+  });
+
+  it("disables Reserve when no active buyer needs exist", () => {
+    render(<MatchmakingServicePage />);
+
+    expect(screen.getByRole("button", { name: /reserve/i })).toBeDisabled();
   });
 });

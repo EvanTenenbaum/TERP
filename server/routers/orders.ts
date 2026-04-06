@@ -54,6 +54,7 @@ import {
 import { getCompatibleBatchSelect } from "../lib/batchColumnCompatibility";
 import { resolveBatchCogs } from "../cogsCalculator";
 import { validateTransition } from "../services/orderStateMachine";
+import { resolveQuoteValidUntilDate } from "../lib/quoteValidity";
 
 // ============================================================================
 // Process-local confirm throttling.
@@ -259,7 +260,10 @@ export function parsePersistedDraftItems(
 
   const lookup = new Map<string, PersistedDraftItemMetadata[]>();
   for (const item of persistedItems) {
-    const key = buildPersistedDraftItemKey(item.batchId, Boolean(item.isSample));
+    const key = buildPersistedDraftItemKey(
+      item.batchId,
+      Boolean(item.isSample)
+    );
     const existing = lookup.get(key);
     if (existing) {
       existing.push(item);
@@ -1126,6 +1130,10 @@ export const ordersRouter = router({
 
       // paymentTerms is NOT NULL in the orders table; ensure draft paths always persist a valid value.
       const resolvedPaymentTerms = input.paymentTerms || "NET_30";
+      const resolvedValidUntil =
+        input.orderType === "QUOTE"
+          ? resolveQuoteValidUntilDate(input.validUntil)
+          : null;
 
       // Create order + line items atomically
       const { orderId, orderNumber } = await withTransaction(async tx => {
@@ -1148,7 +1156,7 @@ export const ordersRouter = router({
           showAdjustmentOnDocument: input.showAdjustmentOnDocument,
           avgMarginPercent: totals.avgMarginPercent.toString(),
           notes: input.notes || null,
-          validUntil: input.validUntil ? new Date(input.validUntil) : null,
+          validUntil: resolvedValidUntil,
           paymentTerms: resolvedPaymentTerms,
           cashPayment: input.cashPayment?.toString() || null,
           createdBy: userId,
@@ -1376,6 +1384,10 @@ export const ordersRouter = router({
       const { sql } = await import("drizzle-orm");
       const resolvedPaymentTerms =
         input.paymentTerms || existingOrder.paymentTerms || "NET_30";
+      const resolvedValidUntil =
+        input.orderType === "QUOTE"
+          ? resolveQuoteValidUntilDate(input.validUntil)
+          : null;
       let nextVersion = input.version + 1;
       await withTransaction(async tx => {
         const [lockedOrder] = await tx
@@ -1395,7 +1407,8 @@ export const ordersRouter = router({
         if (lockedOrder.version !== input.version) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: "Order was modified by another user. Please refresh and try again.",
+            message:
+              "Order was modified by another user. Please refresh and try again.",
           });
         }
 
@@ -1410,19 +1423,23 @@ export const ordersRouter = router({
             clientNeedId: input.clientNeedId ?? null,
             referredByClientId: input.referredByClientId ?? null,
             isReferralOrder: Boolean(input.referredByClientId),
-            items: JSON.stringify(buildPersistedDraftItems(lineItemsWithPrices)),
+            items: JSON.stringify(
+              buildPersistedDraftItems(lineItemsWithPrices)
+            ),
             total: orderTotal.toString(),
             subtotal: totals.subtotal.toString(),
             shipping: shipping.toString(),
             showAdjustmentOnDocument: input.showAdjustmentOnDocument,
             avgMarginPercent: totals.avgMarginPercent.toString(),
             notes: input.notes,
-            validUntil: input.validUntil ? new Date(input.validUntil) : null,
+            validUntil: resolvedValidUntil,
             paymentTerms: resolvedPaymentTerms,
             cashPayment: input.cashPayment?.toString() || null,
             version: sql`version + 1`,
           })
-          .where(and(eq(orders.id, input.orderId), eq(orders.version, input.version)));
+          .where(
+            and(eq(orders.id, input.orderId), eq(orders.version, input.version))
+          );
 
         // Delete existing line items
         await tx

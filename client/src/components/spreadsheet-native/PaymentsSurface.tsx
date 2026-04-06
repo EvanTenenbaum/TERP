@@ -392,11 +392,16 @@ export function PaymentsSurface() {
   }, [routeParams.paymentId]);
 
   // Data query
-  const paymentsQuery = trpc.accounting.payments.list.useQuery({
-    paymentType:
-      typeFilter !== "ALL" ? (typeFilter as "RECEIVED" | "SENT") : undefined,
-    invoiceId: handoffInvoiceId ?? undefined,
-  });
+  const paymentsQuery = trpc.accounting.payments.list.useQuery(
+    {
+      paymentType:
+        typeFilter !== "ALL" ? (typeFilter as "RECEIVED" | "SENT") : undefined,
+      invoiceId: handoffInvoiceId ?? undefined,
+    },
+    {
+      enabled: routeParams.orderId === null || handoffInvoiceId !== null,
+    }
+  );
 
   // Void mutation
   const voidMutation = trpc.payments.void.useMutation({
@@ -539,6 +544,9 @@ export function PaymentsSurface() {
     }
 
     if (routeParams.orderId !== null) {
+      if (orderInvoiceQuery.isLoading) {
+        return `Resolving order #${routeParams.orderId} into its invoice payment history...`;
+      }
       return handoffInvoiceId !== null
         ? `Order #${routeParams.orderId} is linked to invoice #${handoffInvoiceId}, but no payments have been posted for it yet.`
         : `Order #${routeParams.orderId} does not have a linked invoice yet, so there are no payments to show.`;
@@ -551,6 +559,7 @@ export function PaymentsSurface() {
     return "No payments have been recorded yet.";
   }, [
     handoffInvoiceId,
+    orderInvoiceQuery.isLoading,
     routeParams.orderId,
     searchTerm,
     typeFilter,
@@ -731,7 +740,7 @@ export function PaymentsSurface() {
         enableFillHandle={false}
         enableUndoRedo={false}
         onSelectionSummaryChange={setSelectionSummary}
-        isLoading={paymentsQuery.isLoading}
+        isLoading={paymentsQuery.isLoading || orderInvoiceQuery.isLoading}
         errorMessage={
           paymentsQuery.error
             ? (paymentsQuery.error.message ?? "Failed to load payments")
@@ -866,7 +875,12 @@ export function PaymentsSurface() {
       <WorkSurfaceStatusBar
         left={statusLeft}
         center={statusCenter}
-        right={<KeyboardHintBar hints={REGISTRY_KEYBOARD_HINTS} className="text-xs" />}
+        right={
+          <KeyboardHintBar
+            hints={REGISTRY_KEYBOARD_HINTS}
+            className="text-xs"
+          />
+        }
       />
 
       {/* ── 6. Sidecar Dialogs ── */}
