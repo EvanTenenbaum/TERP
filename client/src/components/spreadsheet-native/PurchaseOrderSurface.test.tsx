@@ -29,13 +29,11 @@ const mockCreateProductIntakeDraftFromPO = vi.fn(input => ({
 }));
 const mockUpsertProductIntakeDraft = vi.fn(draft => draft);
 let mockSelectedPoId: number | null = null;
-let getAllQueryInput:
-  | {
-      limit: number;
-      offset: number;
-      supplierClientId?: number;
-    }
-  | null = null;
+let getAllQueryInput: {
+  limit: number;
+  offset: number;
+  supplierClientId?: number;
+} | null = null;
 
 let queueData: Array<{
   id: number;
@@ -72,6 +70,7 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     rows = [],
+    columnDefs = [],
     onSelectedRowChange,
     onRowClicked,
     headerActions,
@@ -79,6 +78,7 @@ vi.mock("./PowersheetGrid", () => ({
   }: {
     title: string;
     rows?: Array<{ identity?: { rowKey: string } }>;
+    columnDefs?: Array<{ field?: string }>;
     onSelectedRowChange?: (
       row: { identity?: { rowKey: string } } | null
     ) => void;
@@ -89,7 +89,7 @@ vi.mock("./PowersheetGrid", () => ({
     selectionMode?: string;
   }) =>
     (() => {
-      mockPowersheetGrid({ title, rows, selectionMode });
+      mockPowersheetGrid({ title, rows, selectionMode, columnDefs });
       return (
         <div data-testid={`grid-${title}`}>
           <div>{title}</div>
@@ -210,19 +210,21 @@ vi.mock("@/lib/trpc", () => ({
     })),
     purchaseOrders: {
       getAll: {
-        useQuery: vi.fn((input: {
-          limit: number;
-          offset: number;
-          supplierClientId?: number;
-        }) => {
-          getAllQueryInput = input;
-          return {
-          data: queueData,
-          isLoading: false,
-          error: null,
-          refetch: vi.fn(),
-          };
-        }),
+        useQuery: vi.fn(
+          (input: {
+            limit: number;
+            offset: number;
+            supplierClientId?: number;
+          }) => {
+            getAllQueryInput = input;
+            return {
+              data: queueData,
+              isLoading: false,
+              error: null,
+              refetch: vi.fn(),
+            };
+          }
+        ),
       },
       getById: {
         useQuery: vi.fn(() => ({
@@ -393,10 +395,10 @@ describe("PurchaseOrderSurface", () => {
     expect(screen.getByText("Purchase Orders")).toBeInTheDocument();
   });
 
-  it('navigates to creation mode when "+ New PO" is clicked', () => {
+  it('navigates to creation mode when "New Purchase Order" is clicked', () => {
     render(<PurchaseOrderSurface />);
 
-    fireEvent.click(screen.getByText("+ New PO"));
+    fireEvent.click(screen.getByText("New Purchase Order"));
 
     expect(mockSetLocation).toHaveBeenCalledWith(
       expect.stringContaining("poView=create")
@@ -465,7 +467,7 @@ describe("PurchaseOrderSurface", () => {
     render(<PurchaseOrderSurface defaultStatusFilter={["CONFIRMED"]} />);
 
     fireEvent.click(
-      screen.getAllByRole("button", { name: /start receiving/i })[0]
+      screen.getAllByRole("button", { name: /open product intake/i })[0]
     );
 
     return waitFor(() => {
@@ -615,6 +617,79 @@ describe("PurchaseOrderSurface", () => {
       expect.objectContaining({ supplierClientId: 12 })
     );
     expect(screen.getByText(/Supplier: North Farm/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/showing purchase orders for North Farm/i)
+    ).toBeInTheDocument();
+  });
+
+  it("hides the expected delivery column when every visible row is unset", () => {
+    queueData = [
+      {
+        id: 71,
+        poNumber: "PO-071",
+        supplierClientId: 12,
+        purchaseOrderStatus: "DRAFT",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: null,
+        total: "80.00",
+        paymentTerms: "CONSIGNMENT",
+      },
+      {
+        id: 72,
+        poNumber: "PO-072",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-28",
+        expectedDeliveryDate: "",
+        total: "180.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+
+    render(<PurchaseOrderSurface />);
+
+    const queueGridCall = mockPowersheetGrid.mock.calls.find(
+      ([props]) => props.title === "Purchase Orders Queue"
+    )?.[0] as { columnDefs: Array<{ field?: string }> };
+
+    expect(queueGridCall.columnDefs.map(col => col.field)).not.toContain(
+      "expectedDeliveryDate"
+    );
+  });
+
+  it("shows the expected delivery column when at least one purchase order has a date", () => {
+    queueData = [
+      {
+        id: 81,
+        poNumber: "PO-081",
+        supplierClientId: 12,
+        purchaseOrderStatus: "DRAFT",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: null,
+        total: "80.00",
+        paymentTerms: "CONSIGNMENT",
+      },
+      {
+        id: 82,
+        poNumber: "PO-082",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-28",
+        expectedDeliveryDate: "2026-04-10",
+        total: "180.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+
+    render(<PurchaseOrderSurface />);
+
+    const queueGridCall = mockPowersheetGrid.mock.calls.find(
+      ([props]) => props.title === "Purchase Orders Queue"
+    )?.[0] as { columnDefs: Array<{ field?: string }> };
+
+    expect(queueGridCall.columnDefs.map(col => col.field)).toContain(
+      "expectedDeliveryDate"
+    );
   });
 });
 

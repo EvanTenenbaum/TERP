@@ -17,7 +17,13 @@ export function SheetModeToggle({
   }
 
   return (
-    <div className="inline-flex items-center gap-2">
+    <div
+      className="inline-flex items-center gap-2"
+      aria-label="View mode toggle"
+    >
+      <span className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+        View Mode
+      </span>
       <Button
         size="sm"
         variant={surfaceMode === "sheet-native" ? "default" : "outline"}
@@ -30,7 +36,7 @@ export function SheetModeToggle({
         variant={surfaceMode === "classic" ? "default" : "ghost"}
         onClick={() => onSurfaceModeChange("classic")}
       >
-        Classic Surface
+        Standard View
       </Button>
     </div>
   );

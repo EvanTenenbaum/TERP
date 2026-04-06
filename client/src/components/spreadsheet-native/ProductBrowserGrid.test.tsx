@@ -97,13 +97,12 @@ describe("ProductBrowserGrid", () => {
   it("renders tab toggle with Supplier History, Low Stock, Catalog", () => {
     render(<ProductBrowserGrid {...defaultProps} />);
     expect(
-      screen.getByRole("button", { name: /supplier history/i })
+      screen.getByRole("tab", { name: /supplier history/i })
     ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /low stock/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /catalog/i })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /low stock/i })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /catalog/i })
+      screen.getByRole("tablist", { name: /product browser tabs/i })
     ).toBeInTheDocument();
   });
 
@@ -206,7 +205,7 @@ describe("ProductBrowserGrid", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /catalog/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /catalog/i }));
     fireEvent.click(screen.getByText("Select first row"));
     fireEvent.click(screen.getByRole("button", { name: /\+ add selected/i }));
 
@@ -216,6 +215,25 @@ describe("ProductBrowserGrid", () => {
         productName: "Fallback Gelato",
         subcategory: "Smalls",
       })
+    );
+  });
+
+  it("marks the active product browser control with tab semantics", () => {
+    render(<ProductBrowserGrid {...defaultProps} />);
+
+    expect(
+      screen.getByRole("tab", { name: /supplier history/i })
+    ).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.click(screen.getByRole("tab", { name: /low stock/i }));
+
+    expect(screen.getByRole("tab", { name: /low stock/i })).toHaveAttribute(
+      "aria-selected",
+      "true"
+    );
+    expect(screen.getByRole("tabpanel")).toHaveAttribute(
+      "aria-labelledby",
+      "product-browser-tab-low-stock"
     );
   });
 });

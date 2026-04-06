@@ -367,13 +367,21 @@ export function ProductBrowserGrid({
     <div className="flex flex-col gap-2">
       {/* Top bar: tab toggle + search */}
       <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1">
+        <div
+          className="flex items-center gap-1"
+          role="tablist"
+          aria-label="Product browser tabs"
+        >
           {tabs.map(tab => (
             <Button
               key={tab.id}
+              id={`product-browser-tab-${tab.id}`}
               size="sm"
               variant={activeTab === tab.id ? "default" : "outline"}
               className="h-7 px-3 text-xs"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`product-browser-panel-${tab.id}`}
               onClick={() => {
                 setActiveTab(tab.id);
                 setSelectedRowId(null);
@@ -393,33 +401,44 @@ export function ProductBrowserGrid({
 
       {/* Grid area */}
       {showNoSupplierState ? (
-        <div className="flex items-center justify-center h-40 text-sm text-muted-foreground border rounded-md bg-muted/30">
+        <div
+          id={`product-browser-panel-${activeTab}`}
+          role="tabpanel"
+          aria-labelledby={`product-browser-tab-${activeTab}`}
+          className="flex items-center justify-center h-40 text-sm text-muted-foreground border rounded-md bg-muted/30"
+        >
           Select a supplier first
         </div>
       ) : (
-        <PowersheetGrid<BrowserRow>
-          surfaceId="product-browser"
-          requirementIds={["PROC-PO-BROWSER-001"]}
-          title="Products"
-          rows={rows}
-          columnDefs={columnDefs}
-          getRowId={row => row.identity.rowKey}
-          selectedRowId={selectedRowId}
-          onSelectedRowChange={row =>
-            setSelectedRowId(row ? row.identity.rowKey : null)
-          }
-          isLoading={isLoading}
-          emptyTitle="No products found"
-          emptyDescription={
-            activeTab === "supplier-history"
-              ? "No purchase history found for this supplier."
-              : activeTab === "low-stock"
-                ? "No low-stock items match your search."
-                : "No products match your search."
-          }
-          headerActions={headerActions}
-          minHeight={280}
-        />
+        <div
+          id={`product-browser-panel-${activeTab}`}
+          role="tabpanel"
+          aria-labelledby={`product-browser-tab-${activeTab}`}
+        >
+          <PowersheetGrid<BrowserRow>
+            surfaceId="product-browser"
+            requirementIds={["PROC-PO-BROWSER-001"]}
+            title="Products"
+            rows={rows}
+            columnDefs={columnDefs}
+            getRowId={row => row.identity.rowKey}
+            selectedRowId={selectedRowId}
+            onSelectedRowChange={row =>
+              setSelectedRowId(row ? row.identity.rowKey : null)
+            }
+            isLoading={isLoading}
+            emptyTitle="No products found"
+            emptyDescription={
+              activeTab === "supplier-history"
+                ? "No purchase history found for this supplier."
+                : activeTab === "low-stock"
+                  ? "No low-stock items match your search."
+                  : "No products match your search."
+            }
+            headerActions={headerActions}
+            minHeight={280}
+          />
+        </div>
       )}
     </div>
   );

@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -21,6 +28,35 @@ interface LinearWorkspaceShellProps<T extends string> {
   section?: string;
 }
 
+const TRANSITION_SKELETON_MS = 180;
+
+const LinearWorkspaceTransitionContext = createContext<{
+  activeTab: string;
+  showTransitionSkeleton: boolean;
+}>({
+  activeTab: "",
+  showTransitionSkeleton: false,
+});
+
+function LinearWorkspaceTransitionSkeleton() {
+  return (
+    <div
+      data-testid="workspace-transition-skeleton"
+      className="space-y-3 rounded-xl border border-border/60 bg-card/80 p-4"
+      aria-live="polite"
+      aria-label="Loading workspace content"
+    >
+      <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="h-20 animate-pulse rounded-lg bg-muted/80" />
+        <div className="h-20 animate-pulse rounded-lg bg-muted/80" />
+        <div className="h-20 animate-pulse rounded-lg bg-muted/80" />
+      </div>
+      <div className="h-72 animate-pulse rounded-lg bg-muted/70" />
+    </div>
+  );
+}
+
 export function LinearWorkspaceShell<T extends string>({
   title,
   description,
@@ -39,6 +75,8 @@ export function LinearWorkspaceShell<T extends string>({
   const showTabRow = showTabs || Boolean(commandStrip);
   const tabsScrollRef = useRef<HTMLDivElement>(null);
   const [showTabsOverflowCue, setShowTabsOverflowCue] = useState(false);
+  const hasMountedRef = useRef(false);
+  const [showTransitionSkeleton, setShowTransitionSkeleton] = useState(false);
 
   useEffect(() => {
     const container = tabsScrollRef.current;
@@ -66,6 +104,20 @@ export function LinearWorkspaceShell<T extends string>({
       resizeObserver.disconnect();
     };
   }, [showTabs, tabs.length]);
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
+    setShowTransitionSkeleton(true);
+    const timeoutId = window.setTimeout(() => {
+      setShowTransitionSkeleton(false);
+    }, TRANSITION_SKELETON_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [activeTab]);
 
   return (
     <section
@@ -110,46 +162,52 @@ export function LinearWorkspaceShell<T extends string>({
         </div>
       )}
 
-      <Tabs
-        value={activeTab}
-        onValueChange={value => onTabChange(value as T)}
-        className="linear-workspace-tabs"
+      <LinearWorkspaceTransitionContext.Provider
+        value={{ activeTab, showTransitionSkeleton }}
       >
-        {showTabRow ? (
-          <div className="linear-workspace-tab-row">
-            {showTabs ? (
-              <div className="linear-workspace-tabs-stack">
-                <div
-                  ref={tabsScrollRef}
-                  className="linear-workspace-tabs-scroller scrollbar-hide"
-                  data-overflowing={showTabsOverflowCue}
-                >
-                  <TabsList className="linear-workspace-tabs-list">
-                    {tabs.map(tab => (
-                      <TabsTrigger
-                        key={tab.value}
-                        value={tab.value}
-                        className="linear-workspace-tabs-trigger"
-                      >
-                        {tab.label}
-                      </TabsTrigger>
-                    ))}
-                  </TabsList>
+        <Tabs
+          value={activeTab}
+          onValueChange={value => onTabChange(value as T)}
+          className="linear-workspace-tabs"
+        >
+          {showTabRow ? (
+            <div className="linear-workspace-tab-row">
+              {showTabs ? (
+                <div className="linear-workspace-tabs-stack">
+                  <div
+                    ref={tabsScrollRef}
+                    className="linear-workspace-tabs-scroller scrollbar-hide"
+                    data-overflowing={showTabsOverflowCue}
+                  >
+                    <TabsList className="linear-workspace-tabs-list">
+                      {tabs.map(tab => (
+                        <TabsTrigger
+                          key={tab.value}
+                          value={tab.value}
+                          className="linear-workspace-tabs-trigger"
+                        >
+                          {tab.label}
+                        </TabsTrigger>
+                      ))}
+                    </TabsList>
+                  </div>
+                  {showTabsOverflowCue ? (
+                    <p className="linear-workspace-tabs-overflow-hint">
+                      Swipe for more tabs
+                    </p>
+                  ) : null}
                 </div>
-                {showTabsOverflowCue ? (
-                  <p className="linear-workspace-tabs-overflow-hint">
-                    Swipe for more tabs
-                  </p>
-                ) : null}
+              ) : (
+                <div className="linear-workspace-tabs-spacer" aria-hidden />
+              )}
+              <div className="linear-workspace-command-strip">
+                {commandStrip}
               </div>
-            ) : (
-              <div className="linear-workspace-tabs-spacer" aria-hidden />
-            )}
-            <div className="linear-workspace-command-strip">{commandStrip}</div>
-          </div>
-        ) : null}
-        {children}
-      </Tabs>
+            </div>
+          ) : null}
+          {children}
+        </Tabs>
+      </LinearWorkspaceTransitionContext.Provider>
     </section>
   );
 }
@@ -163,9 +221,17 @@ export function LinearWorkspacePanel({
   value,
   children,
 }: LinearWorkspacePanelProps) {
+  const { activeTab, showTransitionSkeleton } = useContext(
+    LinearWorkspaceTransitionContext
+  );
+
   return (
     <TabsContent value={value} className="linear-workspace-content">
-      {children}
+      {showTransitionSkeleton && activeTab === value ? (
+        <LinearWorkspaceTransitionSkeleton />
+      ) : (
+        children
+      )}
     </TabsContent>
   );
 }

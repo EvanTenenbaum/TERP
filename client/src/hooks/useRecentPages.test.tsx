@@ -44,4 +44,16 @@ describe("useRecentPages", () => {
       label: "Live Shopping",
     });
   });
+
+  it("tracks product intake with the locked TERP terminology", () => {
+    mockUseLocation.mockReturnValue(["/inventory", vi.fn()]);
+    mockUseSearch.mockReturnValue("?tab=receiving");
+
+    const { result } = renderHook(() => useRecentPages());
+
+    expect(result.current.recentPages[0]).toMatchObject({
+      path: "/inventory?tab=receiving",
+      label: "Product Intake",
+    });
+  });
 });

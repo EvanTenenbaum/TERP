@@ -266,6 +266,14 @@ function buildRowKey(entityType: string, id: number): string {
   return `${entityType}:${id}`;
 }
 
+function hasExpectedDeliveryDate(
+  value: Date | string | null | undefined
+): boolean {
+  if (!value) return false;
+  const date = value instanceof Date ? value : new Date(value);
+  return !Number.isNaN(date.getTime());
+}
+
 function mapPOsToQueueRows(
   pos: POQueueRecord[],
   supplierNamesById: Map<number, string>
@@ -1354,7 +1362,9 @@ function PurchaseOrderQueueMode({
 
   const supplierFilterName = useMemo(() => {
     if (!supplierFilterId) return null;
-    return supplierNamesById.get(supplierFilterId) ?? `Supplier #${supplierFilterId}`;
+    return (
+      supplierNamesById.get(supplierFilterId) ?? `Supplier #${supplierFilterId}`
+    );
   }, [supplierFilterId, supplierNamesById]);
 
   const searchLower = searchTerm.trim().toLowerCase();
@@ -1497,11 +1507,6 @@ function PurchaseOrderQueueMode({
       formatter: v => formatDate(v as Date | string | null),
     },
     {
-      key: "expectedDeliveryDate",
-      label: "Est. Delivery",
-      formatter: v => formatDate(v as Date | string | null),
-    },
-    {
       key: "total",
       label: "Total",
       formatter: v => String(Number(v ?? 0).toFixed(2)),
@@ -1509,13 +1514,30 @@ function PurchaseOrderQueueMode({
     { key: "paymentTerms", label: "Payment Terms" },
   ];
 
+  const showExpectedDeliveryColumn = useMemo(
+    () =>
+      queueRows.some(row => hasExpectedDeliveryDate(row.expectedDeliveryDate)),
+    [queueRows]
+  );
+
   const handleExport = () => {
     if (queueRows.length === 0) {
       notifyToast("warning", "No rows to export");
       return;
     }
+    const exportColumns = showExpectedDeliveryColumn
+      ? [
+          ...PO_EXPORT_COLUMNS.slice(0, 4),
+          {
+            key: "expectedDeliveryDate",
+            label: "Est. Delivery",
+            formatter: (v: unknown) => formatDate(v as Date | string | null),
+          },
+          ...PO_EXPORT_COLUMNS.slice(4),
+        ]
+      : PO_EXPORT_COLUMNS;
     void exportCSV(queueRows as unknown as Record<string, unknown>[], {
-      columns: PO_EXPORT_COLUMNS as unknown as ExportColumn<
+      columns: exportColumns as unknown as ExportColumn<
         Record<string, unknown>
       >[],
       filename: "purchase-orders",
@@ -1607,7 +1629,10 @@ function PurchaseOrderQueueMode({
           lines,
         });
         const persistedDraft = upsertProductIntakeDraft(draft, userId);
-        notifyToast("success", `Product Intake draft saved for ${targetRow.poNumber}`);
+        notifyToast(
+          "success",
+          `Product Intake draft saved for ${targetRow.poNumber}`
+        );
         setLocation(
           buildOperationsWorkspacePath("receiving", {
             draftId: persistedDraft.id,
@@ -1624,15 +1649,23 @@ function PurchaseOrderQueueMode({
         );
       }
     },
-    [detailQuery.data, notifyToast, selectedPoId, selectedRow, setLocation, userId, utils.purchaseOrders.getById]
+    [
+      detailQuery.data,
+      notifyToast,
+      selectedPoId,
+      selectedRow,
+      setLocation,
+      userId,
+      utils.purchaseOrders.getById,
+    ]
   );
 
   // ---------------------------------------------------------------------------
   // Column definitions
   // ---------------------------------------------------------------------------
 
-  const queueColumnDefs = useMemo<ColDef<POQueueRow>[]>(
-    () => [
+  const queueColumnDefs = useMemo<ColDef<POQueueRow>[]>(() => {
+    const cols: ColDef<POQueueRow>[] = [
       {
         field: "poNumber",
         headerName: "PO Number",
@@ -1664,18 +1697,6 @@ function PurchaseOrderQueueMode({
           formatDate(params.value as Date | string | null | undefined),
       },
       {
-        field: "expectedDeliveryDate",
-        headerName: "Est. Delivery",
-        minWidth: 120,
-        maxWidth: 140,
-        cellClass: "powersheet-cell--locked",
-        valueFormatter: params => {
-          const value = params.value as Date | string | null | undefined;
-          if (!value || value === "") return "Not set";
-          return formatDate(value);
-        },
-      },
-      {
         field: "total",
         headerName: "Total ($)",
         minWidth: 110,
@@ -1686,13 +1707,28 @@ function PurchaseOrderQueueMode({
       {
         field: "paymentTerms",
         headerName: "Payment Terms",
-        minWidth: 100,
-        maxWidth: 130,
+        minWidth: 150,
+        maxWidth: 190,
         cellClass: "powersheet-cell--locked",
       },
-    ],
-    []
-  );
+    ];
+
+    if (showExpectedDeliveryColumn) {
+      cols.splice(4, 0, {
+        field: "expectedDeliveryDate",
+        headerName: "Est. Delivery",
+        minWidth: 120,
+        maxWidth: 140,
+        cellClass: "powersheet-cell--locked",
+        valueFormatter: params => {
+          const value = params.value as Date | string | null | undefined;
+          return hasExpectedDeliveryDate(value) ? formatDate(value) : "Not set";
+        },
+      });
+    }
+
+    return cols;
+  }, [showExpectedDeliveryColumn]);
 
   const lineItemColumnDefs = useMemo<ColDef<POLineRow>[]>(
     () => [
@@ -1756,8 +1792,9 @@ function PurchaseOrderQueueMode({
 
   const statusBarLeft = (
     <span>
-      {queueRows.length} visible POs · {draftCount} draft · {confirmedCount}{" "}
-      confirmed · {receivingCount} receiving
+      {queueRows.length} visible purchase orders · {draftCount} draft purchase
+      orders · {confirmedCount} confirmed purchase orders · {receivingCount}{" "}
+      receiving purchase orders
       {queueSelectionSummary
         ? ` · ${queueSelectionSummary.selectedCellCount} cells / ${queueSelectionSummary.selectedRowCount} rows`
         : ""}
@@ -1789,17 +1826,17 @@ function PurchaseOrderQueueMode({
         <h2 className="text-lg font-semibold">Purchase Orders</h2>
         {draftCount > 0 && (
           <Badge variant="outline" className="text-xs">
-            {draftCount} draft
+            {draftCount} draft purchase orders
           </Badge>
         )}
         {confirmedCount > 0 && (
           <Badge variant="outline" className="text-xs">
-            {confirmedCount} confirmed
+            {confirmedCount} confirmed purchase orders
           </Badge>
         )}
         {receivingCount > 0 && (
           <Badge variant="outline" className="text-xs">
-            {receivingCount} receiving
+            {receivingCount} receiving purchase orders
           </Badge>
         )}
         {supplierFilterName ? (
@@ -1809,12 +1846,13 @@ function PurchaseOrderQueueMode({
         ) : null}
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" onClick={handleNewPO}>
-            <Plus className="mr-1 h-4 w-4" />+ New PO
+            <Plus className="mr-1 h-4 w-4" />
+            New Purchase Order
           </Button>
           <Button
             size="sm"
             variant="outline"
-            aria-label="Export visible POs to CSV"
+            aria-label="Export visible purchase orders to CSV"
             onClick={handleExport}
             disabled={exportState.isExporting}
           >
@@ -1851,8 +1889,8 @@ function PurchaseOrderQueueMode({
           {selectedRow
             ? `${selectedRow.poNumber} selected`
             : supplierFilterName
-              ? `Showing POs for ${supplierFilterName}`
-            : "Select a row to see details and actions"}
+              ? `Showing purchase orders for ${supplierFilterName}`
+              : "Select a row to see details and actions"}
         </span>
       </div>
 
@@ -1862,7 +1900,7 @@ function PurchaseOrderQueueMode({
         requirementIds={["PROC-PO-001", "PROC-PO-005"]}
         affordances={queueAffordances}
         title="Purchase Orders Queue"
-        description="Unified PO queue — status, supplier, dates, total, terms, and line count at a glance."
+        description="Unified purchase order queue with status, supplier, dates, total, and payment terms at a glance."
         rows={queueRows}
         columnDefs={queueColumnDefs}
         getRowId={row => row.identity.rowKey}
@@ -1886,8 +1924,9 @@ function PurchaseOrderQueueMode({
         emptyDescription="Adjust the search or status filter, or create a new PO."
         summary={
           <span>
-            {queueRows.length} visible · {draftCount} draft ·{" "}
-            {confirmedCount + receivingCount} active
+            {queueRows.length} visible purchase orders · {draftCount} draft
+            purchase orders · {confirmedCount} confirmed purchase orders ·{" "}
+            {receivingCount} receiving purchase orders
           </span>
         }
         minHeight={360}
@@ -1999,7 +2038,7 @@ function PurchaseOrderQueueMode({
                   onClick={() => void handleStartReceiving()}
                 >
                   <Truck className="mr-1 h-3 w-3" />
-                  Start Receiving
+                  Open Product Intake
                 </Button>
               )}
 
@@ -2144,12 +2183,12 @@ function PurchaseOrderQueueMode({
               ) : null}
             </InspectorSection>
 
-            <InspectorSection title="Receiving Handoff">
+            <InspectorSection title="Product Intake Handoff">
               {selectedRow.isReceivable ? (
                 <>
                   <p className="mb-2 text-sm text-muted-foreground">
-                    This PO is ready for receiving. Use the button below to open
-                    the receiving workflow.
+                    This purchase order is ready for product intake. Use the
+                    button below to open the product intake workflow.
                   </p>
                   <Button
                     size="sm"
@@ -2157,7 +2196,7 @@ function PurchaseOrderQueueMode({
                     onClick={() => void handleStartReceiving()}
                   >
                     <Truck className="mr-2 h-4 w-4" />
-                    Start Receiving
+                    Open Product Intake
                   </Button>
                 </>
               ) : (
