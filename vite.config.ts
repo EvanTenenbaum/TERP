@@ -2,12 +2,18 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { defineConfig, type PluginOption } from "vite";
+import { loadCodexEnv } from "./scripts/_lib/loadCodexEnv";
 
 // IMPORTANT: @sentry/vite-plugin is imported DYNAMICALLY below to prevent build crashes
 // if the package is missing or corrupted. This is critical for build reliability.
 
 // Dev-only plugins are imported dynamically to avoid bundling them in production
 // This enables `pnpm install --prod` in Docker runner stage
+
+// Local TERP runs on Evan's machine keep secrets in ~/.codex/.env.
+// Load that file before Vite resolves browser-exposed env vars so local dev/build
+// picks up values like VITE_AG_GRID_LICENSE_KEY without manual shell exports.
+loadCodexEnv();
 
 export default defineConfig(async ({ mode }) => {
   /**

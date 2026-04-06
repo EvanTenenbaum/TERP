@@ -340,6 +340,16 @@ export function OrdersSheetPilotSurface({
 
   const selectedOrderRow =
     queueRows.find(row => row.orderId === effectiveSelectedOrderId) ?? null;
+  const linkedInvoiceQuery = trpc.accounting.invoices.getByReference.useQuery(
+    {
+      referenceId: selectedOrderRow?.orderId ?? 0,
+      referenceTypes: ["ORDER", "SALE"],
+    },
+    {
+      enabled:
+        selectedOrderRow !== null && selectedOrderRow.lane === "confirmed",
+    }
+  );
 
   // TER-852: Stabilized handler that deduplicates rapid AG Grid callbacks.
   // Without this guard, AG Grid cell-range mode can emit onSelectedRowChange
@@ -482,9 +492,27 @@ export function OrdersSheetPilotSurface({
   const queueSelectionTouchesMultipleRows =
     (queueSelectionSummary?.selectedRowCount ?? 0) > 1;
 
+  const selectedOrderInvoiceId = useMemo(() => {
+    const directInvoiceId = selectedOrderRow?.invoiceId ?? null;
+    if (
+      typeof directInvoiceId === "number" &&
+      Number.isInteger(directInvoiceId) &&
+      directInvoiceId > 0
+    ) {
+      return directInvoiceId;
+    }
+
+    const linkedInvoiceId = linkedInvoiceQuery.data?.id;
+    return typeof linkedInvoiceId === "number" &&
+      Number.isInteger(linkedInvoiceId) &&
+      linkedInvoiceId > 0
+      ? linkedInvoiceId
+      : null;
+  }, [linkedInvoiceQuery.data?.id, selectedOrderRow?.invoiceId]);
+
   const canOpenAccounting = selectedOrderRow?.lane === "confirmed";
   const canOpenShipping = Boolean(
-    selectedOrderRow?.lane === "confirmed" && selectedOrderRow.invoiceId
+    selectedOrderRow?.lane === "confirmed" && selectedOrderInvoiceId
   );
   const rowScopedActionsBlocked = queueSelectionTouchesMultipleRows;
   const totalOrderCount = draftRows.length + confirmedRows.length;
@@ -580,11 +608,11 @@ export function OrdersSheetPilotSurface({
               const params = new URLSearchParams({
                 tab: "invoices",
                 from: "sales",
+                orderId: String(selectedOrderRow.orderId),
               });
 
-              if (selectedOrderRow.invoiceId) {
-                params.set("invoiceId", String(selectedOrderRow.invoiceId));
-                params.set("orderId", String(selectedOrderRow.orderId));
+              if (selectedOrderInvoiceId !== null) {
+                params.set("invoiceId", String(selectedOrderInvoiceId));
               }
 
               setLocation(`/accounting?${params.toString()}`);
@@ -728,9 +756,12 @@ export function OrdersSheetPilotSurface({
             <div className="mt-1 text-sm font-medium">
               {selectedOrderRow.lane === "drafts"
                 ? "Not applicable"
-                : selectedOrderRow.invoiceId
-                  ? `Issued #${selectedOrderRow.invoiceId}`
-                  : canGenerateInvoiceForRow(selectedOrderRow)
+                : selectedOrderInvoiceId !== null
+                  ? `Issued #${selectedOrderInvoiceId}`
+                  : canGenerateInvoiceForRow({
+                        ...selectedOrderRow,
+                        invoiceId: selectedOrderInvoiceId,
+                      })
                     ? "Ready to invoice"
                     : "Not yet invoiced"}
             </div>
@@ -882,9 +913,12 @@ export function OrdersSheetPilotSurface({
                 <p>
                   {selectedOrderRow.lane === "drafts"
                     ? "Not applicable"
-                    : selectedOrderRow.invoiceId
-                      ? `Invoice #${selectedOrderRow.invoiceId}`
-                      : canGenerateInvoiceForRow(selectedOrderRow)
+                    : selectedOrderInvoiceId !== null
+                      ? `Invoice #${selectedOrderInvoiceId}`
+                      : canGenerateInvoiceForRow({
+                            ...selectedOrderRow,
+                            invoiceId: selectedOrderInvoiceId,
+                          })
                         ? "Ready to invoice"
                         : "Not yet invoiced"}
                 </p>
@@ -900,7 +934,10 @@ export function OrdersSheetPilotSurface({
             </InspectorSection>
 
             {/* BUG-012: Generate Invoice only shown when state allows it */}
-            {canGenerateInvoiceForRow(selectedOrderRow) && (
+            {canGenerateInvoiceForRow({
+              ...selectedOrderRow,
+              invoiceId: selectedOrderInvoiceId,
+            }) && (
               <InspectorSection title="Actions">
                 <Button
                   variant="default"

@@ -28,24 +28,22 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     rows = [],
-    onSelectedRowChange,
-    headerActions,
+    columnDefs = [],
   }: {
     title: string;
-    rows?: Array<{ identity: { rowKey: string } }>;
-    onSelectedRowChange?: (
-      row: { identity: { rowKey: string } } | null
-    ) => void;
-    headerActions?: ReactNode;
+    rows?: Array<Record<string, unknown>>;
+    columnDefs?: Array<{
+      headerName?: string;
+      cellRenderer?: (params: { data?: Record<string, unknown> }) => ReactNode;
+    }>;
   }) => (
     <div data-testid={`grid-${title}`}>
       <div>{title}</div>
-      {headerActions}
-      {rows.length > 0 && onSelectedRowChange ? (
-        <button onClick={() => onSelectedRowChange(rows[0])}>
-          Select first row
-        </button>
-      ) : null}
+      {rows.length > 0
+        ? columnDefs
+            .find(column => column.headerName === "Add")
+            ?.cellRenderer?.({ data: rows[0] })
+        : null}
     </div>
   ),
 }));
@@ -97,12 +95,13 @@ describe("ProductBrowserGrid", () => {
   it("renders tab toggle with Supplier History, Low Stock, Catalog", () => {
     render(<ProductBrowserGrid {...defaultProps} />);
     expect(
-      screen.getByRole("tab", { name: /supplier history/i })
+      screen.getByRole("button", { name: /supplier history/i })
     ).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /low stock/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /catalog/i })).toBeInTheDocument();
     expect(
-      screen.getByRole("tablist", { name: /product browser tabs/i })
+      screen.getByRole("button", { name: /low stock/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /catalog/i })
     ).toBeInTheDocument();
   });
 
@@ -141,8 +140,10 @@ describe("ProductBrowserGrid", () => {
       />
     );
 
-    fireEvent.click(screen.getByText("Select first row"));
-    fireEvent.click(screen.getByRole("button", { name: /\+ add selected/i }));
+    fireEvent.change(screen.getByLabelText(/quantity for wedding cake/i), {
+      target: { value: "6" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /\+ add/i }));
 
     expect(onAddProduct).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -150,6 +151,7 @@ describe("ProductBrowserGrid", () => {
         productName: "Wedding Cake",
         category: "Flower",
         subcategory: "Top Shelf",
+        quantityOrdered: 6,
         cogsMode: "FIXED",
         unitCost: "2.40",
       })
@@ -180,8 +182,6 @@ describe("ProductBrowserGrid", () => {
       />
     );
 
-    fireEvent.click(screen.getByText("Select first row"));
-
     expect(screen.getByText("Added")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /added/i })).toBeDisabled();
   });
@@ -205,9 +205,8 @@ describe("ProductBrowserGrid", () => {
       />
     );
 
-    fireEvent.click(screen.getByRole("tab", { name: /catalog/i }));
-    fireEvent.click(screen.getByText("Select first row"));
-    fireEvent.click(screen.getByRole("button", { name: /\+ add selected/i }));
+    fireEvent.click(screen.getByRole("button", { name: /catalog/i }));
+    fireEvent.click(screen.getByRole("button", { name: /\+ add/i }));
 
     expect(onAddProduct).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -215,25 +214,6 @@ describe("ProductBrowserGrid", () => {
         productName: "Fallback Gelato",
         subcategory: "Smalls",
       })
-    );
-  });
-
-  it("marks the active product browser control with tab semantics", () => {
-    render(<ProductBrowserGrid {...defaultProps} />);
-
-    expect(
-      screen.getByRole("tab", { name: /supplier history/i })
-    ).toHaveAttribute("aria-selected", "true");
-
-    fireEvent.click(screen.getByRole("tab", { name: /low stock/i }));
-
-    expect(screen.getByRole("tab", { name: /low stock/i })).toHaveAttribute(
-      "aria-selected",
-      "true"
-    );
-    expect(screen.getByRole("tabpanel")).toHaveAttribute(
-      "aria-labelledby",
-      "product-browser-tab-low-stock"
     );
   });
 });

@@ -229,6 +229,15 @@ vi.mock("@/lib/trpc", () => {
         processVendorReturn: { useMutation: () => mutationStub },
         updateOrderStatus: { useMutation: () => mutationStub },
       },
+      accounting: {
+        invoices: {
+          getByReference: {
+            useQuery: () => ({
+              data: null,
+            }),
+          },
+        },
+      },
       invoices: {
         generateFromOrder: { useMutation: () => mutationStub },
         downloadPdf: { useMutation: () => mutationStub },

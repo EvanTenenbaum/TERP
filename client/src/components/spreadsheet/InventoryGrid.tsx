@@ -5,7 +5,7 @@ import type {
   GridReadyEvent,
   GridApi,
 } from "ag-grid-community";
-import { AgGridReact } from "ag-grid-react";
+import { AgGridReactCompat } from "@/components/ag-grid/AgGridReactCompat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
@@ -369,7 +369,7 @@ export const InventoryGrid = React.memo(function InventoryGrid() {
         {/* Grid renders only when data is available */}
         {!isLoading && !error && data?.rows && data.rows.length > 0 && (
           <div className="ag-theme-alpine h-[600px] w-full">
-            <AgGridReact<InventoryGridRow>
+            <AgGridReactCompat<InventoryGridRow>
               rowData={data.rows}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}

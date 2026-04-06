@@ -7,7 +7,7 @@
 
 ## 🎯 Overview
 
-Build status updates are automatically pushed to a **separate `build-status` branch** instead of the `main` branch. This prevents build status commits from triggering DigitalOcean deployments and causing deployment conflicts.
+Build status updates are automatically pushed to a **separate `build-status` branch** instead of the `main` branch. This prevents build status commits from triggering the current `main`-driven staging deployment and causing deployment conflicts.
 
 ---
 
@@ -16,14 +16,14 @@ Build status updates are automatically pushed to a **separate `build-status` bra
 ### The Problem
 
 Previously, build status updates were pushed directly to `main`:
-- Every push to `main` triggers a DigitalOcean deployment
+- Every push to `main` triggers a DigitalOcean staging deployment
 - Build status commits would cancel active deployments
 - This caused deployment conflicts and failed deployments
 
 ### The Solution
 
 Build status updates now go to the `build-status` branch:
-- DigitalOcean only monitors the `main` branch (configured in `.do/app.yaml`)
+- DigitalOcean only monitors the current staging branch, `main` (configured in `.do/app.yaml`)
 - The `build-status` branch is not monitored, so no deployments are triggered
 - Build status history is still preserved in git
 - No more deployment conflicts!
@@ -73,7 +73,7 @@ The build status file contains:
    - Commits to `build-status` branch (not `main`)
    - Pushes to `origin/build-status`
 
-3. **DigitalOcean deployment**
+3. **DigitalOcean staging deployment**
    - Only triggered by commits to `main`
    - Not triggered by `build-status` branch updates
    - Your deployment completes without interruption!
@@ -147,7 +147,7 @@ github:
   deploy_on_push: true
 ```
 
-Since DigitalOcean only monitors `main`, updates to `build-status` don't trigger deployments.
+Since DigitalOcean only monitors `main` for the staging deployment path, updates to `build-status` don't trigger deployments.
 
 ---
 
@@ -189,4 +189,3 @@ git show origin/build-status:.github/BUILD_STATUS.md
 - **Check it with:** `git show origin/build-status:.github/BUILD_STATUS.md`
 - **Why?** Prevents deployment conflicts
 - **When?** After every push to `main`, wait a few minutes for tests to complete
-

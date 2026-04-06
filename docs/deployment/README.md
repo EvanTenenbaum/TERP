@@ -1,7 +1,7 @@
 
 # TERP Deployment Documentation
 
-**Last Updated**: 2025-12-16  
+**Last Updated**: 2026-03-28  
 **Status**: Active
 
 This directory contains all deployment-related documentation for TERP.
@@ -17,8 +17,10 @@ This directory contains all deployment-related documentation for TERP.
 > 
 > - **Current Platform**: DigitalOcean App Platform
 > - **Production URL**: https://terp-app-b9s35.ondigitalocean.app
+> - **Staging URL**: https://terp-staging-yicld.ondigitalocean.app
 > - **Configuration**: `.do/app.yaml`
 > - **CLI**: `doctl` (NOT `railway`)
+> - **Current Branch Mapping**: As of March 28, 2026, `main` is the staging deployment branch; production is promoted manually
 
 ---
 
@@ -61,17 +63,21 @@ git add .
 # Commit with conventional format
 git commit -m "feat: add new feature"
 
-# Push to trigger deployment
+# Push to trigger staging deployment
 git push origin main
 ```
 
-### 3. Automatic Deployment
+### 3. Automatic Staging Deployment
 - DigitalOcean detects push to `main`
 - Builds using `.do/app.yaml` configuration
 - Runs health checks
-- Deploys to production
+- Deploys to staging for verification
 
-### 4. Verification
+### 4. Production Promotion
+- Production is a separate manual promotion path
+- Do not assume a push to `main` deploys production
+
+### 5. Verification
 ```bash
 # Check deployment status
 bash scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)

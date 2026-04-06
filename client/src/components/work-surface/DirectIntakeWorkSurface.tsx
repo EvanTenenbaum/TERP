@@ -29,7 +29,7 @@ import type {
   ICellRendererParams,
   SelectionChangedEvent,
 } from "ag-grid-community";
-import { AgGridReact } from "ag-grid-react";
+import { AgGridReactCompat } from "@/components/ag-grid/AgGridReactCompat";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -2664,7 +2664,7 @@ export function DirectIntakeWorkSurface() {
             </div>
           ) : (
             <div className="h-full min-h-[420px] w-full">
-              <AgGridReact<IntakeGridRow>
+              <AgGridReactCompat<IntakeGridRow>
                 theme={themeAlpine}
                 rowData={rows}
                 columnDefs={columnDefs}

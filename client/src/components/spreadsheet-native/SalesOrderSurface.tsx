@@ -7,10 +7,11 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
 import type { ColDef } from "ag-grid-community";
-import { AlertTriangle, ArrowLeft, Save } from "lucide-react";
-import { useLocation } from "wouter";
+import { AlertTriangle, ArrowLeft } from "lucide-react";
+import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import { normalizePositiveIntegerWithin } from "@/lib/quantity";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { useOrderCalculations } from "@/hooks/orders/useOrderCalculations";
 import {
@@ -21,7 +22,6 @@ import {
 } from "@/hooks/useOrderDraft";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ClientCombobox } from "@/components/ui/client-combobox";
@@ -57,6 +57,8 @@ import {
   type KeyboardHint,
 } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
+import { AdaptiveSplitLayout } from "@/components/layout/AdaptiveSplitLayout";
+import InlineRowAddControls from "./InlineRowAddControls";
 import { PowersheetGrid } from "./PowersheetGrid";
 
 interface InventoryBrowserRow {
@@ -75,6 +77,13 @@ interface InventoryBrowserRow {
   _raw: PricedInventoryItem;
 }
 
+interface InventoryRowControls {
+  quantity: string;
+  retailPrice: string;
+  markup: string;
+  lastEdited: "retailPrice" | "markup" | null;
+}
+
 const isMac =
   typeof navigator !== "undefined" &&
   /mac/i.test(navigator.platform || navigator.userAgent);
@@ -91,6 +100,108 @@ const formatCurrency = (value: number) =>
     style: "currency",
     currency: "USD",
   }).format(value);
+
+const roundToCents = (value: number) => Math.round(value * 100) / 100;
+const roundToTenth = (value: number) => Math.round(value * 10) / 10;
+
+const calculateRetailFromMarkup = (basePrice: number, markup: number) =>
+  basePrice > 0 ? roundToCents(basePrice * (1 + markup / 100)) : 0;
+
+const calculateMarkupFromRetail = (basePrice: number, retailPrice: number) =>
+  basePrice > 0
+    ? roundToTenth(((retailPrice - basePrice) / basePrice) * 100)
+    : 0;
+
+const sanitizeQuantityInput = (value: string) => value.replace(/\D/g, "");
+
+const sanitizeDecimalInput = (value: string) => {
+  const cleaned = value.replace(/[^0-9.]/g, "");
+  const [whole, ...fraction] = cleaned.split(".");
+  return fraction.length > 0 ? `${whole}.${fraction.join("")}` : whole;
+};
+
+const parseNonNegativeNumber = (value: string): number | null => {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+};
+
+const getInventoryCogsPerUnit = (item: PricedInventoryItem) =>
+  item.effectiveCogs ?? item.basePrice ?? item.unitCogs ?? 0;
+
+const getInventoryRetailPrice = (item: PricedInventoryItem) =>
+  roundToCents(item.retailPrice || item.basePrice || 0);
+
+const buildDefaultInventoryRowControls = (
+  row: InventoryBrowserRow
+): InventoryRowControls => {
+  const cogsPerUnit = getInventoryCogsPerUnit(row._raw);
+  const retailPrice = getInventoryRetailPrice(row._raw);
+  const markup =
+    row._raw.priceMarkup ?? calculateMarkupFromRetail(cogsPerUnit, retailPrice);
+  const availableUnits = Math.max(1, Math.floor(row.quantity || 1));
+
+  return {
+    quantity: String(
+      normalizePositiveIntegerWithin(row.quantity, availableUnits) ?? 1
+    ),
+    retailPrice: retailPrice.toFixed(2),
+    markup: roundToTenth(markup).toFixed(1),
+    lastEdited: null,
+  };
+};
+
+const normalizeInventoryControlsFromPrice = (
+  row: InventoryBrowserRow,
+  controls: InventoryRowControls
+): InventoryRowControls => {
+  const cogsPerUnit = getInventoryCogsPerUnit(row._raw);
+  const availableUnits = Math.max(1, Math.floor(row.quantity || 1));
+  const quantity =
+    normalizePositiveIntegerWithin(controls.quantity, availableUnits) ?? 1;
+  const retailPrice = roundToCents(
+    parseNonNegativeNumber(controls.retailPrice) ??
+      getInventoryRetailPrice(row._raw)
+  );
+  const markup = roundToTenth(
+    calculateMarkupFromRetail(cogsPerUnit, retailPrice)
+  );
+
+  return {
+    quantity: String(quantity),
+    retailPrice: retailPrice.toFixed(2),
+    markup: markup.toFixed(1),
+    lastEdited: null,
+  };
+};
+
+const normalizeInventoryControlsFromMarkup = (
+  row: InventoryBrowserRow,
+  controls: InventoryRowControls
+): InventoryRowControls => {
+  const cogsPerUnit = getInventoryCogsPerUnit(row._raw);
+  const availableUnits = Math.max(1, Math.floor(row.quantity || 1));
+  const quantity =
+    normalizePositiveIntegerWithin(controls.quantity, availableUnits) ?? 1;
+  const fallbackMarkup =
+    row._raw.priceMarkup ??
+    calculateMarkupFromRetail(cogsPerUnit, getInventoryRetailPrice(row._raw));
+  const markup = roundToTenth(
+    parseNonNegativeNumber(controls.markup) ?? fallbackMarkup
+  );
+  const retailPrice = calculateRetailFromMarkup(cogsPerUnit, markup);
+
+  return {
+    quantity: String(quantity),
+    retailPrice: retailPrice.toFixed(2),
+    markup: markup.toFixed(1),
+    lastEdited: null,
+  };
+};
 
 const getInventorySku = (item: PricedInventoryItem) => {
   const raw = item as PricedInventoryItem & {
@@ -166,8 +277,17 @@ function mapInventoryToRows(
 
 export function SalesOrderSurface() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const utils = trpc.useUtils();
-  const draft = useOrderDraft({ surfaceVariant: "sheet-native-orders" });
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const salesWorkspaceTab = searchParams.get("tab");
+  const routeMode = searchParams.get("mode");
+  const isCreateOrderEntry = salesWorkspaceTab === "create-order";
+  const draft = useOrderDraft({
+    surfaceVariant: isCreateOrderEntry
+      ? "classic-create-order"
+      : "sheet-native-orders",
+  });
   const handleAddInventoryItems = draft.handleAddInventoryItems;
   const resetComposerState = draft.resetComposerState;
   const setClientId = draft.setClientId;
@@ -186,6 +306,9 @@ export function SalesOrderSurface() {
   const [selectedInventoryRowId, setSelectedInventoryRowId] = useState<
     string | null
   >(null);
+  const [inventoryRowControls, setInventoryRowControls] = useState<
+    Record<number, InventoryRowControls>
+  >({});
   const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [showCreditWarning, setShowCreditWarning] = useState(false);
   const [creditCheckResult, setCreditCheckResult] =
@@ -195,6 +318,9 @@ export function SalesOrderSurface() {
   const [isCheckingCredit, setIsCheckingCredit] = useState(false);
   const defaultViewAppliedClientRef = useRef<number | null>(null);
   const skipNextDefaultViewApplyRef = useRef(false);
+  const isQuoteCreateEntry =
+    isCreateOrderEntry &&
+    (routeMode === "quote" || draft.orderType === "QUOTE");
 
   const clientsQuery = trpc.clients.list.useQuery({ limit: 1000 });
   const clientList = useMemo(() => {
@@ -289,6 +415,10 @@ export function SalesOrderSurface() {
     [filteredInventory, selectedBatchIds]
   );
 
+  useEffect(() => {
+    setInventoryRowControls({});
+  }, [draft.clientId]);
+
   const calculationState = useOrderCalculations(draft.items, draft.adjustment);
   const orderTotals = calculationState.totals;
   const grandTotal = orderTotals.total + draft.freight;
@@ -300,6 +430,25 @@ export function SalesOrderSurface() {
       clientList.find(client => client.id === draft.clientId)?.name
     );
   }, [clientDetailsQuery.data?.name, clientList, draft.clientId]);
+  const isUnavailableClientRoute =
+    draft.clientId !== null &&
+    !clientsQuery.isLoading &&
+    !clientDetailsQuery.isLoading &&
+    !selectedClientName?.trim();
+  const selectedClientLabel = useMemo(() => {
+    if (!draft.clientId) {
+      return undefined;
+    }
+
+    const trimmedName = selectedClientName?.trim();
+    if (trimmedName) {
+      return trimmedName;
+    }
+
+    return isUnavailableClientRoute
+      ? `Unavailable customer #${draft.clientId}`
+      : undefined;
+  }, [draft.clientId, isUnavailableClientRoute, selectedClientName]);
 
   const creditSummary = useMemo(() => {
     const client = clientDetailsQuery.data;
@@ -333,10 +482,168 @@ export function SalesOrderSurface() {
   }, [clientDetailsQuery.data, grandTotal]);
 
   const isFinalizeBusy =
-    draft.isFinalizingDraft || isCheckingCredit || creditCheckMutation.isPending;
+    draft.isFinalizingDraft ||
+    isCheckingCredit ||
+    creditCheckMutation.isPending;
+
+  const updateInventoryRowControls = useCallback(
+    (
+      row: InventoryBrowserRow,
+      updater: (current: InventoryRowControls) => InventoryRowControls
+    ) => {
+      setInventoryRowControls(current => ({
+        ...current,
+        [row.inventoryId]: updater(
+          current[row.inventoryId] ?? buildDefaultInventoryRowControls(row)
+        ),
+      }));
+    },
+    []
+  );
+
+  const handleInventoryQuantityChange = useCallback(
+    (row: InventoryBrowserRow, value: string) => {
+      updateInventoryRowControls(row, current => ({
+        ...current,
+        quantity: sanitizeQuantityInput(value),
+      }));
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleInventoryQuantityBlur = useCallback(
+    (row: InventoryBrowserRow) => {
+      updateInventoryRowControls(row, current => ({
+        ...current,
+        quantity: normalizeInventoryControlsFromPrice(row, current).quantity,
+      }));
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleInventoryPriceChange = useCallback(
+    (row: InventoryBrowserRow, value: string) => {
+      updateInventoryRowControls(row, current => ({
+        ...current,
+        retailPrice: sanitizeDecimalInput(value),
+        lastEdited: "retailPrice",
+      }));
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleInventoryPriceBlur = useCallback(
+    (row: InventoryBrowserRow) => {
+      updateInventoryRowControls(row, current =>
+        normalizeInventoryControlsFromPrice(row, current)
+      );
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleInventoryMarkupChange = useCallback(
+    (row: InventoryBrowserRow, value: string) => {
+      updateInventoryRowControls(row, current => ({
+        ...current,
+        markup: sanitizeDecimalInput(value),
+        lastEdited: "markup",
+      }));
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleInventoryMarkupBlur = useCallback(
+    (row: InventoryBrowserRow) => {
+      updateInventoryRowControls(row, current =>
+        normalizeInventoryControlsFromMarkup(row, current)
+      );
+    },
+    [updateInventoryRowControls]
+  );
+
+  const handleAddInventoryRow = useCallback(
+    (row: InventoryBrowserRow) => {
+      const stagedControls =
+        inventoryRowControls[row.inventoryId] ??
+        buildDefaultInventoryRowControls(row);
+      const normalizedControls =
+        stagedControls.lastEdited === "markup"
+          ? normalizeInventoryControlsFromMarkup(row, stagedControls)
+          : normalizeInventoryControlsFromPrice(row, stagedControls);
+
+      setInventoryRowControls(current => ({
+        ...current,
+        [row.inventoryId]: normalizedControls,
+      }));
+
+      handleAddInventoryItems([
+        {
+          ...row._raw,
+          orderQuantity: Number(normalizedControls.quantity),
+          retailPrice: Number(normalizedControls.retailPrice),
+          priceMarkup: Number(normalizedControls.markup),
+        },
+      ]);
+    },
+    [handleAddInventoryItems, inventoryRowControls]
+  );
 
   const inventoryColumnDefs = useMemo<ColDef<InventoryBrowserRow>[]>(() => {
     const cols: ColDef<InventoryBrowserRow>[] = [
+      {
+        field: "inOrder",
+        headerName: "Add",
+        minWidth: showMargin ? 292 : 224,
+        maxWidth: showMargin ? 292 : 224,
+        pinned: "left",
+        sortable: false,
+        filter: false,
+        resizable: false,
+        suppressNavigable: true,
+        headerTooltip:
+          "Set qty and pricing before adding this row to the order",
+        cellRenderer: (params: { data?: InventoryBrowserRow }) => {
+          const row = params.data;
+          if (!row) return null;
+          const controls =
+            inventoryRowControls[row.inventoryId] ??
+            buildDefaultInventoryRowControls(row);
+          const isNonSellable =
+            row.quantity < 1 ||
+            NON_SELLABLE_STATUSES.includes(
+              row.status as (typeof NON_SELLABLE_STATUSES)[number]
+            );
+
+          return (
+            <InlineRowAddControls
+              added={row.inOrder}
+              disabled={isNonSellable}
+              onAdd={() => handleAddInventoryRow(row)}
+              quantityValue={controls.quantity}
+              quantityLabel={`Quantity for ${row.name}`}
+              onQuantityChange={value =>
+                handleInventoryQuantityChange(row, value)
+              }
+              onQuantityBlur={() => handleInventoryQuantityBlur(row)}
+              priceValue={controls.retailPrice}
+              priceLabel={`Price for ${row.name}`}
+              onPriceChange={value => handleInventoryPriceChange(row, value)}
+              onPriceBlur={() => handleInventoryPriceBlur(row)}
+              markupValue={showMargin ? controls.markup : undefined}
+              markupLabel={showMargin ? `Markup for ${row.name}` : undefined}
+              onMarkupChange={
+                showMargin
+                  ? value => handleInventoryMarkupChange(row, value)
+                  : undefined
+              }
+              onMarkupBlur={
+                showMargin ? () => handleInventoryMarkupBlur(row) : undefined
+              }
+            />
+          );
+        },
+        cellClass: "powersheet-cell--locked",
+      },
       {
         field: "status",
         headerName: "",
@@ -441,44 +748,29 @@ export function SalesOrderSurface() {
       });
     }
 
-    cols.push({
-      field: "inOrder",
-      headerName: "Action",
-      minWidth: 90,
-      maxWidth: 110,
-      suppressNavigable: true,
-      sortable: false,
-      cellRenderer: (params: { data?: InventoryBrowserRow }) => {
-        const row = params.data;
-        if (!row) return null;
-        const isNonSellable = NON_SELLABLE_STATUSES.includes(
-          row.status as (typeof NON_SELLABLE_STATUSES)[number]
-        );
-        return (
-          <Button
-            type="button"
-            size="sm"
-            variant={row.inOrder ? "secondary" : "outline"}
-            className="h-6 px-2 text-[10px]"
-            disabled={row.inOrder || isNonSellable}
-            onClick={event => {
-              event.stopPropagation();
-              handleAddInventoryItems([row._raw]);
-            }}
-          >
-            {row.inOrder ? "Added" : "Add"}
-          </Button>
-        );
-      },
-      cellClass: "powersheet-cell--locked",
-    });
-
     return cols;
-  }, [columnVisibility, handleAddInventoryItems, showCogs]);
+  }, [
+    columnVisibility,
+    handleAddInventoryRow,
+    handleInventoryMarkupBlur,
+    handleInventoryMarkupChange,
+    handleInventoryPriceBlur,
+    handleInventoryPriceChange,
+    handleInventoryQuantityBlur,
+    handleInventoryQuantityChange,
+    inventoryRowControls,
+    showCogs,
+    showMargin,
+  ]);
 
   const handleClientChange = useCallback(
     (clientId: number | null) => {
-      setLocation(buildDocumentRoute());
+      setLocation(
+        buildDocumentRoute({
+          clientId,
+          mode: draft.orderType === "QUOTE" ? "quote" : undefined,
+        })
+      );
       resetComposerState();
       setClientId(clientId);
       setSelectedInventoryRowId(null);
@@ -491,39 +783,13 @@ export function SalesOrderSurface() {
       skipNextDefaultViewApplyRef.current = false;
       setPendingCreditOverrideReason(undefined);
     },
-    [buildDocumentRoute, resetComposerState, setClientId, setLocation]
-  );
-
-  const handleAddSelectedInventory = useCallback(() => {
-    if (!selectedInventoryRowId) return;
-    const selectedRow = inventoryRows.find(
-      row => row.identity.rowKey === selectedInventoryRowId
-    );
-    if (!selectedRow) return;
-    if (
-      NON_SELLABLE_STATUSES.includes(
-        selectedRow.status as (typeof NON_SELLABLE_STATUSES)[number]
-      )
-    ) {
-      toast.error("This inventory item cannot be added to an order");
-      return;
-    }
-    handleAddInventoryItems([selectedRow._raw]);
-  }, [handleAddInventoryItems, inventoryRows, selectedInventoryRowId]);
-
-  const selectedInventoryRow = useMemo(
-    () =>
-      selectedInventoryRowId
-        ? inventoryRows.find(row => row.identity.rowKey === selectedInventoryRowId)
-        : null,
-    [inventoryRows, selectedInventoryRowId]
-  );
-
-  const selectedInventoryBlocked = Boolean(
-    selectedInventoryRow &&
-      NON_SELLABLE_STATUSES.includes(
-        selectedInventoryRow.status as (typeof NON_SELLABLE_STATUSES)[number]
-      )
+    [
+      buildDocumentRoute,
+      draft.orderType,
+      resetComposerState,
+      setClientId,
+      setLocation,
+    ]
   );
 
   const handleLoadView = useCallback(
@@ -558,8 +824,22 @@ export function SalesOrderSurface() {
     defaultViewAppliedClientRef.current = draft.clientId;
   }, [draft.clientId, savedViewsQuery.data]);
 
+  const handleSaveDraftRequest = useCallback(() => {
+    if (isUnavailableClientRoute) {
+      toast.error("Select an active customer before saving this draft");
+      return;
+    }
+
+    draft.handleSaveDraft();
+  }, [draft, isUnavailableClientRoute]);
+
   const handleFinalizeRequest = useCallback(async () => {
     if (isCheckingCredit || creditCheckMutation.isPending) {
+      return;
+    }
+
+    if (isUnavailableClientRoute) {
+      toast.error("Select an active customer before finalizing this order");
       return;
     }
 
@@ -601,6 +881,7 @@ export function SalesOrderSurface() {
     draft.clientId,
     draft.orderType,
     grandTotal,
+    isUnavailableClientRoute,
     isCheckingCredit,
   ]);
 
@@ -629,11 +910,11 @@ export function SalesOrderSurface() {
     customHandlers: {
       "cmd+s": (event: ReactKeyboardEvent) => {
         event.preventDefault();
-        draft.handleSaveDraft();
+        handleSaveDraftRequest();
       },
       "ctrl+s": (event: ReactKeyboardEvent) => {
         event.preventDefault();
-        draft.handleSaveDraft();
+        handleSaveDraftRequest();
       },
       "cmd+enter": (event: ReactKeyboardEvent) => {
         event.preventDefault();
@@ -665,6 +946,127 @@ export function SalesOrderSurface() {
     filters.grades.length +
     filters.vendors.length +
     (filters.inStockOnly ? 1 : 0);
+  const documentContextLabel = draft.activeDraftId
+    ? `Draft #${draft.activeDraftId}`
+    : draft.isSalesSheetImport
+      ? "Catalogue import"
+      : isQuoteCreateEntry
+        ? "New quote"
+        : isCreateOrderEntry
+          ? "New order"
+          : "New draft";
+  const emptyStateTitle = isQuoteCreateEntry
+    ? "Select a customer to start this quote"
+    : isCreateOrderEntry
+      ? "Select a customer to start this order"
+      : "Select a customer to start the order sheet";
+  const emptyStateDescription = isQuoteCreateEntry
+    ? "Choose a customer above to begin a new quote without leaving the sales workspace."
+    : isCreateOrderEntry
+      ? "Choose a customer above to begin a new order without leaving the sales workspace."
+      : "Choose a customer above to begin.";
+  const inventoryPanel = (
+    <div className="space-y-1">
+      <div>
+        <Input
+          value={searchTerm}
+          onChange={event => setSearchTerm(event.target.value)}
+          placeholder="Search SKU, batch, product..."
+          className="h-7 max-w-xs text-xs"
+        />
+      </div>
+      <PowersheetGrid
+        surfaceId="sales-order-inventory-browser"
+        requirementIds={["ORD-INV-001", "ORD-INV-002"]}
+        title="Inventory"
+        description="Set qty and price on the row, then add it to the order."
+        rows={inventoryRows}
+        columnDefs={inventoryColumnDefs}
+        getRowId={row => row.identity.rowKey}
+        selectedRowId={selectedInventoryRowId}
+        onSelectedRowChange={row =>
+          setSelectedInventoryRowId(row?.identity.rowKey ?? null)
+        }
+        selectionMode="cell-range"
+        enableFillHandle={false}
+        enableUndoRedo={false}
+        isLoading={inventoryQuery.isLoading}
+        errorMessage={inventoryQuery.error?.message ?? null}
+        emptyTitle="No inventory"
+        emptyDescription="This customer has no priced inventory available."
+        summary={
+          <span>
+            {inventoryRows.length} visible
+            {selectedClientLabel ? ` · ${selectedClientLabel}` : ""}
+          </span>
+        }
+        minHeight={420}
+      />
+    </div>
+  );
+  const documentPanel = (
+    <div className="rounded-lg border border-border/70 bg-background">
+      <OrdersDocumentLineItemsGrid
+        items={draft.items}
+        clientId={draft.clientId}
+        onChange={draft.setItems}
+        showCogsColumn={showCogs}
+        showMarginColumn={showMargin}
+      />
+    </div>
+  );
+  const documentControlsBand = (
+    <div className="space-y-1">
+      <div className="overflow-hidden rounded-lg border border-border/70 bg-background">
+        <InvoiceBottom
+          subtotal={orderTotals.subtotal}
+          adjustment={draft.adjustment as OrderAdjustment | null}
+          onAdjustmentChange={draft.setAdjustment}
+          showAdjustmentOnDocument={draft.showAdjustmentOnDocument}
+          onShowAdjustmentOnDocumentChange={draft.setShowAdjustmentOnDocument}
+          freight={draft.freight}
+          onFreightChange={draft.setFreight}
+          total={grandTotal}
+          paymentTerms={draft.paymentTerms}
+          onPaymentTermsChange={draft.setPaymentTerms}
+          creditAvailable={creditSummary.creditAvailable}
+          creditUtilizationPercent={creditSummary.utilizationPercent}
+          creditWarning={creditSummary.warning}
+          totalCogs={orderTotals.totalCogs}
+          totalMargin={orderTotals.totalMargin}
+          marginPercent={orderTotals.avgMarginPercent}
+          showCogs={showCogs}
+          showMargin={showMargin}
+        />
+      </div>
+
+      <OrderAdjustmentsBar
+        referredByClientId={draft.referredByClientId}
+        onReferredByChange={draft.setReferredByClientId}
+        clientId={draft.clientId}
+        notes={draft.notes}
+        onNotesChange={draft.setNotes}
+        activeDraftId={draft.activeDraftId}
+        isSaving={draft.isPersistingDraft}
+        hasUnsavedChanges={draft.hasUnsavedChanges}
+        onSaveDraft={handleSaveDraftRequest}
+        onFinalize={() => void handleFinalizeRequest()}
+        saveDraftDisabled={
+          draft.items.length === 0 ||
+          draft.isPersistingDraft ||
+          isUnavailableClientRoute
+        }
+        finalizeDisabled={
+          !calculationState.isValid ||
+          isFinalizeBusy ||
+          isUnavailableClientRoute
+        }
+        isFinalizePending={isFinalizeBusy}
+        isSeededFromCatalogue={draft.isSalesSheetImport}
+        orderType={draft.orderType}
+      />
+    </div>
+  );
 
   return (
     <div {...keyboardProps} className="flex h-full flex-col gap-1">
@@ -679,14 +1081,9 @@ export function SalesOrderSurface() {
           <ArrowLeft className="mr-1 h-3 w-3" />
           Queue
         </Button>
-        <Badge variant="secondary" className="text-[10px]">
-          Sales Order
-        </Badge>
-        {draft.isSalesSheetImport ? (
-          <Badge variant="outline" className="text-[10px]">
-            Seeded from catalogue
-          </Badge>
-        ) : null}
+        <span className="text-sm font-medium text-foreground">
+          {documentContextLabel}
+        </span>
         <div className="w-48">
           <ClientCombobox
             value={draft.clientId}
@@ -695,6 +1092,7 @@ export function SalesOrderSurface() {
             isLoading={clientsQuery.isLoading}
             placeholder="Customer..."
             emptyText="No customers"
+            selectedLabel={selectedClientLabel}
           />
         </div>
         <Select
@@ -709,49 +1107,12 @@ export function SalesOrderSurface() {
             <SelectItem value="QUOTE">Quote</SelectItem>
           </SelectContent>
         </Select>
-        {draft.activeDraftId ? (
-          <Badge variant="outline" className="text-[10px]">
-            Draft #{draft.activeDraftId}
-          </Badge>
-        ) : null}
         {draft.SaveStateIndicator}
-        <div className="ml-auto flex items-center gap-1">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={draft.items.length === 0 || draft.isPersistingDraft}
-            onClick={() => draft.handleSaveDraft()}
-          >
-            <Save className="mr-1 h-3 w-3" />
-            Save Draft
-          </Button>
-          <Button
-            type="button"
-            size="sm"
-            className="h-7 px-2 text-xs"
-            disabled={!calculationState.isValid || isFinalizeBusy}
-            onClick={() => void handleFinalizeRequest()}
-          >
-            {draft.orderType === "QUOTE" ? "Confirm Quote" : "Confirm Order"}
-          </Button>
-        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5 px-2 py-1">
-        {draft.clientId && (
+        {draft.clientId && !isUnavailableClientRoute && (
           <>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-6 px-2 text-[10px]"
-              disabled={!selectedInventoryRowId || selectedInventoryBlocked}
-              onClick={handleAddSelectedInventory}
-            >
-              Add Selected
-            </Button>
             <QuickViewSelector
               clientId={draft.clientId}
               onLoadView={handleLoadView}
@@ -778,13 +1139,15 @@ export function SalesOrderSurface() {
           </>
         )}
         <span className="ml-auto text-[10px] text-muted-foreground">
-          {draft.items.length > 0
-            ? `${draft.items.length} lines \u00b7 ${formatCurrency(grandTotal)}`
-            : "No line items"}
+          {isUnavailableClientRoute
+            ? "Select an active customer to continue"
+            : draft.items.length > 0
+              ? `${draft.items.length} lines \u00b7 ${formatCurrency(grandTotal)}`
+              : "No line items"}
         </span>
       </div>
 
-      {showAdvancedFilters && draft.clientId && (
+      {showAdvancedFilters && draft.clientId && !isUnavailableClientRoute && (
         <AdvancedFilters
           filters={filters}
           sort={sort}
@@ -797,106 +1160,48 @@ export function SalesOrderSurface() {
       )}
 
       {draft.clientId ? (
-        <div className="grid flex-1 gap-1.5 px-1 lg:grid-cols-5">
-          <div className="lg:col-span-2">
-            <div className="mb-1">
-              <Input
-                value={searchTerm}
-                onChange={event => setSearchTerm(event.target.value)}
-                placeholder="Search SKU, batch, product..."
-                className="h-7 max-w-xs text-xs"
-              />
+        isUnavailableClientRoute ? (
+          <div className="flex flex-1 items-center justify-center px-4 py-16">
+            <div className="max-w-xl rounded-xl border border-amber-300 bg-amber-50 px-5 py-4 text-sm text-amber-950 shadow-sm">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+                <div className="space-y-2">
+                  <p className="font-medium">
+                    {selectedClientLabel ?? "Selected customer"} is unavailable
+                  </p>
+                  <p className="text-amber-900/80">
+                    This route points to a customer record that is no longer in
+                    active clients. Pick an active customer before you build,
+                    save, or finalize this order.
+                  </p>
+                </div>
+              </div>
             </div>
-            <PowersheetGrid
-              surfaceId="sales-order-inventory-browser"
-              requirementIds={["ORD-INV-001", "ORD-INV-002"]}
-              title="Inventory"
-              description="Pick rows from available inventory and add them to the order."
-              rows={inventoryRows}
-              columnDefs={inventoryColumnDefs}
-              getRowId={row => row.identity.rowKey}
-              selectedRowId={selectedInventoryRowId}
-              onSelectedRowChange={row =>
-                setSelectedInventoryRowId(row?.identity.rowKey ?? null)
-              }
-              selectionMode="cell-range"
-              enableFillHandle={false}
-              enableUndoRedo={false}
-              isLoading={inventoryQuery.isLoading}
-              errorMessage={inventoryQuery.error?.message ?? null}
-              emptyTitle="No inventory"
-              emptyDescription="This customer has no priced inventory available."
-              summary={
-                <span>
-                  {inventoryRows.length} visible
-                  {selectedClientName ? ` \u00b7 ${selectedClientName}` : ""}
-                </span>
-              }
-              minHeight={420}
-            />
           </div>
-
-          <div className="flex flex-col gap-1 lg:col-span-3">
-            <div className="rounded-lg border border-border/70 bg-background">
-              <OrdersDocumentLineItemsGrid
-                items={draft.items}
-                clientId={draft.clientId}
-                onChange={draft.setItems}
-                onAddItem={() => {
-                  const firstAvailable = inventoryRows.find(row => !row.inOrder);
-                  if (firstAvailable) {
-                    draft.handleAddInventoryItems([firstAvailable._raw]);
-                  } else {
-                    toast.info("Use the inventory browser to add more items");
-                  }
-                }}
-                showCogsColumn={showCogs}
-                showMarginColumn={showMargin}
-              />
-              <InvoiceBottom
-                subtotal={orderTotals.subtotal}
-                adjustment={draft.adjustment as OrderAdjustment | null}
-                onAdjustmentChange={draft.setAdjustment}
-                showAdjustmentOnDocument={draft.showAdjustmentOnDocument}
-                onShowAdjustmentOnDocumentChange={draft.setShowAdjustmentOnDocument}
-                freight={draft.freight}
-                onFreightChange={draft.setFreight}
-                total={grandTotal}
-                paymentTerms={draft.paymentTerms}
-                onPaymentTermsChange={draft.setPaymentTerms}
-                creditAvailable={creditSummary.creditAvailable}
-                creditUtilizationPercent={creditSummary.utilizationPercent}
-                creditWarning={creditSummary.warning}
-                totalCogs={orderTotals.totalCogs}
-                totalMargin={orderTotals.totalMargin}
-                marginPercent={orderTotals.avgMarginPercent}
-                showCogs={showCogs}
-                showMargin={showMargin}
-              />
-            </div>
-
-            <OrderAdjustmentsBar
-              referredByClientId={draft.referredByClientId}
-              onReferredByChange={draft.setReferredByClientId}
-              clientId={draft.clientId}
-              notes={draft.notes}
-              onNotesChange={draft.setNotes}
-              activeDraftId={draft.activeDraftId}
-              isSaving={draft.isPersistingDraft}
-              hasUnsavedChanges={draft.hasUnsavedChanges}
-              onSaveDraft={() => draft.handleSaveDraft()}
-              onFinalize={() => void handleFinalizeRequest()}
-              isFinalizePending={isFinalizeBusy}
-              isSeededFromCatalogue={draft.isSalesSheetImport}
-              orderType={draft.orderType}
+        ) : (
+          <div className="flex flex-1 flex-col gap-1 px-1">
+            <AdaptiveSplitLayout
+              primary={inventoryPanel}
+              secondary={documentPanel}
+              autoSaveId="sales-order-surface-layout"
+              primaryDefaultSize={60}
+              primaryMinSize={44}
+              secondaryMinSize={28}
+              desktopClassName="min-h-[560px] flex-1"
+              primaryPanelClassName="min-w-0"
+              secondaryPanelClassName="min-w-0"
             />
+            {documentControlsBand}
           </div>
-        </div>
+        )
       ) : (
         <div className="flex flex-1 items-center justify-center px-4 py-16 text-center text-muted-foreground">
           <div>
             <AlertTriangle className="mx-auto mb-3 h-10 w-10 opacity-40" />
-            <p className="text-sm">Select a customer to start the order sheet</p>
+            <p className="text-sm font-medium">{emptyStateTitle}</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {emptyStateDescription}
+            </p>
           </div>
         </div>
       )}
@@ -907,18 +1212,19 @@ export function SalesOrderSurface() {
             {draft.items.length} lines
             {draft.hasUnsavedChanges ? " \u00b7 unsaved" : " \u00b7 synced"}
             {currentViewId ? " \u00b7 saved view" : ""}
-            {selectedClientName ? ` \u00b7 ${selectedClientName}` : ""}
+            {selectedClientLabel ? ` \u00b7 ${selectedClientLabel}` : ""}
+            {isUnavailableClientRoute ? " \u00b7 action blocked" : ""}
           </span>
         }
         right={<KeyboardHintBar hints={keyboardHints} className="text-xs" />}
       />
 
-      {draft.clientId ? (
+      {draft.clientId && !isUnavailableClientRoute ? (
         <SaveViewDialog
           open={showSaveViewDialog}
           onOpenChange={setShowSaveViewDialog}
           clientId={draft.clientId}
-          clientName={selectedClientName}
+          clientName={selectedClientLabel}
           filters={filters}
           sort={sort}
           columnVisibility={columnVisibility}
@@ -937,7 +1243,7 @@ export function SalesOrderSurface() {
         onOpenChange={setShowCreditWarning}
         creditCheck={creditCheckResult}
         orderTotal={grandTotal}
-        clientName={selectedClientName ?? "Selected customer"}
+        clientName={selectedClientLabel ?? "Selected customer"}
         onProceed={handleCreditProceed}
         onCancel={handleCreditCancel}
       />
@@ -950,13 +1256,17 @@ export function SalesOrderSurface() {
             setPendingCreditOverrideReason(undefined);
           }
         }}
-        title={draft.orderType === "QUOTE" ? "Confirm quote?" : "Confirm order?"}
+        title={
+          draft.orderType === "QUOTE" ? "Confirm quote?" : "Confirm order?"
+        }
         description={
           draft.orderType === "QUOTE"
             ? "This will save the current draft and finalize it as a quote."
             : "This will save the current draft and finalize it as a sales order."
         }
-        confirmLabel={draft.orderType === "QUOTE" ? "Confirm Quote" : "Confirm Order"}
+        confirmLabel={
+          draft.orderType === "QUOTE" ? "Confirm Quote" : "Confirm Order"
+        }
         onConfirm={handleConfirmFinalize}
         isLoading={draft.isFinalizingDraft}
       />

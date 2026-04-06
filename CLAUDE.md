@@ -11,6 +11,7 @@ TERP is a specialized ERP for THCA wholesale cannabis operations. React 19 + Tai
 ## Commands (Run Before Every Commit)
 
 ```bash
+pnpm agent:prepare   # In local worktrees, link shared TERP node_modules and verify local bins
 pnpm check          # TypeScript (zero errors policy)
 pnpm lint           # ESLint
 pnpm test           # Unit tests (Vitest)
@@ -36,6 +37,7 @@ All E2E tests use Playwright. The canonical reference is `docs/TESTING.md`.
 pnpm test:e2e:deep           # @deep tagged tests — full admin access
 pnpm test:e2e:deep:rbac      # @rbac tagged tests — role permission boundaries
 pnpm test:e2e:deep:all       # Both: business logic first, then RBAC
+pnpm qa:human:flows -- --count 40 --seed "$(date +%Y%m%d)"
 
 # Other E2E suites
 pnpm test:e2e                # All E2E tests
@@ -105,12 +107,13 @@ All mutations MUST use `getAuthenticatedUserId(ctx)` — never `input.createdBy`
 
 ## Deployment
 
-`PR` → `main` → `staging` (auto-deploy) → verify → `production` (manual promote by Evan)
+`PR` → `main` (auto-deploy to staging) → verify → `production` (manual promote by Evan)
 
+- As of March 28, 2026, staging tracks `main` directly
 - Staging URL: `https://terp-staging-yicld.ondigitalocean.app`
-- Staging deploy is automatic on push to `main`
+- Staging tracks `main` directly, and deploy is automatic on push to `main`
 - Production is a manual promotion — agents never deploy to production
-- Add `[skip-staging-sync]` to commit message to merge docs without triggering deploy
+- There is no staging-only sync branch or `[skip-staging-sync]` escape hatch in this mode
 
 ## Autonomy Modes
 

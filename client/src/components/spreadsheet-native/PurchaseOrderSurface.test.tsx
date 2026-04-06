@@ -118,6 +118,7 @@ vi.mock("./ProductBrowserGrid", () => ({
       productName: string | null;
       category: string | null;
       subcategory: string | null;
+      quantityOrdered?: number;
       cogsMode: "FIXED" | "RANGE";
       unitCost: string | null;
       unitCostMin: string | null;
@@ -132,6 +133,7 @@ vi.mock("./ProductBrowserGrid", () => ({
             productName: "Wedding Cake",
             category: "Flower",
             subcategory: "Top Shelf",
+            quantityOrdered: 6,
             cogsMode: "FIXED",
             unitCost: "2.40",
             unitCostMin: null,
@@ -751,6 +753,7 @@ describe("PurchaseOrderSurface — creation mode", () => {
           expect.objectContaining({
             productId: 91,
             productName: "Wedding Cake",
+            quantityOrdered: 6,
           }),
         ]),
       })
@@ -796,6 +799,7 @@ describe("PurchaseOrderSurface — creation mode", () => {
         expect.objectContaining({
           purchaseOrderId: 22,
           productId: 91,
+          quantityOrdered: 6,
         })
       );
       expect(mockDeleteItemMutateAsync).toHaveBeenCalledWith({ id: 501 });

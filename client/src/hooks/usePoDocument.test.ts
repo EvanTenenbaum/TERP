@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   createEmptyLineItem,
+  createLineItemFromProduct,
   validatePoDocument,
   buildCreatePayload,
   getLineTotal,
@@ -23,6 +24,27 @@ describe("createEmptyLineItem", () => {
     expect(item.unitCostMin).toBe(0);
     expect(item.unitCostMax).toBe(0);
     expect(item.notes).toBe("");
+  });
+});
+
+describe("createLineItemFromProduct", () => {
+  it("respects a requested quantity when adding from the browser", () => {
+    const item = createLineItemFromProduct({
+      productId: 91,
+      productName: "Wedding Cake",
+      category: "Flower",
+      subcategory: "Top Shelf",
+      quantityOrdered: 6,
+      cogsMode: "FIXED",
+      unitCost: "2.40",
+      unitCostMin: null,
+      unitCostMax: null,
+    });
+
+    expect(item.productId).toBe(91);
+    expect(item.productName).toBe("Wedding Cake");
+    expect(item.quantityOrdered).toBe(6);
+    expect(item.unitCost).toBe(2.4);
   });
 });
 

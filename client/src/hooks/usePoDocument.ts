@@ -57,6 +57,7 @@ interface ProductInput {
   productName: string | null;
   category: string | null;
   subcategory: string | null;
+  quantityOrdered?: number | string | null;
   cogsMode: "FIXED" | "RANGE" | string | null;
   unitCost: number | string | null;
   unitCostMin: number | string | null;
@@ -80,7 +81,10 @@ export function createLineItemFromProduct(product: ProductInput): PoLineItem {
     productName: product.productName ?? "",
     category: product.category ?? "",
     subcategory: product.subcategory ?? "",
-    quantityOrdered: 1,
+    quantityOrdered: Math.max(
+      1,
+      Math.floor(toNum(product.quantityOrdered) || 1)
+    ),
     cogsMode: product.cogsMode === "RANGE" ? "RANGE" : "FIXED",
     unitCost: toNum(product.unitCost),
     unitCostMin: toNum(product.unitCostMin),

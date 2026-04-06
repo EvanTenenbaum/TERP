@@ -61,6 +61,11 @@ services:
       - key: NODE_MEMORY_LIMIT
         value: "1536000000"
 
+      # Production must never auto-authenticate visitors.
+      - key: DEMO_MODE
+        value: "false"
+        scope: RUN_AND_BUILD_TIME
+
       # Vite frontend environment variables (required for build)
       - key: VITE_APP_TITLE
         value: TERP

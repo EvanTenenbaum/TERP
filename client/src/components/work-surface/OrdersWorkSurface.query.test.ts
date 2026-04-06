@@ -8,6 +8,7 @@ import {
   getMakePaymentRoute,
   getDisplayOrderNumber,
   parseDeepLinkedOrderId,
+  resolveOrderInvoiceId,
   resolveDeepLinkedOrderSelection,
 } from "./OrdersWorkSurface";
 
@@ -124,10 +125,25 @@ describe("resolveDeepLinkedOrderSelection", () => {
 
 describe("canDownloadInvoice", () => {
   it("allows invoice download only when accounting access and an invoice id are present", () => {
-    expect(canDownloadInvoice({ invoiceId: 12 }, true)).toBe(true);
-    expect(canDownloadInvoice({ invoiceId: null }, true)).toBe(false);
-    expect(canDownloadInvoice({ invoiceId: 12 }, false)).toBe(false);
+    expect(canDownloadInvoice(12, true)).toBe(true);
     expect(canDownloadInvoice(null, true)).toBe(false);
+    expect(canDownloadInvoice(12, false)).toBe(false);
+    expect(canDownloadInvoice(null, false)).toBe(false);
+  });
+});
+
+describe("resolveOrderInvoiceId", () => {
+  it("prefers a direct order invoice id before linked reference fallbacks", () => {
+    expect(resolveOrderInvoiceId(12, 44)).toBe(12);
+  });
+
+  it("falls back to a linked invoice id when the order record is stale", () => {
+    expect(resolveOrderInvoiceId(null, 44)).toBe(44);
+  });
+
+  it("returns null when neither source provides a valid invoice id", () => {
+    expect(resolveOrderInvoiceId(null, null)).toBeNull();
+    expect(resolveOrderInvoiceId(0, -1)).toBeNull();
   });
 });
 

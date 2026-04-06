@@ -7,7 +7,7 @@
  * @module server/routers/salesSheets.test.ts
  */
 
-import { describe, it, expect, beforeAll, vi } from "vitest";
+import { describe, it, expect, beforeAll, beforeEach, vi } from "vitest";
 import { setupDbMock } from "../test-utils/testDb";
 import { setupPermissionMock } from "../test-utils/testPermissions";
 
@@ -37,11 +37,22 @@ const createCaller = () => {
   return appRouter.createCaller(ctx);
 };
 
+const createPublicCaller = () => {
+  const ctx = createMockContext({ user: null });
+  return appRouter.createCaller(ctx);
+};
+
 describe("Sales Sheets Router", () => {
   let caller: ReturnType<typeof createCaller>;
+  let publicCaller: ReturnType<typeof createPublicCaller>;
 
   beforeAll(() => {
     caller = createCaller();
+    publicCaller = createPublicCaller();
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
   describe("getInventory", () => {
@@ -275,6 +286,120 @@ describe("Sales Sheets Router", () => {
 
       // Assert
       expect(result).toEqual([]);
+    });
+  });
+
+  describe("list", () => {
+    it("should use the paginated sales sheet listing helper", async () => {
+      // Arrange
+      const mockSheets = [
+        {
+          id: 11,
+          clientId: 4,
+          items: [],
+          totalValue: "1250.00",
+          itemCount: 0,
+          createdBy: 1,
+          createdAt: new Date("2026-03-30T12:00:00Z"),
+        },
+      ];
+
+      vi.mocked(salesSheetsDb.listSalesSheets).mockResolvedValue({
+        sheets: mockSheets,
+        total: 42,
+      });
+
+      // Act
+      const result = await caller.salesSheets.list({
+        limit: 10,
+        offset: 20,
+      });
+
+      // Assert
+      expect(result).toEqual({
+        data: mockSheets,
+        total: 42,
+        limit: 10,
+        offset: 20,
+        hasMore: true,
+      });
+      expect(salesSheetsDb.listSalesSheets).toHaveBeenCalledWith(
+        undefined,
+        10,
+        20
+      );
+      expect(salesSheetsDb.getSalesSheetHistory).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("getByToken", () => {
+    it("should allow public access and sanitize shared sheet pricing", async () => {
+      // Arrange
+      vi.mocked(salesSheetsDb.getSalesSheetByToken).mockResolvedValue({
+        id: 17,
+        clientId: 3,
+        clientName: "Acme Wellness",
+        items: [
+          {
+            id: 101,
+            name: "Moonrocks",
+            category: "Flower",
+            quantity: 2,
+            finalPrice: 125,
+            retailPrice: 140,
+            imageUrl: "https://example.com/moonrocks.png",
+          },
+          {
+            id: 102,
+            name: "Pre-roll Pack",
+            quantity: 1,
+            retailPrice: 40,
+          },
+        ],
+        totalValue: "290.00",
+        itemCount: 2,
+        createdBy: 1,
+        createdAt: new Date("2026-03-31T09:00:00Z"),
+        shareExpiresAt: new Date("2026-04-07T09:00:00Z"),
+      } as Awaited<ReturnType<typeof salesSheetsDb.getSalesSheetByToken>>);
+      vi.mocked(salesSheetsDb.incrementViewCount).mockResolvedValue();
+
+      // Act
+      const result = await publicCaller.salesSheets.getByToken({
+        token: "public-share-token",
+      });
+
+      // Assert
+      expect(result).toEqual({
+        id: 17,
+        clientName: "Acme Wellness",
+        items: [
+          {
+            id: 101,
+            name: "Moonrocks",
+            category: "Flower",
+            quantity: 2,
+            price: 125,
+            imageUrl: "https://example.com/moonrocks.png",
+          },
+          {
+            id: 102,
+            name: "Pre-roll Pack",
+            category: undefined,
+            quantity: 1,
+            price: 40,
+            imageUrl: undefined,
+          },
+        ],
+        totalValue: "290.00",
+        itemCount: 2,
+        createdAt: new Date("2026-03-31T09:00:00Z"),
+        expiresAt: new Date("2026-04-07T09:00:00Z"),
+      });
+      expect(salesSheetsDb.getSalesSheetByToken).toHaveBeenCalledWith(
+        "public-share-token"
+      );
+      expect(salesSheetsDb.incrementViewCount).toHaveBeenCalledWith(17);
     });
   });
 
