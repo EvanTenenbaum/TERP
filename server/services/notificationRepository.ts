@@ -25,13 +25,13 @@ import { logger } from "../_core/logger";
  */
 type CircuitState = "CLOSED" | "OPEN" | "HALF_OPEN";
 
-const CIRCUIT_FAILURE_THRESHOLD = 3;   // consecutive DB failures before opening
-const CIRCUIT_RESET_MS = 30_000;       // ms in OPEN state before trying HALF_OPEN
+const CIRCUIT_FAILURE_THRESHOLD = 3; // consecutive DB failures before opening
+const CIRCUIT_RESET_MS = 30_000; // ms in OPEN state before trying HALF_OPEN
 
 interface CircuitBreaker {
   state: CircuitState;
   consecutiveFailures: number;
-  openedAt: number | null;  // Date.now() when circuit opened
+  openedAt: number | null; // Date.now() when circuit opened
 }
 
 const circuitBreaker: CircuitBreaker = {
@@ -133,7 +133,11 @@ async function withCircuitBreaker<T>(
 
 export type NotificationChannel = "in_app" | "email" | "sms";
 export type NotificationType = "info" | "warning" | "success" | "error";
-export type NotificationCategory = "appointment" | "order" | "system" | "general";
+export type NotificationCategory =
+  | "appointment"
+  | "order"
+  | "system"
+  | "general";
 
 export interface NotificationRecipient {
   userId?: number;
@@ -169,7 +173,9 @@ export interface NotificationRepository {
   markAllRead: (recipient: ResolvedRecipient) => Promise<number>;
   softDelete: (id: number, recipient: ResolvedRecipient) => Promise<void>;
   countUnread: (recipient: ResolvedRecipient) => Promise<number>;
-  getPreferences: (recipient: ResolvedRecipient) => Promise<NotificationPreference | null>;
+  getPreferences: (
+    recipient: ResolvedRecipient
+  ) => Promise<NotificationPreference | null>;
   savePreferences: (
     recipient: ResolvedRecipient,
     updates: PreferenceUpdateInput
@@ -194,7 +200,9 @@ const ensureIdentifier = (value: number | null | undefined): number => {
   return value;
 };
 
-export const resolveRecipient = (input: NotificationRecipient): ResolvedRecipient => {
+export const resolveRecipient = (
+  input: NotificationRecipient
+): ResolvedRecipient => {
   if (
     input.recipientType === "client" ||
     (!input.userId && input.clientId !== undefined)
@@ -257,12 +265,12 @@ const normalizePreferenceRecord = (
     recipientType: preference.recipientType ?? "user",
     userId: preference.userId ?? null,
     clientId: preference.clientId ?? null,
-    inAppEnabled:
-      preference.inAppEnabled ?? defaultPreferences.inAppEnabled,
+    inAppEnabled: preference.inAppEnabled ?? defaultPreferences.inAppEnabled,
     emailEnabled: preference.emailEnabled ?? defaultPreferences.emailEnabled,
     smsEnabled: preference.smsEnabled ?? false,
     appointmentReminders:
-      preference.appointmentReminders ?? defaultPreferences.appointmentReminders,
+      preference.appointmentReminders ??
+      defaultPreferences.appointmentReminders,
     orderUpdates: preference.orderUpdates ?? defaultPreferences.orderUpdates,
     systemAlerts: preference.systemAlerts ?? defaultPreferences.systemAlerts,
     isDeleted: preference.isDeleted ?? false,
@@ -279,9 +287,15 @@ const matchesRecipient = (
     return false;
   }
   if (recipient.recipientType === "user") {
-    return record.userId === recipient.userId && (record.isDeleted ?? false) === false;
+    return (
+      record.userId === recipient.userId &&
+      (record.isDeleted ?? false) === false
+    );
   }
-  return record.clientId === recipient.clientId && (record.isDeleted ?? false) === false;
+  return (
+    record.clientId === recipient.clientId &&
+    (record.isDeleted ?? false) === false
+  );
 };
 
 const notificationRecipientWhere = (recipient: ResolvedRecipient) =>
@@ -291,6 +305,12 @@ const notificationRecipientWhere = (recipient: ResolvedRecipient) =>
       ? eq(notifications.userId, ensureIdentifier(recipient.userId))
       : eq(notifications.clientId, ensureIdentifier(recipient.clientId)),
     or(eq(notifications.isDeleted, false), isNull(notifications.isDeleted))
+  );
+
+const notificationInboxWhere = (recipient: ResolvedRecipient) =>
+  and(
+    notificationRecipientWhere(recipient),
+    eq(notifications.channel, "in_app")
   );
 
 const preferenceRecipientWhere = (recipient: ResolvedRecipient) =>
@@ -354,21 +374,17 @@ const inMemoryRepository: NotificationRepository = {
     offset: number
   ): Promise<Notification[]> => {
     return inMemoryNotifications
-      .filter(item => matchesRecipient(item, recipient))
+      .filter(
+        item => matchesRecipient(item, recipient) && item.channel === "in_app"
+      )
       .sort(
-        (a, b) =>
-          (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0)
+        (a, b) => (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0)
       )
       .slice(offset, offset + limit);
   },
-  markRead: async (
-    id: number,
-    recipient: ResolvedRecipient
-  ): Promise<void> => {
+  markRead: async (id: number, recipient: ResolvedRecipient): Promise<void> => {
     const target = inMemoryNotifications.find(
-      item =>
-        item.id === id &&
-        matchesRecipient(item, recipient)
+      item => item.id === id && matchesRecipient(item, recipient)
     );
     if (target) {
       target.read = true;
@@ -379,7 +395,12 @@ const inMemoryRepository: NotificationRepository = {
     let updated = 0;
     inMemoryNotifications.forEach(item => {
       const matches = matchesRecipient(item, recipient);
-      if (matches && !item.read && !item.isDeleted) {
+      if (
+        matches &&
+        item.channel === "in_app" &&
+        !item.read &&
+        !item.isDeleted
+      ) {
         item.read = true;
         item.updatedAt = new Date();
         updated += 1;
@@ -392,9 +413,7 @@ const inMemoryRepository: NotificationRepository = {
     recipient: ResolvedRecipient
   ): Promise<void> => {
     const target = inMemoryNotifications.find(
-      item =>
-        item.id === id &&
-        matchesRecipient(item, recipient)
+      item => item.id === id && matchesRecipient(item, recipient)
     );
     if (target) {
       target.isDeleted = true;
@@ -405,6 +424,7 @@ const inMemoryRepository: NotificationRepository = {
     return inMemoryNotifications.filter(
       item =>
         matchesRecipient(item, recipient) &&
+        item.channel === "in_app" &&
         (item.isDeleted ?? false) === false &&
         (item.read ?? false) === false
     ).length;
@@ -456,7 +476,10 @@ const inMemoryRepository: NotificationRepository = {
 function createDbRepository(db: Database): NotificationRepository {
   return {
     insertNotification: async (input: InsertNotification): Promise<number> => {
-      const [created] = await db.insert(notifications).values(input).$returningId();
+      const [created] = await db
+        .insert(notifications)
+        .values(input)
+        .$returningId();
       return created?.id ?? 0;
     },
     listNotifications: async (
@@ -466,13 +489,16 @@ function createDbRepository(db: Database): NotificationRepository {
     ): Promise<Notification[]> => {
       try {
         return await db.query.notifications.findMany({
-          where: notificationRecipientWhere(recipient),
+          where: notificationInboxWhere(recipient),
           orderBy: [desc(notifications.createdAt)],
           limit,
           offset,
         });
       } catch (error) {
-        logger.error({ error, recipient }, "Database error fetching notifications");
+        logger.error(
+          { error, recipient },
+          "Database error fetching notifications"
+        );
         throw error; // Let router handle conversion to TRPCError
       }
     },
@@ -492,7 +518,7 @@ function createDbRepository(db: Database): NotificationRepository {
         .update(notifications)
         .set({ read: true, updatedAt: new Date() })
         .where(
-          and(notificationRecipientWhere(recipient), eq(notifications.read, false))
+          and(notificationInboxWhere(recipient), eq(notifications.read, false))
         );
 
       if (typeof result === "object" && "affectedRows" in result) {
@@ -518,7 +544,7 @@ function createDbRepository(db: Database): NotificationRepository {
         })
         .from(notifications)
         .where(
-          and(notificationRecipientWhere(recipient), eq(notifications.read, false))
+          and(notificationInboxWhere(recipient), eq(notifications.read, false))
         );
       return row?.count ?? 0;
     },
@@ -587,7 +613,9 @@ function createDbRepository(db: Database): NotificationRepository {
  * the batch.
  */
 async function flushInMemoryToDb(db: Database): Promise<void> {
-  const pending = inMemoryNotifications.filter(n => n.pendingSync && !n.isDeleted);
+  const pending = inMemoryNotifications.filter(
+    n => n.pendingSync && !n.isDeleted
+  );
   if (pending.length === 0) {
     return;
   }
@@ -689,7 +717,7 @@ export async function getNotificationRepository(): Promise<NotificationRepositor
   const dbRepo = createDbRepository(dbInstance);
 
   return {
-    insertNotification: (input) =>
+    insertNotification: input =>
       withCircuitBreaker(
         async () => {
           const id = await dbRepo.insertNotification(input);
@@ -717,7 +745,7 @@ export async function getNotificationRepository(): Promise<NotificationRepositor
         () => inMemoryRepository.markRead(id, recipient)
       ),
 
-    markAllRead: (recipient) =>
+    markAllRead: recipient =>
       withCircuitBreaker(
         () => dbRepo.markAllRead(recipient),
         () => inMemoryRepository.markAllRead(recipient)
@@ -729,13 +757,13 @@ export async function getNotificationRepository(): Promise<NotificationRepositor
         () => inMemoryRepository.softDelete(id, recipient)
       ),
 
-    countUnread: (recipient) =>
+    countUnread: recipient =>
       withCircuitBreaker(
         () => dbRepo.countUnread(recipient),
         () => inMemoryRepository.countUnread(recipient)
       ),
 
-    getPreferences: (recipient) =>
+    getPreferences: recipient =>
       withCircuitBreaker(
         () => dbRepo.getPreferences(recipient),
         () => inMemoryRepository.getPreferences(recipient)

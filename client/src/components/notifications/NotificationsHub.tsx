@@ -3,7 +3,8 @@ import { Bell } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
 import { BackButton } from "@/components/common/BackButton";
 import { AlertsPanel } from "@/components/alerts/AlertsPanel";
-import { InboxPanel } from "@/components/inbox/InboxPanel";
+import { InlineNotificationPanel } from "@/components/notifications/InlineNotificationPanel";
+import { normalizeNotificationLink } from "@/lib/navigation/notificationLinks";
 import {
   Card,
   CardContent,
@@ -77,7 +78,21 @@ export function NotificationsHub() {
             </CardHeader>
             <CardContent className="p-0">
               <div className="h-[calc(100vh-20rem)] min-h-[32rem]">
-                <InboxPanel />
+                <InlineNotificationPanel
+                  title="System Notifications"
+                  collapsible={false}
+                  limit={100}
+                  className="h-full rounded-none border-0 shadow-none"
+                  onNotificationClick={notification => {
+                    const destination = normalizeNotificationLink(
+                      notification.link,
+                      notification.metadata
+                    );
+                    if (destination) {
+                      setLocation(destination);
+                    }
+                  }}
+                />
               </div>
             </CardContent>
           </Card>

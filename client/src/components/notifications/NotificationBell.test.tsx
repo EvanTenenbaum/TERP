@@ -18,6 +18,8 @@ const sampleNotifications = [
     title: "New Order",
     message: "Order #123 created",
     type: "info",
+    link: "/orders/123",
+    metadata: { entityType: "order", entityId: 123 },
     channel: "in_app",
     read: false,
     createdAt: new Date(),
@@ -27,6 +29,7 @@ const sampleNotifications = [
     title: "Reminder",
     message: "Appointment tomorrow",
     type: "warning",
+    link: null,
     channel: "in_app",
     read: true,
     createdAt: new Date(),
@@ -121,6 +124,7 @@ describe("NotificationBell", () => {
     fireEvent.click(target);
 
     expect(mockMarkRead).toHaveBeenCalledWith({ notificationId: 1 });
+    expect(mockSetLocation).toHaveBeenCalledWith("/sales?tab=orders&id=123");
   });
 
   it("navigates to view all notifications", async () => {
