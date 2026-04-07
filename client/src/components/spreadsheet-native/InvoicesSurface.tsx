@@ -121,6 +121,8 @@ export interface InvoiceGridRow {
   status: string;
   daysOverdue: number;
   version: number | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
 }
 
 export interface LedgerGridRow {
@@ -253,9 +255,17 @@ function mapInvoicesToGridRows(
 
   return uniqueItems.map(item => {
     const customerId = item.customerId ?? 0;
+    const clientObj = (
+      item as InvoiceItem & {
+        client?: {
+          name?: string | null;
+          email?: string | null;
+          phone?: string | null;
+        };
+      }
+    ).client;
     const clientName =
-      (item as InvoiceItem & { client?: { name?: string | null } }).client
-        ?.name ??
+      clientObj?.name ??
       clientNamesById.get(customerId) ??
       `Client #${customerId}`;
 
@@ -294,6 +304,8 @@ function mapInvoicesToGridRows(
       paymentPct: getPaymentProgress(item),
       status,
       daysOverdue,
+      customerEmail: clientObj?.email ?? null,
+      customerPhone: clientObj?.phone ?? null,
       version:
         (item as InvoiceItem & { version?: number | null }).version ?? null,
     };
@@ -337,6 +349,17 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
     flex: 1.4,
     minWidth: 180,
     cellClass: "powersheet-cell--locked",
+    cellRenderer: (params: { data?: InvoiceGridRow; value: string }) => {
+      if (!params.data) return params.value ?? "-";
+      const { customerEmail, customerPhone, status } = params.data;
+      if (status !== "OVERDUE" || (!customerEmail && !customerPhone)) {
+        return params.value ?? "-";
+      }
+      const contact = [customerPhone, customerEmail]
+        .filter(Boolean)
+        .join(" · ");
+      return `<div class="flex flex-col leading-tight"><span>${params.value}</span><span class="text-[10px] text-muted-foreground truncate">${contact}</span></div>`;
+    },
   },
   {
     field: "invoiceDate",
