@@ -34,6 +34,7 @@ import { NON_SELLABLE_STATUSES } from "./types";
 import {
   type PortableSalesCut,
   countActiveSalesFilters,
+  isSalesInventorySellable,
   matchesSalesInventoryFilters,
   summarizeSalesFilters,
 } from "./filtering";
@@ -106,14 +107,6 @@ function formatAppliedRulesSummary(
 
 function getAvailableUnits(item: PricedInventoryItem): number {
   return Math.max(0, Math.floor(item.quantity || 0));
-}
-
-function isReadyToSell(
-  item: PricedInventoryItem,
-  availableUnits = getAvailableUnits(item)
-): boolean {
-  const statusAllowsSale = !item.status || item.status === "LIVE";
-  return statusAllowsSale && availableUnits > 0;
 }
 
 function sanitizePriceInput(value: string): string {
@@ -192,6 +185,10 @@ export function InventoryBrowser({
     [portableCut]
   );
 
+  useEffect(() => {
+    setIncludeUnavailable(portableCut?.filters.includeUnavailable ?? false);
+  }, [portableCut]);
+
   const filteredInventory = useMemo(() => {
     return inventory.filter(item => {
       if (!item || item.id === undefined || item.id === null || !item.name) {
@@ -199,7 +196,13 @@ export function InventoryBrowser({
       }
 
       const availableUnits = getAvailableUnits(item);
-      if (!includeUnavailable && !isReadyToSell(item, availableUnits)) {
+      if (
+        !includeUnavailable &&
+        !isSalesInventorySellable({
+          quantity: availableUnits,
+          status: item.status,
+        })
+      ) {
         return false;
       }
 
@@ -258,7 +261,11 @@ export function InventoryBrowser({
         .filter(item => {
           const availableUnits = getAvailableUnits(item);
           return (
-            !selectedItemIds.has(item.id) && isReadyToSell(item, availableUnits)
+            !selectedItemIds.has(item.id) &&
+            isSalesInventorySellable({
+              quantity: availableUnits,
+              status: item.status,
+            })
           );
         })
         .map(item => item.id),
@@ -324,7 +331,10 @@ export function InventoryBrowser({
         return (
           selectedIds.has(item.id) &&
           !selectedItemIds.has(item.id) &&
-          isReadyToSell(item, availableUnits)
+          isSalesInventorySellable({
+            quantity: availableUnits,
+            status: item.status,
+          })
         );
       })
       .map(item => {
@@ -348,7 +358,12 @@ export function InventoryBrowser({
     customQuantity?: number
   ) => {
     const availableUnits = getAvailableUnits(item);
-    if (!isReadyToSell(item, availableUnits)) {
+    if (
+      !isSalesInventorySellable({
+        quantity: availableUnits,
+        status: item.status,
+      })
+    ) {
       toast.error("This batch is not ready to add to the order");
       return;
     }
@@ -565,7 +580,10 @@ export function InventoryBrowser({
                   const alreadyInSheet = isInSheet(item.id);
                   const quickQty = quickQuantities[item.id] || "";
                   const availableUnits = getAvailableUnits(item);
-                  const readyToSell = isReadyToSell(item, availableUnits);
+                  const readyToSell = isSalesInventorySellable({
+                    quantity: availableUnits,
+                    status: item.status,
+                  });
                   const addDisabled = alreadyInSheet || !readyToSell;
                   const detailLine = [
                     item.brand || item.vendor,

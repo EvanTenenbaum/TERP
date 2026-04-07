@@ -8,8 +8,9 @@ import {
 } from "@testing-library/react";
 import { SalesOrderSurface } from "./SalesOrderSurface";
 
-const { mockToastError } = vi.hoisted(() => ({
+const { mockToastError, mockToastInfo } = vi.hoisted(() => ({
   mockToastError: vi.fn(),
+  mockToastInfo: vi.fn(),
 }));
 
 const mockSetLocation = vi.fn();
@@ -57,6 +58,15 @@ let mockInventoryData = [
     status: "LIVE",
   },
 ];
+let mockSavedViewsData: Array<{
+  id: number;
+  name: string;
+  filters: Record<string, unknown>;
+  sort: { field: string; direction: "asc" | "desc" };
+  columnVisibility: Record<string, boolean>;
+  isDefault?: boolean;
+}> = [];
+const gridPropsByTitle = new Map<string, Record<string, unknown>>();
 
 const mockDraftState = {
   clientId: null as number | null,
@@ -123,6 +133,7 @@ vi.mock("./PowersheetGrid", () => ({
     }>;
     rows?: Array<Record<string, unknown>>;
   }) => {
+    gridPropsByTitle.set(title, { title, columnDefs, rows });
     const actionColumn = columnDefs.find(column => column.field === "inOrder");
     const firstRow = rows[0];
     const actionCell =
@@ -182,7 +193,7 @@ vi.mock("@/lib/trpc", () => ({
         })),
       },
       getViews: {
-        useQuery: vi.fn(() => ({ data: [] })),
+        useQuery: vi.fn(() => ({ data: mockSavedViewsData })),
       },
     },
     organizationSettings: {
@@ -209,6 +220,7 @@ vi.mock("wouter", () => ({
 vi.mock("sonner", () => ({
   toast: {
     error: mockToastError,
+    info: mockToastInfo,
     success: vi.fn(),
   },
 }));
@@ -274,6 +286,8 @@ vi.mock("@/components/sales/AdvancedFilters", () => ({
 
 describe("SalesOrderSurface", () => {
   beforeEach(() => {
+    window.sessionStorage.clear();
+    gridPropsByTitle.clear();
     mockInventoryData = [
       {
         id: 11,
@@ -285,6 +299,7 @@ describe("SalesOrderSurface", () => {
         status: "LIVE",
       },
     ];
+    mockSavedViewsData = [];
     mockDraftState.clientId = null;
     mockDraftState.items = [];
     mockDraftState.orderType = "SALE";
@@ -305,6 +320,7 @@ describe("SalesOrderSurface", () => {
     mockSetLocation.mockReset();
     mockBuildDocumentRoute.mockReset();
     mockUseOrderDraft.mockReset();
+    mockToastInfo.mockReset();
     mockUseOrderDraft.mockImplementation(
       (options?: { surfaceVariant?: string }) => {
         const surfaceVariant =
@@ -411,6 +427,174 @@ describe("SalesOrderSurface", () => {
     ).toHaveLength(1);
   });
 
+  it("defaults the order inventory browser to sellable rows only", async () => {
+    mockDraftState.clientId = 7;
+    mockInventoryData = [
+      {
+        id: 11,
+        name: "Blue Dream",
+        retailPrice: 20,
+        basePrice: 10,
+        quantity: 5,
+        appliedRules: [],
+        brand: "Andy Rhan",
+        subcategory: "Indoor",
+        batchSku: "BD-11",
+        status: "LIVE",
+      },
+      {
+        id: 12,
+        name: "Quarantined Cut",
+        retailPrice: 18,
+        basePrice: 9,
+        quantity: 4,
+        appliedRules: [],
+        brand: "Andy Rhan",
+        subcategory: "Indoor",
+        batchSku: "QC-12",
+        status: "QUARANTINED",
+      },
+    ];
+
+    render(<SalesOrderSurface />);
+
+    await waitFor(() => {
+      expect(
+        (
+          gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }> | undefined
+        )?.map(row => row.name)
+      ).toEqual(["Blue Dream"]);
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Available now" })
+    ).toBeInTheDocument();
+  });
+
+  it("applies imported portable cuts and preserves include-unavailable carryover", async () => {
+    mockDraftState.clientId = 7;
+    mockInventoryData = [
+      {
+        id: 11,
+        name: "Blue Dream",
+        retailPrice: 20,
+        basePrice: 10,
+        quantity: 5,
+        appliedRules: [],
+        brand: "Andy Rhan",
+        subcategory: "Indoor",
+        batchSku: "BD-11",
+        status: "LIVE",
+      },
+      {
+        id: 12,
+        name: "Quarantined Cut",
+        retailPrice: 18,
+        basePrice: 9,
+        quantity: 4,
+        appliedRules: [],
+        brand: "Andy Rhan",
+        subcategory: "Indoor",
+        batchSku: "QC-12",
+        status: "QUARANTINED",
+      },
+      {
+        id: 13,
+        name: "Outdoor Value",
+        retailPrice: 14,
+        basePrice: 7,
+        quantity: 10,
+        appliedRules: [],
+        brand: "Westside Farms",
+        subcategory: "Outdoor",
+        batchSku: "OV-13",
+        status: "LIVE",
+      },
+    ];
+    mockSavedViewsData = [
+      {
+        id: 3,
+        name: "Andy Indoor",
+        filters: {
+          search: "",
+          categories: [],
+          brands: ["Andy Rhan"],
+          grades: [],
+          priceMin: null,
+          priceMax: null,
+          strainFamilies: [],
+          vendors: [],
+          inStockOnly: false,
+          includeUnavailable: true,
+        },
+        sort: { field: "name", direction: "asc" },
+        columnVisibility: {
+          category: true,
+          quantity: true,
+          basePrice: true,
+          retailPrice: true,
+          markup: true,
+          grade: false,
+          vendor: true,
+          strain: false,
+        },
+      },
+    ];
+    window.sessionStorage.setItem(
+      "salesCataloguePortableCut",
+      JSON.stringify({
+        clientId: 7,
+        viewId: 3,
+        viewName: "Andy Indoor",
+        filters: {
+          search: "",
+          categories: [],
+          brands: ["Andy Rhan"],
+          grades: [],
+          priceMin: null,
+          priceMax: null,
+          strainFamilies: [],
+          vendors: [],
+          inStockOnly: false,
+          includeUnavailable: true,
+        },
+      })
+    );
+
+    render(<SalesOrderSurface />);
+
+    await waitFor(() => {
+      expect(mockToastInfo).toHaveBeenCalledWith("Imported cut: Andy Indoor");
+      expect(
+        (
+          gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }> | undefined
+        )?.map(row => row.name)
+      ).toEqual(["Blue Dream", "Quarantined Cut"]);
+    });
+
+    expect(screen.getByText("Saved cut: Andy Indoor")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Including unavailable" })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Including unavailable" })
+    );
+
+    await waitFor(() => {
+      expect(
+        (
+          gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }> | undefined
+        )?.map(row => row.name)
+      ).toEqual(["Blue Dream"]);
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Available now" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Include unavailable")).toBeInTheDocument();
+  });
+
   it("clears route hydration params before switching clients", () => {
     mockDraftState.clientId = 7;
     mockDraftState.activeDraftId = 42;
@@ -504,7 +688,7 @@ describe("SalesOrderSurface", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("disables add for non-sellable inventory rows", () => {
+  it("keeps non-sellable rows blocked even when unavailable inventory is shown", async () => {
     mockDraftState.clientId = 7;
     mockInventoryData = [
       {
@@ -520,7 +704,15 @@ describe("SalesOrderSurface", () => {
 
     render(<SalesOrderSurface />);
 
-    expect(screen.getByRole("button", { name: /add/i })).toBeDisabled();
+    expect(
+      (gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }>).length
+    ).toBe(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Available now" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add/i })).toBeDisabled();
+    });
   });
 
   it("applies staged quantity and markup before adding a row", () => {

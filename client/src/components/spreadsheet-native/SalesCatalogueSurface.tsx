@@ -65,8 +65,13 @@ import {
   type ColumnVisibility,
 } from "@/components/sales/types";
 import {
+  buildSalesIdentityDescriptor,
   clearPortableSalesCut,
+  countActiveSalesFilters,
+  getPlainLanguageSalesStatus,
+  isSalesInventorySellable,
   matchesSalesInventoryFilters,
+  NON_SELLABLE_STATUS_NOTES,
   normalizeSalesFilters,
   writePortableSalesCut,
 } from "@/components/sales/filtering";
@@ -114,12 +119,6 @@ const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
     value
   );
-
-function isCatalogueItemSellable(item: PricedInventoryItem): boolean {
-  const availableUnits = Math.max(0, Math.floor(item.quantity || 0));
-  const statusAllowsSale = !item.status || item.status === "LIVE";
-  return statusAllowsSale && availableUnits > 0;
-}
 
 export const escapeCsvField = (value: string) =>
   value.replace(/\r\n|\n|\r/g, " ").replace(/"/g, '""');
@@ -193,26 +192,10 @@ export function buildCatalogueChatText(
   return [
     `Available Now (${cleanedItems.length})`,
     ...cleanedItems.map(item => {
-      const descriptor = buildCatalogueDescriptor(item);
+      const descriptor = buildSalesIdentityDescriptor(item);
       return `• ${item.name}${descriptor ? ` — ${descriptor}` : ""} — ${item.quantity} @ ${formatCurrency(item.retailPrice)}`;
     }),
   ].join("\n");
-}
-
-function buildCatalogueDescriptor(item: {
-  brand?: string | null;
-  vendor?: string | null;
-  category?: string | null;
-  subcategory?: string | null;
-  batchSku?: string | null;
-}) {
-  return [
-    item.brand || item.vendor,
-    item.subcategory || item.category,
-    item.batchSku,
-  ]
-    .filter(value => Boolean(value) && value !== "-")
-    .join(" · ");
 }
 
 function downloadBlob(content: string, type: string, filename: string) {
@@ -240,7 +223,7 @@ function buildPrintableCatalogueHtml({
 }) {
   const itemMarkup = items
     .map(item => {
-      const descriptor = buildCatalogueDescriptor(item);
+      const descriptor = buildSalesIdentityDescriptor(item);
       return `
         <article class="catalogue-row">
           ${
@@ -503,11 +486,10 @@ export function SalesCatalogueSurface() {
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(
     DEFAULT_COLUMN_VISIBILITY
   );
-  const [includeUnavailableInventory, setIncludeUnavailableInventory] =
-    useState(false);
   const [currentViewId, setCurrentViewId] = useState<number | null>(null);
   const [showSaveViewDialog, setShowSaveViewDialog] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const activeFilterCount = countActiveSalesFilters(filters);
 
   // ── dialogs ────────────────────────────────────────────────────────────
   const [showDeleteDraftDialog, setShowDeleteDraftDialog] = useState(false);
@@ -646,7 +628,7 @@ export function SalesCatalogueSurface() {
           return false;
         }
 
-        if (!includeUnavailableInventory && !isCatalogueItemSellable(item)) {
+        if (!filters.includeUnavailable && !isSalesInventorySellable(item)) {
           return false;
         }
 
@@ -699,7 +681,6 @@ export function SalesCatalogueSurface() {
     selectedItemIds,
     checkedInventoryIds,
     filters,
-    includeUnavailableInventory,
     sort,
   ]);
 
@@ -809,6 +790,16 @@ export function SalesCatalogueSurface() {
         headerName: "",
         maxWidth: 28,
         valueGetter: params => params.data?.status ?? "LIVE",
+        tooltipValueGetter: (params: { data?: InventoryBrowserRow }) => {
+          const status = params.data?.status;
+          if (!status || status === "LIVE") {
+            return null;
+          }
+
+          const label = getPlainLanguageSalesStatus(status);
+          const note = NON_SELLABLE_STATUS_NOTES[status];
+          return note ? `${label}: ${note}` : label;
+        },
         cellRenderer: (params: { data?: InventoryBrowserRow }) =>
           params.data &&
           (!params.data.quantity || params.data.status !== "LIVE")
@@ -833,19 +824,39 @@ export function SalesCatalogueSurface() {
             return "";
           }
 
-          const identityMeta = buildCatalogueDescriptor({
+          const identityMeta = buildSalesIdentityDescriptor({
             brand: row.brand,
             subcategory: row.subcategory,
             category: row.category,
             batchSku: row.batchSku,
           });
+          const statusLabel = getPlainLanguageSalesStatus(row.status);
+          const statusNote =
+            row.status && row.status !== "LIVE"
+              ? NON_SELLABLE_STATUS_NOTES[row.status] ?? null
+              : null;
 
           return (
             <div className="flex min-w-0 flex-col py-0.5">
-              <span className="truncate font-medium">{row.name}</span>
+              <div className="flex items-center gap-2">
+                <span className="truncate font-medium">{row.name}</span>
+                {statusNote ? (
+                  <Badge
+                    variant="outline"
+                    className="h-5 rounded-full px-1.5 text-[10px] text-amber-700"
+                  >
+                    {statusLabel}
+                  </Badge>
+                ) : null}
+              </div>
               {identityMeta ? (
                 <span className="truncate text-[10px] text-muted-foreground">
                   {identityMeta}
+                </span>
+              ) : null}
+              {statusNote ? (
+                <span className="truncate text-[10px] text-amber-700">
+                  {statusNote}
                 </span>
               ) : null}
             </div>
@@ -1558,6 +1569,15 @@ export function SalesCatalogueSurface() {
             >
               <ArrowRight className="h-3.5 w-3.5 rotate-90" />
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-2.5 text-xs"
+              disabled={!selectedClientId}
+              onClick={() => setShowAdvancedFilters(prev => !prev)}
+            >
+              Filters{activeFilterCount > 0 ? " •" : ""}
+            </Button>
           </>
         )}
       </div>
@@ -1651,10 +1671,13 @@ export function SalesCatalogueSurface() {
               </Button>
               <Button
                 size="sm"
-                variant={includeUnavailableInventory ? "default" : "outline"}
+                variant={filters.includeUnavailable ? "default" : "outline"}
                 className="h-7 px-2 text-[10px]"
                 onClick={() =>
-                  setIncludeUnavailableInventory(current => !current)
+                  setFilters(current => ({
+                    ...current,
+                    includeUnavailable: !current.includeUnavailable,
+                  }))
                 }
               >
                 Include unavailable

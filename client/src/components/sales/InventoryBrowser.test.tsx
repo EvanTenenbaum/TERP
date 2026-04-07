@@ -272,6 +272,7 @@ describe("InventoryBrowser", () => {
             strainFamilies: [],
             vendors: [],
             inStockOnly: false,
+            includeUnavailable: false,
           },
         }}
         onClearPortableCut={onClearPortableCut}

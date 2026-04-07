@@ -157,6 +157,7 @@ export function AdvancedFilters({
     if (filters.vendors.length > 0) count++;
     if (filters.priceMin !== null || filters.priceMax !== null) count++;
     if (filters.inStockOnly) count++;
+    if (filters.includeUnavailable) count++;
     return count;
   }, [filters]);
 
@@ -189,6 +190,7 @@ export function AdvancedFilters({
       strainFamilies: [],
       vendors: [],
       inStockOnly: false,
+      includeUnavailable: false,
     });
   }, [clearPendingSearchUpdate, onFiltersChange]);
 
@@ -317,6 +319,22 @@ export function AdvancedFilters({
                 className="text-sm cursor-pointer"
               >
                 In Stock Only
+              </Label>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="include-unavailable-filter"
+                checked={filters.includeUnavailable}
+                onCheckedChange={checked =>
+                  onFiltersChange({ ...filters, includeUnavailable: checked })
+                }
+              />
+              <Label
+                htmlFor="include-unavailable-filter"
+                className="text-sm cursor-pointer"
+              >
+                Include unavailable
               </Label>
             </div>
           </div>
@@ -596,6 +614,17 @@ export function AdvancedFilters({
                     className="h-3 w-3 cursor-pointer"
                     onClick={() =>
                       onFiltersChange({ ...filters, inStockOnly: false })
+                    }
+                  />
+                </Badge>
+              )}
+              {filters.includeUnavailable && (
+                <Badge variant="secondary" className="gap-1">
+                  Include unavailable
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() =>
+                      onFiltersChange({ ...filters, includeUnavailable: false })
                     }
                   />
                 </Badge>
