@@ -2,7 +2,7 @@
 
 ## Active Milestone
 
-Planning and tracker normalization.
+TER-1067 reconciliation, proof refresh, and tracker normalization closeout.
 
 ## Current Decisions
 
@@ -31,3 +31,8 @@ None at plan time.
 ## Checkpoint Log
 
 - 2026-04-07: spec package created and aligned to the remaining initiative
+- 2026-04-07: recovered PR 569 onto a clean TER-1067 branch by porting the UX fix commit and deliberately not promoting the competing `docs/initiatives/...` tree to canonical status
+- 2026-04-07: refreshed browser proof for copy-for-chat, overdue invoice contacts, command palette client-name search, orders queue client-name search, and record-payment remaining-balance confirmation
+- 2026-04-07: rebuilt the missing reconciliation, review, analysis, and evidence artifacts under this canonical packet
+- 2026-04-07: wrote back normalized tracker truth - `TER-1067` done, `TER-1058` done, `TER-1062` done, `TER-1054` and `TER-1057` active on the recovery branch, `TER-1064` duplicated into `TER-1048`
+- 2026-04-08: reran merge-gate verification, confirmed `agent:prepare`, `check`, `lint`, touched-surface tests, and `build` on the recovery branch, and reproduced the unrelated repo-wide red failures on a clean `origin/main` worktree before proceeding with the replacement PR path

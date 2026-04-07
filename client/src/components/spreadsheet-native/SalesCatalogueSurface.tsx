@@ -1228,29 +1228,31 @@ export function SalesCatalogueSurface() {
       return;
     }
 
+    if (selectedItems.length === 0) return;
+
     const chatText = buildCatalogueChatText(
-      inventoryRows.map(row => ({
-        name: row.name,
-        quantity: row.quantity,
-        retailPrice: row.retailPrice,
-        brand: row.brand,
-        vendor: row.vendor,
-        category: row.category,
-        subcategory: row.subcategory,
-        batchSku: row.batchSku,
+      selectedItems.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        retailPrice: item.retailPrice,
+        brand: item.brand,
+        vendor: item.vendor,
+        category: item.category,
+        subcategory: item.subcategory,
+        batchSku: item.batchSku,
       }))
     );
 
     try {
       await navigator.clipboard.writeText(chatText);
       toast.success(
-        `Copied ${inventoryRows.length} line${inventoryRows.length === 1 ? "" : "s"} for chat`
+        `Copied ${selectedItems.length} line${selectedItems.length === 1 ? "" : "s"} for chat`
       );
     } catch (error) {
       toast.error("Could not copy this cut for chat");
       console.error("Failed to copy sales catalogue cut", error);
     }
-  }, [inventoryRows]);
+  }, [selectedItems]);
 
   const handleManageClientPricing = useCallback(() => {
     if (!selectedClientId) return;
@@ -1851,7 +1853,12 @@ export function SalesCatalogueSurface() {
                   size="sm"
                   variant="outline"
                   className="h-8 text-[11px]"
-                  disabled={inventoryRows.length === 0}
+                  disabled={selectedItems.length === 0}
+                  title={
+                    selectedItems.length === 0
+                      ? "Add items to your catalogue first"
+                      : undefined
+                  }
                   onClick={() => void handleCopyForChat()}
                 >
                   <Copy className="mr-1 h-3.5 w-3.5" />
