@@ -30,8 +30,7 @@ For TER-1067 specifically, the authoritative evidence index is:
 
 ## Known Limitations
 
-- Current tracker state still reflects the original P2 tickets rather than the new execution-task layer.
-- Some already-landed local seams need tracker reconciliation before the remaining initiative can be considered normalized.
+- `TER-1054` and `TER-1057` now have proof-backed recovery-branch fixes, but they are still not merged to `main`.
 - PR 569's `docs/initiatives/...` files are not on `main`; keeping them and this packet side by side as co-equal systems would create drift, so the canonical repo home stays here unless explicitly changed later.
 
 ## Follow-Ups
