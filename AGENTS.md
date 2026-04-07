@@ -39,6 +39,7 @@ Before broad repo scans, old roadmap reads, or commit-history archaeology, start
 
 ```bash
 # Development
+pnpm agent:prepare   # In local worktrees, link shared TERP node_modules and verify local bins
 pnpm install          # Install dependencies
 pnpm dev              # Start dev server (tsx watch)
 pnpm build            # Production build
@@ -54,6 +55,7 @@ pnpm build            # Build verification
 pnpm test:watch       # Watch mode
 pnpm test:coverage    # With coverage
 pnpm test:e2e         # Playwright E2E
+pnpm qa:human:flows -- --count 40 --seed "$(date +%Y%m%d)"   # Seeded confused-human packet for live browser QA
 
 # Database
 pnpm db:push          # Generate and run migrations
@@ -140,12 +142,12 @@ TERP/
 
 ## Deployment
 
-**Workflow:** `PR` → `main` → `staging` (auto) → verify → `production` (manual)
+**Workflow:** `PR` → `main` (auto-deploy to staging) → verify → `production` (manual)
 
-- Staging auto-deploys when code is pushed to `main`
+- As of March 28, 2026, staging tracks `main` directly and auto-deploys when code is pushed to `main`
 - **Staging URL:** `https://terp-staging-yicld.ondigitalocean.app`
 - Production promotion is manual (Evan only)
-- To skip staging deploy, add `[skip-staging-sync]` to commit message
+- There is no staging-only sync branch or `[skip-staging-sync]` escape hatch in this mode
 
 ```bash
 # Check deployment status

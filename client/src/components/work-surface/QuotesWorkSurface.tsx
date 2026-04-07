@@ -19,7 +19,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -192,6 +193,25 @@ const formatDate = (dateString: string | undefined): string => {
   }
 };
 
+const getQuoteValidUntilDisplay = (
+  validUntil: string | undefined,
+  createdAt: string | undefined
+): string => {
+  if (validUntil) {
+    return formatDate(validUntil);
+  }
+
+  if (createdAt) {
+    try {
+      return format(addDays(new Date(createdAt), 30), "MMM d, yyyy");
+    } catch {
+      return "30 days from creation";
+    }
+  }
+
+  return "30 days from creation";
+};
+
 const getEffectiveQuoteStatus = (quote: Pick<Quote, "quoteStatus">) =>
   quote.quoteStatus ?? "UNSENT";
 
@@ -295,11 +315,11 @@ function QuoteInspectorContent({
           <InspectorField label="Created">
             <p>{formatDate(quote.createdAt)}</p>
           </InspectorField>
-          {quote.validUntil && (
-            <InspectorField label="Valid Until">
-              <p>{formatDate(quote.validUntil)}</p>
-            </InspectorField>
-          )}
+          <InspectorField label="Valid Until">
+            <p>
+              {getQuoteValidUntilDisplay(quote.validUntil, quote.createdAt)}
+            </p>
+          </InspectorField>
         </div>
       </InspectorSection>
 
@@ -507,6 +527,22 @@ export function QuotesWorkSurface() {
     () => displayQuotes.find(q => q.id === selectedQuoteId) || null,
     [displayQuotes, selectedQuoteId]
   );
+  const quoteEmptyStateAction = useMemo(() => {
+    if (search || statusFilter !== "ALL") {
+      return {
+        label: "Clear Filters",
+        onClick: () => {
+          setSearch("");
+          setStatusFilter("ALL");
+        },
+      };
+    }
+
+    return {
+      label: "Create Quote",
+      onClick: () => setLocation(buildQuoteComposerPath()),
+    };
+  }, [search, setLocation, statusFilter]);
 
   // Statistics
   const stats = useMemo(
@@ -725,15 +761,16 @@ export function QuotesWorkSurface() {
             </div>
           ) : displayQuotes.length === 0 ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="font-medium">No quotes found</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {search
-                    ? "Try adjusting your search"
-                    : "Create your first quote"}
-                </p>
-              </div>
+              <EmptyState
+                variant="reports"
+                title="No quotes found"
+                description={
+                  search || statusFilter !== "ALL"
+                    ? "No quotes match the current filters. Clear them to see the full registry again."
+                    : "Create the first quote here so sales can send pricing without leaving the workspace."
+                }
+                action={quoteEmptyStateAction}
+              />
             </div>
           ) : (
             <Table>
@@ -769,7 +806,12 @@ export function QuotesWorkSurface() {
                     </TableCell>
                     <TableCell>{getClientName(quote.clientId)}</TableCell>
                     <TableCell>{formatDate(quote.createdAt)}</TableCell>
-                    <TableCell>{formatDate(quote.validUntil)}</TableCell>
+                    <TableCell>
+                      {getQuoteValidUntilDisplay(
+                        quote.validUntil,
+                        quote.createdAt
+                      )}
+                    </TableCell>
                     <TableCell>
                       <QuoteStatusBadge status={quote.quoteStatus} />
                     </TableCell>

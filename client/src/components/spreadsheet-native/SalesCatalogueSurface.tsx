@@ -66,7 +66,6 @@ import {
 } from "@/components/sales/types";
 import {
   clearPortableSalesCut,
-  countActiveSalesFilters,
   matchesSalesInventoryFilters,
   normalizeSalesFilters,
   writePortableSalesCut,
@@ -1409,7 +1408,6 @@ export function SalesCatalogueSurface() {
   }, [saveCatalogueDraft]);
 
   // ── active filter count badge ─────────────────────────────────────────
-  const activeFilterCount = countActiveSalesFilters(filters);
   const draftNameMissingForSave =
     selectedClientId !== null &&
     selectedItems.length > 0 &&
@@ -1541,18 +1539,22 @@ export function SalesCatalogueSurface() {
             <Button
               size="sm"
               variant="outline"
-              className="h-6 px-2 text-[10px]"
-              onClick={() => setShowSaveViewDialog(true)}
+              className="h-8 px-2.5 text-xs"
+              disabled={!selectedClientId || draft.isSaving}
+              onClick={draft.saveDraft}
             >
-              Save View
+              <Save className="mr-1 h-3.5 w-3.5" />
+              {draft.isSaving ? "Saving..." : "Save Draft"}
             </Button>
             <Button
               size="sm"
               variant="outline"
-              className="h-6 px-2 text-[10px]"
-              onClick={() => setShowAdvancedFilters(prev => !prev)}
+              className="h-8 px-2.5 text-xs"
+              disabled={!selectedClientId}
+              onClick={handleRefresh}
+              aria-label="Refresh inventory"
             >
-              Filters{activeFilterCount > 0 ? " \u25cf" : ""}
+              <ArrowRight className="h-3.5 w-3.5 rotate-90" />
             </Button>
           </>
         )}
@@ -1924,11 +1926,63 @@ export function SalesCatalogueSurface() {
           </div>
         </div>
       ) : (
-        <div className="text-center py-16 text-muted-foreground">
-          <FileText className="h-10 w-10 mx-auto mb-3 opacity-40" />
-          <p className="text-sm">
-            Select a client to start building a catalogue
-          </p>
+        <div className="grid gap-4 px-1 py-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+          <div className="flex min-h-[240px] flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-muted/20 px-6 text-center text-muted-foreground">
+            <FileText className="mb-3 h-10 w-10 opacity-40" />
+            <p className="text-sm">
+              Select a client to start building a catalogue
+            </p>
+          </div>
+          <div className="rounded-md border border-border/70 bg-card/80 p-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Next Step
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Load or finish a catalogue, then turn it into an order, a quote,
+                or a live selling session.
+              </p>
+            </div>
+
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-[11px]"
+                disabled={!draft.canConvert || draft.isConverting}
+                onClick={() => void navigateToOrder(true)}
+              >
+                &rarr; Sales Order
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-[11px]"
+                disabled={!draft.canConvert || draft.isConverting}
+                onClick={() => void navigateToOrder(true, "quote")}
+              >
+                &rarr; Quote
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-[11px] sm:col-span-2"
+                disabled={!draft.canGoLive || liveSessionMutation.isPending}
+                onClick={() => {
+                  if (!draft.canGoLive) return;
+                  if (!draft.lastSavedSheetId) {
+                    toast.error("Save the catalogue before going live");
+                    return;
+                  }
+                  liveSessionMutation.mutate({
+                    sheetId: draft.lastSavedSheetId,
+                  });
+                }}
+              >
+                Live
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 

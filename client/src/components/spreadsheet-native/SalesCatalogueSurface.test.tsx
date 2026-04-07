@@ -367,10 +367,16 @@ describe("SalesCatalogueSurface", () => {
 
     render(<SalesCatalogueSurface />);
 
-    expect(screen.getByRole("button", { name: "Live" })).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: "→ Sales Order" })
-    ).not.toBeDisabled();
+      screen
+        .getAllByRole("button", { name: "Live" })
+        .every(button => button.disabled)
+    ).toBe(true);
+    expect(
+      screen
+        .getAllByRole("button", { name: "→ Sales Order" })
+        .every(button => !button.disabled)
+    ).toBe(true);
   });
 
   it("clears stale inventory selection when filters hide the selected row", async () => {
@@ -449,8 +455,10 @@ describe("SalesCatalogueSurface", () => {
     fireEvent.click(screen.getByText("Select Client 1"));
 
     expect(
-      screen.getByRole("button", { name: /^Saving\.\.\.$/ })
-    ).toBeDisabled();
+      screen
+        .getAllByRole("button", { name: /^Saving\.\.\.$/ })
+        .every(button => button.disabled)
+    ).toBe(true);
   });
 
   it("still exports through a blob download flow", async () => {

@@ -56,11 +56,11 @@ export const INVENTORY_WORKSPACE = {
   title: "Inventory",
   homePath: "/inventory",
   description:
-    "Manage inventory, receiving, shipping, photography, and samples from one primary operational workspace.",
+    "Manage inventory, product intake, shipping, photography, and samples from one primary operational workspace.",
   tabs: [
     { value: "inventory", label: "Inventory" },
-    { value: "intake", label: "Intake" },
-    { value: "receiving", label: "Receiving" },
+    { value: "intake", label: "Direct Intake" },
+    { value: "receiving", label: "Product Intake" },
     { value: "shipping", label: "Shipping" },
     { value: "photography", label: "Photography" },
     { value: "samples", label: "Samples" },

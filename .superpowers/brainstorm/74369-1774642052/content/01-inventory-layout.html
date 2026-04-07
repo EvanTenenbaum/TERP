@@ -1,0 +1,280 @@
+<h2>Phase 1: Inventory Management — Layout Approach</h2>
+<p class="subtitle">Single dominant grid with inline support modules below. Gallery toggle preserved.</p>
+
+<div class="mockup">
+  <div class="mockup-header">InventoryManagementSurface.tsx — Grid Mode</div>
+  <div class="mockup-body" style="font-family: system-ui; font-size: 11px; background: #fafafa;">
+
+    <!-- Toolbar -->
+    <div style="display:flex; align-items:center; gap:6px; padding:4px 8px; background:#fff; border-bottom:1px solid #e5e7eb;">
+      <span style="font-weight:600; font-size:12px;">Inventory</span>
+      <div style="display:flex; gap:4px; margin-left:8px;">
+        <span style="background:#f0fdf4; color:#166534; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:500;">432 batches</span>
+        <span style="background:#eff6ff; color:#1e40af; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:500;">12,847 units</span>
+        <span style="background:#fefce8; color:#854d0e; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:500;">$1.2M value</span>
+        <span style="background:#f0fdf4; color:#166534; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:500;">318 live</span>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="display:flex; gap:4px; align-items:center;">
+        <div style="display:inline-flex; border:1px solid #d1d5db; border-radius:4px; overflow:hidden;">
+          <span style="padding:2px 8px; background:#1e40af; color:white; font-size:9px; font-weight:500;">Grid</span>
+          <span style="padding:2px 8px; background:white; color:#6b7280; font-size:9px;">Gallery</span>
+        </div>
+        <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white;">Export CSV</span>
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div style="display:flex; align-items:center; gap:6px; padding:3px 8px; background:#f9fafb; border-bottom:1px solid #e5e7eb;">
+      <input placeholder="Search SKU, product, supplier..." style="font-size:10px; padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; width:220px; background:white;" />
+      <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white;">Status ▾</span>
+      <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white;">Filters ▾</span>
+      <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white;">Saved Views ▾</span>
+      <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white;">Save View</span>
+      <div style="flex:1;"></div>
+      <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white;">Adjust Qty</span>
+      <span style="padding:2px 6px; border:1px solid #e5e7eb; border-radius:4px; font-size:9px; background:#f3f4f6; color:#9ca3af;">Bulk Actions ▾</span>
+    </div>
+
+    <!-- Main Grid -->
+    <div style="border:1px solid #e5e7eb; border-radius:6px; margin:6px; background:white; overflow:hidden;">
+      <div style="padding:4px 8px; background:#f8fafc; border-bottom:1px solid #e5e7eb; display:flex; align-items:center;">
+        <span style="font-size:10px; font-weight:500; color:#374151;">Inventory</span>
+        <span style="font-size:9px; color:#9ca3af; margin-left:8px;">432 rows · status editing enabled</span>
+      </div>
+      <table style="width:100%; border-collapse:collapse; font-size:10px;">
+        <thead>
+          <tr style="background:#f8fafc; border-bottom:1px solid #e5e7eb;">
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:90px;">SKU</th>
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280;">Product</th>
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:80px;">Supplier</th>
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:70px;">Grade</th>
+            <th style="padding:3px 6px; text-align:center; font-weight:500; color:#6b7280; width:90px;">Status</th>
+            <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:65px;">On Hand</th>
+            <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:65px;">Avail</th>
+            <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:65px;">COGS</th>
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:50px;">Age</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #f3f4f6; background:#eff6ff;">
+            <td style="padding:3px 6px; font-weight:500;">SKU-1042</td>
+            <td style="padding:3px 6px;">Wedding Cake · Indoor · Tops/Colas</td>
+            <td style="padding:3px 6px;">GreenLeaf</td>
+            <td style="padding:3px 6px;"><span style="background:#f0fdf4; padding:0 4px; border-radius:2px; font-size:9px;">AAA</span></td>
+            <td style="padding:3px 6px; text-align:center;"><span style="background:#dcfce7; color:#166534; padding:1px 6px; border-radius:3px; font-size:9px; border-left:2px solid #2563eb;">Live</span></td>
+            <td style="padding:3px 6px; text-align:right;">1,200</td>
+            <td style="padding:3px 6px; text-align:right;">980</td>
+            <td style="padding:3px 6px; text-align:right;">$2.40</td>
+            <td style="padding:3px 6px;"><span style="font-size:9px; color:#6b7280;">3d</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid #f3f4f6;">
+            <td style="padding:3px 6px; font-weight:500;">SKU-1038</td>
+            <td style="padding:3px 6px;">Gelato · Deps · Smalls</td>
+            <td style="padding:3px 6px;">SunFarm</td>
+            <td style="padding:3px 6px;"><span style="background:#fef3c7; padding:0 4px; border-radius:2px; font-size:9px;">AA</span></td>
+            <td style="padding:3px 6px; text-align:center;"><span style="background:#dcfce7; color:#166534; padding:1px 6px; border-radius:3px; font-size:9px;">Live</span></td>
+            <td style="padding:3px 6px; text-align:right;">450</td>
+            <td style="padding:3px 6px; text-align:right; color:#dc2626;">42</td>
+            <td style="padding:3px 6px; text-align:right;">$1.80</td>
+            <td style="padding:3px 6px;"><span style="font-size:9px; color:#f59e0b;">12d</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid #f3f4f6;">
+            <td style="padding:3px 6px; font-weight:500;">SKU-1035</td>
+            <td style="padding:3px 6px;">OG Kush · Indoor · Trim</td>
+            <td style="padding:3px 6px;">MountainCo</td>
+            <td style="padding:3px 6px;"><span style="background:#e5e7eb; padding:0 4px; border-radius:2px; font-size:9px;">A</span></td>
+            <td style="padding:3px 6px; text-align:center;"><span style="background:#fef9c3; color:#854d0e; padding:1px 6px; border-radius:3px; font-size:9px;">On Hold</span></td>
+            <td style="padding:3px 6px; text-align:right;">800</td>
+            <td style="padding:3px 6px; text-align:right;">0</td>
+            <td style="padding:3px 6px; text-align:right;">$1.20</td>
+            <td style="padding:3px 6px;"><span style="font-size:9px; color:#dc2626;">28d</span></td>
+          </tr>
+          <tr style="border-bottom:1px solid #f3f4f6; opacity:0.5;">
+            <td style="padding:3px 6px; font-weight:500;">SKU-1029</td>
+            <td style="padding:3px 6px;">Blue Dream · Outdoor · Larf</td>
+            <td style="padding:3px 6px;">ValleyGrn</td>
+            <td style="padding:3px 6px;"><span style="background:#e5e7eb; padding:0 4px; border-radius:2px; font-size:9px;">B</span></td>
+            <td style="padding:3px 6px; text-align:center;"><span style="background:#fee2e2; color:#991b1b; padding:1px 6px; border-radius:3px; font-size:9px;">Sold Out</span></td>
+            <td style="padding:3px 6px; text-align:right;">0</td>
+            <td style="padding:3px 6px; text-align:right;">0</td>
+            <td style="padding:3px 6px; text-align:right;">$0.90</td>
+            <td style="padding:3px 6px;"><span style="font-size:9px; color:#dc2626;">45d</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="padding:3px 8px; background:#f8fafc; border-top:1px solid #e5e7eb; font-size:9px; color:#9ca3af;">
+        432 rows · 4 saved views · status editing enabled
+      </div>
+    </div>
+
+    <!-- Inline Adjustment Panel (when active) -->
+    <div style="border:1px solid #2563eb; border-radius:6px; margin:0 6px 6px; background:#eff6ff; overflow:hidden;">
+      <div style="padding:4px 8px; background:#dbeafe; display:flex; align-items:center; gap:8px;">
+        <span style="font-size:10px; font-weight:600; color:#1e40af;">Adjust Quantity — SKU-1042 · Wedding Cake</span>
+        <div style="flex:1;"></div>
+        <span style="font-size:9px; color:#6b7280;">Current: 1,200 on hand</span>
+      </div>
+      <div style="padding:8px; display:flex; gap:12px; align-items:flex-start;">
+        <div style="display:flex; flex-direction:column; gap:2px;">
+          <span style="font-size:9px; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em;">Adjustment</span>
+          <input value="-50" style="width:80px; padding:3px 6px; border:1px solid #2563eb; border-radius:4px; font-size:11px; background:white;" />
+        </div>
+        <div style="display:flex; flex-direction:column; gap:2px; flex:1;">
+          <span style="font-size:9px; color:#6b7280; text-transform:uppercase; letter-spacing:0.05em;">Context</span>
+          <div style="display:flex; gap:4px; align-items:center;">
+            <div style="display:flex; gap:3px; flex-wrap:wrap;">
+              <span style="padding:2px 6px; border:1px solid #93c5fd; border-radius:3px; font-size:9px; background:#dbeafe; color:#1e40af; cursor:pointer;">Recount</span>
+              <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:3px; font-size:9px; background:white; color:#6b7280; cursor:pointer;">Damage</span>
+              <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:3px; font-size:9px; background:white; color:#6b7280; cursor:pointer;">Sample</span>
+              <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:3px; font-size:9px; background:white; color:#6b7280; cursor:pointer;">Transfer</span>
+              <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:3px; font-size:9px; background:white; color:#6b7280; cursor:pointer;">Shrinkage</span>
+            </div>
+            <input placeholder="Additional notes..." style="flex:1; padding:3px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:10px; background:white;" />
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:2px; align-items:flex-end; padding-top:12px;">
+          <div style="display:flex; gap:4px;">
+            <span style="padding:3px 10px; border:1px solid #d1d5db; border-radius:4px; font-size:10px; background:white; cursor:pointer;">Cancel</span>
+            <span style="padding:3px 10px; border-radius:4px; font-size:10px; background:#1e40af; color:white; cursor:pointer;">Apply −50</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Selected Batch Summary Cards -->
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; margin:0 6px 6px;">
+      <div style="border:1px solid #e5e7eb; border-radius:6px; background:white; padding:6px 8px;">
+        <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:#9ca3af;">Product</div>
+        <div style="font-size:11px; font-weight:500; margin-top:2px;">Wedding Cake · Indoor · Tops/Colas</div>
+      </div>
+      <div style="border:1px solid #e5e7eb; border-radius:6px; background:white; padding:6px 8px;">
+        <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:#9ca3af;">Stock</div>
+        <div style="font-size:11px; font-weight:500; margin-top:2px;">1,200 on hand · 980 available · 220 reserved</div>
+      </div>
+      <div style="border:1px solid #e5e7eb; border-radius:6px; background:white; padding:6px 8px;">
+        <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:#9ca3af;">Valuation</div>
+        <div style="font-size:11px; font-weight:500; margin-top:2px;">$2.40/unit · $2,880 total</div>
+      </div>
+      <div style="border:1px solid #e5e7eb; border-radius:6px; background:white; padding:6px 8px;">
+        <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:#9ca3af;">Location</div>
+        <div style="font-size:11px; font-weight:500; margin-top:2px; color:#2563eb; cursor:pointer; text-decoration:underline;">3 locations →</div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div style="display:flex; align-items:center; padding:3px 8px; background:#f8fafc; border-top:1px solid #e5e7eb; font-size:9px; color:#9ca3af;">
+      <span>12,847 units · 432 batches · $1.2M value · 318 live</span>
+      <div style="flex:1;"></div>
+      <span style="display:flex; gap:8px;">
+        <span>Click select</span>
+        <span>⌘K search</span>
+        <span>⌘C copy</span>
+        <span>⌘A select all</span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:16px;"></div>
+
+<div class="mockup">
+  <div class="mockup-header">InventoryManagementSurface.tsx — Gallery Mode</div>
+  <div class="mockup-body" style="font-family: system-ui; font-size: 11px; background: #fafafa;">
+
+    <!-- Same Toolbar (with Gallery active) -->
+    <div style="display:flex; align-items:center; gap:6px; padding:4px 8px; background:#fff; border-bottom:1px solid #e5e7eb;">
+      <span style="font-weight:600; font-size:12px;">Inventory</span>
+      <div style="display:flex; gap:4px; margin-left:8px;">
+        <span style="background:#f0fdf4; color:#166534; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:500;">432 batches</span>
+        <span style="background:#eff6ff; color:#1e40af; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:500;">12,847 units</span>
+      </div>
+      <div style="flex:1;"></div>
+      <div style="display:inline-flex; border:1px solid #d1d5db; border-radius:4px; overflow:hidden;">
+        <span style="padding:2px 8px; background:white; color:#6b7280; font-size:9px;">Grid</span>
+        <span style="padding:2px 8px; background:#1e40af; color:white; font-size:9px; font-weight:500;">Gallery</span>
+      </div>
+    </div>
+
+    <!-- Same Action Bar -->
+    <div style="display:flex; align-items:center; gap:6px; padding:3px 8px; background:#f9fafb; border-bottom:1px solid #e5e7eb;">
+      <input placeholder="Search SKU, product, supplier..." style="font-size:10px; padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; width:220px; background:white;" />
+      <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white;">Status ▾</span>
+      <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white;">Filters ▾</span>
+      <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white;">Saved Views ▾</span>
+    </div>
+
+    <!-- Gallery Grid -->
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; padding:8px;">
+      <!-- Card 1 -->
+      <div style="border:1px solid #e5e7eb; border-radius:6px; background:white; overflow:hidden;">
+        <div style="background:#f3f4f6; height:100px; display:flex; align-items:center; justify-content:center;">
+          <div style="width:60px; height:60px; border-radius:8px; background:#d1d5db; display:flex; align-items:center; justify-content:center; font-size:20px;">🌿</div>
+        </div>
+        <div style="padding:6px 8px;">
+          <div style="font-size:10px; font-weight:600;">SKU-1042</div>
+          <div style="font-size:10px; color:#374151;">Wedding Cake · Indoor</div>
+          <div style="font-size:9px; color:#6b7280; margin-top:2px;">GreenLeaf · AAA</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+            <span style="background:#dcfce7; color:#166534; padding:1px 6px; border-radius:3px; font-size:9px;">Live</span>
+            <span style="font-size:10px; font-weight:500;">980 avail</span>
+          </div>
+          <div style="display:flex; gap:4px; margin-top:6px;">
+            <span style="flex:1; text-align:center; padding:2px; border:1px solid #d1d5db; border-radius:3px; font-size:9px; cursor:pointer;">Open</span>
+            <span style="flex:1; text-align:center; padding:2px; border:1px solid #d1d5db; border-radius:3px; font-size:9px; cursor:pointer;">Adjust</span>
+          </div>
+        </div>
+      </div>
+      <!-- Card 2 -->
+      <div style="border:1px solid #e5e7eb; border-radius:6px; background:white; overflow:hidden;">
+        <div style="background:#f3f4f6; height:100px; display:flex; align-items:center; justify-content:center;">
+          <div style="width:60px; height:60px; border-radius:8px; background:#d1d5db; display:flex; align-items:center; justify-content:center; font-size:20px;">🌿</div>
+        </div>
+        <div style="padding:6px 8px;">
+          <div style="font-size:10px; font-weight:600;">SKU-1038</div>
+          <div style="font-size:10px; color:#374151;">Gelato · Deps · Smalls</div>
+          <div style="font-size:9px; color:#6b7280; margin-top:2px;">SunFarm · AA</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+            <span style="background:#dcfce7; color:#166534; padding:1px 6px; border-radius:3px; font-size:9px;">Live</span>
+            <span style="font-size:10px; font-weight:500; color:#dc2626;">42 avail</span>
+          </div>
+          <div style="display:flex; gap:4px; margin-top:6px;">
+            <span style="flex:1; text-align:center; padding:2px; border:1px solid #d1d5db; border-radius:3px; font-size:9px; cursor:pointer;">Open</span>
+            <span style="flex:1; text-align:center; padding:2px; border:1px solid #d1d5db; border-radius:3px; font-size:9px; cursor:pointer;">Adjust</span>
+          </div>
+        </div>
+      </div>
+      <!-- Card 3 -->
+      <div style="border:1px solid #e5e7eb; border-radius:6px; background:white; overflow:hidden;">
+        <div style="background:#f3f4f6; height:100px; display:flex; align-items:center; justify-content:center;">
+          <div style="width:60px; height:60px; border-radius:8px; background:#d1d5db; display:flex; align-items:center; justify-content:center; font-size:20px;">🌿</div>
+        </div>
+        <div style="padding:6px 8px;">
+          <div style="font-size:10px; font-weight:600;">SKU-1035</div>
+          <div style="font-size:10px; color:#374151;">OG Kush · Indoor · Trim</div>
+          <div style="font-size:9px; color:#6b7280; margin-top:2px;">MountainCo · A</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px;">
+            <span style="background:#fef9c3; color:#854d0e; padding:1px 6px; border-radius:3px; font-size:9px;">On Hold</span>
+            <span style="font-size:10px; font-weight:500;">0 avail</span>
+          </div>
+          <div style="display:flex; gap:4px; margin-top:6px;">
+            <span style="flex:1; text-align:center; padding:2px; border:1px solid #d1d5db; border-radius:3px; font-size:9px; cursor:pointer;">Open</span>
+            <span style="flex:1; text-align:center; padding:2px; border:1px solid #d1d5db; border-radius:3px; font-size:9px; cursor:pointer;">Adjust</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:20px;">
+  <h3>Key Layout Decisions</h3>
+  <div style="font-size:13px; line-height:1.6; color:#374151; max-width:700px;">
+    <p><strong>Dashboard stats</strong> live in the toolbar as compact badges (batches, units, value, live count) — always visible, zero vertical cost.</p>
+    <p><strong>Quantity adjustment</strong> appears as an inline panel below the grid when triggered — quick-tags for reason + free text for notes, all in one line.</p>
+    <p><strong>Batch summary cards</strong> (4-up) appear below the grid when a row is selected — product, stock, valuation, and a "locations" link that opens the inspector to the locations section.</p>
+    <p><strong>Locations</strong> are accessed via the inspector panel (click "3 locations →" in the summary card). Not inline — saves space for the common case where you don't need to see locations.</p>
+    <p><strong>Gallery/Grid toggle</strong> in the toolbar — same toolbar, filters, and saved views apply to both modes. Gallery shows product images, key metrics, and quick actions per card.</p>
+    <p><strong>Inspector panel</strong> preserved for deep batch context — full details, status change, locations sub-grid, audit events. Opens on demand.</p>
+  </div>
+</div>

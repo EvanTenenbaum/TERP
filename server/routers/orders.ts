@@ -32,7 +32,7 @@ import {
   type Batch,
   type OrderLineItem,
 } from "../../drizzle/schema";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, sql, asc } from "drizzle-orm";
 import { safeInArray } from "../lib/sqlSafety";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
@@ -54,10 +54,13 @@ import {
 import { getCompatibleBatchSelect } from "../lib/batchColumnCompatibility";
 import { resolveBatchCogs } from "../cogsCalculator";
 import { validateTransition } from "../services/orderStateMachine";
+import { resolveQuoteValidUntilDate } from "../lib/quoteValidity";
 
 // ============================================================================
-// BUG-502: In-memory rate limiting for confirm endpoint
-// Tracks timestamps of confirm calls per user to enforce 10 confirms/minute limit
+// Process-local confirm throttling.
+// This reduces accidental duplicate confirms on a single app instance, but it
+// is not a shared cross-instance guarantee. A distributed limiter is still
+// required for true production-wide enforcement.
 // ============================================================================
 const confirmRateLimitMap = new Map<number, number[]>();
 const CONFIRM_RATE_LIMIT = 10; // max confirms per minute
@@ -102,12 +105,17 @@ function checkConfirmRateLimit(userId: number): void {
 
 const lineItemInputSchema = z.object({
   batchId: z.number(),
+  batchSku: z.string().optional(),
+  productId: z.number().optional(),
   productDisplayName: z.string().optional(),
   quantity: z.number().positive("Quantity must be greater than 0"),
   isSample: z.boolean().default(false),
   // ORD-002: COGS must be non-negative
   cogsPerUnit: z.number().nonnegative("COGS per unit cannot be negative"),
   originalCogsPerUnit: z.number().nonnegative().optional(),
+  cogsMode: z.enum(["FIXED", "RANGE"]).optional(),
+  unitCogsMin: z.number().nonnegative().nullable().optional(),
+  unitCogsMax: z.number().nonnegative().nullable().optional(),
   effectiveCogsBasis: z
     .enum(["LOW", "MID", "HIGH", "MANUAL"])
     .optional()
@@ -122,6 +130,17 @@ const lineItemInputSchema = z.object({
   isCogsOverridden: z.boolean().default(false),
   cogsOverrideReason: z.string().optional(),
   isMarginOverridden: z.boolean().default(false),
+  marginSource: z.enum(["CUSTOMER_PROFILE", "DEFAULT", "MANUAL"]).optional(),
+  profilePriceAdjustmentPercent: z.number().nullable().optional(),
+  appliedRules: z
+    .array(
+      z.object({
+        ruleId: z.number(),
+        ruleName: z.string(),
+        adjustment: z.string(),
+      })
+    )
+    .optional(),
 });
 
 const orderAdjustmentSchema = z.object({
@@ -147,10 +166,28 @@ const createOrderInputSchema = z.object({
   paymentTerms: z
     .enum(["NET_7", "NET_15", "NET_30", "COD", "PARTIAL", "CONSIGNMENT"])
     .optional(),
+  shipping: z.number().min(0).optional(),
   cashPayment: z.number().optional(),
 });
 
 type DraftLineItemInput = z.infer<typeof lineItemInputSchema>;
+
+type PersistedDraftItemMetadata = Pick<
+  DraftLineItemInput,
+  | "batchId"
+  | "batchSku"
+  | "productId"
+  | "productDisplayName"
+  | "quantity"
+  | "isSample"
+  | "cogsMode"
+  | "unitCogsMin"
+  | "unitCogsMax"
+  | "profilePriceAdjustmentPercent"
+  | "appliedRules"
+> & {
+  unitPrice?: number;
+};
 
 type DraftBatchPricingContext = Pick<
   Batch,
@@ -175,6 +212,74 @@ export function buildDraftPricingLookupOptions(
     grade: batchContext.batchGrade ?? undefined,
     vendor: batchContext.supplierName ?? undefined,
   };
+}
+
+function buildPersistedDraftItems(
+  lineItems: Array<
+    DraftLineItemInput & {
+      unitPrice: number;
+    }
+  >
+): PersistedDraftItemMetadata[] {
+  return lineItems.map(item => ({
+    batchId: item.batchId,
+    batchSku: item.batchSku,
+    productId: item.productId,
+    productDisplayName: item.productDisplayName,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    isSample: item.isSample,
+    cogsMode: item.cogsMode,
+    unitCogsMin: item.unitCogsMin ?? null,
+    unitCogsMax: item.unitCogsMax ?? null,
+    profilePriceAdjustmentPercent: item.profilePriceAdjustmentPercent ?? null,
+    appliedRules: item.appliedRules ?? [],
+  }));
+}
+
+export function buildPersistedDraftItemKey(
+  batchId: number,
+  isSample: boolean
+): string {
+  return `${batchId}:${isSample ? "sample" : "regular"}`;
+}
+
+export function parsePersistedDraftItems(
+  items: unknown
+): Map<string, PersistedDraftItemMetadata[]> {
+  if (!Array.isArray(items)) {
+    return new Map();
+  }
+
+  const persistedItems = items.filter(
+    (item): item is PersistedDraftItemMetadata =>
+      typeof item === "object" &&
+      item !== null &&
+      typeof (item as PersistedDraftItemMetadata).batchId === "number"
+  );
+
+  const lookup = new Map<string, PersistedDraftItemMetadata[]>();
+  for (const item of persistedItems) {
+    const key = buildPersistedDraftItemKey(
+      item.batchId,
+      Boolean(item.isSample)
+    );
+    const existing = lookup.get(key);
+    if (existing) {
+      existing.push(item);
+    } else {
+      lookup.set(key, [item]);
+    }
+  }
+
+  return lookup;
+}
+
+export function isOrderAlreadyConfirmed(order: {
+  isDraft: boolean;
+  confirmedAt: Date | null;
+}): boolean {
+  return !order.isDraft && order.confirmedAt !== null;
 }
 
 async function getDraftBatchPricingContext(
@@ -204,7 +309,10 @@ async function getDraftBatchPricingContext(
     .then(rows => rows[0]);
 
   if (!batchContext) {
-    throw new Error(`Batch ${batchId} not found`);
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: `Batch ${batchId} not found`,
+    });
   }
 
   return batchContext;
@@ -1001,6 +1109,8 @@ export const ordersRouter = router({
         lineItemsWithPrices,
         input.orderLevelAdjustment
       );
+      const shipping = input.shipping ?? 0;
+      const orderTotal = totals.finalTotal + shipping;
 
       // Validate order
       const validation = orderValidationService.validateOrder({
@@ -1014,20 +1124,23 @@ export const ordersRouter = router({
           marginPercent: item.marginPercent,
           isSample: item.isSample,
         })),
-        finalTotal: totals.finalTotal,
+        finalTotal: orderTotal,
         overallMarginPercent: totals.avgMarginPercent,
       });
 
-      // Generate order number
-      const orderNumber = await ordersDb.generateOrderNumber(
-        input.orderType,
-        true
-      );
       // paymentTerms is NOT NULL in the orders table; ensure draft paths always persist a valid value.
       const resolvedPaymentTerms = input.paymentTerms || "NET_30";
+      const resolvedValidUntil =
+        input.orderType === "QUOTE"
+          ? resolveQuoteValidUntilDate(input.validUntil)
+          : null;
 
       // Create order + line items atomically
-      const { orderId } = await withTransaction(async tx => {
+      const { orderId, orderNumber } = await withTransaction(async tx => {
+        const orderNumber = await ordersDb.generateOrderNumber(
+          input.orderType,
+          true
+        );
         const [orderResult] = await tx.insert(orders).values({
           orderNumber,
           orderType: input.orderType,
@@ -1036,19 +1149,14 @@ export const ordersRouter = router({
           isDraft: true,
           referredByClientId: input.referredByClientId ?? null,
           isReferralOrder: Boolean(input.referredByClientId),
-          items: JSON.stringify(
-            lineItemsWithPrices.map(item => ({
-              batchId: item.batchId,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              isSample: item.isSample,
-            }))
-          ),
-          total: totals.finalTotal.toString(),
+          items: JSON.stringify(buildPersistedDraftItems(lineItemsWithPrices)),
+          total: orderTotal.toString(),
           subtotal: totals.subtotal.toString(),
+          shipping: shipping.toString(),
+          showAdjustmentOnDocument: input.showAdjustmentOnDocument,
           avgMarginPercent: totals.avgMarginPercent.toString(),
           notes: input.notes || null,
-          validUntil: input.validUntil ? new Date(input.validUntil) : null,
+          validUntil: resolvedValidUntil,
           paymentTerms: resolvedPaymentTerms,
           cashPayment: input.cashPayment?.toString() || null,
           createdBy: userId,
@@ -1092,7 +1200,7 @@ export const ordersRouter = router({
           )
         );
 
-        return { orderId: newOrderId };
+        return { orderId: newOrderId, orderNumber };
       });
 
       // Log audit entry (outside transaction — non-critical side effect)
@@ -1100,14 +1208,17 @@ export const ordersRouter = router({
         orderType: input.orderType,
         clientId: input.clientId,
         lineItemCount: lineItemsWithPrices.length,
-        total: totals.finalTotal,
+        total: orderTotal,
       });
 
       return {
         orderId,
         orderNumber,
         version: 1,
-        totals,
+        totals: {
+          ...totals,
+          finalTotal: orderTotal,
+        },
         validation,
       };
     }),
@@ -1129,17 +1240,16 @@ export const ordersRouter = router({
 
       const userId = getAuthenticatedUserId(ctx);
 
-      // ST-026: Check version for concurrent edit detection
-      const { checkVersion } = await import("../_core/optimisticLocking");
-      await checkVersion(db, orders, "Order", input.orderId, input.version);
-
       // Get full existing order
       const existingOrder = await db.query.orders.findFirst({
         where: eq(orders.id, input.orderId),
       });
 
       if (!existingOrder) {
-        throw new Error("Order not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Order not found",
+        });
       }
 
       const client = await db
@@ -1251,6 +1361,8 @@ export const ordersRouter = router({
         lineItemsWithPrices,
         input.orderLevelAdjustment
       );
+      const shipping = input.shipping ?? 0;
+      const orderTotal = totals.finalTotal + shipping;
 
       // Validate order
       const validation = orderValidationService.validateOrder({
@@ -1264,7 +1376,7 @@ export const ordersRouter = router({
           marginPercent: item.marginPercent,
           isSample: item.isSample,
         })),
-        finalTotal: totals.finalTotal,
+        finalTotal: orderTotal,
         overallMarginPercent: totals.avgMarginPercent,
       });
 
@@ -1272,8 +1384,36 @@ export const ordersRouter = router({
       const { sql } = await import("drizzle-orm");
       const resolvedPaymentTerms =
         input.paymentTerms || existingOrder.paymentTerms || "NET_30";
-      const nextVersion = existingOrder.version + 1;
+      const resolvedValidUntil =
+        input.orderType === "QUOTE"
+          ? resolveQuoteValidUntilDate(input.validUntil)
+          : null;
+      let nextVersion = input.version + 1;
       await withTransaction(async tx => {
+        const [lockedOrder] = await tx
+          .select()
+          .from(orders)
+          .where(eq(orders.id, input.orderId))
+          .for("update")
+          .limit(1);
+
+        if (!lockedOrder) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Order not found",
+          });
+        }
+
+        if (lockedOrder.version !== input.version) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message:
+              "Order was modified by another user. Please refresh and try again.",
+          });
+        }
+
+        nextVersion = lockedOrder.version + 1;
+
         // Update order with version increment
         await tx
           .update(orders)
@@ -1284,23 +1424,22 @@ export const ordersRouter = router({
             referredByClientId: input.referredByClientId ?? null,
             isReferralOrder: Boolean(input.referredByClientId),
             items: JSON.stringify(
-              lineItemsWithPrices.map(item => ({
-                batchId: item.batchId,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                isSample: item.isSample,
-              }))
+              buildPersistedDraftItems(lineItemsWithPrices)
             ),
-            total: totals.finalTotal.toString(),
+            total: orderTotal.toString(),
             subtotal: totals.subtotal.toString(),
+            shipping: shipping.toString(),
+            showAdjustmentOnDocument: input.showAdjustmentOnDocument,
             avgMarginPercent: totals.avgMarginPercent.toString(),
             notes: input.notes,
-            validUntil: input.validUntil ? new Date(input.validUntil) : null,
+            validUntil: resolvedValidUntil,
             paymentTerms: resolvedPaymentTerms,
             cashPayment: input.cashPayment?.toString() || null,
             version: sql`version + 1`,
           })
-          .where(eq(orders.id, input.orderId));
+          .where(
+            and(eq(orders.id, input.orderId), eq(orders.version, input.version))
+          );
 
         // Delete existing line items
         await tx
@@ -1347,13 +1486,16 @@ export const ordersRouter = router({
       // Log audit entry
       await orderAuditService.logOrderUpdate(input.orderId, userId, {
         lineItemCount: lineItemsWithPrices.length,
-        total: totals.finalTotal,
+        total: orderTotal,
       });
 
       return {
         orderId: input.orderId,
         version: nextVersion,
-        totals,
+        totals: {
+          ...totals,
+          finalTotal: orderTotal,
+        },
         validation,
       };
     }),
@@ -1368,6 +1510,7 @@ export const ordersRouter = router({
       z.object({
         orderId: z.number(),
         version: z.number(),
+        overrideReason: z.string().trim().min(10).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -1527,6 +1670,9 @@ export const ordersRouter = router({
               fulfillmentStatus: coerceOrderFulfillmentStatus(
                 readyForPackingStatus
               ),
+              creditOverrideApproved: input.overrideReason ? true : undefined,
+              creditOverrideBy: input.overrideReason ? userId : undefined,
+              creditOverrideReason: input.overrideReason ?? undefined,
               version: sqlFn`version + 1`,
             })
             .where(eq(orders.id, input.orderId));
@@ -1575,9 +1721,11 @@ export const ordersRouter = router({
         ...order,
         fulfillmentStatus: normalizeFulfillmentStatus(order.fulfillmentStatus),
       };
+      const persistedDraftItems = parsePersistedDraftItems(order.items);
 
       const lineItems = await db.query.orderLineItems.findMany({
         where: eq(orderLineItems.orderId, input.orderId),
+        orderBy: [asc(orderLineItems.id)],
       });
 
       const batchIds = Array.from(new Set(lineItems.map(item => item.batchId)));
@@ -1615,16 +1763,39 @@ export const ordersRouter = router({
 
       return {
         order: normalizedOrder,
-        lineItems: lineItems.map(lineItem => ({
-          ...lineItem,
-          productId: batchMetadataById.get(lineItem.batchId)?.productId ?? null,
-          batchSku: batchMetadataById.get(lineItem.batchId)?.batchSku ?? null,
-          cogsMode: batchMetadataById.get(lineItem.batchId)?.cogsMode ?? null,
-          unitCogsMin:
-            batchMetadataById.get(lineItem.batchId)?.unitCogsMin ?? null,
-          unitCogsMax:
-            batchMetadataById.get(lineItem.batchId)?.unitCogsMax ?? null,
-        })),
+        lineItems: lineItems.map(lineItem => {
+          const persistedMetadataQueue = persistedDraftItems.get(
+            buildPersistedDraftItemKey(lineItem.batchId, lineItem.isSample)
+          );
+          const persistedMetadata = persistedMetadataQueue?.shift();
+
+          return {
+            ...lineItem,
+            productId:
+              batchMetadataById.get(lineItem.batchId)?.productId ??
+              persistedMetadata?.productId ??
+              null,
+            batchSku:
+              batchMetadataById.get(lineItem.batchId)?.batchSku ??
+              persistedMetadata?.batchSku ??
+              null,
+            cogsMode:
+              batchMetadataById.get(lineItem.batchId)?.cogsMode ??
+              persistedMetadata?.cogsMode ??
+              null,
+            unitCogsMin:
+              batchMetadataById.get(lineItem.batchId)?.unitCogsMin ??
+              persistedMetadata?.unitCogsMin ??
+              null,
+            unitCogsMax:
+              batchMetadataById.get(lineItem.batchId)?.unitCogsMax ??
+              persistedMetadata?.unitCogsMax ??
+              null,
+            profilePriceAdjustmentPercent:
+              persistedMetadata?.profilePriceAdjustmentPercent ?? null,
+            appliedRules: persistedMetadata?.appliedRules ?? [],
+          };
+        }),
       };
     }),
 
@@ -2007,6 +2178,14 @@ export const ordersRouter = router({
               code: "BAD_REQUEST",
               message: "Only SALE orders can be confirmed",
             });
+          }
+
+          if (isOrderAlreadyConfirmed(order)) {
+            logger.info({
+              msg: "INV-003: confirmOrder skipped inventory mutation for already-confirmed order",
+              orderId: input.id,
+            });
+            return { success: true, orderId: input.id, alreadyConfirmed: true };
           }
 
           if (

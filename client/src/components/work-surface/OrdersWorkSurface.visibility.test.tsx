@@ -10,6 +10,10 @@ const mockCanViewCogs = vi.hoisted(() => ({ value: false }));
 const mockOpenInspector = vi.hoisted(() => vi.fn());
 const mockCloseInspector = vi.hoisted(() => vi.fn());
 const mockHasAnyPermission = vi.hoisted(() => vi.fn(() => false));
+const mockOrdersResponse = vi.hoisted(() => ({
+  confirmed: { items: [] as unknown[], pagination: { total: 0 } },
+  draft: { items: [] as unknown[], pagination: { total: 0 } },
+}));
 
 const confirmedOrder = {
   id: 101,
@@ -194,11 +198,8 @@ vi.mock("@/lib/trpc", () => {
         getAll: {
           useQuery: (input: { isDraft?: boolean }) => ({
             data: input.isDraft
-              ? emptyListResponse
-              : {
-                  items: [confirmedOrder],
-                  pagination: { total: 1 },
-                },
+              ? mockOrdersResponse.draft
+              : mockOrdersResponse.confirmed,
             isLoading: false,
             refetch: vi.fn(),
           }),
@@ -228,6 +229,15 @@ vi.mock("@/lib/trpc", () => {
         processVendorReturn: { useMutation: () => mutationStub },
         updateOrderStatus: { useMutation: () => mutationStub },
       },
+      accounting: {
+        invoices: {
+          getByReference: {
+            useQuery: () => ({
+              data: null,
+            }),
+          },
+        },
+      },
       invoices: {
         generateFromOrder: { useMutation: () => mutationStub },
         downloadPdf: { useMutation: () => mutationStub },
@@ -245,6 +255,11 @@ describe("OrdersWorkSurface wave 5 visibility wiring", () => {
     mockCloseInspector.mockClear();
     mockHasAnyPermission.mockReset();
     mockHasAnyPermission.mockReturnValue(false);
+    mockOrdersResponse.confirmed = {
+      items: [confirmedOrder],
+      pagination: { total: 1 },
+    };
+    mockOrdersResponse.draft = emptyListResponse;
   });
 
   it("keeps the inspector COGS section hidden when display settings deny cost access", () => {
@@ -266,5 +281,17 @@ describe("OrdersWorkSurface wave 5 visibility wiring", () => {
 
     expect(screen.getByText("COGS Details")).toBeInTheDocument();
     expect(screen.getByText("COGS detail rows")).toBeInTheDocument();
+  });
+
+  it("shows the guided empty state when there are no confirmed orders", () => {
+    mockOrdersResponse.confirmed = emptyListResponse;
+
+    render(<OrdersWorkSurface />);
+
+    expect(screen.getByTestId("orders-empty-state")).toBeInTheDocument();
+    expect(screen.getByText("No orders found")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "View Draft Orders" })
+    ).toBeInTheDocument();
   });
 });

@@ -11,6 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { normalizeNotificationLink } from "@/lib/navigation/notificationLinks";
 import { useLocation } from "wouter";
 import { formatDistanceToNow } from "date-fns";
 
@@ -24,15 +25,15 @@ export const NotificationBell = React.memo(function NotificationBell({
   const [, setLocation] = useLocation();
   const utils = trpc.useContext();
 
-  const { data: unreadData } = trpc.notifications.getUnreadCount.useQuery(undefined, {
-    refetchInterval: 30000, // Poll every 30 seconds
-  });
-  const { data: listData } = trpc.notifications.list.useQuery({
-    limit: 5,
-    offset: 0,
-  }, {
-    refetchInterval: 30000, // Poll every 30 seconds
-  });
+  const { data: listData } = trpc.notifications.list.useQuery(
+    {
+      limit: 5,
+      offset: 0,
+    },
+    {
+      refetchInterval: 30000, // Poll every 30 seconds
+    }
+  );
 
   const markRead = trpc.notifications.markRead.useMutation({
     onSuccess: async () => {
@@ -53,7 +54,7 @@ export const NotificationBell = React.memo(function NotificationBell({
   });
 
   const notifications = listData?.items ?? [];
-  const unreadCount = unreadData?.unread ?? 0;
+  const unreadCount = listData?.unread ?? 0;
 
   const handleViewAll = useCallback(() => {
     setLocation("/notifications");
@@ -67,10 +68,11 @@ export const NotificationBell = React.memo(function NotificationBell({
   }, [markAllRead, notifications.length]);
 
   const handleSelect = useCallback(
-    (notificationId: number, link?: string | null) => {
+    (notificationId: number, link?: string | null, metadata?: unknown) => {
       markRead.mutate({ notificationId });
-      if (link) {
-        setLocation(link);
+      const destination = normalizeNotificationLink(link, metadata);
+      if (destination) {
+        setLocation(destination);
       }
     },
     [markRead, setLocation]
@@ -123,7 +125,11 @@ export const NotificationBell = React.memo(function NotificationBell({
                   key={notification.id}
                   className="flex flex-col items-start gap-1 cursor-pointer"
                   onClick={() =>
-                    handleSelect(notification.id, notification.link ?? undefined)
+                    handleSelect(
+                      notification.id,
+                      notification.link ?? undefined,
+                      notification.metadata
+                    )
                   }
                 >
                   <div className="flex items-center gap-2 w-full">

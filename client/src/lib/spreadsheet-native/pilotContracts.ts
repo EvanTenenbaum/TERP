@@ -141,6 +141,40 @@ function toNumber(value: number | string | null | undefined) {
   return 0;
 }
 
+function parseOptionalNumber(value: unknown) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function hasDraftPricingGaps(order: OrdersQueueItem) {
+  const storedItems = (order as { items?: unknown[] }).items;
+  if (!Array.isArray(storedItems) || storedItems.length === 0) {
+    return false;
+  }
+
+  return storedItems.some(item => {
+    if (!item || typeof item !== "object") {
+      return true;
+    }
+
+    const record = item as {
+      unitCogs?: unknown;
+      cogsPerUnit?: unknown;
+    };
+    const unitCogs = parseOptionalNumber(
+      record.unitCogs ?? record.cogsPerUnit ?? null
+    );
+
+    return unitCogs === null || unitCogs <= 0;
+  });
+}
+
 export function extractItems<T>(
   data: T[] | { items?: T[] } | null | undefined
 ): T[] {
@@ -257,6 +291,13 @@ export function mapOrdersToPilotRows(input: {
   return input.orders.map(order => {
     const createdAt = toDateString(order.createdAt);
     const invoiceId = order.invoiceId ?? null;
+    const lineItemCount =
+      (order as unknown as { lineItemCount?: number }).lineItemCount ??
+      (Array.isArray((order as { lineItems?: unknown[] }).lineItems)
+        ? ((order as { lineItems?: unknown[] }).lineItems?.length ?? 0)
+        : Array.isArray((order as { items?: unknown[] }).items)
+          ? ((order as { items?: unknown[] }).items?.length ?? 0)
+          : 0);
     const stageLabel = input.lane === "drafts" ? "Draft" : "Confirmed";
     const invoiceStateLabel =
       input.lane === "drafts"
@@ -266,7 +307,11 @@ export function mapOrdersToPilotRows(input: {
           : "Pending";
     const nextStepLabel =
       input.lane === "drafts"
-        ? "Open draft"
+        ? lineItemCount === 0
+          ? "Add products"
+          : hasDraftPricingGaps(order)
+            ? "Review pricing"
+            : "Confirm"
         : invoiceId
           ? "Ship"
           : "Accounting";
@@ -284,11 +329,7 @@ export function mapOrdersToPilotRows(input: {
           ? "DRAFT"
           : order.fulfillmentStatus || order.saleStatus || "READY_FOR_PACKING",
       total: toNumber(order.total),
-      lineItemCount:
-        (order as unknown as { lineItemCount?: number }).lineItemCount ??
-        (Array.isArray((order as { lineItems?: unknown[] }).lineItems)
-          ? ((order as { lineItems?: unknown[] }).lineItems?.length ?? 0)
-          : 0),
+      lineItemCount,
       createdAt,
       ageLabel: formatAgeLabel(createdAt),
       confirmedAt: toDateString(order.confirmedAt),

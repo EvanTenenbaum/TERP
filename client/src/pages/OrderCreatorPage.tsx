@@ -93,6 +93,7 @@ import {
   type PortableSalesCut,
 } from "@/components/sales/filtering";
 import { ProfileQuickPanel } from "@/components/clients/ProfileQuickPanel";
+import { QuickCreateClient } from "@/components/clients/QuickCreateClient";
 import { AdaptiveSplitLayout } from "@/components/layout/AdaptiveSplitLayout";
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
@@ -452,6 +453,7 @@ export default function OrderCreatorPageV2({
 
   // State
   const [clientId, setClientId] = useState<number | null>(null);
+  const [quickCreateClientOpen, setQuickCreateClientOpen] = useState(false);
   const [linkedNeedId, setLinkedNeedId] = useState<number | null>(null);
   const [items, setItems] = useState<LineItem[]>([]);
   const [adjustment, setAdjustment] = useState<OrderAdjustment | null>(null);
@@ -698,9 +700,11 @@ export default function OrderCreatorPageV2({
   // Queries - handle paginated response
   const { data: clientsData, isLoading: clientsLoading } =
     trpc.clients.list.useQuery({ limit: 1000 });
-  const clients = Array.isArray(clientsData)
-    ? clientsData
-    : (clientsData?.items ?? []);
+  const clients = useMemo(
+    () =>
+      Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []),
+    [clientsData]
+  );
   const {
     data: routeOrderData,
     error: routeOrderError,
@@ -718,6 +722,15 @@ export default function OrderCreatorPageV2({
       { clientId: clientId || 0 },
       { enabled: !!clientId }
     );
+  const requestCreditOverrideMutation =
+    trpc.pricing.requestCreditOverride.useMutation({
+      onSuccess: () => {
+        toast.success("Credit override request submitted");
+      },
+      onError: error => {
+        toast.error(error.message || "Failed to request a credit override");
+      },
+    });
 
   useEffect(() => {
     if (!routeOrderError || routeOrderId === null) {
@@ -1285,54 +1298,73 @@ export default function OrderCreatorPageV2({
     debouncedAutoSave,
   ]);
 
-  const validateOrderMetadata = (
-    effectiveOrderType: "QUOTE" | "SALE" = orderType
-  ): boolean => {
-    handleOrderValidationChange("clientId", clientId ?? undefined);
-    handleOrderValidationBlur("clientId");
-    handleOrderValidationChange("orderType", effectiveOrderType);
-    handleOrderValidationBlur("orderType");
+  const validateOrderMetadata = useCallback(
+    (effectiveOrderType: "QUOTE" | "SALE" = orderType): boolean => {
+      handleOrderValidationChange("clientId", clientId ?? undefined);
+      handleOrderValidationBlur("clientId");
+      handleOrderValidationChange("orderType", effectiveOrderType);
+      handleOrderValidationBlur("orderType");
 
-    const result = orderValidationSchema.safeParse({
-      clientId: clientId ?? undefined,
-      orderType: effectiveOrderType,
-    });
+      const result = orderValidationSchema.safeParse({
+        clientId: clientId ?? undefined,
+        orderType: effectiveOrderType,
+      });
 
-    if (!result.success) {
-      toast.error("Please select a client before continuing");
-      return false;
-    }
+      if (!result.success) {
+        toast.error("Please select a client before continuing");
+        return false;
+      }
 
-    return true;
-  };
+      return true;
+    },
+    [
+      clientId,
+      handleOrderValidationBlur,
+      handleOrderValidationChange,
+      orderType,
+    ]
+  );
 
   // Handlers
-  const handleSaveDraft = (overrideOrderType?: "SALE" | "QUOTE") => {
-    const effectiveOrderType = overrideOrderType ?? orderType;
+  const handleSaveDraft = useCallback(
+    (overrideOrderType?: "SALE" | "QUOTE") => {
+      const effectiveOrderType = overrideOrderType ?? orderType;
 
-    if (!validateOrderMetadata(effectiveOrderType)) {
-      return;
-    }
+      if (!validateOrderMetadata(effectiveOrderType)) {
+        return;
+      }
 
-    if (items.length === 0) {
-      toast.error("Please add at least one item");
-      return;
-    }
+      if (items.length === 0) {
+        toast.error("Please add at least one item");
+        return;
+      }
 
-    pendingPersistFingerprintRef.current = currentOrderFingerprintRef.current;
-    setSaving();
+      pendingPersistFingerprintRef.current = currentOrderFingerprintRef.current;
+      setSaving();
 
-    if (activeDraftId !== null && activeDraftVersion !== null) {
-      updateDraftMutation.mutate({
-        orderId: activeDraftId,
-        version: activeDraftVersion,
-        ...buildDraftMutationPayload(effectiveOrderType),
-      });
-      return;
-    }
+      if (activeDraftId !== null && activeDraftVersion !== null) {
+        updateDraftMutation.mutate({
+          orderId: activeDraftId,
+          version: activeDraftVersion,
+          ...buildDraftMutationPayload(effectiveOrderType),
+        });
+        return;
+      }
 
-    createDraftMutation.mutate(buildDraftMutationPayload(effectiveOrderType));
-  };
+      createDraftMutation.mutate(buildDraftMutationPayload(effectiveOrderType));
+    },
+    [
+      activeDraftId,
+      activeDraftVersion,
+      buildDraftMutationPayload,
+      createDraftMutation,
+      items.length,
+      orderType,
+      setSaving,
+      updateDraftMutation,
+      validateOrderMetadata,
+    ]
+  );
 
   const handlePreviewAndFinalize = async () => {
     if (!validateOrderMetadata(orderType)) {
@@ -1378,11 +1410,59 @@ export default function OrderCreatorPageV2({
     setShowFinalizeConfirm(true);
   };
 
+  const handleRequestCreditOverride = useCallback(
+    async (overrideReason?: string) => {
+      const reason = overrideReason?.trim() ?? "";
+
+      if (reason.length < 10) {
+        toast.error("Enter at least 10 characters to request an override");
+        return;
+      }
+
+      if (activeDraftId === null) {
+        handleSaveDraft("SALE");
+        toast.info(
+          "Draft saved. Re-open the credit guidance to submit the override request."
+        );
+        return;
+      }
+
+      await requestCreditOverrideMutation.mutateAsync({
+        orderId: activeDraftId,
+        reason,
+      });
+      setPendingOverrideReason(reason);
+      setShowCreditWarning(false);
+    },
+    [activeDraftId, handleSaveDraft, requestCreditOverrideMutation]
+  );
+
   const handleCreditCancel = () => {
     setShowCreditWarning(false);
     setCreditCheckResult(null);
     setPendingOverrideReason(undefined);
   };
+
+  const handleQuickCreateClientSuccess = useCallback(
+    (client: { id: number; name: string }) => {
+      handleOrderValidationChange("clientId", client.id);
+      handleOrderValidationBlur("clientId");
+      setClientId(client.id);
+      setItems([]);
+      setQuickCreateClientOpen(false);
+    },
+    [handleOrderValidationBlur, handleOrderValidationChange]
+  );
+
+  const handleViewPaymentHistory = useCallback(() => {
+    setShowCreditWarning(false);
+    setLocation("/accounting?tab=invoices");
+  }, [setLocation]);
+
+  const handleRecordPayment = useCallback(() => {
+    setShowCreditWarning(false);
+    setLocation("/accounting?tab=payments");
+  }, [setLocation]);
 
   const confirmFinalize = () => {
     setShowFinalizeConfirm(false);
@@ -2031,6 +2111,15 @@ export default function OrderCreatorPageV2({
                   {clientFieldState.error}
                 </p>
               ) : null}
+              <QuickCreateClient
+                hideTrigger
+                open={quickCreateClientOpen}
+                onOpenChange={setQuickCreateClientOpen}
+                title="Quick Add Customer"
+                description="Create the customer without leaving the order. The new customer is selected automatically."
+                submitLabel="Create Customer"
+                onSuccess={handleQuickCreateClientSuccess}
+              />
             </div>
 
             <div className="flex min-w-[260px] flex-1 flex-col gap-1">
@@ -2161,6 +2250,15 @@ export default function OrderCreatorPageV2({
           orderTotal={totals.total}
           clientName={clientDetails?.name || "Client"}
           onProceed={handleCreditProceed}
+          onRequestOverride={handleRequestCreditOverride}
+          requestOverrideLabel={
+            activeDraftId === null
+              ? "Save Draft to Request Override"
+              : "Request Credit Override"
+          }
+          requestOverrideBusy={requestCreditOverrideMutation.isPending}
+          onViewPaymentHistory={handleViewPaymentHistory}
+          onRecordPayment={handleRecordPayment}
           onCancel={handleCreditCancel}
         />
 

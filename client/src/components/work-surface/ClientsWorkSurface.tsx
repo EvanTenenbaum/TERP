@@ -84,6 +84,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
+import { getRelationshipSummary } from "@/lib/relationshipSummary";
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -200,16 +201,21 @@ function ClientTypeBadges({ client }: { client: Client }) {
     });
 
   return (
-    <div className="flex gap-1 flex-wrap">
-      {badges.map(badge => (
-        <Badge
-          key={badge.label}
-          variant="outline"
-          className={cn("text-xs", badge.className)}
-        >
-          {badge.label}
-        </Badge>
-      ))}
+    <div className="space-y-1">
+      <p className="text-sm font-medium text-foreground">
+        {getRelationshipSummary(client)}
+      </p>
+      <div className="flex gap-1 flex-wrap">
+        {badges.map(badge => (
+          <Badge
+            key={badge.label}
+            variant="outline"
+            className={cn("text-xs", badge.className)}
+          >
+            {badge.label}
+          </Badge>
+        ))}
+      </div>
     </div>
   );
 }
@@ -994,7 +1000,7 @@ export function ClientsWorkSurface() {
                         Code Name <SortIcon column="name" />
                       </span>
                     </TableHead>
-                    <TableHead>Type</TableHead>
+                    <TableHead>Relationship</TableHead>
                     <TableHead>Reachable Handles</TableHead>
                     <TableHead
                       className="cursor-pointer text-right"

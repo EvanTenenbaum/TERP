@@ -170,6 +170,54 @@ describe("ST-050: Error Propagation in ordersDb", () => {
         /Data corruption detected.*order 1/
       );
     });
+
+    it("keeps legacy seeded orders readable when batchIds are missing but item text is present", async () => {
+      const resolvedRows = [
+        {
+          orders: {
+            id: 50,
+            orderNumber: "SO-50",
+            items: JSON.stringify([
+              {
+                batchId: 0,
+                displayName: "Legacy Flower",
+                quantity: 3,
+                unitPrice: 12,
+                lineTotal: 36,
+              },
+            ]),
+            subtotal: "36",
+          },
+          clients: { id: 1, name: "Legacy Client" },
+        },
+      ];
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        leftJoin: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        offset: vi.fn().mockResolvedValue(resolvedRows),
+      };
+
+      vi.mocked(getDb).mockResolvedValue(
+        mockDb as unknown as Awaited<ReturnType<typeof getDb>>
+      );
+
+      const result = await ordersDb.getAllOrders();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.items).toEqual([
+        expect.objectContaining({
+          batchId: 0,
+          displayName: "Legacy Flower",
+          quantity: 3,
+          unitPrice: 12,
+        }),
+      ]);
+    });
   });
 
   describe("Error message format", () => {

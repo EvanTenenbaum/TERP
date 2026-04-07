@@ -15,6 +15,35 @@ const { mockParseInvoiceDeepLink, mockSetSelectedId, invoiceSelectionState } =
     invoiceSelectionState: { selectedId: null as number | null },
   }));
 
+const mockInvoicesList = vi.hoisted(() => ({
+  items: [
+    {
+      id: 1,
+      invoiceNumber: "INV-001",
+      customerId: 10,
+      invoiceDate: "2026-01-15",
+      dueDate: "2026-01-01",
+      totalAmount: "5000.00",
+      amountDue: "5000.00",
+      amountPaid: "0",
+      status: "OVERDUE",
+      client: { name: "Acme Corp" },
+    },
+    {
+      id: 2,
+      invoiceNumber: "INV-002",
+      customerId: 11,
+      invoiceDate: "2026-02-01",
+      dueDate: "2026-03-01",
+      totalAmount: "3000.00",
+      amountDue: "0.00",
+      amountPaid: "3000.00",
+      status: "PAID",
+      client: { name: "Beta LLC" },
+    },
+  ],
+}));
+
 /* ── Mock PowersheetGrid ── */
 vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({ rows, title }: { rows: unknown[]; title: string }) => (
@@ -31,33 +60,8 @@ vi.mock("@/lib/trpc", () => ({
       list: {
         useQuery: vi.fn(() => ({
           data: {
-            items: [
-              {
-                id: 1,
-                invoiceNumber: "INV-001",
-                customerId: 10,
-                invoiceDate: "2026-01-15",
-                dueDate: "2026-01-01",
-                totalAmount: "5000.00",
-                amountDue: "5000.00",
-                amountPaid: "0",
-                status: "OVERDUE",
-                client: { name: "Acme Corp" },
-              },
-              {
-                id: 2,
-                invoiceNumber: "INV-002",
-                customerId: 11,
-                invoiceDate: "2026-02-01",
-                dueDate: "2026-03-01",
-                totalAmount: "3000.00",
-                amountDue: "0.00",
-                amountPaid: "3000.00",
-                status: "PAID",
-                client: { name: "Beta LLC" },
-              },
-            ],
-            total: 2,
+            items: mockInvoicesList.items,
+            total: mockInvoicesList.items.length,
           },
           isLoading: false,
           error: null,

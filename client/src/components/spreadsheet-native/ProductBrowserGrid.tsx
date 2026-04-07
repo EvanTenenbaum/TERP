@@ -14,8 +14,8 @@ import { useMemo, useState } from "react";
 import type { ColDef } from "ag-grid-community";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import InlineRowAddControls from "./InlineRowAddControls";
 import { PowersheetGrid } from "./PowersheetGrid";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -27,6 +27,7 @@ export interface AddProductPayload {
   productName: string | null;
   category: string | null;
   subcategory: string | null;
+  quantityOrdered?: number;
   cogsMode: "FIXED" | "RANGE";
   unitCost: string | null;
   unitCostMin: string | null;
@@ -74,6 +75,13 @@ const formatDate = (d: string | Date | null | undefined): string => {
   });
 };
 
+const sanitizeQuantityInput = (value: string) => value.replace(/\D/g, "");
+
+const normalizeRequestedQuantity = (value: string | undefined): number => {
+  const parsed = Number(value ?? "");
+  return Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 1;
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ProductBrowserGrid({
@@ -84,6 +92,9 @@ export function ProductBrowserGrid({
   const [activeTab, setActiveTab] = useState<ActiveTab>("supplier-history");
   const [search, setSearch] = useState("");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [requestedQuantities, setRequestedQuantities] = useState<
+    Record<string, string>
+  >({});
   const normalizedSearch = search.trim().toLowerCase();
 
   // ── Queries ──────────────────────────────────────────────────────────────────
@@ -265,6 +276,63 @@ export function ProductBrowserGrid({
   const columnDefs = useMemo<ColDef<BrowserRow>[]>(() => {
     const cols: ColDef<BrowserRow>[] = [
       {
+        headerName: "Add",
+        minWidth: 156,
+        maxWidth: 156,
+        pinned: "left",
+        sortable: false,
+        filter: false,
+        resizable: false,
+        suppressNavigable: true,
+        cellRenderer: (params: { data?: BrowserRow }) => {
+          const row = params.data;
+          if (!row) return null;
+          const added =
+            row.productId !== null &&
+            row.productId !== undefined &&
+            addedProductIds.has(row.productId);
+          const quantityValue = requestedQuantities[row.identity.rowKey] ?? "1";
+
+          return (
+            <InlineRowAddControls
+              added={added}
+              onAdd={() =>
+                onAddProduct({
+                  productId: row.productId,
+                  productName: row.productName,
+                  category: row.category,
+                  subcategory: row.subcategory,
+                  quantityOrdered: normalizeRequestedQuantity(quantityValue),
+                  cogsMode: row.cogsMode,
+                  unitCost: row.unitCost,
+                  unitCostMin: row.unitCostMin,
+                  unitCostMax: row.unitCostMax,
+                })
+              }
+              quantityValue={quantityValue}
+              quantityLabel={`Quantity for ${row.productName ?? "product"}`}
+              onQuantityChange={value =>
+                setRequestedQuantities(current => ({
+                  ...current,
+                  [row.identity.rowKey]: sanitizeQuantityInput(value),
+                }))
+              }
+              onQuantityBlur={() =>
+                setRequestedQuantities(current => ({
+                  ...current,
+                  [row.identity.rowKey]: String(
+                    normalizeRequestedQuantity(
+                      current[row.identity.rowKey] ?? quantityValue
+                    )
+                  ),
+                }))
+              }
+            />
+          );
+        },
+        cellClass: "powersheet-cell--locked",
+      },
+      {
         headerName: "Product",
         field: "productName",
         flex: 2,
@@ -294,7 +362,13 @@ export function ProductBrowserGrid({
     }
 
     return cols;
-  }, [col3Header, col4Header]);
+  }, [
+    addedProductIds,
+    col3Header,
+    col4Header,
+    onAddProduct,
+    requestedQuantities,
+  ]);
 
   // ── State derivations ─────────────────────────────────────────────────────────
 
@@ -304,56 +378,10 @@ export function ProductBrowserGrid({
     (activeTab === "catalog" &&
       (catalogQuery.isLoading || catalogFallbackQuery.isLoading));
 
-  const selectedRow =
-    rows.find(r => r.identity.rowKey === selectedRowId) ?? null;
-
-  const isSelectedAdded =
-    selectedRow?.productId !== null &&
-    selectedRow?.productId !== undefined &&
-    addedProductIds.has(selectedRow.productId);
-
   // ── Empty state for no-supplier on supplier-history tab ────────────────────
 
   const showNoSupplierState =
     activeTab === "supplier-history" && supplierId === null;
-
-  // ── Handlers ──────────────────────────────────────────────────────────────────
-
-  const handleAddSelected = () => {
-    if (!selectedRow) return;
-    onAddProduct({
-      productId: selectedRow.productId,
-      productName: selectedRow.productName,
-      category: selectedRow.category,
-      subcategory: selectedRow.subcategory,
-      cogsMode: selectedRow.cogsMode,
-      unitCost: selectedRow.unitCost,
-      unitCostMin: selectedRow.unitCostMin,
-      unitCostMax: selectedRow.unitCostMax,
-    });
-  };
-
-  // ── Header actions ─────────────────────────────────────────────────────────────
-
-  const headerActions = (
-    <Button
-      size="sm"
-      className="h-7 px-3 bg-green-600 hover:bg-green-700 text-white"
-      disabled={!selectedRow || isSelectedAdded}
-      onClick={handleAddSelected}
-    >
-      {isSelectedAdded ? (
-        <Badge
-          variant="secondary"
-          className="text-xs bg-gray-200 text-gray-600"
-        >
-          Added
-        </Badge>
-      ) : (
-        "+ Add Selected"
-      )}
-    </Button>
-  );
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
@@ -377,6 +405,7 @@ export function ProductBrowserGrid({
               onClick={() => {
                 setActiveTab(tab.id);
                 setSelectedRowId(null);
+                setRequestedQuantities({});
               }}
             >
               {tab.label}
@@ -417,7 +446,6 @@ export function ProductBrowserGrid({
                 ? "No low-stock items match your search."
                 : "No products match your search."
           }
-          headerActions={headerActions}
           minHeight={280}
         />
       )}

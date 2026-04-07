@@ -284,4 +284,24 @@ describe("PaymentsSurface", () => {
     ).toHaveTextContent("invoice #34 for order #34");
     expect(screen.getByText(/1 rows/)).toBeInTheDocument();
   });
+
+  it("keeps the order handoff responsive when no linked invoice is found", () => {
+    mockUseSearch.mockReturnValue("?tab=payments&orderId=88&from=sales");
+    mockInvoicesGetByReferenceUseQuery.mockReturnValue({
+      data: null,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+
+    render(<PaymentsSurface />);
+
+    expect(mockPaymentsListUseQuery).toHaveBeenCalledWith(
+      { paymentType: undefined, invoiceId: undefined },
+      expect.objectContaining({ enabled: true })
+    );
+    expect(
+      screen.getByTestId("payments-order-handoff-banner")
+    ).toHaveTextContent("does not have a linked invoice yet");
+    expect(screen.getByText(/0 rows/)).toBeInTheDocument();
+  });
 });

@@ -27,6 +27,7 @@ import { createServer } from "http";
 import net from "net";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerSimpleAuthRoutes } from "./simpleAuth";
+import { registerQaAuthRoutes } from "./qaAuth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./vite";
@@ -369,10 +370,12 @@ async function startServer() {
 
     // Apply rate limiting to auth endpoints before registering auth routes
     app.use("/api/auth", authLimiter);
+    app.use("/api/qa-auth", authLimiter);
     app.use("/api/trpc/auth", authLimiter);
 
     // Simple auth routes under /api/auth
     registerSimpleAuthRoutes(app);
+    registerQaAuthRoutes(app);
 
     // Apply rate limiting to tRPC API
     app.use("/api/trpc", apiLimiter);
@@ -416,7 +419,7 @@ async function startServer() {
     // Metrics endpoint for monitoring systems (Prometheus-compatible format available)
     // Requires a valid JWT in the Authorization header (Bearer <token>) to prevent
     // exposing server internals to unauthenticated callers.
-    app.get("/health/metrics", (req, res) => {
+    app.get("/health/metrics", async (req, res) => {
       const authHeader = req.headers.authorization;
       const token =
         authHeader && authHeader.startsWith("Bearer ")
@@ -426,7 +429,7 @@ async function startServer() {
         return res.status(401).json({ error: "Authentication required" });
       }
 
-      const metrics = getHealthMetrics();
+      const metrics = await getHealthMetrics();
       const format = req.query.format;
 
       if (format === "prometheus") {
@@ -444,6 +447,22 @@ async function startServer() {
           `# HELP terp_memory_rss_mb Resident set size (MB)`,
           `# TYPE terp_memory_rss_mb gauge`,
           `terp_memory_rss_mb ${metrics.memory.rssMb}`,
+          ...(metrics.disk
+            ? [
+                `# HELP terp_disk_total_mb Total local disk space (MB)`,
+                `# TYPE terp_disk_total_mb gauge`,
+                `terp_disk_total_mb ${metrics.disk.totalMb}`,
+                `# HELP terp_disk_used_mb Used local disk space (MB)`,
+                `# TYPE terp_disk_used_mb gauge`,
+                `terp_disk_used_mb ${metrics.disk.usedMb}`,
+                `# HELP terp_disk_available_mb Available local disk space (MB)`,
+                `# TYPE terp_disk_available_mb gauge`,
+                `terp_disk_available_mb ${metrics.disk.availableMb}`,
+                `# HELP terp_disk_used_percent Local disk usage percent`,
+                `# TYPE terp_disk_used_percent gauge`,
+                `terp_disk_used_percent ${metrics.disk.usedPercent}`,
+              ]
+            : []),
         ];
         res.set("Content-Type", "text/plain");
         res.send(lines.join("\n"));

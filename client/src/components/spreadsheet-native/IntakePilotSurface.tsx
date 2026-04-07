@@ -243,6 +243,20 @@ const intakeRowSchema = z
 
 type IntakeRowData = z.infer<typeof intakeRowSchema>;
 type IntakeCogsMode = IntakeRowData["cogsMode"];
+type IntakeFieldErrorMap = Partial<
+  Record<
+    | "vendorName"
+    | "brandName"
+    | "item"
+    | "qty"
+    | "cogsMode"
+    | "cogs"
+    | "cogsMin"
+    | "cogsMax"
+    | "site",
+    string
+  >
+>;
 
 interface IntakeDraftRow extends IntakeRowData {
   id: string;
@@ -255,6 +269,7 @@ interface IntakeDraftRow extends IntakeRowData {
   matchedStrainName?: string;
   status: "pending" | "submitted" | "error";
   errorMessage?: string;
+  fieldErrors?: IntakeFieldErrorMap;
 }
 
 interface IntakeLocationRecord {
@@ -415,6 +430,7 @@ const createEmptyRow = (defaults?: {
     site: defaults?.site ?? "",
     notes: "",
     status: "pending",
+    fieldErrors: undefined,
   };
 };
 
@@ -450,6 +466,65 @@ const normalizeRowForValidation = (row: IntakeDraftRow): IntakeDraftRow => {
   const site = row.site.trim();
   return normalizeIntakeCogs({ ...row, vendorName, brandName, item, site });
 };
+
+const isEmptyTemplateRow = (
+  row: Pick<
+    IntakeDraftRow,
+    "vendorName" | "brandName" | "item" | "qty" | "cogs" | "cogsMin" | "cogsMax"
+  >
+) =>
+  !row.vendorName.trim() &&
+  !row.brandName.trim() &&
+  !row.item.trim() &&
+  Number(row.qty || 0) <= 0 &&
+  Number(row.cogs || 0) <= 0 &&
+  Number(row.cogsMin || 0) <= 0 &&
+  Number(row.cogsMax || 0) <= 0;
+
+const hasMissingCostWarning = (
+  row: Pick<IntakeDraftRow, "cogsMode" | "cogs" | "cogsMin" | "cogsMax"> &
+    Pick<IntakeDraftRow, "vendorName" | "brandName" | "item" | "qty">
+) => {
+  if (isEmptyTemplateRow(row)) return false;
+  if (row.cogsMode === "RANGE") {
+    return Number(row.cogsMin || 0) <= 0 || Number(row.cogsMax || 0) <= 0;
+  }
+  return Number(row.cogs || 0) <= 0;
+};
+
+const getRowErrorFieldMap = (issues: z.ZodIssue[]): IntakeFieldErrorMap => {
+  const fieldErrors: IntakeFieldErrorMap = {};
+
+  for (const issue of issues) {
+    const field = issue.path[0];
+    if (
+      field === "vendorName" ||
+      field === "brandName" ||
+      field === "item" ||
+      field === "qty" ||
+      field === "cogsMode" ||
+      field === "cogs" ||
+      field === "cogsMin" ||
+      field === "cogsMax" ||
+      field === "site"
+    ) {
+      fieldErrors[field] ??= issue.message;
+    }
+  }
+
+  return fieldErrors;
+};
+
+const getInlineErrorCellClass = (
+  row: IntakeDraftRow | undefined,
+  field: keyof IntakeFieldErrorMap
+) =>
+  row?.fieldErrors?.[field]
+    ? "border-l-2 border-red-400 bg-red-50/70"
+    : undefined;
+
+const getMissingCostCellClass = (row: IntakeDraftRow | undefined) =>
+  row && hasMissingCostWarning(row) ? "bg-amber-50 text-amber-900" : undefined;
 
 const formatLocationLabel = (location: IntakeLocationRecord): string => {
   const segments = [
@@ -538,6 +613,13 @@ function StatusCellRenderer({ data }: { data?: IntakeDraftRow }) {
         <AlertCircle className="h-4 w-4" />
         <span>Error</span>
       </div>
+    );
+  }
+  if (data && isEmptyTemplateRow(data)) {
+    return (
+      <Badge variant="secondary" className="text-muted-foreground">
+        New
+      </Badge>
     );
   }
   return (
@@ -800,7 +882,7 @@ function RowInspectorContent({
 
           <InspectorField label="COGS Mode" required>
             <Select
-              value={row.cogsMode}
+              value={isEmptyTemplateRow(row) ? undefined : row.cogsMode}
               onValueChange={value => {
                 onUpdate({ cogsMode: value as IntakeCogsMode });
                 validation.handleChange("cogsMode", value);
@@ -1406,9 +1488,12 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
         flex: 1,
         editable: params => params.data?.status === "pending",
         cellClass: params =>
-          params.data?.status === "pending" && getFieldPolicy("vendorName")
-            ? "powersheet-cell--editable"
-            : "powersheet-cell--locked",
+          cn(
+            params.data?.status === "pending" && getFieldPolicy("vendorName")
+              ? "powersheet-cell--editable"
+              : "powersheet-cell--locked",
+            getInlineErrorCellClass(params.data, "vendorName")
+          ),
         headerTooltip: "Editable: supplier name for pending rows",
         cellEditor: "agTextCellEditor",
         tooltipValueGetter: () =>
@@ -1423,9 +1508,12 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
         flex: 2,
         editable: params => params.data?.status === "pending",
         cellClass: params =>
-          params.data?.status === "pending" && getFieldPolicy("item")
-            ? "powersheet-cell--editable"
-            : "powersheet-cell--locked",
+          cn(
+            params.data?.status === "pending" && getFieldPolicy("item")
+              ? "powersheet-cell--editable"
+              : "powersheet-cell--locked",
+            getInlineErrorCellClass(params.data, "item")
+          ),
         headerTooltip: "Editable: product/strain name for pending rows",
         cellEditor: "agTextCellEditor",
         tooltipValueGetter: () =>
@@ -1439,9 +1527,12 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
         width: 90,
         editable: params => params.data?.status === "pending",
         cellClass: params =>
-          params.data?.status === "pending" && getFieldPolicy("qty")
-            ? "powersheet-cell--editable"
-            : "powersheet-cell--locked",
+          cn(
+            params.data?.status === "pending" && getFieldPolicy("qty")
+              ? "powersheet-cell--editable"
+              : "powersheet-cell--locked",
+            getInlineErrorCellClass(params.data, "qty")
+          ),
         headerTooltip: "Editable: quantity for pending rows",
         valueParser: params => {
           const val = Number(params.newValue);
@@ -1454,12 +1545,22 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
         width: 120,
         editable: params => params.data?.status === "pending",
         cellClass: params =>
-          params.data?.status === "pending" && getFieldPolicy("cogsMode")
-            ? "powersheet-cell--editable"
-            : "powersheet-cell--locked",
+          cn(
+            params.data?.status === "pending" && getFieldPolicy("cogsMode")
+              ? "powersheet-cell--editable"
+              : "powersheet-cell--locked",
+            getInlineErrorCellClass(params.data, "cogsMode"),
+            getMissingCostCellClass(params.data)
+          ),
         headerTooltip: "Editable: FIXED or RANGE for pending rows",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: { values: ["FIXED", "RANGE"] },
+        valueFormatter: params => {
+          if (params.data && isEmptyTemplateRow(params.data)) {
+            return "—";
+          }
+          return params.value === "RANGE" ? "Range" : "Fixed";
+        },
       },
       {
         headerName: "COGS",
@@ -1469,16 +1570,22 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           params.data?.status === "pending" &&
           params.data?.cogsMode !== "RANGE",
         cellClass: params =>
-          params.data?.status === "pending" &&
-          params.data?.cogsMode !== "RANGE" &&
-          getFieldPolicy("cogs")
-            ? "powersheet-cell--editable"
-            : "powersheet-cell--locked",
+          cn(
+            params.data?.status === "pending" &&
+              params.data?.cogsMode !== "RANGE" &&
+              getFieldPolicy("cogs")
+              ? "powersheet-cell--editable"
+              : "powersheet-cell--locked",
+            getInlineErrorCellClass(params.data, "cogs"),
+            getMissingCostCellClass(params.data)
+          ),
         headerTooltip: "Editable: fixed COGS value for pending rows",
         valueFormatter: params =>
-          params.data
-            ? formatCogsLabel(params.data)
-            : `$${((params.value as number) ?? 0).toFixed(2)}`,
+          params.data && isEmptyTemplateRow(params.data)
+            ? "—"
+            : params.data
+              ? formatCogsLabel(params.data)
+              : `$${((params.value as number) ?? 0).toFixed(2)}`,
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1492,16 +1599,22 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           params.data?.status === "pending" &&
           params.data?.cogsMode === "RANGE",
         cellClass: params =>
-          params.data?.status === "pending" &&
-          params.data?.cogsMode === "RANGE" &&
-          getFieldPolicy("cogsMin")
-            ? "powersheet-cell--editable"
-            : "powersheet-cell--locked",
+          cn(
+            params.data?.status === "pending" &&
+              params.data?.cogsMode === "RANGE" &&
+              getFieldPolicy("cogsMin")
+              ? "powersheet-cell--editable"
+              : "powersheet-cell--locked",
+            getInlineErrorCellClass(params.data, "cogsMin"),
+            getMissingCostCellClass(params.data)
+          ),
         headerTooltip: "Editable: minimum COGS for range mode",
         valueFormatter: params =>
-          params.data?.cogsMode === "RANGE"
-            ? `$${((params.value as number) ?? 0).toFixed(2)}`
-            : "Fixed",
+          params.data && isEmptyTemplateRow(params.data)
+            ? "—"
+            : params.data?.cogsMode === "RANGE"
+              ? `$${((params.value as number) ?? 0).toFixed(2)}`
+              : "Fixed",
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1515,16 +1628,22 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           params.data?.status === "pending" &&
           params.data?.cogsMode === "RANGE",
         cellClass: params =>
-          params.data?.status === "pending" &&
-          params.data?.cogsMode === "RANGE" &&
-          getFieldPolicy("cogsMax")
-            ? "powersheet-cell--editable"
-            : "powersheet-cell--locked",
+          cn(
+            params.data?.status === "pending" &&
+              params.data?.cogsMode === "RANGE" &&
+              getFieldPolicy("cogsMax")
+              ? "powersheet-cell--editable"
+              : "powersheet-cell--locked",
+            getInlineErrorCellClass(params.data, "cogsMax"),
+            getMissingCostCellClass(params.data)
+          ),
         headerTooltip: "Editable: maximum COGS for range mode",
         valueFormatter: params =>
-          params.data?.cogsMode === "RANGE"
-            ? `$${((params.value as number) ?? 0).toFixed(2)}`
-            : "Fixed",
+          params.data && isEmptyTemplateRow(params.data)
+            ? "—"
+            : params.data?.cogsMode === "RANGE"
+              ? `$${((params.value as number) ?? 0).toFixed(2)}`
+              : "Fixed",
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1537,9 +1656,12 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
         flex: 1,
         editable: params => params.data?.status === "pending",
         cellClass: params =>
-          params.data?.status === "pending" && getFieldPolicy("site")
-            ? "powersheet-cell--editable"
-            : "powersheet-cell--locked",
+          cn(
+            params.data?.status === "pending" && getFieldPolicy("site")
+              ? "powersheet-cell--editable"
+              : "powersheet-cell--locked",
+            getInlineErrorCellClass(params.data, "site")
+          ),
         headerTooltip: "Editable: location for pending rows",
         cellEditor: "agSelectCellEditor",
         cellEditorParams: {
@@ -1633,6 +1755,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
       if (nextRow.status === "error") {
         nextRow.status = "pending";
         nextRow.errorMessage = undefined;
+        nextRow.fieldErrors = undefined;
       }
 
       updateRows(prev =>
@@ -1649,6 +1772,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
     updateRows(prev => [...prev, newRow]);
     setSelectedRowId(newRow.id);
     replaceSelection([newRow.id]);
+    toast.success("Added Product Intake row");
   }, [defaultLocationOverrides, replaceSelection, updateRows]);
 
   // ---- Row update from inspector ----
@@ -1682,6 +1806,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                     r.status === "error" ? ("pending" as const) : r.status,
                   errorMessage:
                     r.status === "error" ? undefined : r.errorMessage,
+                  fieldErrors: r.status === "error" ? undefined : r.fieldErrors,
                 };
               })()
             : r
@@ -1773,6 +1898,9 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
       });
       rowSelection.clear();
       setSelectedRowId(null);
+      toast.success(
+        `Removed ${plan.removedIds.length} Product Intake row${plan.removedIds.length === 1 ? "" : "s"}`
+      );
     },
     [replaceSelection, rowSelection, undo, updateRows, updateRowMediaFilesById]
   );
@@ -1831,6 +1959,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
       const result = intakeRowSchema.safeParse(normalized);
       if (!result.success) {
         const first = result.error.issues[0];
+        const fieldErrors = getRowErrorFieldMap(result.error.issues);
         updateRows(prev =>
           prev.map(r =>
             r.id === row.id
@@ -1838,6 +1967,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                   ...r,
                   status: "error" as const,
                   errorMessage: first?.message ?? "Validation failed",
+                  fieldErrors,
                 }
               : r
           )
@@ -1890,7 +2020,14 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
 
         updateRows(prev =>
           prev.map(r =>
-            r.id === row.id ? { ...r, status: "submitted" as const } : r
+            r.id === row.id
+              ? {
+                  ...r,
+                  status: "submitted" as const,
+                  errorMessage: undefined,
+                  fieldErrors: undefined,
+                }
+              : r
           )
         );
         updateRowMediaFilesById(prev => {
@@ -1899,7 +2036,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           return next;
         });
         setSaved();
-        toast.success("Intake submitted successfully");
+        toast.success("Product Intake submitted");
       } catch (error) {
         if (uploadedUrls.length > 0) {
           try {
@@ -1919,7 +2056,12 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
         updateRows(prev =>
           prev.map(r =>
             r.id === row.id
-              ? { ...r, status: "error" as const, errorMessage: message }
+              ? {
+                  ...r,
+                  status: "error" as const,
+                  errorMessage: message,
+                  fieldErrors: undefined,
+                }
               : r
           )
         );
@@ -1996,6 +2138,9 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
             ...r,
             status: "error" as const,
             errorMessage: first?.message ?? "Validation failed",
+            fieldErrors: inv.result.success
+              ? undefined
+              : getRowErrorFieldMap(inv.result.error.issues),
           };
         })
       );
@@ -2003,13 +2148,13 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
 
     if (validRows.length === 0) {
       toast.error(
-        "No valid rows to submit. Ensure all required fields are filled."
+        "No valid Product Intake rows to submit. Fill product, quantity, and cost before submitting."
       );
       return;
     }
 
     setIsSubmitting(true);
-    setSaving(`Submitting ${validRows.length} records...`);
+    setSaving(`Submitting ${validRows.length} Product Intake rows...`);
     let successCount = 0;
     let errorCount = 0;
 
@@ -2026,7 +2171,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
             throw err;
           }
         }
-        setSaving(`Submitting ${validRows.length} records...`);
+        setSaving(`Submitting ${validRows.length} Product Intake rows...`);
         await intakeMutation.mutateAsync({
           vendorName: row.vendorName,
           brandName: row.brandName,
@@ -2052,7 +2197,14 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
         });
         updateRows(prev =>
           prev.map(r =>
-            r.id === row.id ? { ...r, status: "submitted" as const } : r
+            r.id === row.id
+              ? {
+                  ...r,
+                  status: "submitted" as const,
+                  errorMessage: undefined,
+                  fieldErrors: undefined,
+                }
+              : r
           )
         );
         updateRowMediaFilesById(prev => {
@@ -2083,6 +2235,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                   status: "error" as const,
                   errorMessage:
                     error instanceof Error ? error.message : "Failed",
+                  fieldErrors: undefined,
                 }
               : r
           )
@@ -2092,7 +2245,9 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
     }
 
     if (successCount > 0) {
-      toast.success(`Successfully submitted ${successCount} intake record(s)`);
+      toast.success(
+        `Submitted ${successCount} Product Intake row${successCount === 1 ? "" : "s"}`
+      );
     }
     if (errorCount > 0) {
       toast.error(`Failed to submit ${errorCount} record(s)`);
@@ -2130,6 +2285,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           rowKey: newId,
           status: "pending" as const,
           errorMessage: undefined,
+          fieldErrors: undefined,
         };
       },
     });
@@ -2357,7 +2513,11 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">COGS Mode</Label>
             <Select
-              value={selectedRow?.cogsMode ?? "FIXED"}
+              value={
+                selectedRow && !isEmptyTemplateRow(selectedRow)
+                  ? selectedRow.cogsMode
+                  : undefined
+              }
               onValueChange={value => {
                 if (!selectedRow || selectedRow.status !== "pending") return;
                 handleUpdateSelectedRow({ cogsMode: value as IntakeCogsMode });
@@ -2495,6 +2655,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                 createEmptyRow(defaultLocationOverrides)
               );
               updateRows(prev => [...prev, ...newRows]);
+              toast.success("Added 5 Product Intake rows");
             }}
           >
             <Plus className="mr-1 h-4 w-4" />
@@ -2509,7 +2670,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
               disabled={isSubmitting}
             >
               <Send className="mr-1 h-4 w-4" />
-              Submit Selected ({selectedPendingRows.length})
+              Submit Selected Rows ({selectedPendingRows.length})
             </Button>
           )}
 
@@ -2601,7 +2762,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
             ) : (
               <>
                 <Send className="mr-1 h-4 w-4" />
-                Submit All Pending
+                Submit All Product Intake
               </>
             )}
           </Button>

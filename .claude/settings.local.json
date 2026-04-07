@@ -1,0 +1,47 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude plugin:*)",
+      "Bash(npx metaswarm:*)",
+      "Bash(command:*)",
+      "Bash(npx playwright:*)",
+      "Bash(bd init:*)",
+      "Bash(codex:*)",
+      "Bash(bd config:*)",
+      "Bash(mysql:*)",
+      "Bash(ls:*)",
+      "Bash(bd doctor:*)",
+      "Bash(env:*)",
+      "Bash(lsof:*)",
+      "Bash(bd stats:*)",
+      "mcp__claude_ai_Linear__get_issue"
+    ]
+  },
+  "disabledMcpjsonServers": ["digitalocean-full", "thinking"],
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/env python3 /Users/evantenenbaum/spec-erp-docker/TERP/TERP/.claude/hooks/closeout-guard.py",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/env python3 /Users/evantenenbaum/spec-erp-docker/TERP/TERP/.claude/hooks/closeout-guard.py",
+            "timeout": 10000
+          }
+        ]
+      }
+    ]
+  }
+}

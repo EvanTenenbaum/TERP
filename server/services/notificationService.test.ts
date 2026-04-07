@@ -44,7 +44,10 @@ describe("notificationService - queue and delivery", () => {
 
     const result = await processNotificationQueue();
     expect(result.processed).toBe(1);
-    const notifications = await listNotifications({ userId: 1 }, { limit: 10, offset: 0 });
+    const notifications = await listNotifications(
+      { userId: 1 },
+      { limit: 10, offset: 0 }
+    );
     expect(notifications).toHaveLength(1);
     expect(notifications[0]?.read).toBe(false);
     expect(notifications[0]?.channel).toBe("in_app");
@@ -52,25 +55,51 @@ describe("notificationService - queue and delivery", () => {
   });
 
   it("supports bulk queueing across users", async () => {
-    await sendBulkNotification(
-      [11, 22],
-      {
-        type: "warning",
-        title: "System Warning",
-        message: "Check your tasks",
-      }
-    );
+    await sendBulkNotification([11, 22], {
+      type: "warning",
+      title: "System Warning",
+      message: "Check your tasks",
+    });
 
     const result = await processNotificationQueue({ batchSize: 10 });
     expect(result.processed).toBe(2);
 
-    const userOne = await listNotifications({ userId: 11 }, { limit: 5, offset: 0 });
-    const userTwo = await listNotifications({ userId: 22 }, { limit: 5, offset: 0 });
+    const userOne = await listNotifications(
+      { userId: 11 },
+      { limit: 5, offset: 0 }
+    );
+    const userTwo = await listNotifications(
+      { userId: 22 },
+      { limit: 5, offset: 0 }
+    );
 
     expect(userOne).toHaveLength(1);
     expect(userTwo).toHaveLength(1);
     expect(userOne[0]?.title).toBe("System Warning");
     expect(userTwo[0]?.title).toBe("System Warning");
+  });
+
+  it("counts and lists only in-app notifications for the bell inbox", async () => {
+    await sendNotification({
+      userId: 14,
+      type: "info",
+      title: "Appointment Reminder",
+      message: "Check calendar",
+      channels: ["in_app", "email"],
+    });
+
+    const result = await processNotificationQueue({ batchSize: 10 });
+    expect(result.processed).toBe(1);
+
+    const notifications = await listNotifications(
+      { userId: 14 },
+      { limit: 10, offset: 0 }
+    );
+    const unread = await getUnreadCount({ userId: 14 });
+
+    expect(notifications).toHaveLength(1);
+    expect(notifications[0]?.channel).toBe("in_app");
+    expect(unread).toBe(1);
   });
 
   it("respects in-app preference toggles when processing queue", async () => {
@@ -85,7 +114,10 @@ describe("notificationService - queue and delivery", () => {
     const result = await processNotificationQueue();
     expect(result.skipped).toBe(1);
 
-    const notifications = await listNotifications({ userId: 5 }, { limit: 5, offset: 0 });
+    const notifications = await listNotifications(
+      { userId: 5 },
+      { limit: 5, offset: 0 }
+    );
     expect(notifications).toHaveLength(0);
   });
 
@@ -104,7 +136,10 @@ describe("notificationService - queue and delivery", () => {
     });
     await processNotificationQueue();
 
-    const firstBatch = await listNotifications({ userId: 2 }, { limit: 10, offset: 0 });
+    const firstBatch = await listNotifications(
+      { userId: 2 },
+      { limit: 10, offset: 0 }
+    );
     const targetId = firstBatch[0]?.id;
     expect(targetId).toBeDefined();
 
@@ -129,7 +164,10 @@ describe("notificationService - queue and delivery", () => {
       message: "Soon deleted",
     });
     await processNotificationQueue();
-    const existing = await listNotifications({ userId: 3 }, { limit: 5, offset: 0 });
+    const existing = await listNotifications(
+      { userId: 3 },
+      { limit: 5, offset: 0 }
+    );
     const idToDelete = existing[0]?.id;
     expect(idToDelete).toBeDefined();
 
@@ -138,7 +176,10 @@ describe("notificationService - queue and delivery", () => {
     }
 
     await deleteNotification(idToDelete, { userId: 3 });
-    const afterDelete = await listNotifications({ userId: 3 }, { limit: 5, offset: 0 });
+    const afterDelete = await listNotifications(
+      { userId: 3 },
+      { limit: 5, offset: 0 }
+    );
     expect(afterDelete).toHaveLength(0);
     const unread = await getUnreadCount({ userId: 3 });
     expect(unread).toBe(0);
@@ -150,10 +191,13 @@ describe("notificationService - queue and delivery", () => {
     expect(prefs.emailEnabled).toBe(true);
     expect(prefs.systemAlerts).toBe(true);
 
-    await updateNotificationPreferences({ userId: 7 }, {
-      inAppEnabled: false,
-      systemAlerts: false,
-    });
+    await updateNotificationPreferences(
+      { userId: 7 },
+      {
+        inAppEnabled: false,
+        systemAlerts: false,
+      }
+    );
 
     const updated = await getNotificationPreferences({ userId: 7 });
     expect(updated.inAppEnabled).toBe(false);

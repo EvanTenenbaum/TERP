@@ -59,6 +59,7 @@ const CalendarPage = lazy(() => import("@/pages/CalendarPage"));
 const SchedulingPage = lazy(() => import("@/pages/SchedulingPage"));
 // MEET-048: Hour Tracking / Time Clock
 const TimeClockPage = lazy(() => import("@/pages/TimeClockPage"));
+const SystemMetricsPage = lazy(() => import("@/pages/SystemMetricsPage"));
 import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
@@ -80,6 +81,7 @@ import {
   type RouteComponentProps as WouterRouteComponentProps,
 } from "wouter";
 import { VersionChecker } from "@/components/VersionChecker";
+import { StagingAgentation } from "@/components/staging/StagingAgentation";
 import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 import { PageLoading } from "@/components/ui/loading-state";
 
@@ -404,6 +406,22 @@ function Router() {
                     lazy(() => import("@/pages/ProductsPage"))
                   )}
                 />
+                <Route
+                  path="/strains"
+                  component={RedirectWithSearch("/strains", "/products")}
+                />
+                <Route
+                  path="/strains/new"
+                  component={RedirectWithSearch("/strains/new", "/products")}
+                />
+                <Route
+                  path="/strains/:id"
+                  component={RedirectWithSearch("/strains/:id", "/products")}
+                />
+                <Route
+                  path="/admin/strains"
+                  component={RedirectWithSearch("/admin/strains", "/products")}
+                />
                 {/* Accounting workspace — all sub-pages as tabs */}
                 <Route
                   path="/accounting"
@@ -608,6 +626,26 @@ function Router() {
                   component={withErrorBoundary(Settings)}
                 />
                 <Route
+                  path="/admin/users"
+                  component={RedirectWithTab(
+                    "/admin/users",
+                    "/settings",
+                    "users"
+                  )}
+                />
+                <Route
+                  path="/admin/roles/new"
+                  component={RedirectWithTab(
+                    "/admin/roles/new",
+                    "/settings",
+                    "roles"
+                  )}
+                />
+                <Route
+                  path="/admin/metrics"
+                  component={withLazyErrorBoundary(SystemMetricsPage)}
+                />
+                <Route
                   path="/account"
                   component={withErrorBoundary(AccountPage)}
                 />
@@ -674,9 +712,10 @@ function Router() {
                 />
                 <Route
                   path="/procurement"
-                  component={RedirectWithSearch(
+                  component={RedirectWithTab(
                     "/procurement",
-                    "/purchase-orders"
+                    "/purchase-orders",
+                    "purchase-orders"
                   )}
                 />
                 <Route
@@ -817,6 +856,14 @@ function Router() {
                 <Route
                   path="/calendar"
                   component={withLazyErrorBoundary(CalendarPage)}
+                />
+                <Route
+                  path="/calendar/invitations"
+                  component={RedirectWithTab(
+                    "/calendar/invitations",
+                    "/calendar",
+                    "invitations"
+                  )}
                 />
                 {/* Sprint 4 Track D: Scheduling System */}
                 <Route
@@ -999,6 +1046,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <VersionChecker />
+          <StagingAgentation />
           <Router />
           <CommandPalette
             open={showCommandPalette}

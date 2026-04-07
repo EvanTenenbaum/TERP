@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
@@ -10,15 +10,17 @@ const OrdersSheetPilotSurface = lazy(
 const SalesCatalogueSurface = lazy(
   () => import("@/components/spreadsheet-native/SalesCatalogueSurface")
 );
+const SalesOrderSurface = lazy(
+  () => import("@/components/spreadsheet-native/SalesOrderSurface")
+);
 const QuotesPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/QuotesPilotSurface")
 );
 const ReturnsPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/ReturnsPilotSurface")
 );
-import ReturnsPage from "@/pages/ReturnsPage";
-import OrderCreatorPage from "@/pages/OrderCreatorPage";
-import LiveShoppingPage from "@/pages/LiveShoppingPage";
+const ReturnsPage = lazy(() => import("@/pages/ReturnsPage"));
+const LiveShoppingPage = lazy(() => import("@/pages/LiveShoppingPage"));
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { SALES_WORKSPACE } from "@/config/workspaces";
@@ -42,6 +44,7 @@ import { Redirect, useLocation, useSearch } from "wouter";
 type BaseSalesTab = (typeof SALES_WORKSPACE.tabs)[number]["value"];
 type SalesTab = BaseSalesTab | "create-order";
 type SalesQueryTab = SalesTab | "pick-pack";
+type PilotSurfaceMode = "classic" | "sheet-native";
 
 const SALES_TABS_CONFIG_BASE = [
   ...SALES_WORKSPACE.tabs,
@@ -62,60 +65,154 @@ const ORDER_DOCUMENT_PARAM_KEYS = [
   "fromSalesSheet",
 ] as const;
 
-function pickDocumentRedirectParams(searchParams: URLSearchParams) {
+const CLASSIC_ORDER_CONTEXT_PARAM_KEYS = [
+  "clientId",
+  "needId",
+  "fromSalesSheet",
+] as const;
+
+const CLASSIC_ORDER_FALLBACK_PARAM_KEYS = ["clientId"] as const;
+
+const CLASSIC_DOCUMENT_FALLBACK_PARAM_KEYS = [
+  "draftId",
+  "quoteId",
+  "clientId",
+  "needId",
+  "mode",
+  "fromSalesSheet",
+] as const;
+
+const SHIPPING_REDIRECT_PARAM_KEYS = ["orderId"] as const;
+
+function pickParams<const TKeys extends readonly string[]>(
+  searchParams: URLSearchParams,
+  keys: TKeys
+) {
   return Object.fromEntries(
-    ORDER_DOCUMENT_PARAM_KEYS.flatMap(key => {
+    keys.flatMap(key => {
       const value = searchParams.get(key);
       return value ? [[key, value]] : [];
     })
   );
 }
 
+function shouldRenderPilotSurface(
+  enabled: boolean,
+  surfaceMode: PilotSurfaceMode,
+  force = false
+) {
+  return enabled && (surfaceMode === "sheet-native" || force);
+}
+
 export default function SalesWorkspacePage() {
   const [, setLocation] = useLocation();
   const search = useSearch();
-  const searchParams = new URLSearchParams(search);
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
   const { activeTab, setActiveTab } = useQueryTabState<SalesQueryTab>({
     defaultTab: "orders",
     validTabs: [...SALES_TABS, "pick-pack"],
   });
-  const redirectParams = Object.fromEntries(
-    Array.from(searchParams.entries()).filter(
-      ([key]) => key !== "tab" && key !== "classic"
-    )
+  const classicOrderContextParams = useMemo(
+    () => pickParams(searchParams, CLASSIC_ORDER_CONTEXT_PARAM_KEYS),
+    [searchParams]
   );
-  const shouldRedirectSalesSheetsDocumentIntent =
-    searchParams.get("tab") === "sales-sheets" &&
-    (searchParams.get("ordersView") === "document" ||
-      searchParams.has("draftId") ||
-      searchParams.has("quoteId") ||
-      searchParams.has("needId") ||
-      searchParams.get("fromSalesSheet") === "true");
-  const salesSheetsDocumentRedirect = shouldRedirectSalesSheetsDocumentIntent
-    ? buildSheetNativeOrdersDocumentPath(
-        pickDocumentRedirectParams(searchParams)
-      )
-    : null;
+  const classicOrderFallbackParams = useMemo(
+    () => pickParams(searchParams, CLASSIC_ORDER_FALLBACK_PARAM_KEYS),
+    [searchParams]
+  );
+  const pickPackRedirectParams = useMemo(
+    () => pickParams(searchParams, SHIPPING_REDIRECT_PARAM_KEYS),
+    [searchParams]
+  );
+  const classicDocumentFallbackParams = useMemo(
+    () => pickParams(searchParams, CLASSIC_DOCUMENT_FALLBACK_PARAM_KEYS),
+    [searchParams]
+  );
+  const shouldRedirectSalesSheetsDocumentIntent = useMemo(
+    () =>
+      searchParams.get("tab") === "sales-sheets" &&
+      (searchParams.get("ordersView") === "document" ||
+        searchParams.has("draftId") ||
+        searchParams.has("quoteId") ||
+        searchParams.has("needId") ||
+        searchParams.get("fromSalesSheet") === "true"),
+    [searchParams]
+  );
+  const salesSheetsDocumentRedirect = useMemo(
+    () =>
+      shouldRedirectSalesSheetsDocumentIntent
+        ? buildSheetNativeOrdersDocumentPath(
+            pickParams(searchParams, ORDER_DOCUMENT_PARAM_KEYS)
+          )
+        : null,
+    [searchParams, shouldRedirectSalesSheetsDocumentIntent]
+  );
+  const shouldForceSheetNativeOrdersSurface = useMemo(
+    () =>
+      searchParams.get("tab") === "orders" &&
+      (searchParams.get("ordersView") === "document" ||
+        searchParams.has("draftId") ||
+        searchParams.has("quoteId") ||
+        searchParams.has("needId") ||
+        searchParams.get("fromSalesSheet") === "true"),
+    [searchParams]
+  );
 
   // BUG-008: When mode=quote is in the URL (from "New Quote" action),
   // relabel the create-order tab to "New Quote" so users understand context.
   const isQuoteMode =
     activeTab === "create-order" && searchParams.get("mode") === "quote";
-  const SALES_TABS_CONFIG: readonly LinearWorkspaceTab<SalesTab>[] = isQuoteMode
-    ? SALES_TABS_CONFIG_BASE.map(tab =>
-        tab.value === "create-order" ? { ...tab, label: "New Quote" } : tab
-      )
-    : SALES_TABS_CONFIG_BASE;
+  const SALES_TABS_CONFIG: readonly LinearWorkspaceTab<SalesTab>[] = useMemo(
+    () =>
+      isQuoteMode
+        ? SALES_TABS_CONFIG_BASE.map(tab =>
+            tab.value === "create-order" ? { ...tab, label: "New Quote" } : tab
+          )
+        : SALES_TABS_CONFIG_BASE,
+    [isQuoteMode]
+  );
   // Orders / create-order pilot (separate from sales-sheets to prevent cross-tab surfaceMode bleed)
-  const ordersPilotSupported =
-    activeTab === "orders" || activeTab === "create-order";
+  const ordersPilotSupported = activeTab === "orders";
   const { sheetPilotEnabled, availabilityReady } =
     useSpreadsheetPilotAvailability(ordersPilotSupported);
-  const ordersSurfaceModuleId =
-    activeTab === "create-order" ? "create-order" : "orders";
+  const ordersPilotReady =
+    sheetPilotEnabled && availabilityReady && ordersPilotSupported;
+  const shouldShowOrdersPilotLoading =
+    ordersPilotSupported &&
+    shouldForceSheetNativeOrdersSurface &&
+    !availabilityReady;
+  const classicOrdersDocumentFallback = useMemo(() => {
+    if (
+      !shouldForceSheetNativeOrdersSurface ||
+      !availabilityReady ||
+      sheetPilotEnabled
+    ) {
+      return null;
+    }
+
+    const orderId = searchParams.get("orderId");
+    if (orderId) {
+      return buildSalesWorkspacePath("orders", {
+        ...classicOrderFallbackParams,
+        orderId,
+      });
+    }
+
+    return buildSalesWorkspacePath(
+      "create-order",
+      classicDocumentFallbackParams
+    );
+  }, [
+    availabilityReady,
+    classicDocumentFallbackParams,
+    classicOrderFallbackParams,
+    searchParams,
+    sheetPilotEnabled,
+    shouldForceSheetNativeOrdersSurface,
+  ]);
   const { surfaceMode, setSurfaceMode } = useSpreadsheetSurfaceMode(
     buildSurfaceAvailability(
-      ordersSurfaceModuleId,
+      "orders",
       sheetPilotEnabled,
       availabilityReady && ordersPilotSupported
     )
@@ -126,6 +223,8 @@ export default function SalesWorkspacePage() {
     sheetPilotEnabled: quotesPilotEnabled,
     availabilityReady: quotesAvailabilityReady,
   } = useSpreadsheetPilotAvailability(quotesPilotSupported);
+  const quotesPilotReady =
+    quotesPilotEnabled && quotesAvailabilityReady && quotesPilotSupported;
   const {
     surfaceMode: quotesSurfaceMode,
     setSurfaceMode: setQuotesSurfaceMode,
@@ -142,6 +241,8 @@ export default function SalesWorkspacePage() {
     sheetPilotEnabled: returnsPilotEnabled,
     availabilityReady: returnsAvailabilityReady,
   } = useSpreadsheetPilotAvailability(returnsPilotSupported);
+  const returnsPilotReady =
+    returnsPilotEnabled && returnsAvailabilityReady && returnsPilotSupported;
   const {
     surfaceMode: returnsSurfaceMode,
     setSurfaceMode: setReturnsSurfaceMode,
@@ -153,18 +254,41 @@ export default function SalesWorkspacePage() {
     )
   );
 
-  useWorkspaceHomeTelemetry(
-    "sales",
-    shouldRedirectSalesSheetsDocumentIntent ? "orders" : activeTab
+  const telemetryTab = shouldRedirectSalesSheetsDocumentIntent
+    ? "sales-sheets-document-redirect"
+    : activeTab === "pick-pack"
+      ? "pick-pack-redirect"
+      : activeTab;
+  const returnsFallback = useMemo(
+    () => (
+      <Suspense
+        fallback={
+          <div className="p-4 text-sm text-muted-foreground">
+            Loading returns...
+          </div>
+        }
+      >
+        <ReturnsPage embedded />
+      </Suspense>
+    ),
+    []
   );
+
+  useWorkspaceHomeTelemetry("sales", telemetryTab);
 
   if (salesSheetsDocumentRedirect) {
     return <Redirect to={salesSheetsDocumentRedirect} />;
   }
 
+  if (classicOrdersDocumentFallback) {
+    return <Redirect to={classicOrdersDocumentFallback} />;
+  }
+
   if (activeTab === "pick-pack") {
     return (
-      <Redirect to={buildOperationsWorkspacePath("shipping", redirectParams)} />
+      <Redirect
+        to={buildOperationsWorkspacePath("shipping", pickPackRedirectParams)}
+      />
     );
   }
 
@@ -178,7 +302,7 @@ export default function SalesWorkspacePage() {
       tabs={SALES_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
       commandStrip={
-        activeTab === "orders" || activeTab === "create-order" ? (
+        activeTab === "orders" ? (
           <SheetModeToggle
             enabled={sheetPilotEnabled}
             surfaceMode={surfaceMode}
@@ -200,42 +324,75 @@ export default function SalesWorkspacePage() {
       }
     >
       <LinearWorkspacePanel value="orders">
-        {surfaceMode === "sheet-native" ? (
-          <PilotSurfaceBoundary fallback={<OrdersWorkSurface />}>
-            <OrdersSheetPilotSurface
-              onOpenClassic={orderId =>
-                setLocation(
-                  buildSalesWorkspacePath("orders", {
-                    orderId: orderId ?? undefined,
-                  })
-                )
-              }
-            />
-          </PilotSurfaceBoundary>
+        {shouldShowOrdersPilotLoading ? (
+          <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+            Loading orders document...
+          </div>
+        ) : shouldRenderPilotSurface(
+            ordersPilotReady,
+            surfaceMode,
+            shouldForceSheetNativeOrdersSurface
+          ) ? (
+          <Suspense
+            fallback={
+              <div className="p-4 text-sm text-muted-foreground">
+                Loading orders...
+              </div>
+            }
+          >
+            <PilotSurfaceBoundary fallback={<OrdersWorkSurface />}>
+              <OrdersSheetPilotSurface
+                onOpenClassic={orderId =>
+                  setLocation(
+                    buildSalesWorkspacePath("orders", {
+                      ...classicOrderContextParams,
+                      orderId: orderId ?? undefined,
+                    })
+                  )
+                }
+              />
+            </PilotSurfaceBoundary>
+          </Suspense>
         ) : (
           <OrdersWorkSurface />
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="quotes">
-        {quotesPilotEnabled && quotesSurfaceMode === "sheet-native" ? (
-          <PilotSurfaceBoundary fallback={<QuotesWorkSurface />}>
-            <QuotesPilotSurface
-              onOpenClassic={() => setQuotesSurfaceMode("classic")}
-            />
-          </PilotSurfaceBoundary>
+        {shouldRenderPilotSurface(quotesPilotReady, quotesSurfaceMode) ? (
+          <Suspense
+            fallback={
+              <div className="p-4 text-sm text-muted-foreground">
+                Loading quotes...
+              </div>
+            }
+          >
+            <PilotSurfaceBoundary fallback={<QuotesWorkSurface />}>
+              <QuotesPilotSurface
+                onOpenClassic={() => setQuotesSurfaceMode("classic")}
+              />
+            </PilotSurfaceBoundary>
+          </Suspense>
         ) : (
           <QuotesWorkSurface />
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="returns">
-        {returnsPilotEnabled && returnsSurfaceMode === "sheet-native" ? (
-          <PilotSurfaceBoundary fallback={<ReturnsPage embedded />}>
-            <ReturnsPilotSurface
-              onOpenClassic={() => setReturnsSurfaceMode("classic")}
-            />
-          </PilotSurfaceBoundary>
+        {shouldRenderPilotSurface(returnsPilotReady, returnsSurfaceMode) ? (
+          <Suspense
+            fallback={
+              <div className="p-4 text-sm text-muted-foreground">
+                Loading returns...
+              </div>
+            }
+          >
+            <PilotSurfaceBoundary fallback={returnsFallback}>
+              <ReturnsPilotSurface
+                onOpenClassic={() => setReturnsSurfaceMode("classic")}
+              />
+            </PilotSurfaceBoundary>
+          </Suspense>
         ) : (
-          <ReturnsPage embedded />
+          returnsFallback
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="sales-sheets">
@@ -250,25 +407,26 @@ export default function SalesWorkspacePage() {
         </Suspense>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="live-shopping">
-        <LiveShoppingPage />
+        <Suspense
+          fallback={
+            <div className="p-4 text-sm text-muted-foreground">
+              Loading live shopping...
+            </div>
+          }
+        >
+          <LiveShoppingPage />
+        </Suspense>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="create-order">
-        {sheetPilotEnabled && surfaceMode === "sheet-native" ? (
-          <PilotSurfaceBoundary fallback={<OrderCreatorPage />}>
-            <OrdersSheetPilotSurface
-              forceDocumentMode
-              onOpenClassic={orderId =>
-                setLocation(
-                  buildSalesWorkspacePath("create-order", {
-                    orderId: orderId ?? undefined,
-                  })
-                )
-              }
-            />
-          </PilotSurfaceBoundary>
-        ) : (
-          <OrderCreatorPage />
-        )}
+        <Suspense
+          fallback={
+            <div className="p-4 text-sm text-muted-foreground">
+              Loading order...
+            </div>
+          }
+        >
+          <SalesOrderSurface />
+        </Suspense>
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );

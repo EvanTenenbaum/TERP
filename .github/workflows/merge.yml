@@ -38,16 +38,16 @@ jobs:
           --health-retries=5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '22'
-          cache: 'pnpm'
+          node-version: "22"
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -119,7 +119,7 @@ jobs:
         continue-on-error: true
 
       - name: Post Results Comment
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: always()
         with:
           script: |
@@ -259,7 +259,7 @@ jobs:
           git checkout main
 
       - name: Create fallback issue if comment failed
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: failure() && steps.schema.outputs.status != ''
         with:
           script: |
@@ -312,41 +312,75 @@ jobs:
         if: success()
         run: |
           APP_URL="https://terp-app-b9s35.ondigitalocean.app"
+          TARGET_COMMIT="${GITHUB_SHA}"
+          TARGET_COMMIT_SHORT="${GITHUB_SHA::7}"
+          VERIFICATION_START_EPOCH=$(date -u +%s)
+          INITIAL_VERSION_COMPACT=$(curl -sf "${APP_URL}/version.json?ts=${VERIFICATION_START_EPOCH}" 2>/dev/null | jq -c '.' 2>/dev/null || true)
 
           echo "Waiting for DigitalOcean auto-deploy to start..."
           sleep 60
 
-          MAX_ATTEMPTS=20
+          MAX_ATTEMPTS=30
           ATTEMPTS=0
           while [ "$ATTEMPTS" -lt "$MAX_ATTEMPTS" ]; do
             ATTEMPTS=$((ATTEMPTS + 1))
 
-            RESPONSE=$(curl -sf "${APP_URL}/health" 2>/dev/null) || {
-              echo "App unreachable (attempt $ATTEMPTS/$MAX_ATTEMPTS) — deploy may be in progress"
+            VERSION_RESPONSE=$(curl -sf "${APP_URL}/version.json?ts=$(date +%s)" 2>/dev/null) || {
+              echo "version.json unreachable (attempt $ATTEMPTS/$MAX_ATTEMPTS) — deploy may be in progress"
               sleep 30
               continue
             }
 
-            UPTIME=$(echo "$RESPONSE" | jq -r '.uptime // empty' 2>/dev/null)
-            STATUS=$(echo "$RESPONSE" | jq -r '.status // empty' 2>/dev/null)
+            LIVE_COMMIT=$(echo "$VERSION_RESPONSE" | jq -r '.commit // empty' 2>/dev/null)
+            LIVE_BUILD_TIME=$(echo "$VERSION_RESPONSE" | jq -r '.buildTime // empty' 2>/dev/null)
+            LIVE_VERSION_COMPACT=$(echo "$VERSION_RESPONSE" | jq -c '.' 2>/dev/null || true)
+            LIVE_BUILD_EPOCH=$(date -u -d "$LIVE_BUILD_TIME" +%s 2>/dev/null || true)
+            VERSION_CHANGED=false
+            BUILD_TIME_IS_FRESH=false
 
-            if [ -n "$UPTIME" ]; then
-              UPTIME_INT=${UPTIME%.*}
-              if [ "$UPTIME_INT" -lt 300 ] 2>/dev/null; then
-                echo "✅ Fresh deployment verified (uptime: ${UPTIME_INT}s, status: ${STATUS})"
-                echo "deployment_status=verified" >> $GITHUB_OUTPUT
-                exit 0
-              else
-                echo "Uptime ${UPTIME_INT}s — old deployment still serving (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
-              fi
-            else
-              echo "Could not parse uptime from /health (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+            if [ -n "$LIVE_VERSION_COMPACT" ] && [ "$LIVE_VERSION_COMPACT" != "$INITIAL_VERSION_COMPACT" ]; then
+              VERSION_CHANGED=true
             fi
 
+            if [ -n "$LIVE_BUILD_EPOCH" ] && [ "$LIVE_BUILD_EPOCH" -ge $((VERIFICATION_START_EPOCH - 60)) ]; then
+              BUILD_TIME_IS_FRESH=true
+            fi
+
+            HEALTH_RESPONSE=$(curl -sf "${APP_URL}/health" 2>/dev/null || true)
+            HEALTH_STATUS=$(echo "$HEALTH_RESPONSE" | jq -r '.status // empty' 2>/dev/null)
+            HEALTH_COMMIT=$(echo "$HEALTH_RESPONSE" | jq -r '.commit // empty' 2>/dev/null)
+
+            if [ -n "$HEALTH_COMMIT" ] && [ -n "$LIVE_COMMIT" ] && [ "$HEALTH_COMMIT" != "$LIVE_COMMIT" ]; then
+              echo "version.json reports ${LIVE_COMMIT} but /health reports ${HEALTH_COMMIT} (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+              sleep 30
+              continue
+            fi
+
+            COMMIT_MATCHES=false
+            if [ "$LIVE_COMMIT" = "$TARGET_COMMIT_SHORT" ] || [ "$LIVE_COMMIT" = "$TARGET_COMMIT" ]; then
+              COMMIT_MATCHES=true
+            fi
+
+            if [ "$COMMIT_MATCHES" = true ] || { [ "$VERSION_CHANGED" = true ] && [ "$BUILD_TIME_IS_FRESH" = true ]; }; then
+              if [ "$COMMIT_MATCHES" = false ]; then
+                echo "ℹ️  Verified a fresh production build via changed version payload and buildTime ${LIVE_BUILD_TIME:-unknown}"
+              fi
+
+              if [ -n "$HEALTH_COMMIT" ] && [ "$COMMIT_MATCHES" = true ] && [ "$HEALTH_COMMIT" != "$TARGET_COMMIT_SHORT" ] && [ "$HEALTH_COMMIT" != "$TARGET_COMMIT" ]; then
+                echo "/health still reports commit ${HEALTH_COMMIT} instead of ${TARGET_COMMIT_SHORT} (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
+                sleep 30
+                continue
+              fi
+
+              echo "✅ Fresh deployment verified (commit: ${LIVE_COMMIT}, health: ${HEALTH_STATUS:-unknown}, buildTime: ${LIVE_BUILD_TIME:-unknown})"
+              echo "deployment_status=verified" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+
+            echo "Live app is still stale (commit: ${LIVE_COMMIT:-unknown}, changed: ${VERSION_CHANGED}, freshBuildTime: ${BUILD_TIME_IS_FRESH}) (attempt $ATTEMPTS/$MAX_ATTEMPTS)"
             sleep 30
           done
 
-          echo "⚠️ Could not confirm fresh deployment after $MAX_ATTEMPTS attempts (~10 min)"
-          echo "The deploy may still be in progress. Check DigitalOcean dashboard."
-          echo "deployment_status=unverified" >> $GITHUB_OUTPUT
-          exit 0
+          echo "❌ Could not confirm commit ${TARGET_COMMIT_SHORT} on production after $MAX_ATTEMPTS attempts (~15 min)"
+          echo "deployment_status=failed" >> $GITHUB_OUTPUT
+          exit 1

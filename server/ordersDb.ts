@@ -38,6 +38,7 @@ import {
   isReadyForPackingLikeStatus,
   normalizeFulfillmentStatus,
 } from "./lib/fulfillmentStatusCompatibility";
+import { resolveQuoteValidUntilDate } from "./lib/quoteValidity";
 import { parseMoneyOrNull, parseMoneyOrZero } from "./utils/money";
 // MEET-005: Import payables service for tracking vendor payables when inventory is sold
 import * as payablesService from "./services/payablesService";
@@ -224,8 +225,16 @@ function normalizeStoredOrderItem(rawItem: unknown): OrderItem {
   }
 
   const item = rawItem as OrderItemLike;
-  const batchId = Number(item.batchId);
-  if (!Number.isFinite(batchId) || batchId <= 0) {
+  const displayName =
+    item.displayName ||
+    item.productName ||
+    item.originalName ||
+    (item.batchId ? `Batch ${item.batchId}` : "Legacy order item");
+  const parsedBatchId = Number(item.batchId);
+  const batchId =
+    Number.isFinite(parsedBatchId) && parsedBatchId > 0 ? parsedBatchId : 0;
+
+  if (batchId === 0 && !displayName.trim()) {
     throw new Error("Order contains an item with a missing batchId");
   }
 
@@ -259,12 +268,6 @@ function normalizeStoredOrderItem(rawItem: unknown): OrderItem {
     ["LOW", "MID", "HIGH", "MANUAL"].includes(item.effectiveCogsBasis)
       ? item.effectiveCogsBasis
       : "MANUAL";
-  const displayName =
-    item.displayName ||
-    item.productName ||
-    item.originalName ||
-    `Batch ${batchId}`;
-
   return {
     batchId,
     displayName,
@@ -559,9 +562,9 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       totalMargin: totalMargin.toString(),
       avgMarginPercent: avgMarginPercent.toString(),
       validUntil: input.validUntil
-        ? new Date(input.validUntil)
+        ? resolveQuoteValidUntilDate(input.validUntil)
         : input.orderType === "QUOTE"
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          ? resolveQuoteValidUntilDate()
           : undefined,
       quoteStatus: input.orderType === "QUOTE" ? "UNSENT" : undefined,
       paymentTerms: input.paymentTerms || "NET_30",
@@ -1856,7 +1859,7 @@ export async function updateDraftOrder(input: {
           totalMargin: totalMargin.toString(),
           avgMarginPercent: avgMarginPercent.toString(),
           validUntil: input.validUntil
-            ? new Date(input.validUntil)
+            ? resolveQuoteValidUntilDate(input.validUntil)
             : draft.validUntil,
           notes: input.notes || draft.notes,
         })

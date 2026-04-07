@@ -1,9 +1,35 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import type { PricedInventoryItem, DraftInfo } from "@/components/sales/types";
 
 const AUTO_SAVE_INTERVAL_MS = 30_000;
+
+function buildItemsFingerprint(sourceItems: PricedInventoryItem[]) {
+  return JSON.stringify(
+    sourceItems.map(item => ({
+      id: item.id,
+      name: item.name,
+      basePrice: item.basePrice,
+      retailPrice: item.retailPrice,
+      quantity: item.quantity,
+      category: item.category,
+      subcategory: item.subcategory,
+      brand: item.brand,
+      batchSku: item.batchSku,
+      vendor: item.vendor,
+      imageUrl: item.imageUrl,
+      cogsMode: item.cogsMode,
+      unitCogs: item.unitCogs,
+      unitCogsMin: item.unitCogsMin,
+      unitCogsMax: item.unitCogsMax,
+      effectiveCogs: item.effectiveCogs,
+      effectiveCogsBasis: item.effectiveCogsBasis,
+      priceMarkup: item.priceMarkup,
+      appliedRules: item.appliedRules,
+    }))
+  );
+}
 
 function toAbsoluteShareUrl(path: string): string {
   if (path.startsWith("http://") || path.startsWith("https://")) {
@@ -78,7 +104,8 @@ export function useCatalogueDraft({
   const [lastShareUrl, setLastShareUrl] = useState<string | null>(null);
 
   // ── refs for stale-closure-safe auto-save ───────────────────────────────
-  const isInitialLoad = useRef(true);
+  const isItemsInitialLoadRef = useRef(true);
+  const isDraftNameInitialLoadRef = useRef(true);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDeletingDraftRef = useRef(false);
   const saveLockRef = useRef(false);
@@ -104,8 +131,16 @@ export function useCatalogueDraft({
     currentDraftIdRef.current = currentDraftId;
   }, [currentDraftId]);
 
+  const itemsFingerprint = useMemo(() => buildItemsFingerprint(items), [items]);
+
   // ── mutations ───────────────────────────────────────────────────────────
   const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation();
+  const shareLinkMutation = trpc.salesSheets.generateShareLink.useMutation();
+  const shareLinkMutateAsyncRef = useRef(shareLinkMutation.mutateAsync);
+
+  useEffect(() => {
+    shareLinkMutateAsyncRef.current = shareLinkMutation.mutateAsync;
+  }, [shareLinkMutation.mutateAsync]);
 
   const deleteDraftMutation = trpc.salesSheets.deleteDraft.useMutation({
     onSuccess: (_data, variables) => {
@@ -137,9 +172,6 @@ export function useCatalogueDraft({
       toast.error("Failed to delete draft: " + error.message);
     },
   });
-
-  const shareLinkMutation = trpc.salesSheets.generateShareLink.useMutation();
-
   // Track the last finalized sheet ID — needed for share link generation.
   // salesSheets.save returns a number (the sheetId), not an object.
   const [lastSavedSheetId, setLastSavedSheetId] = useState<number | null>(null);
@@ -166,21 +198,22 @@ export function useCatalogueDraft({
 
   // ── mark dirty on item changes ──────────────────────────────────────────
   useEffect(() => {
-    if (isInitialLoad.current) {
-      isInitialLoad.current = false;
+    if (isItemsInitialLoadRef.current) {
+      isItemsInitialLoadRef.current = false;
       return;
     }
     setLastShareUrl(null);
     setHasUnsavedChanges(true);
-  }, [items]);
+  }, [itemsFingerprint]);
 
   useEffect(() => {
-    if (draftName === previousDraftNameRef.current) return;
-
-    if (isInitialLoad.current) {
+    if (isDraftNameInitialLoadRef.current) {
+      isDraftNameInitialLoadRef.current = false;
       previousDraftNameRef.current = draftName;
       return;
     }
+
+    if (draftName === previousDraftNameRef.current) return;
 
     previousDraftNameRef.current = draftName;
     setLastShareUrl(null);
@@ -372,7 +405,8 @@ export function useCatalogueDraft({
             : null
         );
         setHasUnsavedChanges(false);
-        isInitialLoad.current = true;
+        isItemsInitialLoadRef.current = true;
+        isDraftNameInitialLoadRef.current = true;
         return result.items as PricedInventoryItem[];
       }
       return [];
@@ -449,7 +483,7 @@ export function useCatalogueDraft({
     // salesSheets.generateShareLink operates on the salesSheetHistory table.
     if (!lastSavedSheetId || hasUnsavedChanges) return null;
     try {
-      const result = await shareLinkMutation.mutateAsync({
+      const result = await shareLinkMutateAsyncRef.current({
         sheetId: lastSavedSheetId,
         expiresInDays: 7,
       });
@@ -469,7 +503,7 @@ export function useCatalogueDraft({
       toast.error("Failed to generate share link");
       return null;
     }
-  }, [lastSavedSheetId, hasUnsavedChanges, shareLinkMutation]);
+  }, [lastSavedSheetId, hasUnsavedChanges]);
 
   const handleConvertToOrder = useCallback(async () => {
     if (!clientId || items.length === 0 || hasUnsavedChanges || isSaveLocked) {
@@ -522,7 +556,8 @@ export function useCatalogueDraft({
     setLastShareUrl(null);
     setLastSaveTime(null);
     setHasUnsavedChanges(false);
-    isInitialLoad.current = true;
+    isItemsInitialLoadRef.current = true;
+    isDraftNameInitialLoadRef.current = true;
   }, []);
 
   return {

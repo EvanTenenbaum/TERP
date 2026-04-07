@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import type { ColDef, RowClassParams } from "ag-grid-community";
-import { AgGridReact } from "ag-grid-react";
+import { AgGridReactCompat } from "@/components/ag-grid/AgGridReactCompat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -247,7 +247,7 @@ export const ClientGrid = React.memo(function ClientGrid() {
                 </p>
               </div>
             ) : (
-              <AgGridReact<ClientGridRow>
+              <AgGridReactCompat<ClientGridRow>
                 rowData={gridData?.rows ?? []}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}

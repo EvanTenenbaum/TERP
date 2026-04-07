@@ -79,6 +79,7 @@ import {
   resolveNextSelectedDraftId,
   resolveSelectedDraft,
 } from "./productIntakeSelection";
+import { cn } from "@/lib/utils";
 
 // BUG-026: Capitalize each word of strain/product names for polished display
 function capitalizeStrainName(name: string | null | undefined): string {
@@ -91,6 +92,22 @@ const formatCurrency = (value: number): string =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
     value
   );
+
+function hasMissingCostData(line: ProductIntakeDraftLine): boolean {
+  if (line.cogsMode === "RANGE") {
+    return (
+      Number(line.unitCostMin ?? 0) <= 0 || Number(line.unitCostMax ?? 0) <= 0
+    );
+  }
+  return Number(line.unitCost ?? 0) <= 0;
+}
+
+function formatLineCostDisplay(line: ProductIntakeDraftLine): string {
+  if (line.cogsMode === "RANGE") {
+    return `${formatCurrency(Number(line.unitCostMin ?? 0))} - ${formatCurrency(Number(line.unitCostMax ?? 0))}`;
+  }
+  return formatCurrency(Number(line.unitCost ?? 0));
+}
 
 const defaultColumns: GridColumnOption[] = [
   { id: "brand", label: "Brand/Farmer", visible: true },
@@ -1488,23 +1505,84 @@ export function ProductIntakeSlicePage() {
                     </td>
                   )}
                   {visibleColumnIds.has("cost") && (
-                    <td className="p-2">
+                    <td
+                      className={cn(
+                        "p-2",
+                        hasMissingCostData(line) ? "bg-amber-50/80" : undefined
+                      )}
+                    >
                       {canEdit ? (
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={line.unitCost}
-                          onChange={e =>
-                            updateLine(line.id, {
-                              unitCost: Number(e.target.value || 0),
-                            })
-                          }
-                        />
+                        line.cogsMode === "RANGE" ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={line.unitCostMin ?? 0}
+                              className={
+                                hasMissingCostData(line)
+                                  ? "border-amber-300 bg-amber-50"
+                                  : undefined
+                              }
+                              onChange={e =>
+                                updateLine(line.id, {
+                                  unitCostMin: Number(e.target.value || 0),
+                                })
+                              }
+                            />
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={line.unitCostMax ?? 0}
+                              className={
+                                hasMissingCostData(line)
+                                  ? "border-amber-300 bg-amber-50"
+                                  : undefined
+                              }
+                              onChange={e =>
+                                updateLine(line.id, {
+                                  unitCostMax: Number(e.target.value || 0),
+                                })
+                              }
+                            />
+                          </div>
+                        ) : (
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            value={line.unitCost}
+                            className={
+                              hasMissingCostData(line)
+                                ? "border-amber-300 bg-amber-50"
+                                : undefined
+                            }
+                            onChange={e =>
+                              updateLine(line.id, {
+                                unitCost: Number(e.target.value || 0),
+                              })
+                            }
+                          />
+                        )
                       ) : (
-                        // BUG-027: Format cost as currency in read-only view
-                        <span className="text-sm">
-                          {formatCurrency(Number(line.unitCost ?? 0))}
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1 text-sm",
+                            hasMissingCostData(line)
+                              ? "font-medium text-amber-700"
+                              : undefined
+                          )}
+                          title={
+                            hasMissingCostData(line)
+                              ? "Cost is missing or zero. Review before receiving."
+                              : undefined
+                          }
+                        >
+                          {hasMissingCostData(line) ? (
+                            <AlertTriangle className="h-4 w-4" />
+                          ) : null}
+                          {formatLineCostDisplay(line)}
                         </span>
                       )}
                     </td>

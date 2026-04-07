@@ -51,6 +51,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { EmptyState } from "@/components/ui/empty-state";
 
 import {
   InspectorPanel,
@@ -91,6 +93,7 @@ import {
 import { cn } from "@/lib/utils";
 import { parseInvoiceDeepLink } from "@/components/work-surface/invoiceDeepLink";
 import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
+import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
 
 // ============================================================================
 // TYPES
@@ -277,7 +280,7 @@ function mapInvoicesToGridRows(
     return {
       rowKey: String(item.id),
       invoiceId: item.id,
-      invoiceNumber: item.invoiceNumber ?? "-",
+      invoiceNumber: formatInvoiceNumberForDisplay(item.invoiceNumber),
       clientName,
       customerId,
       invoiceDate: formatDate(item.invoiceDate),
@@ -610,13 +613,20 @@ export function InvoicesSurface() {
     const q = searchTerm.trim().toLowerCase();
     return rawItems.filter(item => {
       const invNum = (item.invoiceNumber ?? "").toLowerCase();
+      const displayInvoiceNumber = formatInvoiceNumberForDisplay(
+        item.invoiceNumber
+      ).toLowerCase();
       const clientName = (
         (item as InvoiceItem & { client?: { name?: string | null } }).client
           ?.name ??
         clientNamesById.get(item.customerId ?? 0) ??
         ""
       ).toLowerCase();
-      return invNum.includes(q) || clientName.includes(q);
+      return (
+        invNum.includes(q) ||
+        displayInvoiceNumber.includes(q) ||
+        clientName.includes(q)
+      );
     });
   }, [rawItems, searchTerm, clientNamesById]);
 
@@ -627,6 +637,7 @@ export function InvoicesSurface() {
 
   const selectedRow =
     gridRows.find(r => r.invoiceId === selectedInvoiceId) ?? null;
+  const inspectorDesktopOffsetClass = selectedRow ? "md:pr-[400px]" : "";
 
   // KPI values
   const summaryTotals = summaryQuery.data?.totals ?? {
@@ -1046,7 +1057,13 @@ export function InvoicesSurface() {
   return (
     <div className="flex flex-col">
       {/* ── 1. Toolbar ── */}
-      <div className="flex items-center gap-2 px-2 py-1 bg-muted/30 border-b">
+      <div
+        className={cn(
+          "flex items-center gap-2 px-2 py-1 bg-muted/30 border-b transition-[padding] duration-200",
+          inspectorDesktopOffsetClass
+        )}
+        data-testid="invoices-toolbar"
+      >
         <span className="font-bold text-xs">Invoices</span>
 
         {/* KPI badges */}
@@ -1107,7 +1124,13 @@ export function InvoicesSurface() {
       </div>
 
       {/* ── 2. Action Bar ── */}
-      <div className="flex items-center gap-1 px-2 py-0.5 bg-muted/10 border-b flex-wrap">
+      <div
+        className={cn(
+          "flex items-center gap-1 px-2 py-0.5 bg-muted/10 border-b flex-wrap transition-[padding] duration-200",
+          inspectorDesktopOffsetClass
+        )}
+        data-testid="invoices-action-bar"
+      >
         {/* Status filter tabs */}
         {INVOICE_STATUS_TABS.map(tab => (
           <Button
@@ -1277,40 +1300,59 @@ export function InvoicesSurface() {
       {/* ── 3. Grid + Collapsible Inspector ── */}
       <div className="flex flex-1 min-h-0">
         <div className={cn("flex-1", selectedRow && "flex-[3]")}>
-          <PowersheetGrid
-            surfaceId="invoices-unified"
-            requirementIds={[
-              "INV-001",
-              "INV-002",
-              "INV-003",
-              "INV-009",
-              "INV-020",
-            ]}
-            affordances={registryAffordances}
-            title="Invoices"
-            rows={gridRows}
-            columnDefs={invoiceColumnDefs}
-            getRowId={row => row.rowKey}
-            selectedRowId={selectedRow?.rowKey ?? null}
-            onSelectedRowChange={row =>
-              setSelectedInvoiceId(row?.invoiceId ?? null)
-            }
-            selectionMode="cell-range"
-            enableFillHandle={false}
-            enableUndoRedo={false}
-            onSelectionSummaryChange={setSelectionSummary}
-            isLoading={invoicesQuery.isLoading}
-            errorMessage={invoicesQuery.error?.message ?? null}
-            emptyTitle="No invoices match"
-            emptyDescription="Adjust the search or status filter, or create a new invoice."
-            summary={
-              <span className="text-[10px]">
-                {gridRows.length} visible · {invoicesQuery.data?.total ?? 0}{" "}
-                total · {statusFilter !== "ALL" ? statusFilter : "All statuses"}
-              </span>
-            }
-            minHeight={320}
-          />
+          {!invoicesQuery.isLoading &&
+          !invoicesQuery.error &&
+          gridRows.length === 0 ? (
+            <Card className="border-border/70 shadow-sm">
+              <CardContent className="pt-6">
+                <EmptyState
+                  variant="invoices"
+                  title="No invoices match"
+                  description="Clear the filters or create a new invoice so accounting can start collecting against it."
+                  action={{
+                    label: "Create Invoice",
+                    onClick: () => setShowCreateDialog(true),
+                  }}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <PowersheetGrid
+              surfaceId="invoices-unified"
+              requirementIds={[
+                "INV-001",
+                "INV-002",
+                "INV-003",
+                "INV-009",
+                "INV-020",
+              ]}
+              affordances={registryAffordances}
+              title="Invoices"
+              rows={gridRows}
+              columnDefs={invoiceColumnDefs}
+              getRowId={row => row.rowKey}
+              selectedRowId={selectedRow?.rowKey ?? null}
+              onSelectedRowChange={row =>
+                setSelectedInvoiceId(row?.invoiceId ?? null)
+              }
+              selectionMode="cell-range"
+              enableFillHandle={false}
+              enableUndoRedo={false}
+              onSelectionSummaryChange={setSelectionSummary}
+              isLoading={invoicesQuery.isLoading}
+              errorMessage={invoicesQuery.error?.message ?? null}
+              emptyTitle="No invoices match"
+              emptyDescription="Adjust the search or status filter, or create a new invoice."
+              summary={
+                <span className="text-[10px]">
+                  {gridRows.length} visible · {invoicesQuery.data?.total ?? 0}{" "}
+                  total ·{" "}
+                  {statusFilter !== "ALL" ? statusFilter : "All statuses"}
+                </span>
+              }
+              minHeight={320}
+            />
+          )}
         </div>
 
         {/* Inspector panel (~25% right) */}

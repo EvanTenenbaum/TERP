@@ -165,6 +165,24 @@ const FINGERPRINT_CANARIES = [
         AND COLUMN_NAME = 'dueDate'
     )`,
   },
+  {
+    key: "orders.shipping.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'orders'
+        AND COLUMN_NAME = 'shipping'
+    )`,
+  },
+  {
+    key: "orders.show_adjustment_on_document.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'orders'
+        AND COLUMN_NAME = 'show_adjustment_on_document'
+    )`,
+  },
 ] as const;
 
 export const FINGERPRINT_CANARY_COUNT = FINGERPRINT_CANARIES.length;
@@ -877,6 +895,34 @@ export async function runAutoMigrations() {
         console.info("  ℹ️  orders.version already exists");
       } else {
         console.info("  ⚠️  orders.version:", errMsg);
+      }
+    }
+
+    try {
+      await db.execute(
+        sql`ALTER TABLE orders ADD COLUMN shipping DECIMAL(15, 2) DEFAULT 0`
+      );
+      console.info("  ✅ Added shipping column to orders");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  orders.shipping already exists");
+      } else {
+        console.info("  ⚠️  orders.shipping:", errMsg);
+      }
+    }
+
+    try {
+      await db.execute(
+        sql`ALTER TABLE orders ADD COLUMN show_adjustment_on_document BOOLEAN NOT NULL DEFAULT TRUE`
+      );
+      console.info("  ✅ Added show_adjustment_on_document column to orders");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  orders.show_adjustment_on_document already exists");
+      } else {
+        console.info("  ⚠️  orders.show_adjustment_on_document:", errMsg);
       }
     }
 

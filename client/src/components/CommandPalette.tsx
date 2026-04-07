@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import {
   CommandDialog,
   CommandInput,
@@ -16,11 +16,13 @@ import {
   Loader2,
   Package,
   Plus,
+  History,
   ReceiptText,
   Users,
 } from "lucide-react";
 import { buildNavigationAccessModel } from "@/config/navigation";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
+import { useRecentPages } from "@/hooks/useRecentPages";
 import {
   buildOperationsWorkspacePath,
   buildSalesWorkspacePath,
@@ -33,8 +35,10 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  const search = useSearch();
   const { flags, isLoading } = useFeatureFlags();
+  const { recentPages } = useRecentPages();
   const [inputValue, setInputValue] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
@@ -146,6 +150,12 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     setLocation(url);
     onOpenChange(false);
   };
+
+  const currentPath = `${location}${search || ""}`;
+  const recentCommands = useMemo(
+    () => recentPages.filter(page => page.path !== currentPath).slice(0, 5),
+    [currentPath, recentPages]
+  );
 
   const isActiveSearch = debouncedQuery.length > 2;
   const hasQuotes = (searchResults?.quotes?.length ?? 0) > 0;
@@ -268,6 +278,21 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
         ) : (
           <>
             <CommandEmpty>No results found.</CommandEmpty>
+
+            {recentCommands.length > 0 && (
+              <CommandGroup heading="Recently Opened">
+                {recentCommands.map(page => (
+                  <CommandItem
+                    key={`recent:${page.path}`}
+                    value={`${page.label} recent ${page.path}`}
+                    onSelect={() => handleNavigate(page.path)}
+                  >
+                    <History className="mr-2 h-4 w-4" />
+                    <span>{page.label}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
 
             <CommandGroup heading="Navigation">
               {navigationCommands.map(item => {

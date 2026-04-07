@@ -10,6 +10,8 @@ const {
   deleteDraftMutate,
   convertMutateAsync,
   shareLinkMutateAsync,
+  fetchDraftById,
+  invalidateDrafts,
 } = vi.hoisted(() => ({
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
@@ -18,6 +20,8 @@ const {
   deleteDraftMutate: vi.fn(),
   convertMutateAsync: vi.fn(),
   shareLinkMutateAsync: vi.fn(),
+  fetchDraftById: vi.fn(),
+  invalidateDrafts: vi.fn(),
 }));
 
 // Mock tRPC
@@ -50,7 +54,10 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
     useUtils: vi.fn(() => ({
-      salesSheets: { getDrafts: { invalidate: vi.fn() } },
+      salesSheets: {
+        getDrafts: { invalidate: invalidateDrafts },
+        getDraftById: { fetch: fetchDraftById },
+      },
     })),
   },
 }));

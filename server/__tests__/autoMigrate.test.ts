@@ -19,6 +19,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { FINGERPRINT_CANARY_COUNT } from "../autoMigrate";
 
 // Mock the database module
 vi.mock("../db", () => ({
@@ -61,7 +62,7 @@ describe("Schema Fingerprint Retry Logic", () => {
 
   /**
    * Helper to create a fingerprint check result
-   * @param count Number of canary checks that passed (0-7)
+   * @param count Number of canary checks that passed
    */
   function createFingerprintResult(count: number) {
     return [[{ cnt: count }]];
@@ -91,7 +92,7 @@ describe("Schema Fingerprint Retry Logic", () => {
         const row = Array.isArray(fpResult) ? fpResult[0] : fpResult;
         const count = Number(row?.cnt ?? 0);
 
-        if (count === 7) {
+        if (count === FINGERPRINT_CANARY_COUNT) {
           return { success: true, attempts, delays };
         }
 
@@ -111,10 +112,12 @@ describe("Schema Fingerprint Retry Logic", () => {
 
   describe("First-attempt success", () => {
     it("succeeds on first attempt when schema is complete", async () => {
-      // Mock: warmup succeeds, fingerprint returns 7/7
+      // Mock: warmup succeeds, fingerprint returns a complete fingerprint
       mockDb.execute
         .mockResolvedValueOnce([[{ result: 1 }]]) // SELECT 1 warmup
-        .mockResolvedValueOnce(createFingerprintResult(7)); // fingerprint check
+        .mockResolvedValueOnce(
+          createFingerprintResult(FINGERPRINT_CANARY_COUNT)
+        ); // fingerprint check
 
       const result = await simulateFingerprintCheck(mockDb.execute);
 
@@ -143,7 +146,9 @@ describe("Schema Fingerprint Retry Logic", () => {
       // Mock: first attempt fails, second succeeds
       mockDb.execute
         .mockRejectedValueOnce(new Error("Connection timeout")) // warmup fails
-        .mockResolvedValueOnce(createFingerprintResult(7)); // second attempt succeeds
+        .mockResolvedValueOnce(
+          createFingerprintResult(FINGERPRINT_CANARY_COUNT)
+        ); // second attempt succeeds
 
       const result = await simulateFingerprintCheck(mockDb.execute);
 
@@ -155,7 +160,9 @@ describe("Schema Fingerprint Retry Logic", () => {
     it("applies correct 3s delay after first failure", async () => {
       mockDb.execute
         .mockRejectedValueOnce(new Error("Connection timeout"))
-        .mockResolvedValueOnce(createFingerprintResult(7));
+        .mockResolvedValueOnce(
+          createFingerprintResult(FINGERPRINT_CANARY_COUNT)
+        );
 
       const result = await simulateFingerprintCheck(mockDb.execute);
 
@@ -169,7 +176,9 @@ describe("Schema Fingerprint Retry Logic", () => {
       mockDb.execute
         .mockRejectedValueOnce(new Error("Connection timeout")) // attempt 1
         .mockRejectedValueOnce(new Error("Connection reset")) // attempt 2
-        .mockResolvedValueOnce(createFingerprintResult(7)); // attempt 3
+        .mockResolvedValueOnce(
+          createFingerprintResult(FINGERPRINT_CANARY_COUNT)
+        ); // attempt 3
 
       const result = await simulateFingerprintCheck(mockDb.execute);
 
@@ -182,7 +191,9 @@ describe("Schema Fingerprint Retry Logic", () => {
       mockDb.execute
         .mockRejectedValueOnce(new Error("Error 1"))
         .mockRejectedValueOnce(new Error("Error 2"))
-        .mockResolvedValueOnce(createFingerprintResult(7));
+        .mockResolvedValueOnce(
+          createFingerprintResult(FINGERPRINT_CANARY_COUNT)
+        );
 
       const result = await simulateFingerprintCheck(mockDb.execute);
 
@@ -239,10 +250,10 @@ describe("Schema Fingerprint Retry Logic", () => {
   });
 
   describe("Partial schema detection", () => {
-    it("returns incomplete when count is less than 7", async () => {
+    it("returns incomplete when count is less than the full fingerprint", async () => {
       mockDb.execute
         .mockResolvedValueOnce([[{ result: 1 }]]) // warmup
-        .mockResolvedValueOnce(createFingerprintResult(3)); // only 3/7 checks pass
+        .mockResolvedValueOnce(createFingerprintResult(3)); // only 3 checks pass
 
       const result = await simulateFingerprintCheck(mockDb.execute);
 
@@ -250,10 +261,12 @@ describe("Schema Fingerprint Retry Logic", () => {
       expect(result.attempts).toBe(1);
     });
 
-    it("returns success only when count equals 7", async () => {
+    it("returns success only when count equals the full fingerprint", async () => {
       mockDb.execute
         .mockResolvedValueOnce([[{ result: 1 }]])
-        .mockResolvedValueOnce(createFingerprintResult(7));
+        .mockResolvedValueOnce(
+          createFingerprintResult(FINGERPRINT_CANARY_COUNT)
+        );
 
       const result = await simulateFingerprintCheck(mockDb.execute);
 
@@ -275,7 +288,9 @@ describe("Schema Fingerprint Retry Logic", () => {
     it("handles Error objects correctly", async () => {
       const testError = new Error("Test connection error");
       mockDb.execute.mockRejectedValueOnce(testError);
-      mockDb.execute.mockResolvedValueOnce(createFingerprintResult(7));
+      mockDb.execute.mockResolvedValueOnce(
+        createFingerprintResult(FINGERPRINT_CANARY_COUNT)
+      );
 
       const result = await simulateFingerprintCheck(mockDb.execute);
 
@@ -285,7 +300,9 @@ describe("Schema Fingerprint Retry Logic", () => {
 
     it("handles non-Error throws", async () => {
       mockDb.execute.mockRejectedValueOnce("String error");
-      mockDb.execute.mockResolvedValueOnce(createFingerprintResult(7));
+      mockDb.execute.mockResolvedValueOnce(
+        createFingerprintResult(FINGERPRINT_CANARY_COUNT)
+      );
 
       const result = await simulateFingerprintCheck(mockDb.execute);
 
@@ -299,7 +316,7 @@ describe("Schema Fingerprint Retry Logic", () => {
 
       const result = await simulateFingerprintCheck(mockDb.execute);
 
-      // null coerces to 0, which is not 7, so should fail
+      // null coerces to 0, which is not a complete fingerprint, so should fail
       expect(result.success).toBe(false);
     });
   });
@@ -316,13 +333,13 @@ describe("Schema Fingerprint Retry Logic", () => {
         if (calls.length <= 2) {
           throw new Error("Still failing");
         }
-        return createFingerprintResult(7);
+        return createFingerprintResult(FINGERPRINT_CANARY_COUNT);
       });
 
       await simulateFingerprintCheck(mockDb.execute);
 
       // Warmup (SELECT 1) should only be called once
-      const warmupCalls = calls.filter((c) => c === "SELECT 1");
+      const warmupCalls = calls.filter(c => c === "SELECT 1");
       expect(warmupCalls).toHaveLength(1);
     });
   });

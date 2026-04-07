@@ -38,6 +38,7 @@ import {
 } from "drizzle-orm";
 import { convertQuoteToSale as convertQuoteToSaleDb } from "../ordersDb";
 import { TRPCError } from "@trpc/server";
+import { resolveQuoteValidUntilDate } from "../lib/quoteValidity";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -586,7 +587,7 @@ export const unifiedSalesPortalRouter = router({
             items: JSON.stringify(salesSheetItems), // Copy items from sales sheet
             subtotal: String(subtotal),
             total: String(total),
-            validUntil: input.validUntil ? new Date(input.validUntil) : null,
+            validUntil: resolveQuoteValidUntilDate(input.validUntil),
             notes:
               input.notes || `Converted from Sales Sheet #${salesSheet.id}`,
             createdBy: userId,

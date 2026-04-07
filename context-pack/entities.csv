@@ -1,0 +1,212 @@
+entity,description,primary_keys,foreign_keys,invariants,statuses_enums,evidence_paths
+accounts,Chart of Accounts,id,,soft_delete:deletedAt; unique:[accountNumber],accountType=[ASSET|LIABILITY|EQUITY|REVENUE|EXPENSE]; normalBalance=[DEBIT|CREDIT],drizzle/schema.ts
+achievements,Achievement Definitions,id,,unique:[code],category=[SPENDING|ORDERS|LOYALTY|REFERRALS|ENGAGEMENT|SPECIAL]; medal=[BRONZE|SILVER|GOLD|PLATINUM]; requirementType=[TOTAL_SPENT|ORDER_COUNT|CONSECUTIVE_MONTHS|ACCOUNT_AGE_DAYS|REFERRAL_COUNT|REFERRAL_REVENUE|ACTIVITY_SCORE|MANUAL],drizzle/schema-gamification.ts
+adminImpersonationActions,Admin Impersonation Actions,id,,,,drizzle/schema-vip-portal.ts
+adminImpersonationSessions,Admin Impersonation Sessions,id,adminUserId->users.id (onDelete:cascade); clientId->clients.id (onDelete:cascade); revokedBy->users.id,unique:[sessionGuid],,drizzle/schema-vip-portal.ts
+alertConfigurations,Alert Configurations,id,userId->users.id (onDelete:cascade),,alertType=[LOW_STOCK|EXPIRING_BATCH|OVERDUE_PAYMENT|HIGH_VALUE_ORDER|SAMPLE_CONVERSION|CUSTOM]; targetType=[GLOBAL|PRODUCT|BATCH|CLIENT|CATEGORY]; thresholdOperator=[LESS_THAN|GREATER_THAN|EQUALS]; deliveryMethod=[DASHBOARD|EMAIL|BOTH],drizzle/schema.ts
+appointmentCheckIns,Appointment Check-ins table,id,calendarEventId->calendarEvents.id (onDelete:cascade); clientId->clients.id (onDelete:set null); handledById->users.id,,status=[waiting|checked_in|in_progress|completed|no_show],drizzle/schema-scheduling.ts
+appointmentReferrals,Appointment Referrals table,id,calendarEventId->calendarEvents.id (onDelete:cascade); referringClientId->clients.id (onDelete:set null); referringEmployeeId->users.id (onDelete:set null),,referralSource=[existing_client|employee|website|social_media|advertisement|trade_show|other],drizzle/schema-scheduling.ts
+appointmentRequests,Appointment Requests table (CAL-003),id,calendarId->calendars.id (onDelete:cascade); appointmentTypeId->appointmentTypes.id (onDelete:cascade); respondedById->users.id (onDelete:set null); calendarEventId->calendarEvents.id (onDelete:set null),,,drizzle/schema.ts
+appointmentStatusHistory,Appointment Status History table,id,,,,drizzle/schema-scheduling.ts
+appointmentTypes,Appointment Types table (CAL-002),id,calendarId->calendars.id (onDelete:cascade),,,drizzle/schema.ts
+auditLogs,Audit Log table,id,,soft_delete:deletedAt,,drizzle/schema.ts
+bankAccounts,Bank Accounts,id,,soft_delete:deletedAt,accountType=[CHECKING|SAVINGS|MONEY_MARKET|CREDIT_CARD],drizzle/schema.ts
+bankTransactions,Bank Transactions,id,,soft_delete:deletedAt,transactionType=[DEPOSIT|WITHDRAWAL|TRANSFER|FEE|INTEREST],drizzle/schema.ts
+batches,Batches table,id,statusId->workflowStatuses.id (onDelete:set null); photoSessionEventId->calendarEvents.id (onDelete:set null),soft_delete:deletedAt; optimistic_lock:version; unique:[code|sku],batchStatus=[AWAITING_INTAKE|LIVE|PHOTOGRAPHY_COMPLETE|ON_HOLD|QUARANTINED|SOLD_OUT|CLOSED]; cogsMode=[FIXED|RANGE]; paymentTerms=[COD|NET_7|NET_15|NET_30|CONSIGNMENT|PARTIAL]; ownershipType=[CONSIGNED|OFFICE_OWNED|SAMPLE],drizzle/schema.ts
+batchLocations,Batch Locations table,id,,soft_delete:deletedAt,,drizzle/schema.ts
+batchStatusHistory,Batch Status History table,id,batchId->batches.id (onDelete:cascade); fromStatusId->workflowStatuses.id (onDelete:set null); toStatusId->workflowStatuses.id (onDelete:restrict); changedBy->users.id (onDelete:restrict),,,drizzle/schema.ts
+batchZoneAssignments,Batch Zone Assignments table,id,batchId->batches.id (onDelete:cascade); zoneId->storageZones.id (onDelete:cascade); assignedById->users.id,,,drizzle/schema-storage.ts
+billLineItems,Bill Line Items,id,,soft_delete:deletedAt,,drizzle/schema.ts
+bills,Bills (Accounts Payable),id,,soft_delete:deletedAt; unique:[billNumber],status=[DRAFT|PENDING|APPROVED|PARTIAL|PAID|OVERDUE|VOID],drizzle/schema.ts
+brands,Brands table,id,,soft_delete:deletedAt,,drizzle/schema.ts
+calendarAvailability,Calendar Availability table (CAL-002),id,calendarId->calendars.id (onDelete:cascade),,,drizzle/schema.ts
+calendarBlockedDates,Calendar Blocked Dates table (CAL-002),id,calendarId->calendars.id (onDelete:cascade),,,drizzle/schema.ts
+calendarEventAttachments,Calendar Event Attachments table,id,eventId->calendarEvents.id (onDelete:cascade); uploadedBy->users.id,,,drizzle/schema.ts
+calendarEventHistory,Calendar Event History table,id,eventId->calendarEvents.id (onDelete:cascade); changedBy->users.id,,changeType=[CREATED|UPDATED|DELETED|RESCHEDULED|CANCELLED|COMPLETED],drizzle/schema.ts
+calendarEventInvitations,Calendar Event Invitations table,id,eventId->calendarEvents.id (onDelete:cascade); userId->users.id (onDelete:cascade); clientId->clients.id (onDelete:cascade); overriddenBy->users.id; createdBy->users.id,,inviteeType=[USER|CLIENT|EXTERNAL]; role=[ORGANIZER|REQUIRED|OPTIONAL|OBSERVER]; status=[DRAFT|PENDING|ACCEPTED|DECLINED|AUTO_ACCEPTED|CANCELLED|EXPIRED],drizzle/schema.ts
+calendarEventParticipants,Calendar Event Participants table,id,eventId->calendarEvents.id (onDelete:cascade); userId->users.id (onDelete:cascade); addedBy->users.id,,role=[ORGANIZER|REQUIRED|OPTIONAL|OBSERVER]; responseStatus=[PENDING|ACCEPTED|DECLINED|TENTATIVE],drizzle/schema.ts
+calendarEventPermissions,Calendar Event Permissions table,id,eventId->calendarEvents.id (onDelete:cascade); grantedBy->users.id,,grantType=[USER|ROLE|TEAM]; permission=[VIEW|EDIT|DELETE|MANAGE],drizzle/schema.ts
+calendarEvents,Calendar Events table,id,clientId->clients.id (onDelete:set null); vendorId->vendors.id (onDelete:set null); createdBy->users.id; assignedTo->users.id,soft_delete:deletedAt; optimistic_lock:version,module=[INVENTORY|ACCOUNTING|CLIENTS|VENDORS|ORDERS|SAMPLES|COMPLIANCE|GENERAL]; eventType=[MEETING|DEADLINE|TASK|DELIVERY|PAYMENT_DUE|FOLLOW_UP|AUDIT|INTAKE|PHOTOGRAPHY|BATCH_EXPIRATION|RECURRING_ORDER|SAMPLE_REQUEST|OTHER|AR_COLLECTION|AP_PAYMENT]; status=[SCHEDULED|IN_PROGRESS|COMPLETED|CANCELLED]; priority=[LOW|MEDIUM|HIGH|URGENT]; visibility=[PRIVATE|TEAM|COMPANY|PUBLIC],drizzle/schema.ts
+calendarInvitationHistory,Calendar Invitation History table,id,performedBy->users.id,,action=[CREATED|SENT|ACCEPTED|DECLINED|AUTO_ACCEPTED|CANCELLED|EXPIRED|ADMIN_OVERRIDE|RESENT],drizzle/schema.ts
+calendarInvitationSettings,Calendar Invitation Settings table,id,userId->users.id (onDelete:cascade),unique:[userId],,drizzle/schema.ts
+calendarRecurrenceInstances,Calendar Recurrence Instances table (Materialized),id,modifiedAssignedTo->users.id; modifiedBy->users.id,,status=[GENERATED|MODIFIED|CANCELLED],drizzle/schema.ts
+calendarRecurrenceRules,Calendar Recurrence Rules table,id,eventId->calendarEvents.id (onDelete:cascade),unique:[eventId],frequency=[DAILY|WEEKLY|MONTHLY|YEARLY],drizzle/schema.ts
+calendarReminders,Calendar Reminders table,id,eventId->calendarEvents.id (onDelete:cascade); userId->users.id (onDelete:cascade),,method=[IN_APP|EMAIL|BOTH]; status=[PENDING|SENT|FAILED|CANCELLED],drizzle/schema.ts
+calendars,Calendars table (CAL-001),id,ownerId->users.id (onDelete:set null),,,drizzle/schema.ts
+calendarUserAccess,Calendar User Access table (CAL-001),id,calendarId->calendars.id (onDelete:cascade); userId->users.id (onDelete:cascade),,,drizzle/schema.ts
+calendarViews,Calendar Views table,id,userId->users.id (onDelete:cascade),,defaultViewType=[MONTH|WEEK|DAY|AGENDA],drizzle/schema.ts
+cashLocations,Cash Locations Table,id,,,,drizzle/schema.ts
+cashLocationTransactions,Cash Location Transactions Table,id,,,,drizzle/schema.ts
+categories,Categories table,id,,soft_delete:deletedAt; unique:[name],,drizzle/schema.ts
+clientAchievements,Client Achievements,id,clientId->clients.id (onDelete:cascade); achievementId->achievements.id (onDelete:cascade),,,drizzle/schema-gamification.ts
+clientActivity,UNSPECIFIED,id,clientId->clients.id (onDelete:cascade); userId->users.id (onDelete:cascade),,activityType=[CREATED|UPDATED|TRANSACTION_ADDED|PAYMENT_RECORDED|NOTE_ADDED|TAG_ADDED|TAG_REMOVED],drizzle/schema.ts
+clientCatalogViews,Client Catalog Views,id,clientId->clients.id (onDelete:cascade),,,drizzle/schema-vip-portal.ts
+clientCommunications,Client Communications Table,id,clientId->clients.id (onDelete:cascade); loggedBy->users.id,,communicationType=[CALL|EMAIL|MEETING|NOTE],drizzle/schema.ts
+clientCreditLimits,Credit Limit Configuration,id,clientId->clients.id (onDelete:cascade),unique:[clientId],mode=[LEARNING|ACTIVE]; trend=[IMPROVING|STABLE|WORSENING],drizzle/schema.ts
+clientDraftInterests,Client Draft Interests,id,clientId->clients.id (onDelete:cascade); batchId->batches.id (onDelete:cascade),,,drizzle/schema-vip-portal.ts
+clientInterestListItems,Client Interest List Items,id,,,,drizzle/schema-vip-portal.ts
+clientInterestLists,Client Interest Lists (Submitted Lists),id,clientId->clients.id (onDelete:cascade); reviewedBy->users.id (onDelete:set null); convertedToOrderId->orders.id (onDelete:set null); convertedBy->users.id (onDelete:set null),,,drizzle/schema-vip-portal.ts
+clientLedgerAdjustments,Client Ledger Adjustments table,id,clientId->clients.id (onDelete:cascade); createdBy->users.id (onDelete:restrict),,transactionType=[CREDIT|DEBIT],drizzle/schema.ts
+clientMeetingHistory,Client Meeting History table (V2.1 Addition),id,calendarEventId->calendarEvents.id (onDelete:cascade),,,drizzle/schema.ts
+clientNeeds,Client Needs,id,clientId->clients.id (onDelete:cascade); strainId->strains.id (onDelete:set null); createdBy->users.id (onDelete:restrict); createdByClientId->clients.id (onDelete:restrict),,strainType=[INDICA|SATIVA|HYBRID|CBD|ANY]; status=[ACTIVE|FULFILLED|EXPIRED|CANCELLED]; priority=[LOW|MEDIUM|HIGH|URGENT],drizzle/schema.ts
+clientNotes,UNSPECIFIED,id,clientId->clients.id (onDelete:cascade); noteId->freeformNotes.id (onDelete:cascade),,,drizzle/schema.ts
+clientPointsSummary,Client Points Summary,id,clientId->clients.id (onDelete:cascade),unique:[clientId],,drizzle/schema-gamification.ts
+clientPriceAlerts,Client Price Alerts,id,clientId->clients.id (onDelete:cascade); batchId->batches.id (onDelete:cascade),,,drizzle/schema-vip-portal.ts
+clientReferralCodes,Client Referral Codes,id,clientId->clients.id (onDelete:cascade),unique:[clientId|code],codeType=[AUTO_GENERATED|CUSTOM],drizzle/schema-gamification.ts
+clients,UNSPECIFIED,id,,soft_delete:deletedAt; optimistic_lock:version; unique:[teriCode],businessType=[RETAIL|WHOLESALE|DISPENSARY|DELIVERY|MANUFACTURER|DISTRIBUTOR|OTHER]; preferredContact=[EMAIL|PHONE|TEXT|ANY]; cogsAdjustmentType=[NONE|PERCENTAGE|FIXED_AMOUNT]; creditLimitSource=[CALCULATED|MANUAL],drizzle/schema.ts
+clientTags,Client Tags junction table,id,clientId->clients.id (onDelete:cascade); tagId->tags.id (onDelete:cascade),soft_delete:deletedAt,,drizzle/schema.ts
+clientTransactions,UNSPECIFIED,id,clientId->clients.id (onDelete:cascade),,transactionType=[INVOICE|PAYMENT|QUOTE|ORDER|REFUND|CREDIT]; paymentStatus=[PAID|PENDING|OVERDUE|PARTIAL],drizzle/schema.ts
+clientVipStatus,Client VIP Status,id,clientId->clients.id (onDelete:cascade); currentTierId->vipTiers.id (onDelete:set null); overrideBy->users.id (onDelete:set null),unique:[clientId],,drizzle/schema-vip-portal.ts
+cogsHistory,COGS History table,id,,soft_delete:deletedAt,,drizzle/schema.ts
+cogsRules,COGS Rules (Optional - Simple Version),id,,,conditionField=[QUANTITY|TOTAL_VALUE|CLIENT_TIER|PAYMENT_TERMS]; conditionOperator=[GT|GTE|LT|LTE|EQ]; adjustmentType=[PERCENTAGE|FIXED_AMOUNT|USE_MIN|USE_MAX],drizzle/schema.ts
+commentMentions,Comment Mentions table,id,commentId->comments.id (onDelete:cascade); mentionedUserId->users.id (onDelete:cascade); mentionedByUserId->users.id (onDelete:cascade),,,drizzle/schema.ts
+comments,Comments table (polymorphic),id,userId->users.id (onDelete:cascade); resolvedBy->users.id (onDelete:set null),,,drizzle/schema.ts
+couchTaxPayouts,Couch Tax Payouts,id,referralTrackingId->referralTracking.id (onDelete:cascade); referrerClientId->clients.id (onDelete:cascade); orderId->orders.id (onDelete:cascade); processedById->users.id,,status=[PENDING|APPROVED|PAID|VOID],drizzle/schema-gamification.ts
+creditApplications,Credit Applications Table,id,creditId->credits.id (onDelete:cascade); invoiceId->transactions.id (onDelete:cascade); appliedBy->users.id,,,drizzle/schema.ts
+creditAuditLog,Credit Audit Log,id,clientId->clients.id (onDelete:cascade); triggeredBy->users.id,,eventType=[LIMIT_CALCULATED|LIMIT_INCREASED|LIMIT_DECREASED|MODE_CHANGED|MANUAL_OVERRIDE|EXPOSURE_EXCEEDED],drizzle/schema.ts
+creditOverrideRequests,Credit Override Requests (FEAT-004-BE),id,orderId->orders.id (onDelete:cascade); clientId->clients.id (onDelete:cascade); requestedBy->users.id; reviewedBy->users.id,,status=[PENDING|APPROVED|REJECTED],drizzle/schema.ts
+credits,Credits Table,id,clientId->clients.id (onDelete:cascade); transactionId->transactions.id; createdBy->users.id,unique:[creditNumber],creditStatus=[ACTIVE|PARTIALLY_USED|FULLY_USED|EXPIRED|VOID],drizzle/schema.ts
+creditSignalHistory,Credit Signal History,id,clientId->clients.id (onDelete:cascade),,,drizzle/schema.ts
+creditSystemSettings,Credit System Settings,id,updatedBy->users.id,soft_delete:deletedAt,,drizzle/schema.ts
+creditVisibilitySettings,Credit Visibility Settings,id,,,creditEnforcementMode=[WARNING|SOFT_BLOCK|HARD_BLOCK],drizzle/schema.ts
+customFinanceStatuses,Custom Finance Statuses Table,id,,,entityType=[INVOICE|ORDER|PAYMENT|BILL|CREDIT],drizzle/schema.ts
+dashboardKpiConfigs,Dashboard KPI Configurations table,id,,soft_delete:deletedAt,role=[user|admin],drizzle/schema.ts
+dashboardWidgetConfigs,Dashboard Widget Configurations,id,userId->users.id (onDelete:cascade),,,drizzle/schema.ts
+dashboardWidgetLayouts,Dashboard Widget Layouts table,id,userId->users.id (onDelete:cascade),soft_delete:deletedAt,role=[user|admin],drizzle/schema.ts
+deliverySchedules,Delivery Schedules table,id,createdById->users.id,,referenceType=[order|purchase_order|sample]; status=[pending|confirmed|in_transit|delivered|delayed|cancelled],drizzle/schema-scheduling.ts
+deployments,UNSPECIFIED,id,,,,drizzle/schema.ts
+employeeShifts,Employee Shifts table,id,userId->users.id (onDelete:cascade); createdById->users.id,,shiftType=[regular|overtime|on_call|training]; status=[scheduled|started|completed|absent|cancelled],drizzle/schema-scheduling.ts
+employeeTimesheets,Employee Timesheets table,id,userId->users.id (onDelete:cascade); periodId->timesheetPeriods.id (onDelete:cascade); approvedById->users.id,,status=[draft|submitted|approved|rejected|paid],drizzle/schema-scheduling.ts
+expenseCategories,Expense Categories,id,,soft_delete:deletedAt,,drizzle/schema.ts
+expenses,Expenses,id,,soft_delete:deletedAt; unique:[expenseNumber],paymentMethod=[CASH|CHECK|CREDIT_CARD|DEBIT_CARD|BANK_TRANSFER|OTHER],drizzle/schema.ts
+featureFlagAuditLogs,UNSPECIFIED,id,flagId->featureFlags.id (onDelete:set null),,action=[created|updated|deleted|enabled|disabled|override_added|override_removed],drizzle/schema-feature-flags.ts
+featureFlagRoleOverrides,UNSPECIFIED,id,flagId->featureFlags.id (onDelete:cascade); roleId->roles.id (onDelete:cascade),,,drizzle/schema-feature-flags.ts
+featureFlags,Feature Flags Schema for TERP,id,,soft_delete:deletedAt; unique:[key],,drizzle/schema-feature-flags.ts
+featureFlagUserOverrides,User overrides use openId (varchar) NOT numeric id,id,flagId->featureFlags.id (onDelete:cascade),,,drizzle/schema-feature-flags.ts
+fiscalPeriods,Fiscal Periods,id,,soft_delete:deletedAt,status=[OPEN|CLOSED|LOCKED],drizzle/schema.ts
+freeformNotes,Freeform Notes table,id,userId->users.id (onDelete:cascade),soft_delete:deletedAt,,drizzle/schema.ts
+grades,Grades table,id,,soft_delete:deletedAt; unique:[name],,drizzle/schema.ts
+inboxItems,Inbox Items table,id,userId->users.id (onDelete:cascade),,sourceType=[mention|task_assignment|task_update]; status=[unread|seen|completed],drizzle/schema.ts
+intakeDiscrepancies,Intake Discrepancies Table,id,receiptId->intakeReceipts.id (onDelete:cascade); itemId->intakeReceiptItems.id (onDelete:cascade); resolvedBy->users.id,,,drizzle/schema.ts
+intakeReceiptItems,Intake Receipt Items Table,id,receiptId->intakeReceipts.id (onDelete:cascade); productId->products.id,,,drizzle/schema.ts
+intakeReceipts,Intake Receipts Table,id,supplierId->clients.id; farmerVerifiedBy->users.id; stackerVerifiedBy->users.id; finalizedBy->users.id; createdBy->users.id,unique:[receiptNumber],,drizzle/schema.ts
+intakeSessionBatches,Intake Session Batches,id,intakeSessionId->intakeSessions.id (onDelete:cascade); batchId->batches.id (onDelete:cascade),,,drizzle/schema.ts
+intakeSessions,Product Intake Sessions,id,vendorId->clients.id (onDelete:restrict); receivedBy->users.id (onDelete:restrict),unique:[sessionNumber],status=[IN_PROGRESS|COMPLETED|CANCELLED]; paymentTerms=[COD|NET_7|NET_15|NET_30|CONSIGNMENT|PARTIAL],drizzle/schema.ts
+inventoryAlerts,Inventory Alerts Table,id,batchId->batches.id (onDelete:cascade); acknowledgedBy->users.id,,inventoryAlertType=[LOW_STOCK|EXPIRING|OVERSTOCK|SLOW_MOVING]; alertSeverity=[LOW|MEDIUM|HIGH]; alertStatus=[ACTIVE|ACKNOWLEDGED|RESOLVED],drizzle/schema.ts
+inventoryMovements,Inventory Movements Table,id,batchId->batches.id (onDelete:restrict); performedBy->users.id,soft_delete:deletedAt,inventoryMovementType=[INTAKE|SALE|RETURN|REFUND_RETURN|ADJUSTMENT|QUARANTINE|RELEASE_FROM_QUARANTINE|DISPOSAL|TRANSFER|SAMPLE]; adjustmentReason=[DAMAGED|EXPIRED|LOST|THEFT|COUNT_DISCREPANCY|QUALITY_ISSUE|REWEIGH|OTHER],drizzle/schema.ts
+inventoryViews,Inventory Saved Views Table,id,createdBy->users.id (onDelete:cascade),,,drizzle/schema.ts
+invoiceLineItems,Invoice Line Items,id,invoiceId->invoices.id (onDelete:cascade); productId->products.id (onDelete:restrict); batchId->batches.id (onDelete:restrict),soft_delete:deletedAt,,drizzle/schema.ts
+invoicePayments,Invoice Payments Junction Table (FEAT-007),id,paymentId->payments.id (onDelete:cascade); invoiceId->invoices.id (onDelete:restrict); allocatedBy->users.id (onDelete:restrict),soft_delete:deletedAt,,drizzle/schema.ts
+invoices,Invoices (Accounts Receivable),id,customerId->clients.id (onDelete:restrict); createdBy->users.id (onDelete:restrict),soft_delete:deletedAt; optimistic_lock:version; unique:[invoiceNumber],status=[DRAFT|SENT|VIEWED|PARTIAL|PAID|OVERDUE|VOID],drizzle/schema.ts
+leaderboardDefaultWeights,Leaderboard Default Weights,id,updatedBy->users.id (onDelete:set null),,clientType=[CUSTOMER|SUPPLIER|ALL],drizzle/schema.ts
+leaderboardDisplaySettings,Leaderboard Display Settings,id,clientId->clients.id (onDelete:cascade),unique:[clientId],,drizzle/schema-gamification.ts
+leaderboardMetricCache,Leaderboard Metric Cache,id,clientId->clients.id (onDelete:cascade),,,drizzle/schema.ts
+leaderboardRankHistory,Leaderboard Rank History,id,clientId->clients.id (onDelete:cascade),,,drizzle/schema.ts
+leaderboardWeightConfigs,Leaderboard Weight Configurations,id,userId->users.id (onDelete:cascade),soft_delete:deletedAt,clientType=[CUSTOMER|SUPPLIER|ALL],drizzle/schema.ts
+ledgerEntries,General Ledger Entries,id,,soft_delete:deletedAt; unique:[entryNumber],,drizzle/schema.ts
+liveShoppingSessions,Live Shopping Sessions,id,hostUserId->users.id (onDelete:restrict); clientId->clients.id (onDelete:restrict),soft_delete:deletedAt; unique:[roomCode],status=[SCHEDULED|ACTIVE|PAUSED|ENDED|CONVERTED|CANCELLED],drizzle/schema-live-shopping.ts
+locations,Locations table,id,,soft_delete:deletedAt,,drizzle/schema.ts
+lots,Lots table,id,supplierClientId->clients.id (onDelete:restrict),soft_delete:deletedAt; unique:[code],,drizzle/schema.ts
+matchRecords,Match Records,id,clientNeedId->clientNeeds.id (onDelete:set null); clientId->clients.id (onDelete:cascade); inventoryBatchId->batches.id (onDelete:set null); vendorSupplyId->vendorSupply.id (onDelete:set null); historicalOrderId->orders.id (onDelete:set null); actionedBy->users.id (onDelete:set null); saleOrderId->orders.id (onDelete:set null),,matchType=[EXACT|CLOSE|HISTORICAL]; userAction=[CREATED_QUOTE|CONTACTED_VENDOR|DISMISSED|NONE],drizzle/schema.ts
+noteActivity,Note Activity table,id,noteId->freeformNotes.id (onDelete:cascade); userId->users.id (onDelete:cascade),soft_delete:deletedAt,activityType=[CREATED|UPDATED|COMMENTED|SHARED|ARCHIVED|RESTORED|PINNED|UNPINNED|TEMPLATE_APPLIED],drizzle/schema.ts
+noteComments,Note Comments table,id,noteId->freeformNotes.id (onDelete:cascade); userId->users.id (onDelete:cascade),soft_delete:deletedAt,,drizzle/schema.ts
+notificationPreferences,Notification preferences table,id,userId->users.id (onDelete:cascade); clientId->clients.id (onDelete:cascade),,recipientType=[user|client],drizzle/schema.ts
+notifications,Unified notifications table,id,userId->users.id (onDelete:cascade); clientId->clients.id (onDelete:cascade),,recipientType=[user|client]; type=[info|warning|success|error]; channel=[in_app|email|sms],drizzle/schema.ts
+orderAuditLog,UNSPECIFIED,id,,,,drizzle/schema.ts
+orderBags,WS-003: Order Bags Table,id,orderId->orders.id (onDelete:cascade); createdBy->users.id,,,drizzle/schema.ts
+orderItemBags,WS-003: Order Item Bags Table,id,bagId->orderBags.id (onDelete:cascade); packedBy->users.id,,,drizzle/schema.ts
+orderLineItemAllocations,UNSPECIFIED,id,,,,drizzle/schema.ts
+orderLineItems,UNSPECIFIED,id,,,marginSource=[CUSTOMER_PROFILE|DEFAULT|MANUAL],drizzle/schema.ts
+orderPriceAdjustments,UNSPECIFIED,id,orderId->orders.id (onDelete:cascade); adjustedBy->users.id,,adjustmentType=[ITEM|CATEGORY|ORDER]; adjustmentMode=[PERCENT|FIXED],drizzle/schema.ts
+orders,Orders Table (Unified Quotes + Sales),id,clientId->clients.id (onDelete:cascade); intakeEventId->calendarEvents.id (onDelete:set null); packedBy->users.id; shippedBy->users.id; referredByClientId->clients.id; convertedFromOrderId->orders.id; creditOverrideBy->users.id; createdBy->users.id,soft_delete:deletedAt; optimistic_lock:version; unique:[orderNumber],orderType=[QUOTE|SALE]; quoteStatus=[DRAFT|SENT|VIEWED|ACCEPTED|REJECTED|EXPIRED|CONVERTED]; paymentTerms=[COD|NET_7|NET_15|NET_30|CONSIGNMENT|PARTIAL]; saleStatus=[PENDING|PARTIAL|PAID|OVERDUE|CANCELLED]; fulfillmentStatus=[DRAFT|CONFIRMED|PENDING|PACKED|SHIPPED|DELIVERED|RETURNED|RESTOCKED|RETURNED_TO_VENDOR|CANCELLED]; pickPackStatus=[PENDING|PICKING|PACKED|READY],drizzle/schema.ts
+orderStatusHistory,Order Status History,id,orderId->orders.id (onDelete:restrict); changedBy->users.id,soft_delete:deletedAt,fulfillmentStatus=[DRAFT|CONFIRMED|PENDING|PACKED|SHIPPED|DELIVERED|RETURNED|RESTOCKED|RETURNED_TO_VENDOR|CANCELLED],drizzle/schema.ts
+organizationSettings,Organization Settings Table,id,,unique:[settingKey],settingType=[BOOLEAN|STRING|NUMBER|JSON]; scope=[SYSTEM|USER|TEAM],drizzle/schema.ts
+overtimeRules,Overtime Rules table,id,,,,drizzle/schema-scheduling.ts
+payableNotifications,Payable Notifications Table (MEET-005),id,payableId->vendorPayables.id (onDelete:cascade); sentToUserId->users.id (onDelete:set null); acknowledgedBy->users.id (onDelete:set null),soft_delete:deletedAt,notificationType=[GRACE_PERIOD_WARNING|PAYABLE_DUE|PAYMENT_REMINDER|OVERDUE],drizzle/schema.ts
+paymentHistory,Payment History table,id,,soft_delete:deletedAt,,drizzle/schema.ts
+paymentMethods,Payment Methods Table,id,,unique:[code],,drizzle/schema.ts
+payments,Payments,id,bankAccountId->bankAccounts.id (onDelete:restrict); customerId->clients.id (onDelete:restrict); vendorId->clients.id (onDelete:restrict); invoiceId->invoices.id (onDelete:restrict); billId->bills.id (onDelete:restrict); createdBy->users.id (onDelete:restrict),soft_delete:deletedAt; optimistic_lock:version; unique:[paymentNumber],paymentType=[RECEIVED|SENT]; paymentMethod=[CASH|CHECK|WIRE|ACH|CREDIT_CARD|DEBIT_CARD|OTHER],drizzle/schema.ts
+permissions,UNSPECIFIED,id,,unique:[name],,drizzle/schema-rbac.ts
+pointsLedger,Points Ledger,id,clientId->clients.id (onDelete:cascade); processedById->users.id,,transactionType=[EARNED_ACHIEVEMENT|EARNED_PURCHASE|EARNED_REFERRAL|EARNED_BONUS|REDEEMED|EXPIRED|ADJUSTED],drizzle/schema-gamification.ts
+priceHistory,"Price History (MEET-061, MEET-062)",id,productId->products.id (onDelete:cascade); batchId->batches.id (onDelete:set null); clientId->clients.id (onDelete:set null); orderId->orders.id (onDelete:set null); supplierId->clients.id (onDelete:set null),,transactionType=[PURCHASE|SALE],drizzle/schema.ts
+pricingDefaults,UNSPECIFIED,id,,unique:[productCategory],,drizzle/schema.ts
+pricingProfiles,Pricing Profiles,id,createdBy->users.id,soft_delete:deletedAt,,drizzle/schema.ts
+pricingRules,Pricing Rules,id,,soft_delete:deletedAt,adjustmentType=[PERCENT_MARKUP|PERCENT_MARKDOWN|DOLLAR_MARKUP|DOLLAR_MARKDOWN]; logicType=[AND|OR],drizzle/schema.ts
+productImages,Product Images Table,id,batchId->batches.id (onDelete:cascade); productId->products.id (onDelete:cascade); uploadedBy->users.id,,status=[PENDING|APPROVED|REJECTED|ARCHIVED],drizzle/schema.ts
+productMedia,Product Media table,id,,soft_delete:deletedAt,,drizzle/schema.ts
+products,Products table,id,,soft_delete:deletedAt,,drizzle/schema.ts
+productSynonyms,Product Synonyms table,id,,soft_delete:deletedAt,,drizzle/schema.ts
+productTags,Product Tags junction table,id,,soft_delete:deletedAt,,drizzle/schema.ts
+purchaseOrderItems,Purchase Order Line Items table,id,purchaseOrderId->purchaseOrders.id (onDelete:cascade); productId->products.id (onDelete:restrict),soft_delete:deletedAt,,drizzle/schema.ts
+purchaseOrders,Purchase Orders table,id,supplierClientId->clients.id (onDelete:restrict); vendorId->vendors.id (onDelete:restrict); intakeSessionId->intakeSessions.id (onDelete:set null); createdBy->users.id (onDelete:restrict),soft_delete:deletedAt; unique:[poNumber],purchaseOrderStatus=[DRAFT|SENT|CONFIRMED|RECEIVING|RECEIVED|CANCELLED],drizzle/schema.ts
+receipts,UNSPECIFIED,id,clientId->clients.id; createdBy->users.id,unique:[receiptNumber],transactionType=[PAYMENT|CREDIT|ADJUSTMENT|STATEMENT],drizzle/schema.ts
+recurringOrders,Recurring Orders,id,clientId->clients.id (onDelete:cascade); createdBy->users.id (onDelete:restrict),,frequency=[DAILY|WEEKLY|BIWEEKLY|MONTHLY|QUARTERLY]; status=[ACTIVE|PAUSED|CANCELLED],drizzle/schema.ts
+referralCredits,Referral Credits Table,id,referrerClientId->clients.id (onDelete:cascade); referredClientId->clients.id (onDelete:cascade); referredOrderId->orders.id (onDelete:cascade); appliedToOrderId->orders.id; appliedBy->users.id,,status=[PENDING|AVAILABLE|APPLIED|EXPIRED|CANCELLED],drizzle/schema.ts
+referralCreditSettings,Referral Settings Table,id,,,,drizzle/schema.ts
+referralGamificationSettings,Referral Settings,id,updatedById->users.id,,,drizzle/schema-gamification.ts
+referralTracking,Referral Tracking,id,referrerClientId->clients.id (onDelete:cascade); referredClientId->clients.id (onDelete:cascade); firstOrderId->orders.id,,status=[PENDING|CONVERTED|COUCH_TAX_ACTIVE|COMPLETED|CANCELLED],drizzle/schema-gamification.ts
+returns,Returns Table,id,orderId->orders.id (onDelete:cascade); processedBy->users.id,,returnReason=[DEFECTIVE|WRONG_ITEM|NOT_AS_DESCRIBED|CUSTOMER_CHANGED_MIND|OTHER],drizzle/schema.ts
+rewardCatalog,Reward Catalog,id,,unique:[code],rewardType=[MARKUP_DISCOUNT|FIXED_DISCOUNT|FREE_SHIPPING|PRIORITY_SERVICE|EXCLUSIVE_ACCESS|CUSTOM],drizzle/schema-gamification.ts
+rewardRedemptions,Reward Redemptions,id,clientId->clients.id (onDelete:cascade); rewardId->rewardCatalog.id (onDelete:cascade); appliedToOrderId->orders.id; approvedById->users.id,,status=[PENDING|APPROVED|APPLIED|EXPIRED|CANCELLED],drizzle/schema-gamification.ts
+rolePermissions,UNSPECIFIED,id,roleId->roles.id (onDelete:cascade); permissionId->permissions.id (onDelete:cascade),,,drizzle/schema-rbac.ts
+roles,RBAC Schema for TERP,id,,unique:[name],,drizzle/schema-rbac.ts
+roomBookings,Room Bookings table,id,roomId->rooms.id (onDelete:cascade); calendarEventId->calendarEvents.id (onDelete:cascade); bookedById->users.id; clientId->clients.id (onDelete:set null),,status=[pending|confirmed|in_progress|completed|cancelled],drizzle/schema-scheduling.ts
+rooms,Rooms table,id,,soft_delete:deletedAt,roomType=[meeting|loading],drizzle/schema-scheduling.ts
+sales,Sales table,id,customerId->clients.id (onDelete:restrict); createdBy->users.id (onDelete:restrict),soft_delete:deletedAt,,drizzle/schema.ts
+salesSheetDrafts,Sales Sheet Drafts,id,clientId->clients.id (onDelete:cascade); createdBy->users.id,,,drizzle/schema.ts
+salesSheetHistory,Sales Sheet History,id,clientId->clients.id (onDelete:cascade); createdBy->users.id; templateId->salesSheetTemplates.id (onDelete:set null); convertedToOrderId->orders.id (onDelete:set null),soft_delete:deletedAt,,drizzle/schema.ts
+salesSheetTemplates,Sales Sheet Templates,id,clientId->clients.id (onDelete:cascade); createdBy->users.id,,,drizzle/schema.ts
+salesSheetVersions,Sales Sheet Versions Table,id,templateId->salesSheetTemplates.id (onDelete:cascade); createdBy->users.id,,,drizzle/schema.ts
+sampleAllocations,Sample Allocations Table,id,clientId->clients.id (onDelete:cascade),,,drizzle/schema.ts
+sampleInventoryLog,Sample Inventory Log,id,batchId->batches.id (onDelete:cascade); orderId->orders.id (onDelete:cascade); createdBy->users.id,,action=[ALLOCATED|RELEASED|CONSUMED],drizzle/schema.ts
+sampleLocationHistory,Sample Location History Table (SAMPLE-008),id,sampleRequestId->sampleRequests.id (onDelete:cascade); changedBy->users.id,,fromLocation=[WAREHOUSE|WITH_CLIENT|WITH_SALES_REP|RETURNED|LOST]; toLocation=[WAREHOUSE|WITH_CLIENT|WITH_SALES_REP|RETURNED|LOST],drizzle/schema.ts
+sampleRequests,Sample Requests Table,id,clientId->clients.id (onDelete:cascade); requestedBy->users.id; fulfilledBy->users.id; cancelledBy->users.id; relatedOrderId->orders.id; returnRequestedBy->users.id; returnApprovedBy->users.id,,sampleRequestStatus=[PENDING|FULFILLED|CANCELLED|RETURN_REQUESTED|RETURN_APPROVED|RETURNED|VENDOR_RETURN_REQUESTED|SHIPPED_TO_VENDOR|VENDOR_CONFIRMED]; location=[WAREHOUSE|WITH_CLIENT|WITH_SALES_REP|RETURNED|LOST],drizzle/schema.ts
+scratchPadNotes,Scratch Pad Notes table,id,userId->users.id (onDelete:cascade),soft_delete:deletedAt,,drizzle/schema.ts
+sequences,Sequences table,id,,soft_delete:deletedAt; unique:[name],,drizzle/schema.ts
+sessionCartItems,Session Cart Items,id,sessionId->liveShoppingSessions.id (onDelete:cascade); batchId->batches.id (onDelete:restrict); productId->products.id (onDelete:restrict),soft_delete:deletedAt,addedByRole=[HOST|CLIENT]; itemStatus=[SAMPLE_REQUEST|INTERESTED|TO_PURCHASE]; negotiationStatus=[PENDING|COUNTER_OFFERED|ACCEPTED|REJECTED],drizzle/schema-live-shopping.ts
+sessionPriceOverrides,Session Price Overrides,id,sessionId->liveShoppingSessions.id (onDelete:cascade); productId->products.id (onDelete:cascade),,,drizzle/schema-live-shopping.ts
+shiftAudits,Shift Audits Table,id,locationId->cashLocations.id; resetBy->users.id,,,drizzle/schema.ts
+shiftTemplates,Shift Templates table,id,,,,drizzle/schema-scheduling.ts
+siteInventoryCounts,Site Inventory Counts table,id,siteId->sites.id (onDelete:cascade); batchId->batches.id (onDelete:cascade); lastCountById->users.id,,,drizzle/schema-storage.ts
+sites,Sites table,id,,soft_delete:deletedAt; unique:[code],siteType=[samples|storage|shipping|warehouse|office|custom],drizzle/schema-storage.ts
+siteTransfers,Site Transfers table,id,fromSiteId->sites.id (onDelete:restrict); toSiteId->sites.id (onDelete:restrict); batchId->batches.id (onDelete:restrict); requestedById->users.id; shippedById->users.id; receivedById->users.id; destinationZoneId->storageZones.id,unique:[transferNumber],status=[pending|in_transit|received|cancelled],drizzle/schema-storage.ts
+storageZones,Storage Zones table,id,siteId->sites.id (onDelete:cascade),soft_delete:deletedAt,temperatureControl=[ambient|cool|cold|frozen|controlled]; accessLevel=[public|restricted|secure|high_security],drizzle/schema-storage.ts
+strains,Strain Library table,id,,soft_delete:deletedAt; unique:[name],,drizzle/schema.ts
+subcategories,Subcategories table,id,,soft_delete:deletedAt,,drizzle/schema.ts
+supplierProfiles,Supplier Profiles Table,id,clientId->clients.id (onDelete:cascade),unique:[clientId],preferredPaymentMethod=[CASH|CHECK|WIRE|ACH|CREDIT_CARD|OTHER],drizzle/schema.ts
+tagGroupMembers,Tag Group Members Table,id,groupId->tagGroups.id (onDelete:cascade); tagId->tags.id (onDelete:cascade),,,drizzle/schema.ts
+tagGroups,Tag Groups Table,id,createdBy->users.id,soft_delete:deletedAt,,drizzle/schema.ts
+tagHierarchy,Tag Hierarchy Table,id,parentTagId->tags.id (onDelete:cascade); childTagId->tags.id (onDelete:cascade),,,drizzle/schema.ts
+tags,Tags table,id,,soft_delete:deletedAt; unique:[name],category=[STATUS|PRIORITY|TYPE|CUSTOM|STRAIN|FLAVOR|EFFECT],drizzle/schema.ts
+timeEntries,Time Entries table,id,userId->users.id (onDelete:cascade); shiftId->employeeShifts.id (onDelete:set null); adjustedById->users.id; approvedById->users.id,,entryType=[regular|overtime|holiday|sick|vacation|training]; status=[active|completed|adjusted|approved|rejected],drizzle/schema-scheduling.ts
+timeOffRequests,Time Off Requests table (CAL-004),id,userId->users.id (onDelete:cascade); calendarEventId->calendarEvents.id (onDelete:set null); respondedById->users.id (onDelete:set null),,,drizzle/schema.ts
+timesheetPeriods,Timesheet Periods table,id,closedById->users.id,,periodType=[weekly|biweekly|monthly]; status=[open|closed|locked],drizzle/schema-scheduling.ts
+todoListMembers,Todo List Members table,id,listId->todoLists.id (onDelete:cascade); userId->users.id (onDelete:cascade); addedBy->users.id (onDelete:cascade),,role=[owner|editor|viewer],drizzle/schema.ts
+todoLists,Todo Lists table,id,ownerId->users.id (onDelete:cascade),,,drizzle/schema.ts
+todoTaskActivity,Todo Task Activity table,id,taskId->todoTasks.id (onDelete:cascade); userId->users.id (onDelete:cascade),,action=[created|updated|status_changed|assigned|completed|deleted],drizzle/schema.ts
+todoTasks,Todo Tasks table,id,listId->todoLists.id (onDelete:cascade); assignedTo->users.id (onDelete:set null); createdBy->users.id (onDelete:cascade); completedBy->users.id (onDelete:set null),,status=[todo|in_progress|done]; priority=[low|medium|high|urgent],drizzle/schema.ts
+transactionLinks,Transaction Links Table,id,parentTransactionId->transactions.id (onDelete:cascade); childTransactionId->transactions.id (onDelete:cascade); createdBy->users.id,,transactionLinkType=[REFUND_OF|PAYMENT_FOR|CREDIT_APPLIED_TO|CONVERTED_FROM|PARTIAL_OF|RELATED_TO],drizzle/schema.ts
+transactions,Base Transactions Table,id,clientId->clients.id (onDelete:cascade); createdBy->users.id,unique:[transactionNumber],transactionType=[INVOICE|PAYMENT|REFUND|CREDIT|QUOTE|ORDER|SALE]; transactionStatus=[DRAFT|PENDING|CONFIRMED|COMPLETED|PARTIAL|PAID|OVERDUE|VOID|WRITTEN_OFF],drizzle/schema.ts
+unitTypes,Unit Types Table,id,,unique:[code],category=[WEIGHT|COUNT|VOLUME|PACKAGED],drizzle/schema.ts
+userDashboardPreferences,User Dashboard Preferences table,id,userId->users.id (onDelete:cascade),soft_delete:deletedAt; unique:[userId],,drizzle/schema.ts
+userMentions,User Mentions table,id,mentionedUserId->users.id (onDelete:cascade); mentionedById->users.id (onDelete:cascade),,sourceType=[appointment|comment|note|order|task],drizzle/schema-scheduling.ts
+userPermissionOverrides,UNSPECIFIED,id,permissionId->permissions.id (onDelete:cascade),,,drizzle/schema-rbac.ts
+userPreferences,User Preferences Table,id,userId->users.id (onDelete:cascade); defaultWarehouseId->locations.id (onDelete:set null); defaultLocationId->locations.id (onDelete:set null),unique:[userId],,drizzle/schema.ts
+userRoles,UNSPECIFIED,id,roleId->roles.id (onDelete:cascade),,,drizzle/schema-rbac.ts
+users,Core user table backing auth flow.,id,,soft_delete:deletedAt; unique:[openId],role=[user|admin],drizzle/schema.ts
+variableMarkupRules,Variable Markup Rules (MEET-014),id,profileId->pricingProfiles.id (onDelete:cascade),,ruleType=[AGE|QUANTITY]; adjustmentMode=[PERCENT|FIXED],drizzle/schema.ts
+vendorHarvestReminders,Vendor Harvest Reminders Table,id,vendorId->vendors.id (onDelete:cascade); createdBy->users.id; contactedBy->users.id,,status=[PENDING|CONTACTED|COMPLETED|CANCELLED],drizzle/schema.ts
+vendorNotes,Vendor Notes table,id,vendorId->vendors.id (onDelete:cascade); userId->users.id,soft_delete:deletedAt,,drizzle/schema.ts
+vendorPayables,Vendor Payables Table (MEET-005),id,vendorClientId->clients.id (onDelete:restrict); batchId->batches.id (onDelete:restrict); lotId->lots.id (onDelete:restrict); createdBy->users.id (onDelete:restrict),soft_delete:deletedAt; optimistic_lock:version; unique:[payableNumber],status=[PENDING|DUE|PARTIAL|PAID|VOID],drizzle/schema.ts
+vendorReturnItems,WSQA-003: Vendor Return Items Table,id,vendorReturnId->vendorReturns.id (onDelete:cascade); batchId->batches.id,,,drizzle/schema.ts
+vendorReturns,UNSPECIFIED,id,orderId->orders.id; vendorId->clients.id; createdBy->users.id,,status=[PENDING_VENDOR_CREDIT|CREDIT_RECEIVED|DISPUTED|CLOSED],drizzle/schema.ts
+vendors,Vendors table,id,,soft_delete:deletedAt; unique:[name],,drizzle/schema.ts
+vendorSupply,Vendor Supply,id,vendorId->vendors.id (onDelete:cascade); createdBy->users.id (onDelete:restrict); createdByClientId->clients.id (onDelete:restrict),soft_delete:deletedAt,strainType=[INDICA|SATIVA|HYBRID|CBD]; status=[AVAILABLE|RESERVED|PURCHASED|EXPIRED],drizzle/schema.ts
+vipLeaderboardSnapshots,VIP Leaderboard Snapshots,id,clientId->clients.id (onDelete:cascade),,period=[WEEKLY|MONTHLY|QUARTERLY|YEARLY|ALL_TIME]; leaderboardType=[TOTAL_SPENT|ORDER_COUNT|REFERRALS|ACTIVITY|ACHIEVEMENTS],drizzle/schema-gamification.ts
+vipPortalAuth,VIP Portal Authentication,id,clientId->clients.id (onDelete:cascade),unique:[clientId|email],,drizzle/schema-vip-portal.ts
+vipPortalAuth,VIP Portal Authentication,id,clientId->clients.id (onDelete:cascade),unique:[clientId|email],,drizzle/schema-vip-portal.ts
+vipPortalConfigurations,VIP Portal Configurations,id,clientId->clients.id (onDelete:cascade),unique:[clientId],,drizzle/schema-vip-portal.ts
+vipPortalConfigurations,VIP Portal Configurations,id,clientId->clients.id (onDelete:cascade),unique:[clientId],,drizzle/schema-vip-portal.ts
+vipTierHistory,VIP Tier History,id,clientId->clients.id (onDelete:cascade); previousTierId->vipTiers.id (onDelete:set null); newTierId->vipTiers.id (onDelete:set null); changedBy->users.id (onDelete:set null),,,drizzle/schema-vip-portal.ts
+vipTiers,VIP Tiers,id,,unique:[name],,drizzle/schema-vip-portal.ts
+workflowStatuses,Workflow Statuses table,id,,unique:[slug],,drizzle/schema.ts

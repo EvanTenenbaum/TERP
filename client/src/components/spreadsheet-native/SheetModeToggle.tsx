@@ -36,7 +36,7 @@ export function SheetModeToggle({
         aria-pressed={surfaceMode === "classic"}
         onClick={() => onSurfaceModeChange("classic")}
       >
-        Classic Surface
+        Standard View
       </Button>
     </div>
   );

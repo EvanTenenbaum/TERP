@@ -493,6 +493,11 @@ export function BillsSurface() {
           days60: number;
           days90: number;
           days90Plus: number;
+          currentCount?: number;
+          days30Count?: number;
+          days60Count?: number;
+          days90Count?: number;
+          days90PlusCount?: number;
         }
       | null
       | undefined;
@@ -502,30 +507,35 @@ export function BillsSurface() {
         key: "current",
         label: "Current",
         amount: data.current,
+        count: data.currentCount ?? 0,
         colorClass: AP_AGING_TOKENS.current,
       },
       {
         key: "30",
         label: "1-30 Days",
         amount: data.days30,
+        count: data.days30Count ?? 0,
         colorClass: AP_AGING_TOKENS["30"],
       },
       {
         key: "60",
         label: "31-60 Days",
         amount: data.days60,
+        count: data.days60Count ?? 0,
         colorClass: AP_AGING_TOKENS["60"],
       },
       {
         key: "90",
         label: "61-90 Days",
         amount: data.days90,
+        count: data.days90Count ?? 0,
         colorClass: AP_AGING_TOKENS["90"],
       },
       {
         key: "90+",
         label: "90+ Days",
         amount: data.days90Plus,
+        count: data.days90PlusCount ?? 0,
         colorClass: AP_AGING_TOKENS["90+"],
       },
     ];
@@ -984,6 +994,9 @@ export function BillsSurface() {
                   <div className="text-[9px] font-medium">{bucket.label}</div>
                   <div className="text-sm font-bold">
                     {formatCurrency(bucket.amount)}
+                  </div>
+                  <div className="text-[8px] text-muted-foreground">
+                    {bucket.count} {bucket.count === 1 ? "bill" : "bills"}
                   </div>
                 </div>
               ))}

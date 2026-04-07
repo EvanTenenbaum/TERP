@@ -45,6 +45,10 @@ steps:
     network_idle: true
     timeout: 10000
 
+  - action: wait
+    for: "input[placeholder='Search order or client'], [role='grid'], main"
+    timeout: 20000
+
   - action: type
     target: "input[placeholder='Search order or client']"
     value: "{{temp:invoice_source_order.orderNumber}}"

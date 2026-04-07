@@ -15,6 +15,7 @@
 import type { Request, Response } from "express";
 import type { User } from "../../drizzle/schema";
 import { simpleAuth } from "./simpleAuth";
+import { getSessionCookieOptions } from "./cookies";
 import { getUserByEmail, upsertUser, getUser } from "../db";
 import { logger } from "./logger";
 import bcrypt from "bcrypt";
@@ -328,9 +329,7 @@ export function registerQaAuthRoutes(app: import("express").Express): void {
 
       // Set session cookie
       res.cookie(COOKIE_NAME, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
+        ...getSessionCookieOptions(req),
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
 

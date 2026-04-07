@@ -182,23 +182,16 @@ const PO_ALLOWED_TRANSITIONS: Record<string, POStatus[]> = {
   CANCELLED: [],
 };
 
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const mod = isMac ? "\u2318" : "Ctrl";
-
 const queueKeyboardHints: KeyboardHint[] = [
   { key: "Click", label: "select row" },
-  { key: "Shift+Click", label: "extend range" },
-  { key: `${mod}+Click`, label: "add to selection" },
-  { key: `${mod}+C`, label: "copy cells" },
-  { key: `${mod}+A`, label: "select all" },
+  { key: "Enter", label: "focus selection" },
+  { key: "Esc", label: "clear dialogs" },
 ];
 
 const queueAffordances: PowersheetAffordance[] = [
   { label: "Select", available: true },
-  { label: "Multi-select", available: true },
-  { label: "Copy", available: true },
+  { label: "Multi-select", available: false },
+  { label: "Copy", available: false },
   { label: "Paste", available: false },
   { label: "Fill", available: false },
   { label: "Edit", available: false },
@@ -337,6 +330,14 @@ function buildRowKey(entityType: string, id: number): string {
   return `${entityType}:${id}`;
 }
 
+function hasExpectedDeliveryDate(
+  value: Date | string | null | undefined
+): boolean {
+  if (!value) return false;
+  const date = value instanceof Date ? value : new Date(value);
+  return !Number.isNaN(date.getTime());
+}
+
 function mapPOsToQueueRows(
   pos: POQueueRecord[],
   supplierNamesById: Map<number, string>
@@ -409,6 +410,7 @@ function mapLineItemsToRows(items: POLineItem[]): POLineRow[] {
 
 interface PurchaseOrderSurfaceProps {
   defaultStatusFilter?: string[];
+  autoLaunchReceivingOnRowClick?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -417,10 +419,15 @@ interface PurchaseOrderSurfaceProps {
 
 export function PurchaseOrderSurface({
   defaultStatusFilter,
+  autoLaunchReceivingOnRowClick = false,
 }: PurchaseOrderSurfaceProps) {
   const [, setLocation] = useLocation();
   const routeSearch = useSearch();
   const { user } = useAuth();
+  const deepLink = useMemo(
+    () => parsePurchaseOrderDeepLink(routeSearch),
+    [routeSearch]
+  );
   const { selectedId: selectedPoId, setSelectedId: setSelectedPoId } =
     useSpreadsheetSelectionParam("poId");
 
@@ -430,6 +437,12 @@ export function PurchaseOrderSurface({
     [routeSearch]
   );
   const poView = searchParams.get("poView");
+
+  useEffect(() => {
+    if (poView) return;
+    if (selectedPoId !== null || deepLink.poId === null) return;
+    setSelectedPoId(deepLink.poId);
+  }, [deepLink.poId, poView, selectedPoId, setSelectedPoId]);
 
   // If creation/edit mode, render the split-surface editor
   if (poView === "create" || poView === "edit") {
@@ -448,9 +461,12 @@ export function PurchaseOrderSurface({
     <PurchaseOrderQueueMode
       defaultStatusFilter={defaultStatusFilter}
       initialStatusFilter={initialStatus}
+      autoLaunchReceivingOnRowClick={autoLaunchReceivingOnRowClick}
       selectedPoId={selectedPoId}
       setSelectedPoId={setSelectedPoId}
       setLocation={setLocation}
+      routeSearch={routeSearch}
+      supplierFilterId={deepLink.supplierClientId}
       userId={user?.id ?? null}
     />
   );
@@ -1309,16 +1325,22 @@ function PurchaseOrderCreateEditMode({
 function PurchaseOrderQueueMode({
   defaultStatusFilter,
   initialStatusFilter,
+  autoLaunchReceivingOnRowClick,
   selectedPoId,
   setSelectedPoId,
   setLocation,
+  routeSearch,
+  supplierFilterId,
   userId,
 }: {
   defaultStatusFilter?: string[];
   initialStatusFilter: string;
+  autoLaunchReceivingOnRowClick: boolean;
   selectedPoId: number | null;
   setSelectedPoId: (id: number | null) => void;
   setLocation: (path: string) => void;
+  routeSearch: string;
+  supplierFilterId: number | null;
   userId: number | null;
 }) {
   // Export hook
@@ -1333,8 +1355,6 @@ function PurchaseOrderQueueMode({
   // Dialog state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showStatusDialog, setShowStatusDialog] = useState(false);
-  const [showReceivingConfirmDialog, setShowReceivingConfirmDialog] =
-    useState(false);
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     poId: number;
     status: POStatus;
@@ -1350,20 +1370,23 @@ function PurchaseOrderQueueMode({
   const lastToastKeyRef = useRef<string | null>(null);
   const lastToastTimeRef = useRef(0);
 
-  const notifyToast = (level: "success" | "error" | "warning", msg: string) => {
-    const now = Date.now();
-    const key = `${level}:${msg}`;
-    if (
-      key !== lastToastKeyRef.current ||
-      now - lastToastTimeRef.current > 300
-    ) {
-      if (level === "success") toast.success(msg);
-      else if (level === "warning") toast.warning(msg);
-      else toast.error(msg);
-      lastToastKeyRef.current = key;
-      lastToastTimeRef.current = now;
-    }
-  };
+  const notifyToast = useCallback(
+    (level: "success" | "error" | "warning", msg: string) => {
+      const now = Date.now();
+      const key = `${level}:${msg}`;
+      if (
+        key !== lastToastKeyRef.current ||
+        now - lastToastTimeRef.current > 300
+      ) {
+        if (level === "success") toast.success(msg);
+        else if (level === "warning") toast.warning(msg);
+        else toast.error(msg);
+        lastToastKeyRef.current = key;
+        lastToastTimeRef.current = now;
+      }
+    },
+    []
+  );
 
   // ---------------------------------------------------------------------------
   // Queries
@@ -1372,7 +1395,9 @@ function PurchaseOrderQueueMode({
   const posQuery = trpc.purchaseOrders.getAll.useQuery({
     limit: 500,
     offset: 0,
+    supplierClientId: supplierFilterId ?? undefined,
   });
+  const utils = trpc.useUtils();
 
   const suppliersQuery = trpc.clients.list.useQuery({
     clientTypes: ["seller"],
@@ -1399,6 +1424,13 @@ function PurchaseOrderQueueMode({
     );
     return new Map(items.map(s => [s.id, s.name ?? "Unknown"]));
   }, [suppliersQuery.data]);
+
+  const supplierFilterName = useMemo(() => {
+    if (!supplierFilterId) return null;
+    return (
+      supplierNamesById.get(supplierFilterId) ?? `Supplier #${supplierFilterId}`
+    );
+  }, [supplierFilterId, supplierNamesById]);
 
   const searchLower = searchTerm.trim().toLowerCase();
 
@@ -1478,6 +1510,12 @@ function PurchaseOrderQueueMode({
     defaultStatusFilter,
     searchLower,
   ]);
+
+  const showExpectedDeliveryColumn = useMemo(
+    () =>
+      queueRows.some(row => hasExpectedDeliveryDate(row.expectedDeliveryDate)),
+    [queueRows]
+  );
 
   const selectedRow = queueRows.find(row => row.poId === selectedPoId) ?? null;
 
@@ -1573,8 +1611,7 @@ function PurchaseOrderQueueMode({
   // ---------------------------------------------------------------------------
 
   const handleNewPO = () => {
-    // Set URL param to trigger creation mode (Task 4)
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(routeSearch);
     params.set("poView", "create");
     setLocation(`?${params.toString()}`);
   };
@@ -1654,68 +1691,100 @@ function PurchaseOrderQueueMode({
     deletePO.mutate({ id: selectedRow.poId });
   };
 
-  const handleStartReceiving = () => {
-    if (!selectedRow) return;
-    // Create product intake draft from PO detail
-    const detail = detailQuery.data;
-    if (detail?.items) {
-      const lines: ProductIntakeDraftLine[] = (
-        detail.items as POLineItem[]
-      ).map(item => ({
-        id: `line-${item.id}`,
-        poItemId: item.id,
-        productId: item.productId,
-        productName: item.productName ?? `Product #${item.productId}`,
-        category: item.category,
-        quantityOrdered: toNumber(item.quantityOrdered),
-        quantityReceived: toNumber(item.quantityReceived),
-        intakeQty: Math.max(
-          0,
-          toNumber(item.quantityOrdered) - toNumber(item.quantityReceived)
-        ),
-        cogsMode: item.cogsMode ?? "FIXED",
-        unitCost: toNumber(item.unitCost),
-        unitCostMin: toNumber(item.unitCostMin),
-        unitCostMax: toNumber(item.unitCostMax),
-      }));
+  const handleStartReceiving = useCallback(
+    async (rowOverride?: POQueueRow | null) => {
+      const targetRow = rowOverride ?? selectedRow;
+      if (!targetRow) return;
 
-      const supplierData = detail.supplier as
-        | { id?: number; name?: string }
-        | undefined;
-      const draft = createProductIntakeDraftFromPO({
-        poId: selectedRow.poId,
-        poNumber: selectedRow.poNumber,
-        vendorId: supplierData?.id ?? null,
-        vendorName: selectedRow.supplierName,
-        warehouseId: null,
-        warehouseName: "Default",
-        lines,
-      });
-      const persistedDraft = upsertProductIntakeDraft(draft, userId);
-      setLocation(
-        buildOperationsWorkspacePath("receiving", {
-          draftId: persistedDraft.id,
-          poId: selectedRow.poId,
-          poNumber: selectedRow.poNumber,
-        })
-      );
-      return;
-    }
+      try {
+        const detail =
+          targetRow.poId === selectedPoId && detailQuery.data
+            ? detailQuery.data
+            : await utils.purchaseOrders.getById.fetch({
+                id: targetRow.poId,
+              });
 
-    setLocation(
-      buildOperationsWorkspacePath("receiving", {
-        poId: selectedRow.poId,
-        poNumber: selectedRow.poNumber,
-      })
-    );
-  };
+        if (detail?.items) {
+          const lines: ProductIntakeDraftLine[] = (
+            detail.items as POLineItem[]
+          ).map(item => ({
+            id: `line-${item.id}`,
+            poItemId: item.id,
+            productId: item.productId,
+            productName: item.productName ?? `Product #${item.productId}`,
+            category: item.category,
+            subcategory: item.subcategory,
+            quantityOrdered: toNumber(item.quantityOrdered),
+            quantityReceived: toNumber(item.quantityReceived),
+            intakeQty: Math.max(
+              0,
+              toNumber(item.quantityOrdered) - toNumber(item.quantityReceived)
+            ),
+            cogsMode: item.cogsMode ?? "FIXED",
+            unitCost: toNumber(item.unitCost),
+            unitCostMin: toNumber(item.unitCostMin),
+            unitCostMax: toNumber(item.unitCostMax),
+          }));
+
+          const supplierData = detail.supplier as
+            | { id?: number; name?: string }
+            | undefined;
+          const draft = createProductIntakeDraftFromPO({
+            poId: targetRow.poId,
+            poNumber: targetRow.poNumber,
+            vendorId: supplierData?.id ?? null,
+            vendorName: targetRow.supplierName,
+            warehouseId: null,
+            warehouseName: "Default",
+            lines,
+          });
+          const persistedDraft = upsertProductIntakeDraft(draft, userId);
+          notifyToast(
+            "success",
+            `Product Intake draft saved for ${targetRow.poNumber}`
+          );
+          setLocation(
+            buildOperationsWorkspacePath("receiving", {
+              draftId: persistedDraft.id,
+              poId: targetRow.poId,
+              poNumber: targetRow.poNumber,
+            })
+          );
+          return;
+        }
+
+        setLocation(
+          buildOperationsWorkspacePath("receiving", {
+            poId: targetRow.poId,
+            poNumber: targetRow.poNumber,
+          })
+        );
+      } catch (error) {
+        notifyToast(
+          "error",
+          error instanceof Error
+            ? error.message
+            : "Failed to open Product Intake draft"
+        );
+      }
+    },
+    [
+      detailQuery.data,
+      notifyToast,
+      selectedPoId,
+      selectedRow,
+      setLocation,
+      userId,
+      utils.purchaseOrders.getById,
+    ]
+  );
 
   // ---------------------------------------------------------------------------
   // Column definitions
   // ---------------------------------------------------------------------------
 
-  const queueColumnDefs = useMemo<ColDef<POQueueRow>[]>(
-    () => [
+  const queueColumnDefs = useMemo<ColDef<POQueueRow>[]>(() => {
+    const cols: ColDef<POQueueRow>[] = [
       {
         field: "poNumber",
         headerName: "PO Number",
@@ -1747,18 +1816,6 @@ function PurchaseOrderQueueMode({
           formatDate(params.value as Date | string | null | undefined),
       },
       {
-        field: "expectedDeliveryDate",
-        headerName: "Est. Delivery",
-        minWidth: 120,
-        maxWidth: 140,
-        cellClass: "powersheet-cell--locked",
-        valueFormatter: params =>
-          getExpectedDeliveryLabel(
-            params.value as Date | string | null | undefined,
-            params.data?.status
-          ),
-      },
-      {
         field: "total",
         headerName: "Total ($)",
         minWidth: 110,
@@ -1769,13 +1826,34 @@ function PurchaseOrderQueueMode({
       {
         field: "paymentTerms",
         headerName: "Payment Terms",
-        minWidth: 100,
-        maxWidth: 130,
+        minWidth: 150,
+        maxWidth: 190,
         cellClass: "powersheet-cell--locked",
       },
-    ],
-    []
-  );
+    ];
+
+    if (showExpectedDeliveryColumn) {
+      const orderDateColumnIndex = cols.findIndex(
+        column => column.field === "orderDate"
+      );
+      const insertIndex =
+        orderDateColumnIndex >= 0 ? orderDateColumnIndex + 1 : cols.length;
+
+      cols.splice(insertIndex, 0, {
+        field: "expectedDeliveryDate",
+        headerName: "Est. Delivery",
+        minWidth: 120,
+        maxWidth: 140,
+        cellClass: "powersheet-cell--locked",
+        valueFormatter: params => {
+          const value = params.value as Date | string | null | undefined;
+          return hasExpectedDeliveryDate(value) ? formatDate(value) : "Not set";
+        },
+      });
+    }
+
+    return cols;
+  }, [showExpectedDeliveryColumn]);
 
   const lineItemColumnDefs = useMemo<ColDef<POLineRow>[]>(
     () => [
@@ -1873,27 +1951,33 @@ function PurchaseOrderQueueMode({
         <h2 className="text-lg font-semibold">Purchase Orders</h2>
         {draftCount > 0 && (
           <Badge variant="outline" className="text-xs">
-            {draftCount} draft
+            {draftCount} draft purchase orders
           </Badge>
         )}
         {confirmedCount > 0 && (
           <Badge variant="outline" className="text-xs">
-            {confirmedCount} confirmed
+            {confirmedCount} confirmed purchase orders
           </Badge>
         )}
         {receivingCount > 0 && (
           <Badge variant="outline" className="text-xs">
-            {receivingCount} receiving
+            {receivingCount} receiving purchase orders
           </Badge>
         )}
+        {supplierFilterName ? (
+          <Badge variant="secondary" className="text-xs">
+            Supplier: {supplierFilterName}
+          </Badge>
+        ) : null}
         <div className="ml-auto flex items-center gap-2">
           <Button size="sm" onClick={handleNewPO}>
-            <Plus className="mr-1 h-4 w-4" />+ New PO
+            <Plus className="mr-1 h-4 w-4" />
+            New Purchase Order
           </Button>
           <Button
             size="sm"
             variant="outline"
-            aria-label="Export visible POs to CSV"
+            aria-label="Export visible purchase orders to CSV"
             onClick={handleExport}
             disabled={exportState.isExporting}
           >
@@ -1936,7 +2020,9 @@ function PurchaseOrderQueueMode({
         <span className="ml-auto text-xs text-muted-foreground">
           {selectedRow
             ? `${selectedRow.poNumber} selected`
-            : "Select a row to see details and actions"}
+            : supplierFilterName
+              ? `Showing purchase orders for ${supplierFilterName}`
+              : "Select a row to see details and actions"}
         </span>
       </div>
 
@@ -1946,13 +2032,21 @@ function PurchaseOrderQueueMode({
         requirementIds={["PROC-PO-001", "PROC-PO-005"]}
         affordances={queueAffordances}
         title="Purchase Orders Queue"
-        description="Unified PO queue — status, supplier, dates, total, terms, and line count at a glance."
+        description="Unified purchase order queue with status, supplier, dates, total, and payment terms at a glance."
         rows={queueRows}
         columnDefs={queueColumnDefs}
         getRowId={row => row.identity.rowKey}
         selectedRowId={selectedRow?.identity.rowKey ?? null}
         onSelectedRowChange={row => setSelectedPoId(row?.poId ?? null)}
-        selectionMode="cell-range"
+        onRowClicked={event => {
+          const row = event.data;
+          if (!row) return;
+          setSelectedPoId(row.poId);
+          if (autoLaunchReceivingOnRowClick && row.isReceivable) {
+            void handleStartReceiving(row);
+          }
+        }}
+        selectionMode="single-row"
         enableFillHandle={false}
         enableUndoRedo={false}
         onSelectionSummaryChange={setQueueSelectionSummary}
@@ -1962,8 +2056,9 @@ function PurchaseOrderQueueMode({
         emptyDescription="Adjust the search or status filter, or create a new PO."
         summary={
           <span>
-            {queueRows.length} visible · {draftCount} draft ·{" "}
-            {confirmedCount + receivingCount} active
+            {queueRows.length} visible purchase orders · {draftCount} draft
+            purchase orders · {confirmedCount} confirmed purchase orders ·{" "}
+            {receivingCount} receiving purchase orders
           </span>
         }
         minHeight={360}
@@ -2036,9 +2131,7 @@ function PurchaseOrderQueueMode({
                     variant="outline"
                     className="h-7 text-xs"
                     onClick={() => {
-                      const params = new URLSearchParams(
-                        window.location.search
-                      );
+                      const params = new URLSearchParams(routeSearch);
                       params.set("poView", "edit");
                       params.set("poId", String(selectedRow.poId));
                       setLocation(`?${params.toString()}`);
@@ -2080,10 +2173,10 @@ function PurchaseOrderQueueMode({
                   size="sm"
                   className="h-7 text-xs"
                   disabled={!canLaunchReceiving}
-                  onClick={() => setShowReceivingConfirmDialog(true)}
+                  onClick={() => void handleStartReceiving()}
                 >
                   <Truck className="mr-1 h-3 w-3" />
-                  Start Receiving
+                  Open Product Intake
                 </Button>
               )}
 
@@ -2169,6 +2262,7 @@ function PurchaseOrderQueueMode({
         onClose={() => setSelectedPoId(null)}
         title={selectedRow?.poNumber ?? "PO Inspector"}
         subtitle={selectedRow?.supplierName ?? "Select a purchase order"}
+        trapFocus={false}
         headerActions={
           selectedRow ? (
             <Badge variant="outline">{selectedRow.statusLabel}</Badge>
@@ -2228,20 +2322,20 @@ function PurchaseOrderQueueMode({
               ) : null}
             </InspectorSection>
 
-            <InspectorSection title="Receiving Handoff">
+            <InspectorSection title="Product Intake Handoff">
               {selectedRow.isReceivable ? (
                 <>
                   <p className="mb-2 text-sm text-muted-foreground">
-                    This PO is ready for receiving. Use the button below to open
-                    the receiving workflow.
+                    This purchase order is ready for product intake. Use the
+                    button below to open the product intake workflow.
                   </p>
                   <Button
                     size="sm"
                     className="w-full"
-                    onClick={() => setShowReceivingConfirmDialog(true)}
+                    onClick={() => void handleStartReceiving()}
                   >
                     <Truck className="mr-2 h-4 w-4" />
-                    Start Receiving
+                    Open Product Intake
                   </Button>
                 </>
               ) : (
@@ -2314,22 +2408,6 @@ function PurchaseOrderQueueMode({
             : `Set to ${pendingStatusChange ? (PO_STATUS_LABELS[pendingStatusChange.status] ?? pendingStatusChange.status) : ""}`
         }
         onConfirm={handleStatusConfirm}
-      />
-
-      <ConfirmDialog
-        open={showReceivingConfirmDialog}
-        onOpenChange={setShowReceivingConfirmDialog}
-        title="Start Receiving?"
-        description={
-          selectedRow
-            ? `You will be taken to the Receiving workspace for ${selectedRow.poNumber} (${selectedRow.supplierName}). Any unsaved work in the PO queue will remain.`
-            : "Open the Receiving workspace for this PO?"
-        }
-        confirmLabel="Go to Receiving"
-        onConfirm={() => {
-          setShowReceivingConfirmDialog(false);
-          handleStartReceiving();
-        }}
       />
     </div>
   );

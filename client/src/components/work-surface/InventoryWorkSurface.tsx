@@ -1863,7 +1863,9 @@ export function InventoryWorkSurface() {
           {/* TER-220: Unified receiving entry point */}
           <Button
             data-testid="new-batch-btn"
-            onClick={() => setLocation(buildOperationsWorkspacePath("receiving"))}
+            onClick={() =>
+              setLocation(buildOperationsWorkspacePath("receiving"))
+            }
           >
             <Plus className="h-4 w-4 mr-2" />
             Open Receiving Queue
@@ -2101,11 +2103,16 @@ export function InventoryWorkSurface() {
               <EmptyState
                 variant="inventory"
                 title="No inventory found"
-                description="Receive products to start managing stock, locations, and availability."
+                description="Receive products to start managing stock, availability, and movement history from one sheet."
                 action={{
                   label: "Open Receiving Queue",
                   onClick: () =>
                     setLocation(buildOperationsWorkspacePath("receiving")),
+                }}
+                secondaryAction={{
+                  label: "Start Direct Intake",
+                  onClick: () =>
+                    setLocation(buildOperationsWorkspacePath("intake")),
                 }}
               />
             )

@@ -63,6 +63,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -142,10 +143,10 @@ interface Order {
 }
 
 export function canDownloadInvoice(
-  order: Pick<Order, "invoiceId"> | null,
+  invoiceId: number | null,
   canAccessAccounting: boolean
 ): boolean {
-  return Boolean(canAccessAccounting && order?.invoiceId);
+  return Boolean(canAccessAccounting && invoiceId);
 }
 
 export function canGenerateInvoice(
@@ -166,7 +167,7 @@ export function canGenerateInvoice(
 }
 
 export function getMakePaymentRoute(
-  order: Pick<Order, "id" | "invoiceId"> | null
+  order: { id: number; invoiceId: number | null } | null
 ): string | null {
   if (!order?.invoiceId) {
     return null;
@@ -180,6 +181,29 @@ export function getMakePaymentRoute(
   });
 
   return `/accounting?${params.toString()}`;
+}
+
+export function resolveOrderInvoiceId(
+  directInvoiceId: number | null | undefined,
+  linkedInvoiceId: number | null | undefined
+): number | null {
+  if (
+    typeof directInvoiceId === "number" &&
+    Number.isInteger(directInvoiceId) &&
+    directInvoiceId > 0
+  ) {
+    return directInvoiceId;
+  }
+
+  if (
+    typeof linkedInvoiceId === "number" &&
+    Number.isInteger(linkedInvoiceId) &&
+    linkedInvoiceId > 0
+  ) {
+    return linkedInvoiceId;
+  }
+
+  return null;
 }
 
 export function canViewOrderCogsDetails(settings?: {
@@ -465,6 +489,7 @@ function OrderStatusBadge({
 // WSQA-003: Added return processing handlers
 interface OrderInspectorProps {
   order: Order | null;
+  resolvedInvoiceId: number | null;
   clientName: string;
   cogsLineItems: OrderCOGSLineItem[];
   canViewCogsDetails: boolean;
@@ -507,6 +532,7 @@ interface OrderInspectorProps {
 
 function OrderInspectorContent({
   order,
+  resolvedInvoiceId,
   clientName,
   cogsLineItems,
   canViewCogsDetails,
@@ -547,8 +573,10 @@ function OrderInspectorContent({
     0
   );
   const fulfillmentStatus = normalizeFulfillmentStatus(order.fulfillmentStatus);
-  const invoiceId =
-    typeof order.invoiceId === "number" ? order.invoiceId : null;
+  const invoiceId = resolveOrderInvoiceId(
+    order.invoiceId ?? null,
+    resolvedInvoiceId
+  );
 
   return (
     <div className="space-y-6">
@@ -751,7 +779,7 @@ function OrderInspectorContent({
               {!shippingEnabled &&
                 order.orderType === "SALE" &&
                 canAccessAccounting &&
-                getMakePaymentRoute(order) && (
+                getMakePaymentRoute({ id: order.id, invoiceId }) && (
                   <Button
                     variant="default"
                     className="w-full justify-start"
@@ -796,7 +824,7 @@ function OrderInspectorContent({
               {canGenerateInvoice(
                 {
                   orderType: order.orderType,
-                  invoiceId: order.invoiceId,
+                  invoiceId,
                   fulfillmentStatus,
                 },
                 canCreateAccounting
@@ -853,7 +881,7 @@ function OrderInspectorContent({
                 </>
               )}
               {invoiceId !== null &&
-                canDownloadInvoice(order, canAccessAccounting) &&
+                canDownloadInvoice(invoiceId, canAccessAccounting) &&
                 onDownloadInvoice && (
                   <Button
                     variant="outline"
@@ -1175,11 +1203,46 @@ export function OrdersWorkSurface() {
     });
   }, [activeTab, draftOrders, confirmedOrders, search, getClientName, sortKey]);
 
+  const orderEmptyStateAction = useMemo(() => {
+    if (search || statusFilter !== "ALL") {
+      return {
+        label: "Clear Filters",
+        onClick: () => {
+          setSearch("");
+          setStatusFilter("ALL");
+        },
+      };
+    }
+
+    if (activeTab === "draft") {
+      return {
+        label: "Create Order",
+        onClick: () => setLocation(buildSalesWorkspacePath("create-order")),
+      };
+    }
+
+    return {
+      label: "View Draft Orders",
+      onClick: () => setActiveTab("draft"),
+    };
+  }, [activeTab, search, setLocation, statusFilter]);
+
   // Selected order
   const selectedOrderSummary = useMemo(
     () =>
       (displayOrders as Order[]).find(o => o.id === selectedOrderId) || null,
     [displayOrders, selectedOrderId]
+  );
+
+  const linkedInvoiceQuery = trpc.accounting.invoices.getByReference.useQuery(
+    {
+      referenceId: selectedOrderSummary?.id ?? 0,
+      referenceTypes: ["ORDER", "SALE"],
+    },
+    {
+      enabled:
+        selectedOrderSummary !== null && selectedOrderSummary.isDraft === false,
+    }
   );
 
   const { data: orderDetails } = trpc.orders.getOrderWithLineItems.useQuery(
@@ -1231,6 +1294,15 @@ export function OrdersWorkSurface() {
       })),
     };
   }, [orderDetails, selectedOrderSummary]);
+
+  const selectedOrderInvoiceId = useMemo(
+    () =>
+      resolveOrderInvoiceId(
+        selectedOrder?.invoiceId,
+        linkedInvoiceQuery.data?.id
+      ),
+    [linkedInvoiceQuery.data?.id, selectedOrder?.invoiceId]
+  );
 
   const normalizedOrderReturns = useMemo<OrderReturnEntry[]>(
     () =>
@@ -1589,10 +1661,24 @@ export function OrdersWorkSurface() {
     setShowShipDialog(true);
   };
   const handleMakePayment = (orderId: number) => {
-    const sourceOrder =
-      (selectedOrder?.id === orderId ? selectedOrder : null) ??
+    const matchedFallbackOrder =
       confirmedOrders.find(order => order.id === orderId) ??
       draftOrders.find(order => order.id === orderId) ??
+      null;
+
+    const sourceOrder =
+      (selectedOrder?.id === orderId
+        ? {
+            id: selectedOrder.id,
+            invoiceId: selectedOrderInvoiceId,
+          }
+        : null) ??
+      (matchedFallbackOrder
+        ? {
+            id: matchedFallbackOrder.id,
+            invoiceId: matchedFallbackOrder.invoiceId ?? null,
+          }
+        : null) ??
       null;
 
     const destination = getMakePaymentRoute(sourceOrder);
@@ -1780,21 +1866,20 @@ export function OrdersWorkSurface() {
               ) : displayOrders.length === 0 ? (
                 <TableRow data-testid="orders-empty-state">
                   <TableCell colSpan={7} className="h-64 text-center">
-                    <div className="mx-auto max-w-xl">
-                      <div className="flex items-center justify-center gap-2 text-foreground">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <p className="font-medium">No orders found</p>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        {search
-                          ? "Try adjusting your search"
+                    <EmptyState
+                      variant="orders"
+                      title="No orders found"
+                      description={
+                        search
+                          ? "No orders match this search yet. Clear the filters and try a broader lookup."
                           : statusFilter !== "ALL"
-                            ? `No ${statusFilter.toLowerCase()} orders. Try switching to "All" status.`
+                            ? `No ${statusFilter.toLowerCase()} orders match the current status filter.`
                             : activeTab === "draft"
-                              ? "No draft orders. Create a new order to get started."
-                              : "No confirmed orders yet. Confirm a draft order to see it here."}
-                      </p>
-                    </div>
+                              ? "Create a sales order draft so pricing, review, and final confirmation can all happen from one place."
+                              : "Confirmed orders appear here once a draft is finalized."
+                      }
+                      action={orderEmptyStateAction}
+                    />
                   </TableCell>
                 </TableRow>
               ) : (
@@ -1859,6 +1944,7 @@ export function OrdersWorkSurface() {
         >
           <OrderInspectorContent
             order={selectedOrder}
+            resolvedInvoiceId={selectedOrderInvoiceId}
             clientName={
               selectedOrder ? getClientName(selectedOrder.clientId) : ""
             }

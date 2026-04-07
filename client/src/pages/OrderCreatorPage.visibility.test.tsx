@@ -107,6 +107,14 @@ vi.mock("@/lib/trpc", () => ({
         }),
       },
     },
+    pricing: {
+      requestCreditOverride: {
+        useMutation: () => ({
+          mutateAsync: vi.fn(),
+          isPending: false,
+        }),
+      },
+    },
   },
 }));
 
@@ -238,6 +246,14 @@ vi.mock("@/components/ui/client-combobox", () => ({
       <button type="button" onClick={() => onValueChange(2)}>
         Switch to Client 2
       </button>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/clients/QuickCreateClient", () => ({
+  QuickCreateClient: ({ open, title }: { open?: boolean; title?: string }) => (
+    <div data-testid="quick-create-client" data-open={open ? "true" : "false"}>
+      {title ?? "Quick Create Client"}
     </div>
   ),
 }));
@@ -384,6 +400,8 @@ vi.mock("@/lib/workspaceRoutes", () => ({
   buildSalesWorkspacePath: () => "/sales/orders",
   buildSheetNativeOrdersDocumentPath: () => "/sheet-native/orders/document",
   buildSheetNativeOrdersPath: () => "/sheet-native/orders",
+  buildAccountingWorkspacePath: () => "/accounting",
+  buildOperationsWorkspacePath: () => "/operations",
 }));
 
 vi.mock("@/lib/quantity", () => ({

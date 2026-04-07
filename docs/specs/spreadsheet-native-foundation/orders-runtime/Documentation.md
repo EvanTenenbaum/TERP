@@ -25,4 +25,4 @@
   - `pnpm proof:staging:sheet-surfaces`: surface-detection sweep for classic versus sheet-native routes
   - `pnpm proof:staging:orders-runtime:g2`: Orders queue/document proof bundle for build ID, AG Grid license state, document row ops, and document navigation behavior
   - `pnpm proof:staging:orders-fill-handle`: narrow TER-795 fill-handle probe that now emits a closure packet
-  - `pnpm proof:await-staging-build --commit <sha>`: waits for `Sync Main → Staging`, matching DigitalOcean activation, and a cache-busted `version.json` refresh before spending a live probe
+  - `pnpm proof:await-staging-build --commit <sha>`: waits for the matching DigitalOcean deployment from `main` to activate and for a cache-busted `version.json` refresh before spending a live probe

@@ -2,7 +2,9 @@
 
 **Version**: 1.0  
 **Last Updated**: 2025-12-03  
-**Status**: IMPLEMENTATION GUIDE
+**Status**: HISTORICAL REFERENCE
+
+> Current-state note (March 28, 2026): This document describes a proposed `develop` plus dedicated dev-site workflow that is not the active TERP deployment model. Right now `main` is the staging branch, staging deploys from `main`, and production is a separate manual promotion path. Use `docs/STAGING_ENVIRONMENT.md` and `docs/runbooks/STAGING_DEPLOYMENT_RUNBOOK.md` for the live workflow.
 
 ## Problem Statement
 
@@ -17,10 +19,10 @@ Current workflow deploys every change to production, causing:
 
 ### Environment Strategy
 
-| Environment     | Branch      | URL                                 | Purpose             | Deploy Time |
-| --------------- | ----------- | ----------------------------------- | ------------------- | ----------- |
-| **Production**  | `main`      | terp-app-b9s35.ondigitalocean.app   | Live users          | 5-10 min    |
-| **Development** | `develop`   | terp-dev-app.ondigitalocean.app     | Testing & iteration | 3-5 min     |
+| Environment     | Branch    | URL                               | Purpose             | Deploy Time |
+| --------------- | --------- | --------------------------------- | ------------------- | ----------- |
+| **Production**  | `main`    | terp-app-b9s35.ondigitalocean.app | Live users          | 5-10 min    |
+| **Development** | `develop` | terp-dev-app.ondigitalocean.app   | Testing & iteration | 3-5 min     |
 
 ---
 
