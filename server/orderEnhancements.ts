@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { getDb } from "./db";
 import { orders, clients } from "../drizzle/schema";
 import { logger } from "./_core/logger";
@@ -32,7 +32,11 @@ export async function reorderFromPrevious(data: {
     }
 
     // Parse items from JSON
-    const originalItems = originalOrder.items as Array<{ productId: number; quantity: string | number; price: string | number }>;
+    const originalItems = originalOrder.items as Array<{
+      productId: number;
+      quantity: string | number;
+      price: string | number;
+    }>;
 
     if (!originalItems || originalItems.length === 0) {
       return { success: false, error: "Original order has no items" };
@@ -43,7 +47,9 @@ export async function reorderFromPrevious(data: {
 
     if (data.modifications) {
       for (const mod of data.modifications) {
-        const itemIndex = newItems.findIndex((i: { productId: number }) => i.productId === mod.productId);
+        const itemIndex = newItems.findIndex(
+          (i: { productId: number }) => i.productId === mod.productId
+        );
         if (itemIndex >= 0) {
           if (mod.remove) {
             newItems.splice(itemIndex, 1);
@@ -55,15 +61,28 @@ export async function reorderFromPrevious(data: {
     }
 
     if (newItems.length === 0) {
-      return { success: false, error: "No items remaining after modifications" };
+      return {
+        success: false,
+        error: "No items remaining after modifications",
+      };
     }
 
     // Calculate total
-    const subtotal = newItems.reduce((sum: number, item: { quantity: string | number; price: string | number }) => {
-      const qty = typeof item.quantity === 'string' ? parseFloat(item.quantity) : item.quantity;
-      const price = typeof item.price === 'string' ? parseFloat(item.price) : item.price;
-      return sum + (qty * price);
-    }, 0);
+    const subtotal = newItems.reduce(
+      (
+        sum: number,
+        item: { quantity: string | number; price: string | number }
+      ) => {
+        const qty =
+          typeof item.quantity === "string"
+            ? parseFloat(item.quantity)
+            : item.quantity;
+        const price =
+          typeof item.price === "string" ? parseFloat(item.price) : item.price;
+        return sum + qty * price;
+      },
+      0
+    );
 
     // Generate order number
     const orderNumber = `ORD-${Date.now()}`;
@@ -80,7 +99,7 @@ export async function reorderFromPrevious(data: {
       saleStatus: "PENDING",
       notes: `Reordered from Order #${originalOrder.orderNumber}`,
       createdBy: data.createdBy,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any);
 
     return {
@@ -90,14 +109,20 @@ export async function reorderFromPrevious(data: {
     };
   } catch (error) {
     logger.error({ error }, "Error reordering from previous");
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
 /**
  * Get client's recent orders for quick reorder
  */
-export async function getRecentOrdersForReorder(clientId: number, limit: number = 10) {
+export async function getRecentOrdersForReorder(
+  clientId: number,
+  limit: number = 10
+) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
@@ -105,8 +130,16 @@ export async function getRecentOrdersForReorder(clientId: number, limit: number 
     const recentOrders = await db
       .select()
       .from(orders)
-      .where(eq(orders.clientId, clientId))
-      .orderBy(desc(orders.createdAt))
+      .where(
+        and(
+          eq(orders.clientId, clientId),
+          eq(orders.orderType, "SALE"),
+          eq(orders.isDraft, false),
+          isNull(orders.deletedAt),
+          sql`(${orders.saleStatus} IS NULL OR ${orders.saleStatus} <> 'CANCELLED')`
+        )
+      )
+      .orderBy(desc(orders.confirmedAt), desc(orders.createdAt))
       .limit(limit);
 
     return {
@@ -115,7 +148,10 @@ export async function getRecentOrdersForReorder(clientId: number, limit: number 
     };
   } catch (error) {
     logger.error({ error }, "Error getting recent orders for reorder");
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -159,7 +195,10 @@ export async function updateClientPaymentTerms(
     return { success: true };
   } catch (error) {
     logger.error({ error }, "Error updating client payment terms");
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
@@ -231,6 +270,9 @@ export async function getClientPaymentTerms(clientId: number) {
     };
   } catch (error) {
     logger.error({ error }, "Error getting client payment terms");
-    return { success: false, error: error instanceof Error ? error.message : String(error) };
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }

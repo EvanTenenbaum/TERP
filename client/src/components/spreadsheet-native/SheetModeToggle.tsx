@@ -17,17 +17,23 @@ export function SheetModeToggle({
   }
 
   return (
-    <div className="inline-flex items-center gap-2">
+    <div
+      className="linear-workspace-mode-toggle"
+      role="group"
+      aria-label="Surface mode"
+    >
       <Button
         size="sm"
         variant={surfaceMode === "sheet-native" ? "default" : "outline"}
+        aria-pressed={surfaceMode === "sheet-native"}
         onClick={() => onSurfaceModeChange("sheet-native")}
       >
         Spreadsheet View
       </Button>
       <Button
         size="sm"
-        variant={surfaceMode === "classic" ? "default" : "ghost"}
+        variant={surfaceMode === "classic" ? "default" : "outline"}
+        aria-pressed={surfaceMode === "classic"}
         onClick={() => onSurfaceModeChange("classic")}
       >
         Classic Surface

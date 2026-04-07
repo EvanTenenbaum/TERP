@@ -8,6 +8,10 @@ TERP is a specialized ERP for THCA wholesale cannabis operations. React 19 + Tai
 
 **Verification over persuasion.** Prove it works through commands and evidence. Never convince yourself something works.
 
+## Startup Contract
+
+Before scanning old docs or commit history for broad orientation, read `docs/agent-context/START_HERE.md`. Use `docs/agent-context/state.json` for machine-readable startup truth and freshness. Treat `docs/ACTIVE_SESSIONS.md`, `docs/PROJECT_CONTEXT.md`, `docs/TERP_AGENT_INSTRUCTIONS.md`, and `docs/ROADMAP_AGENT_GUIDE.md` as legacy/background unless the agent-context bundle tells you otherwise.
+
 ## Commands (Run Before Every Commit)
 
 ```bash
@@ -153,6 +157,16 @@ Domain knowledge is loaded on demand via `.claude/skills/`. Key skills:
 - **architecture** — Full tech stack, auth flow, query patterns, key files
 - **roadmap-management** — Linear integration, task IDs, estimation, session lifecycle
 - **deprecated-systems** — Migration status, replacement patterns, pre-work checklist
+- **terp-domscribe** — Local implementation-time UI inspection using the live TERP browser runtime
+
+Auto-use these TERP skills when the lane is clear:
+
+- Use `architecture` for "where does this live?", auth flow questions, schema/query shape questions, and codebase orientation.
+- Use `deprecated-systems` before touching legacy patterns, data-model migrations, `vendors` replacements, actor attribution, or risky old service/db code.
+- Use `roadmap-management` for Linear state, issue structure, session lifecycle, estimation, or roadmap/task-status questions.
+- Use `verification-protocol` when deciding the right QA gate, proving a done claim, or packaging evidence for completion.
+- Use `terp-domscribe` for local UI bugs where rendered browser truth matters more than source inspection.
+- Use `terp-long-run-autonomy` when the ask implies unattended execution, a multi-ticket remediation train, supervisor/worker coordination, or duplicate-sensitive parallel work.
 
 ## Audit System
 

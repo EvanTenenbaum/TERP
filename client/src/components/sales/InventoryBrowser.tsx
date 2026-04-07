@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -18,7 +18,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, CheckSquare, Square, AlertTriangle } from "lucide-react";
+import { Search, Plus, AlertTriangle } from "lucide-react";
 import { StrainFamilyIndicator } from "@/components/strain/StrainComponents";
 import {
   normalizePositiveIntegerWithin,
@@ -31,6 +31,13 @@ import type {
   NonSellableStatus,
 } from "./types";
 import { NON_SELLABLE_STATUSES } from "./types";
+import {
+  type PortableSalesCut,
+  countActiveSalesFilters,
+  matchesSalesInventoryFilters,
+  summarizeSalesFilters,
+} from "./filtering";
+import { STATUS_LABELS } from "@/components/spreadsheet-native/inventoryConstants";
 
 // TERP-0007: Non-sellable batch status UI configuration
 const BATCH_STATUS_CONFIG: Record<
@@ -38,32 +45,32 @@ const BATCH_STATUS_CONFIG: Record<
   { label: string; color: string; warning: string }
 > = {
   AWAITING_INTAKE: {
-    label: "Awaiting Intake",
+    label: STATUS_LABELS.AWAITING_INTAKE,
     color: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    warning: "Not yet available for sale",
+    warning: "Still incoming and not ready to sell",
   },
   ON_HOLD: {
-    label: "On Hold",
+    label: STATUS_LABELS.ON_HOLD,
     color: "bg-orange-100 text-orange-800 border-orange-200",
     warning: "Temporarily unavailable",
   },
   QUARANTINED: {
-    label: "Quarantined",
+    label: STATUS_LABELS.QUARANTINED,
     color: "bg-red-100 text-red-800 border-red-200",
-    warning: "Quality hold - do not sell",
+    warning: "Blocked pending quality review",
   },
   LIVE: {
-    label: "Live",
+    label: STATUS_LABELS.LIVE,
     color: "bg-green-100 text-green-800 border-green-200",
     warning: "",
   },
   SOLD_OUT: {
-    label: "Sold Out",
+    label: STATUS_LABELS.SOLD_OUT,
     color: "bg-gray-100 text-gray-600 border-gray-200",
     warning: "No inventory available",
   },
   CLOSED: {
-    label: "Closed",
+    label: STATUS_LABELS.CLOSED,
     color: "bg-gray-200 text-gray-500 border-gray-300",
     warning: "Batch closed",
   },
@@ -97,6 +104,37 @@ function formatAppliedRulesSummary(
   return `${appliedRules[0].ruleName} (${appliedRules[0].adjustment}) +${appliedRules.length - 1} more`;
 }
 
+function getAvailableUnits(item: PricedInventoryItem): number {
+  return Math.max(0, Math.floor(item.quantity || 0));
+}
+
+function isReadyToSell(
+  item: PricedInventoryItem,
+  availableUnits = getAvailableUnits(item)
+): boolean {
+  const statusAllowsSale = !item.status || item.status === "LIVE";
+  return statusAllowsSale && availableUnits > 0;
+}
+
+function sanitizePriceInput(value: string): string {
+  const sanitized = value.replace(/[^\d.]/g, "");
+  const [whole, ...decimalParts] = sanitized.split(".");
+  if (decimalParts.length === 0) {
+    return whole;
+  }
+
+  return `${whole}.${decimalParts.join("")}`;
+}
+
+function parsePriceFilter(value: string): number | null {
+  if (!value.trim()) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 // Extended inventory item type for internal use (includes orderQuantity when added)
 interface InventoryItemWithQuantity extends PricedInventoryItem {
   orderQuantity?: number;
@@ -113,6 +151,8 @@ interface InventoryBrowserProps {
   onAddItems: (items: InventoryItemWithQuantity[]) => void;
   /** Items already in the sheet - only id is needed for duplicate detection */
   selectedItems: SelectedItemRef[];
+  portableCut?: PortableSalesCut | null;
+  onClearPortableCut?: () => void;
 }
 
 export function InventoryBrowser({
@@ -120,31 +160,139 @@ export function InventoryBrowser({
   isLoading,
   onAddItems,
   selectedItems,
+  portableCut = null,
+  onClearPortableCut,
 }: InventoryBrowserProps) {
   const [search, setSearch] = useState("");
+  const [minClientPrice, setMinClientPrice] = useState("");
+  const [maxClientPrice, setMaxClientPrice] = useState("");
+  const [includeUnavailable, setIncludeUnavailable] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   // FEAT-003: Quick add quantity state - tracks quantity for each item
   const [quickQuantities, setQuickQuantities] = useState<
     Record<number, string>
   >({});
 
-  // Filter inventory by search, ensuring items have valid data
-  const filteredInventory = inventory.filter(item => {
-    // Skip items without valid id or name
-    if (!item || item.id === undefined || item.id === null || !item.name) {
-      return false;
-    }
-    return (
-      item.name.toLowerCase().includes(search.toLowerCase()) ||
-      item.category?.toLowerCase().includes(search.toLowerCase()) ||
-      item.strain?.toLowerCase().includes(search.toLowerCase())
-    );
-  });
+  const selectedItemIds = useMemo(
+    () => new Set(selectedItems.map(item => item.id)),
+    [selectedItems]
+  );
+  const normalizedSearch = search.trim().toLowerCase();
+  const searchTerms = useMemo(
+    () => normalizedSearch.split(/\s+/).filter(Boolean),
+    [normalizedSearch]
+  );
+  const minPriceValue = parsePriceFilter(minClientPrice);
+  const maxPriceValue = parsePriceFilter(maxClientPrice);
+  const portableCutSummary = useMemo(
+    () =>
+      portableCut
+        ? summarizeSalesFilters(portableCut.filters)
+        : ([] as string[]),
+    [portableCut]
+  );
 
-  // Check if item is already in sheet
+  const filteredInventory = useMemo(() => {
+    return inventory.filter(item => {
+      if (!item || item.id === undefined || item.id === null || !item.name) {
+        return false;
+      }
+
+      const availableUnits = getAvailableUnits(item);
+      if (!includeUnavailable && !isReadyToSell(item, availableUnits)) {
+        return false;
+      }
+
+      if (
+        portableCut &&
+        !matchesSalesInventoryFilters(item, portableCut.filters)
+      ) {
+        return false;
+      }
+
+      if (minPriceValue !== null && item.retailPrice < minPriceValue) {
+        return false;
+      }
+
+      if (maxPriceValue !== null && item.retailPrice > maxPriceValue) {
+        return false;
+      }
+
+      if (searchTerms.length === 0) {
+        return true;
+      }
+
+      const searchIndex = [
+        item.name,
+        item.vendor,
+        item.brand,
+        item.category,
+        item.subcategory,
+        item.strain,
+        item.strainFamily,
+        item.batchSku,
+        item.grade,
+        item.status
+          ? (BATCH_STATUS_CONFIG[item.status as BatchStatus]?.label ??
+            item.status)
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchTerms.every(term => searchIndex.includes(term));
+    });
+  }, [
+    inventory,
+    includeUnavailable,
+    minPriceValue,
+    maxPriceValue,
+    portableCut,
+    searchTerms,
+  ]);
+
+  const selectableVisibleIds = useMemo(
+    () =>
+      filteredInventory
+        .filter(item => {
+          const availableUnits = getAvailableUnits(item);
+          return (
+            !selectedItemIds.has(item.id) && isReadyToSell(item, availableUnits)
+          );
+        })
+        .map(item => item.id),
+    [filteredInventory, selectedItemIds]
+  );
+
+  const hasActiveFilters =
+    search.length > 0 ||
+    minClientPrice.length > 0 ||
+    maxClientPrice.length > 0 ||
+    includeUnavailable ||
+    Boolean(portableCut && countActiveSalesFilters(portableCut.filters) > 0);
+
   const isInSheet = (itemId: number) => {
-    return selectedItems.some(item => item.id === itemId);
+    return selectedItemIds.has(itemId);
   };
+
+  useEffect(() => {
+    const visibleIds = new Set(filteredInventory.map(item => item.id));
+    setSelectedIds(prev => {
+      let changed = false;
+      const nextSelected = new Set<number>();
+
+      prev.forEach(id => {
+        if (visibleIds.has(id)) {
+          nextSelected.add(id);
+        } else {
+          changed = true;
+        }
+      });
+
+      return changed ? nextSelected : prev;
+    });
+  }, [filteredInventory]);
 
   // Toggle item selection
   const toggleSelection = (itemId: number) => {
@@ -159,7 +307,7 @@ export function InventoryBrowser({
 
   // Select all visible items
   const selectAll = () => {
-    const allIds = new Set(filteredInventory.map(item => item.id));
+    const allIds = new Set(selectableVisibleIds);
     setSelectedIds(allIds);
   };
 
@@ -171,9 +319,16 @@ export function InventoryBrowser({
   // Add selected items to sheet
   const addSelectedToSheet = () => {
     const itemsToAdd = inventory
-      .filter(item => selectedIds.has(item.id))
+      .filter(item => {
+        const availableUnits = getAvailableUnits(item);
+        return (
+          selectedIds.has(item.id) &&
+          !selectedItemIds.has(item.id) &&
+          isReadyToSell(item, availableUnits)
+        );
+      })
       .map(item => {
-        const availableUnits = Math.floor(item.quantity || 0);
+        const availableUnits = getAvailableUnits(item);
         const requestedQty = normalizePositiveIntegerWithin(
           quickQuantities[item.id] || "1",
           availableUnits
@@ -192,9 +347,9 @@ export function InventoryBrowser({
     item: PricedInventoryItem,
     customQuantity?: number
   ) => {
-    const availableUnits = Math.floor(item.quantity || 0);
-    if (availableUnits < 1) {
-      toast.error("No available units to add for this item");
+    const availableUnits = getAvailableUnits(item);
+    if (!isReadyToSell(item, availableUnits)) {
+      toast.error("This batch is not ready to add to the order");
       return;
     }
 
@@ -219,6 +374,14 @@ export function InventoryBrowser({
     const [integerPortion = ""] = value.split(".");
     const sanitized = integerPortion.replace(/[^\d]/g, "");
     setQuickQuantities(prev => ({ ...prev, [itemId]: sanitized }));
+  };
+
+  const clearFilters = () => {
+    setSearch("");
+    setMinClientPrice("");
+    setMaxClientPrice("");
+    setIncludeUnavailable(false);
+    onClearPortableCut?.();
   };
 
   // Show gross margin so the browser matches pricing profiles and order rows.
@@ -247,12 +410,29 @@ export function InventoryBrowser({
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
-            {/* TER-213: Redesigned as availability catalog */}
             <CardTitle>Availability Catalog</CardTitle>
             <CardDescription>
-              Browse available inventory — filter by supplier, category, and
-              stock
+              Search product, grower, or cut and narrow by client price before
+              adding lines to the order.
             </CardDescription>
+            {portableCut && portableCutSummary.length > 0 ? (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Badge variant="secondary" className="text-[11px]">
+                  {portableCut.viewName
+                    ? `Saved cut: ${portableCut.viewName}`
+                    : "Catalogue cut applied"}
+                </Badge>
+                {portableCutSummary.slice(0, 4).map(summary => (
+                  <Badge
+                    key={summary}
+                    variant="outline"
+                    className="text-[10px] text-muted-foreground"
+                  >
+                    {summary}
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
           </div>
           {selectedIds.size > 0 && (
             <Button onClick={addSelectedToSheet}>
@@ -263,24 +443,78 @@ export function InventoryBrowser({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search inventory..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              className="pl-10"
-            />
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 xl:flex-row xl:items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search product, grower, subcategory, strain, or grade"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="pl-10"
+                aria-label="Search availability catalog"
+              />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                inputMode="decimal"
+                placeholder="Min $"
+                value={minClientPrice}
+                onChange={e =>
+                  setMinClientPrice(sanitizePriceInput(e.target.value))
+                }
+                className="h-10 w-24"
+                aria-label="Minimum client price"
+              />
+              <Input
+                inputMode="decimal"
+                placeholder="Max $"
+                value={maxClientPrice}
+                onChange={e =>
+                  setMaxClientPrice(sanitizePriceInput(e.target.value))
+                }
+                className="h-10 w-24"
+                aria-label="Maximum client price"
+              />
+              <label
+                htmlFor="include-unavailable-batches"
+                className="flex h-10 items-center gap-2 rounded-md border px-3 text-sm"
+              >
+                <Checkbox
+                  id="include-unavailable-batches"
+                  checked={includeUnavailable}
+                  onCheckedChange={checked =>
+                    setIncludeUnavailable(Boolean(checked))
+                  }
+                />
+                Include unavailable
+              </label>
+            </div>
           </div>
-          <Button variant="outline" size="sm" onClick={selectAll}>
-            <CheckSquare className="mr-2 h-4 w-4" />
-            Select All
-          </Button>
-          <Button variant="outline" size="sm" onClick={clearSelection}>
-            <Square className="mr-2 h-4 w-4" />
-            Clear
-          </Button>
+
+          <div className="flex flex-col gap-2 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              Showing {filteredInventory.length} of {inventory.length} batches
+              {!includeUnavailable ? " • Ready to sell only" : ""}
+            </span>
+            <div className="flex flex-wrap items-center gap-1">
+              {selectableVisibleIds.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={selectAll}>
+                  Select Visible ({selectableVisibleIds.length})
+                </Button>
+              )}
+              {selectedIds.size > 0 && (
+                <Button variant="ghost" size="sm" onClick={clearSelection}>
+                  Clear Selection
+                </Button>
+              )}
+              {hasActiveFilters && (
+                <Button variant="ghost" size="sm" onClick={clearFilters}>
+                  {portableCut ? "Clear Cut + Filters" : "Clear Filters"}
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="rounded-md border max-h-[600px] overflow-y-auto">
@@ -290,7 +524,6 @@ export function InventoryBrowser({
                 <TableHead className="w-12"></TableHead>
                 <TableHead className="w-[210px]">Units to Add</TableHead>
                 <TableHead>Item</TableHead>
-                {/* TER-213: Vendor column for availability catalog */}
                 <TableHead>Supplier</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Qty Available</TableHead>
@@ -304,9 +537,23 @@ export function InventoryBrowser({
                 <TableRow>
                   <TableCell
                     colSpan={9}
-                    className="text-center text-muted-foreground"
+                    className="text-center text-muted-foreground space-y-2 py-8"
                   >
-                    No batches found
+                    <div>No batches match this cut.</div>
+                    <div className="text-xs">
+                      Broaden the search, clear the price band, or include
+                      unavailable batches.
+                    </div>
+                    {hasActiveFilters && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearFilters}
+                        className="mt-2"
+                      >
+                        Reset filters
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -317,10 +564,17 @@ export function InventoryBrowser({
                   );
                   const alreadyInSheet = isInSheet(item.id);
                   const quickQty = quickQuantities[item.id] || "";
-                  const availableUnits = Math.max(
-                    0,
-                    Math.floor(item.quantity || 0)
-                  );
+                  const availableUnits = getAvailableUnits(item);
+                  const readyToSell = isReadyToSell(item, availableUnits);
+                  const addDisabled = alreadyInSheet || !readyToSell;
+                  const detailLine = [
+                    item.brand || item.vendor,
+                    item.subcategory,
+                    item.grade ? `Grade ${item.grade}` : null,
+                    item.batchSku,
+                  ]
+                    .filter(Boolean)
+                    .join(" • ");
 
                   return (
                     <TableRow
@@ -331,7 +585,7 @@ export function InventoryBrowser({
                         <Checkbox
                           checked={selectedIds.has(item.id)}
                           onCheckedChange={() => toggleSelection(item.id)}
-                          disabled={alreadyInSheet}
+                          disabled={addDisabled}
                         />
                       </TableCell>
                       <TableCell>
@@ -347,7 +601,7 @@ export function InventoryBrowser({
                               updateQuickQuantity(item.id, e.target.value)
                             }
                             onKeyDown={e => {
-                              if (e.key === "Enter" && !alreadyInSheet) {
+                              if (e.key === "Enter" && !addDisabled) {
                                 e.preventDefault();
                                 addSingleItem(item);
                                 const currentRow = (
@@ -362,7 +616,7 @@ export function InventoryBrowser({
                                 }
                               }
                             }}
-                            disabled={alreadyInSheet || availableUnits < 1}
+                            disabled={addDisabled}
                             className="w-24 h-8 text-center"
                             title={`Available: ${availableUnits}`}
                             aria-label={`Number of units to add for ${item.name}`}
@@ -371,7 +625,7 @@ export function InventoryBrowser({
                             variant="ghost"
                             size="sm"
                             onClick={() => addSingleItem(item)}
-                            disabled={alreadyInSheet || availableUnits < 1}
+                            disabled={addDisabled}
                             title={quickQty ? `Add ${quickQty}` : "Add 1"}
                             aria-label={`Quick add ${item.name}`}
                           >
@@ -413,6 +667,11 @@ export function InventoryBrowser({
                           {item.strainId && (
                             <StrainFamilyIndicator strainId={item.strainId} />
                           )}
+                          {detailLine && (
+                            <span className="text-xs text-muted-foreground">
+                              {detailLine}
+                            </span>
+                          )}
                           {/* TERP-0007: Warning for non-sellable status */}
                           {item.status && isNonSellableStatus(item.status) && (
                             <span className="text-xs text-orange-600">
@@ -427,7 +686,6 @@ export function InventoryBrowser({
                             )}
                         </div>
                       </TableCell>
-                      {/* TER-213: Vendor column */}
                       <TableCell className="text-muted-foreground text-sm">
                         {item.vendor || "—"}
                       </TableCell>
@@ -459,20 +717,29 @@ export function InventoryBrowser({
                               <span
                                 className="text-xs font-normal text-muted-foreground"
                                 title={item.appliedRules
-                                  .map(rule => `${rule.ruleName} (${rule.adjustment})`)
+                                  .map(
+                                    rule =>
+                                      `${rule.ruleName} (${rule.adjustment})`
+                                  )
                                   .join(", ")}
                               >
                                 Profile{" "}
-                                {item.appliedRules.length > 1 ? "rules net" : "rule"}{" "}
+                                {item.appliedRules.length > 1
+                                  ? "rules net"
+                                  : "rule"}{" "}
                                 {formatProfileRuleMarkup(item.priceMarkup)}
                               </span>
                               <span
                                 className="text-xs font-normal text-muted-foreground"
                                 title={item.appliedRules
-                                  .map(rule => `${rule.ruleName} (${rule.adjustment})`)
+                                  .map(
+                                    rule =>
+                                      `${rule.ruleName} (${rule.adjustment})`
+                                  )
                                   .join(", ")}
                               >
-                                Applied: {formatAppliedRulesSummary(item.appliedRules)}
+                                Applied:{" "}
+                                {formatAppliedRulesSummary(item.appliedRules)}
                               </span>
                             </>
                           )}
@@ -490,10 +757,6 @@ export function InventoryBrowser({
               )}
             </TableBody>
           </Table>
-        </div>
-
-        <div className="text-sm text-muted-foreground">
-          Showing {filteredInventory.length} of {inventory.length} items
         </div>
       </CardContent>
     </Card>

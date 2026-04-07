@@ -1,6 +1,86 @@
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { PaymentsSurface } from "./PaymentsSurface";
+
+const PAYMENT_ITEMS = [
+  {
+    id: 1,
+    paymentNumber: "PAY-001",
+    paymentDate: "2026-01-15",
+    paymentType: "RECEIVED",
+    paymentMethod: "CHECK",
+    amount: "5000.00",
+    referenceNumber: "CHK-100",
+    invoiceId: 10,
+    notes: "First payment",
+  },
+  {
+    id: 2,
+    paymentNumber: "PAY-002",
+    paymentDate: "2026-02-01",
+    paymentType: "SENT",
+    paymentMethod: "ACH",
+    amount: "3000.00",
+    referenceNumber: "ACH-200",
+    invoiceId: 20,
+    notes: "",
+  },
+  {
+    id: 3,
+    paymentNumber: "PAY-003",
+    paymentDate: "2026-02-10",
+    paymentType: "RECEIVED",
+    paymentMethod: "WIRE",
+    amount: "2500.00",
+    referenceNumber: null,
+    invoiceId: null,
+    notes: null,
+  },
+] as const;
+
+const {
+  mockUseSearch,
+  mockInvoicesGetByReferenceUseQuery,
+  mockPaymentsListUseQuery,
+  mockInvoicesGetByIdUseQuery,
+} = vi.hoisted(() => ({
+  mockUseSearch: vi.fn(() => ""),
+  mockInvoicesGetByReferenceUseQuery: vi.fn(() => ({
+    data: null,
+    isLoading: false,
+    refetch: vi.fn(),
+  })),
+  mockInvoicesGetByIdUseQuery: vi.fn(() => ({
+    data: {
+      id: 10,
+      invoiceNumber: "INV-010",
+      totalAmount: "5000.00",
+      amountPaid: "0.00",
+      amountDue: "5000.00",
+      status: "SENT",
+    },
+    refetch: vi.fn(),
+  })),
+  mockPaymentsListUseQuery: vi.fn((input?: { invoiceId?: number }) => {
+    const filteredItems =
+      typeof input?.invoiceId === "number"
+        ? PAYMENT_ITEMS.filter(item => item.invoiceId === input.invoiceId)
+        : PAYMENT_ITEMS;
+
+    return {
+      data: {
+        items: filteredItems,
+        nextCursor: null,
+        hasMore: false,
+        pagination: { total: 142, limit: 50, offset: 0 },
+      },
+      isLoading: false,
+      error: null,
+      isFetching: false,
+      refetch: vi.fn(),
+    };
+  }),
+}));
 
 /* ── Mock PowersheetGrid ── */
 vi.mock("./PowersheetGrid", () => ({
@@ -15,54 +95,17 @@ vi.mock("./PowersheetGrid", () => ({
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     accounting: {
+      invoices: {
+        getByReference: {
+          useQuery: mockInvoicesGetByReferenceUseQuery,
+        },
+        getById: {
+          useQuery: mockInvoicesGetByIdUseQuery,
+        },
+      },
       payments: {
         list: {
-          useQuery: vi.fn(() => ({
-            data: {
-              items: [
-                {
-                  id: 1,
-                  paymentNumber: "PAY-001",
-                  paymentDate: "2026-01-15",
-                  paymentType: "RECEIVED",
-                  paymentMethod: "CHECK",
-                  amount: "5000.00",
-                  referenceNumber: "CHK-100",
-                  invoiceId: 10,
-                  notes: "First payment",
-                },
-                {
-                  id: 2,
-                  paymentNumber: "PAY-002",
-                  paymentDate: "2026-02-01",
-                  paymentType: "SENT",
-                  paymentMethod: "ACH",
-                  amount: "3000.00",
-                  referenceNumber: "ACH-200",
-                  invoiceId: 20,
-                  notes: "",
-                },
-                {
-                  id: 3,
-                  paymentNumber: "PAY-003",
-                  paymentDate: "2026-02-10",
-                  paymentType: "RECEIVED",
-                  paymentMethod: "WIRE",
-                  amount: "2500.00",
-                  referenceNumber: null,
-                  invoiceId: null,
-                  notes: null,
-                },
-              ],
-              nextCursor: null,
-              hasMore: false,
-              pagination: { total: 142, limit: 50, offset: 0 },
-            },
-            isLoading: false,
-            error: null,
-            isFetching: false,
-            refetch: vi.fn(),
-          })),
+          useQuery: mockPaymentsListUseQuery,
         },
       },
     },
@@ -109,12 +152,13 @@ vi.mock("@/components/work-surface/KeyboardHintBar", () => ({
   KeyboardHintBar: () => <div data-testid="keyboard-hint-bar" />,
 }));
 
-vi.mock("@/components/work-surface/golden-flows/InvoiceToPaymentFlow", () => ({
-  InvoiceToPaymentFlow: () => <div data-testid="invoice-to-payment-flow" />,
+vi.mock("@/components/accounting/RecordPaymentDialog", () => ({
+  RecordPaymentDialog: ({ open }: { open: boolean }) =>
+    open ? <div data-testid="record-payment-dialog" /> : null,
 }));
 
 vi.mock("wouter", () => ({
-  useSearch: vi.fn(() => ""),
+  useSearch: mockUseSearch,
 }));
 
 vi.mock("@/hooks/usePermissions", () => ({
@@ -128,6 +172,27 @@ vi.mock("@/hooks/usePermissions", () => ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("PaymentsSurface", () => {
+  beforeEach(() => {
+    mockUseSearch.mockReturnValue("");
+    mockInvoicesGetByReferenceUseQuery.mockReturnValue({
+      data: null,
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+    mockInvoicesGetByIdUseQuery.mockReturnValue({
+      data: {
+        id: 10,
+        invoiceNumber: "INV-010",
+        totalAmount: "5000.00",
+        amountPaid: "0.00",
+        amountDue: "5000.00",
+        status: "SENT",
+      },
+      refetch: vi.fn(),
+    });
+    mockPaymentsListUseQuery.mockClear();
+  });
+
   it("renders KPI badges with totals (142 total)", () => {
     render(<PaymentsSurface />);
     expect(screen.getByText(/142 total/i)).toBeInTheDocument();
@@ -169,5 +234,54 @@ describe("PaymentsSurface", () => {
   it("disables Void when no row selected", () => {
     render(<PaymentsSurface />);
     expect(screen.getByTestId("action-void")).toBeDisabled();
+  });
+
+  it("resolves legacy order handoffs through the linked invoice instead of fuzzy search", () => {
+    mockUseSearch.mockReturnValue("?tab=payments&orderId=34&from=sales");
+    mockInvoicesGetByReferenceUseQuery.mockReturnValue({
+      data: { id: 34, invoiceNumber: "INV-000034" },
+      isLoading: false,
+      refetch: vi.fn(),
+    });
+    mockPaymentsListUseQuery.mockImplementation(
+      (input?: { invoiceId?: number }) => {
+        const filteredItems =
+          typeof input?.invoiceId === "number"
+            ? [
+                {
+                  id: 34,
+                  paymentNumber: "PAY-INV-000034",
+                  paymentDate: "2026-02-12",
+                  paymentType: "RECEIVED",
+                  paymentMethod: "WIRE",
+                  amount: "18524.66",
+                  referenceNumber: "WIRE-34",
+                  invoiceId: input.invoiceId,
+                  notes: "Order-linked payment",
+                },
+              ]
+            : PAYMENT_ITEMS;
+
+        return {
+          data: {
+            items: filteredItems,
+            nextCursor: null,
+            hasMore: false,
+            pagination: { total: filteredItems.length, limit: 50, offset: 0 },
+          },
+          isLoading: false,
+          error: null,
+          isFetching: false,
+          refetch: vi.fn(),
+        };
+      }
+    );
+
+    render(<PaymentsSurface />);
+
+    expect(
+      screen.getByTestId("payments-order-handoff-banner")
+    ).toHaveTextContent("invoice #34 for order #34");
+    expect(screen.getByText(/1 rows/)).toBeInTheDocument();
   });
 });

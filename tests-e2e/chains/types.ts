@@ -139,6 +139,7 @@ export interface ChainResult {
   // Overall health classification
   failure_type?: "test_infra" | "app_bug" | "data_issue" | "network";
   tags_covered: string[];
+  stored_snapshot: Record<string, unknown>;
 }
 
 // Day simulation result

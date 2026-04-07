@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import type {
   CellSelectionDeleteEndEvent,
   CellSelectionDeleteStartEvent,
+  CellClickedEvent,
   CellFocusedEvent,
   ProcessCellForExportParams,
   ProcessDataFromClipboardParams,
@@ -29,6 +30,7 @@ import { AgGridReact } from "ag-grid-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
+import { cn } from "@/lib/utils";
 import type {
   PowersheetSelectionSet,
   PowersheetSelectionSummary,
@@ -245,7 +247,7 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
   emptyDescription: string;
   headerActions?: ReactNode;
   summary?: ReactNode;
-  minHeight?: number;
+  minHeight?: number | string;
   onCellValueChanged?: (event: CellValueChangedEvent<Row>) => void;
   selectionMode?: SpreadsheetPilotGridSelectionMode;
   selectionSurface?: PowersheetSelectionSummary["focusedSurface"];
@@ -283,7 +285,11 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
     selectionSummary: PowersheetSelectionSummary
   ) => void;
   onRowClicked?: (event: RowClickedEvent<Row>) => void;
+  onCellClicked?: (event: CellClickedEvent<Row>) => void;
   rowHeight?: number;
+  cardClassName?: string;
+  headerClassName?: string;
+  contentClassName?: string;
 }
 
 export function SpreadsheetPilotGrid<Row extends object>({
@@ -328,7 +334,11 @@ export function SpreadsheetPilotGrid<Row extends object>({
   onSelectionSetChange,
   onSelectionSummaryChange,
   onRowClicked,
+  onCellClicked,
   rowHeight: rowHeightProp,
+  cardClassName,
+  headerClassName,
+  contentClassName,
 }: SpreadsheetPilotGridProps<Row>) {
   const gridApiRef = useRef<GridApi<Row> | null>(null);
   const lastEmittedRowIdRef = useRef<string | null>(null);
@@ -476,8 +486,13 @@ export function SpreadsheetPilotGrid<Row extends object>({
   };
 
   return (
-    <Card className="border-border/70 shadow-sm">
-      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+    <Card className={cn("border-border/70 shadow-sm", cardClassName)}>
+      <CardHeader
+        className={cn(
+          "flex flex-row items-start justify-between gap-2 space-y-0 pb-2",
+          headerClassName
+        )}
+      >
         <div className="space-y-0.5">
           <CardTitle className="text-sm font-semibold">{title}</CardTitle>
           {description ? (
@@ -489,7 +504,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
         </div>
         {headerActions ? <div className="shrink-0">{headerActions}</div> : null}
       </CardHeader>
-      <CardContent>
+      <CardContent className={contentClassName}>
         {isLoading ? (
           <LoadingState message={`Loading ${title.toLowerCase()}...`} />
         ) : errorMessage ? (
@@ -569,6 +584,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
               onCellSelectionDeleteStart={onCellSelectionDeleteStart}
               onCellSelectionDeleteEnd={onCellSelectionDeleteEnd}
               onRowClicked={onRowClicked}
+              onCellClicked={onCellClicked}
               getRowId={params => getRowId(params.data)}
             />
           </div>

@@ -43,6 +43,8 @@ interface OverdueInvoice {
   invoiceNumber: string;
   customerName?: string | null;
   customerId?: number | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
   dueDate?: string | Date | null;
   daysOverdue: number;
   amountDue: string | number;
@@ -516,8 +518,40 @@ export default function AccountingDashboard({
                           {invoice.invoiceNumber}
                         </TableCell>
                         <TableCell>
-                          {invoice.customerName ||
-                            `Client #${invoice.customerId}`}
+                          <div className="flex flex-col gap-1">
+                            <span className="font-medium">
+                              {invoice.customerName ||
+                                `Client #${invoice.customerId}`}
+                            </span>
+                            {invoice.customerPhone || invoice.customerEmail ? (
+                              <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+                                {invoice.customerPhone ? (
+                                  <a
+                                    href={`tel:${invoice.customerPhone}`}
+                                    className="text-primary hover:underline"
+                                  >
+                                    {invoice.customerPhone}
+                                  </a>
+                                ) : null}
+                                {invoice.customerPhone &&
+                                invoice.customerEmail ? (
+                                  <span>|</span>
+                                ) : null}
+                                {invoice.customerEmail ? (
+                                  <a
+                                    href={`mailto:${invoice.customerEmail}`}
+                                    className="max-w-[220px] truncate text-primary hover:underline"
+                                  >
+                                    {invoice.customerEmail}
+                                  </a>
+                                ) : null}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">
+                                No contact on file
+                              </span>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell>{formatDate(invoice.dueDate)}</TableCell>
                         <TableCell>

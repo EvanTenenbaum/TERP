@@ -44,6 +44,43 @@ Opt-outs:
 
 ---
 
+## Local UI Runtime Inspection with Domscribe
+
+Use Domscribe when you need live UI truth during implementation, not just post-merge browser QA. It is especially useful for styling bugs, conditional rendering issues, wrong props, and "what is actually on screen right now?" questions.
+
+### When to Use It
+
+- The change is visual or behaviorally tied to rendered UI.
+- The source code alone is ambiguous.
+- You want Codex to inspect the live browser state before or after an edit.
+
+### Workflow
+
+1. Start the app with `pnpm dev`.
+   If local DB bootstrap is slowing down or blocking a quick UI-debug session, use `pnpm domscribe:dev`.
+2. Open the target page in a browser.
+3. Confirm the relay is up with `pnpm domscribe:status`.
+4. Ask Codex to use Domscribe before editing, or use the in-browser overlay to capture an annotation.
+   The overlay starts collapsed by default, so a small root shell is normal until you expand it.
+
+Interpret results carefully:
+
+- `browserConnected: false` means the browser page is not connected yet, so runtime truth is unavailable.
+- `rendered: false` can be expected for wrapper components. Retry on a nearby native rendered element before assuming the UI is broken.
+- `domSnapshot` is the most useful payload for actual classes, text, and attributes.
+
+### Repo Integration Notes
+
+- App-side wiring lives in `vite.config.ts`.
+- Codex MCP wiring lives in `.codex/config.toml`.
+- Claude project MCP wiring lives in `.mcp.json`.
+- Claude skill guidance lives in `.claude/skills/terp-domscribe/SKILL.md`.
+- Local runtime artifacts live under `.domscribe/` and are gitignored.
+
+See `docs/dev-guide/DOMSCRIBE_WORKFLOW.md` for the full TERP-specific flow and prompt examples.
+
+---
+
 ## Test Layers (Testing Pyramid)
 
 ### 1. Unit Tests (Vitest) — `pnpm test`

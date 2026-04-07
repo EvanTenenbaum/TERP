@@ -18,7 +18,6 @@
 import { useMemo, useState, useCallback } from "react";
 import type { ColDef } from "ag-grid-community";
 import { toast } from "sonner";
-import { format } from "date-fns";
 import {
   Plus,
   RefreshCw,
@@ -33,12 +32,14 @@ import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 import {
@@ -47,10 +48,7 @@ import {
   InspectorField,
 } from "@/components/work-surface/InspectorPanel";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
-import {
-  KeyboardHintBar,
-  type KeyboardHint,
-} from "@/components/work-surface/KeyboardHintBar";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 
 import { AccountSelector } from "@/components/accounting/AccountSelector";
 import { FiscalPeriodSelector } from "@/components/accounting/FiscalPeriodSelector";
@@ -60,6 +58,11 @@ import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
 import { cn } from "@/lib/utils";
+import {
+  fmtCurrency,
+  fmtDate,
+  REGISTRY_KEYBOARD_HINTS,
+} from "@/lib/powersheet/surface-helpers";
 
 // ============================================================================
 // TYPES
@@ -113,17 +116,13 @@ type StatusTab = "ALL" | "POSTED" | "DRAFT";
 // CONSTANTS
 // ============================================================================
 
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const mod = isMac ? "\u2318" : "Ctrl";
-
 const STATUS_TABS: Array<{ value: StatusTab; label: string }> = [
   { value: "ALL", label: "All" },
   { value: "POSTED", label: "Posted" },
   { value: "DRAFT", label: "Draft" },
 ];
 
+/** GL uses "Workflow actions" instead of "Sort"/"Filter" — kept local. */
 const registryAffordances: PowersheetAffordance[] = [
   { label: "Select", available: true },
   { label: "Multi-select", available: true },
@@ -134,38 +133,14 @@ const registryAffordances: PowersheetAffordance[] = [
   { label: "Workflow actions", available: true },
 ];
 
-const keyboardHints: KeyboardHint[] = [
-  { key: "Click", label: "select row" },
-  { key: "Shift+Click", label: "extend range" },
-  { key: `${mod}+Click`, label: "add to selection" },
-  { key: `${mod}+C`, label: "copy cells" },
-  { key: "Escape", label: "close inspector" },
-];
-
 const PAGE_SIZE = 50;
 
 // ============================================================================
 // HELPERS
 // ============================================================================
 
-const formatCurrency = (value: string | number | null | undefined): string => {
-  const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
-  if (Number.isNaN(num)) return "$0.00";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(num);
-};
-
-const formatDate = (value: Date | string | null | undefined): string => {
-  if (!value) return "-";
-  try {
-    const d = typeof value === "string" ? new Date(value) : value;
-    return format(d, "MMM d, yyyy");
-  } catch {
-    return "-";
-  }
-};
+const formatCurrency = fmtCurrency;
+const formatDate = fmtDate;
 
 // ============================================================================
 // ROW MAPPING
@@ -291,6 +266,8 @@ export function GeneralLedgerSurface() {
   const [selectedRowId, setSelectedRowId] = useState<number | null>(null);
   const [selectionSummary, setSelectionSummary] =
     useState<PowersheetSelectionSummary | null>(null);
+  const [showReverseDialog, setShowReverseDialog] = useState(false);
+  const [reverseReason, setReverseReason] = useState("");
 
   // ─── Queries ────────────────────────────────────────────────────────────────
 
@@ -320,6 +297,18 @@ export function GeneralLedgerSurface() {
   });
 
   const _utils = trpc.useUtils();
+
+  const reverseMutation = trpc.accountingHooks.reverseGLEntries.useMutation({
+    onSuccess: () => {
+      toast.success("GL entry reversed successfully");
+      setShowReverseDialog(false);
+      setReverseReason("");
+      void ledgerQuery.refetch();
+    },
+    onError: (error: { message: string }) => {
+      toast.error(`Failed to reverse entry: ${error.message}`);
+    },
+  });
 
   // ─── Derived Data ───────────────────────────────────────────────────────────
 
@@ -592,6 +581,7 @@ export function GeneralLedgerSurface() {
             size="sm"
             className="h-5 text-[9px] px-2"
             disabled={!selectedRow || !selectedRow.isPosted}
+            onClick={() => setShowReverseDialog(true)}
             data-testid="reverse-entry-button"
           >
             <RotateCcw className="h-3 w-3 mr-1" />
@@ -722,6 +712,7 @@ export function GeneralLedgerSurface() {
                   variant="outline"
                   size="sm"
                   className="w-full text-xs"
+                  onClick={() => setShowReverseDialog(true)}
                   data-testid="inspector-reverse-button"
                 >
                   <RotateCcw className="h-3 w-3 mr-1" />
@@ -833,7 +824,7 @@ export function GeneralLedgerSurface() {
       {/* ── 5. Status Bar ── */}
       <WorkSurfaceStatusBar
         left={statusBarLeft}
-        right={<KeyboardHintBar hints={keyboardHints} />}
+        right={<KeyboardHintBar hints={REGISTRY_KEYBOARD_HINTS} />}
       />
 
       {/* ── 6. Post Journal Entry Dialog ── */}
@@ -859,6 +850,72 @@ export function GeneralLedgerSurface() {
             onCancel={() => setShowPostDialog(false)}
             isSubmitting={postJournalEntry.isPending}
           />
+        </DialogContent>
+      </Dialog>
+
+      {/* ── 7. Reverse Entry Confirmation Dialog ── */}
+      <Dialog
+        open={showReverseDialog}
+        onOpenChange={open => {
+          setShowReverseDialog(open);
+          if (!open) setReverseReason("");
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Reverse GL Entry</DialogTitle>
+            <DialogDescription>
+              This will create offsetting entries to reverse{" "}
+              {selectedRow?.entryNumber ?? "this entry"}. This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <label
+              htmlFor="reverse-reason"
+              className="text-sm font-medium mb-1.5 block"
+            >
+              Reason for reversal <span className="text-red-500">*</span>
+            </label>
+            <Textarea
+              id="reverse-reason"
+              placeholder="Enter reason for reversing this entry..."
+              value={reverseReason}
+              onChange={e => setReverseReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setShowReverseDialog(false);
+                setReverseReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={
+                !reverseReason.trim() ||
+                reverseMutation.isPending ||
+                !selectedRow?.referenceType ||
+                !selectedRow?.referenceId
+              }
+              onClick={() => {
+                if (!selectedRow?.referenceType || !selectedRow?.referenceId)
+                  return;
+                reverseMutation.mutate({
+                  referenceType: selectedRow.referenceType,
+                  referenceId: selectedRow.referenceId,
+                  reason: reverseReason.trim(),
+                });
+              }}
+            >
+              {reverseMutation.isPending ? "Reversing..." : "Confirm Reversal"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

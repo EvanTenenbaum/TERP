@@ -1,8 +1,118 @@
 {
   "createdAt": "",
-  "updatedAt": "",
-  "locations": [],
-  "clients": { "customers": [], "suppliers": [] },
-  "brands": [],
-  "products": []
+  "updatedAt": "2026-03-29T19:29:44.548Z",
+  "locations": [
+    {
+      "id": 4,
+      "site": "QA_LOCATION_MAIN"
+    },
+    {
+      "id": 5,
+      "site": "QA_LOCATION_WAREHOUSE"
+    },
+    {
+      "id": 6,
+      "site": "QA_LOCATION_COLD"
+    },
+    {
+      "id": 7,
+      "site": "QA_LOCATION_STAGING"
+    },
+    {
+      "id": 8,
+      "site": "QA_LOCATION_RETURNS"
+    }
+  ],
+  "clients": {
+    "customers": [
+      {
+        "id": 13,
+        "teriCode": "QA_CUSTOMER_01",
+        "name": "QA Test Dispensary Alpha"
+      },
+      {
+        "id": 14,
+        "teriCode": "QA_CUSTOMER_02",
+        "name": "QA Test Retail Beta"
+      },
+      {
+        "id": 15,
+        "teriCode": "QA_CUSTOMER_03",
+        "name": "QA Test Wholesale Gamma"
+      },
+      {
+        "id": 16,
+        "teriCode": "QA_CUSTOMER_CREDIT",
+        "name": "QA Test Credit Customer"
+      },
+      {
+        "id": 17,
+        "teriCode": "QA_CUSTOMER_VIP",
+        "name": "QA Test VIP Customer"
+      }
+    ],
+    "suppliers": [
+      {
+        "id": 18,
+        "teriCode": "QA_SUPPLIER_01",
+        "name": "QA Test Farm Delta"
+      },
+      {
+        "id": 19,
+        "teriCode": "QA_SUPPLIER_02",
+        "name": "QA Test Cultivator Epsilon"
+      },
+      {
+        "id": 20,
+        "teriCode": "QA_SUPPLIER_03",
+        "name": "QA Test Manufacturer Zeta"
+      }
+    ]
+  },
+  "brands": [
+    {
+      "id": 2,
+      "name": "QA_BRAND_PREMIUM"
+    },
+    {
+      "id": 3,
+      "name": "QA_BRAND_STANDARD"
+    },
+    {
+      "id": 4,
+      "name": "QA_BRAND_BUDGET"
+    }
+  ],
+  "products": [
+    {
+      "id": 813,
+      "name": "QA_PRODUCT_FLOWER_A",
+      "brandId": 2
+    },
+    {
+      "id": 814,
+      "name": "QA_PRODUCT_FLOWER_B",
+      "brandId": 3
+    },
+    {
+      "id": 815,
+      "name": "QA_PRODUCT_PREROLL",
+      "brandId": 2
+    },
+    {
+      "id": 816,
+      "name": "QA_PRODUCT_EDIBLE",
+      "brandId": 4
+    },
+    {
+      "id": 817,
+      "name": "QA_PRODUCT_CONCENTRATE",
+      "brandId": 2
+    },
+    {
+      "id": 818,
+      "name": "QA_PRODUCT_VAPE",
+      "brandId": 3
+    }
+  ]
 }

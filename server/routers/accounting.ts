@@ -222,6 +222,8 @@ export const accountingRouter = router({
             invoiceNumber: invoices.invoiceNumber,
             customerId: invoices.customerId,
             customerName: clients.name,
+            customerEmail: clients.email,
+            customerPhone: clients.phone,
             invoiceDate: invoices.invoiceDate,
             dueDate: invoices.dueDate,
             totalAmount: invoices.totalAmount,
@@ -795,6 +797,21 @@ export const accountingRouter = router({
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return await arApDb.getInvoiceById(input.id);
+      }),
+
+    getByReference: protectedProcedure
+      .use(requirePermission("accounting:read"))
+      .input(
+        z.object({
+          referenceId: z.number(),
+          referenceTypes: z.array(z.string()).optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        return await arApDb.getInvoiceByReference(
+          input.referenceId,
+          input.referenceTypes
+        );
       }),
 
     create: protectedProcedure

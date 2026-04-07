@@ -1,5 +1,5 @@
 import { getDb } from "./db";
-import { eq, desc, inArray, and, sql, isNull } from "drizzle-orm";
+import { eq, desc, inArray, and, or, sql, isNull } from "drizzle-orm";
 import { randomBytes } from "crypto";
 import {
   salesSheetHistory,
@@ -9,6 +9,8 @@ import {
   clients,
   orders,
   products,
+  brands,
+  productImages,
   lots,
   type SalesSheetHistory,
   type SalesSheetTemplate,
@@ -20,10 +22,7 @@ import {
 } from "../drizzle/schema-live-shopping";
 import * as pricingEngine from "./pricingEngine";
 import { logger } from "./_core/logger";
-import {
-  resolveBatchCogs,
-  type CogsRangeBasis,
-} from "./cogsCalculator";
+import { resolveBatchCogs, type CogsRangeBasis } from "./cogsCalculator";
 import { pricingService } from "./services/pricingService";
 
 // ============================================================================
@@ -37,6 +36,8 @@ export interface PricedInventoryItem {
   name: string;
   category?: string;
   subcategory?: string;
+  brand?: string;
+  batchSku?: string;
   basePrice: number;
   cogsMode?: "FIXED" | "RANGE";
   unitCogs?: number;
@@ -48,6 +49,7 @@ export interface PricedInventoryItem {
   quantity: number;
   grade?: string;
   vendor?: string; // Supplier name for backward compatibility
+  imageUrl?: string;
   status?: string; // INV-CONSISTENCY-002: Include batch status for display/filtering
   priceMarkup: number;
   appliedRules: Array<{
@@ -67,6 +69,19 @@ export interface PricedInventoryItem {
 function parseNumber(value: unknown, defaultValue: number = 0): number {
   const parsed = parseFloat(value?.toString() || String(defaultValue));
   return isNaN(parsed) ? defaultValue : parsed;
+}
+
+function getMutationAffectedRows(result: unknown): number {
+  if (Array.isArray(result)) {
+    const header = result[0] as { affectedRows?: number } | undefined;
+    return header?.affectedRows ?? 0;
+  }
+
+  if (result && typeof result === "object" && "affectedRows" in result) {
+    return (result as { affectedRows?: number }).affectedRows ?? 0;
+  }
+
+  return 0;
 }
 
 // ============================================================================
@@ -127,6 +142,7 @@ export async function getInventoryWithPricing(
       productName: string | null;
       productCategory: string | null;
       productSubcategory: string | null;
+      brandName: string | null;
       supplierName: string | null;
     }>;
 
@@ -152,10 +168,12 @@ export async function getInventoryWithPricing(
           productName: products.nameCanonical,
           productCategory: products.category,
           productSubcategory: products.subcategory,
+          brandName: brands.name,
           supplierName: clients.name,
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
+        .leftJoin(brands, eq(products.brandId, brands.id))
         .leftJoin(lots, eq(batches.lotId, lots.id))
         .leftJoin(
           clients,
@@ -193,9 +211,11 @@ export async function getInventoryWithPricing(
           productName: products.nameCanonical,
           productCategory: products.category,
           productSubcategory: products.subcategory,
+          brandName: brands.name,
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
+        .leftJoin(brands, eq(products.brandId, brands.id))
         .leftJoin(lots, eq(batches.lotId, lots.id))
         .where(
           and(
@@ -222,6 +242,44 @@ export async function getInventoryWithPricing(
     if (inventoryWithDetails.length === 0) {
       logger.info({ clientId }, "No inventory batches available");
       return [];
+    }
+
+    const batchIds = inventoryWithDetails.map(row => row.batchId);
+    const imageUrlByBatchId = new Map<number, string>();
+
+    if (batchIds.length > 0) {
+      const batchImages = await db
+        .select({
+          batchId: productImages.batchId,
+          imageUrl: productImages.imageUrl,
+        })
+        .from(productImages)
+        .where(
+          and(
+            inArray(productImages.batchId, batchIds),
+            or(
+              isNull(productImages.status),
+              eq(productImages.status, "APPROVED"),
+              eq(productImages.status, "PENDING")
+            ),
+            isNull(productImages.deletedAt)
+          )
+        )
+        .orderBy(
+          desc(productImages.isPrimary),
+          productImages.sortOrder,
+          productImages.id
+        );
+
+      for (const image of batchImages) {
+        if (
+          image.batchId !== null &&
+          !imageUrlByBatchId.has(image.batchId) &&
+          image.imageUrl
+        ) {
+          imageUrlByBatchId.set(image.batchId, image.imageUrl);
+        }
+      }
     }
 
     // Get client pricing rules with error handling
@@ -269,6 +327,8 @@ export async function getInventoryWithPricing(
           name: row.productName || row.batchSku || `Batch #${row.batchId}`,
           category: row.productCategory || undefined,
           subcategory: row.productSubcategory || undefined,
+          brand: row.brandName || undefined,
+          batchSku: row.batchSku || undefined,
           basePrice: resolvedCogs.unitCogs,
           cogsMode: row.batchCogsMode,
           unitCogs: parseNumber(row.batchUnitCogs, 0),
@@ -283,6 +343,7 @@ export async function getInventoryWithPricing(
           quantity: parseNumber(row.batchOnHandQty, 0),
           grade: row.batchGrade || undefined,
           vendor: row.supplierName || undefined,
+          imageUrl: imageUrlByBatchId.get(row.batchId),
           status: row.batchStatus || undefined,
         };
       });
@@ -303,6 +364,7 @@ export async function getInventoryWithPricing(
         quantity: item.quantity || 0,
         // Preserve joined fields that pricing engine doesn't know about
         productId: inventoryItems[index].productId,
+        imageUrl: inventoryItems[index].imageUrl,
         status: inventoryItems[index].status,
       }));
     } catch (pricingError) {
@@ -375,7 +437,12 @@ export async function getSalesSheetHistory(
   return await db
     .select()
     .from(salesSheetHistory)
-    .where(eq(salesSheetHistory.clientId, clientId))
+    .where(
+      and(
+        eq(salesSheetHistory.clientId, clientId),
+        isNull(salesSheetHistory.deletedAt)
+      )
+    )
     .orderBy(desc(salesSheetHistory.createdAt))
     .limit(limit);
 }
@@ -436,24 +503,24 @@ export async function createTemplate(data: {
 
 export async function getTemplates(
   clientId?: number,
-  _includeUniversal: boolean = true
+  includeUniversal: boolean = true
 ): Promise<SalesSheetTemplate[]> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  if (!clientId) {
-    // Get all templates where clientId is null (universal templates)
-    return await db
-      .select()
-      .from(salesSheetTemplates)
-      .orderBy(desc(salesSheetTemplates.createdAt));
-  }
+  const templateFilter = clientId
+    ? includeUniversal
+      ? or(
+          eq(salesSheetTemplates.clientId, clientId),
+          isNull(salesSheetTemplates.clientId)
+        )
+      : eq(salesSheetTemplates.clientId, clientId)
+    : isNull(salesSheetTemplates.clientId);
 
-  // Get client-specific templates
   return await db
     .select()
     .from(salesSheetTemplates)
-    .where(eq(salesSheetTemplates.clientId, clientId))
+    .where(templateFilter)
     .orderBy(desc(salesSheetTemplates.createdAt));
 }
 
@@ -521,7 +588,7 @@ export async function saveDraft(data: {
 
   if (data.draftId) {
     // Update existing draft
-    await db
+    const result = await db
       .update(salesSheetDrafts)
       .set({
         name: data.name,
@@ -535,6 +602,13 @@ export async function saveDraft(data: {
           eq(salesSheetDrafts.createdBy, data.createdBy)
         )
       );
+
+    if (getMutationAffectedRows(result) === 0) {
+      throw new Error(
+        "Draft not found or you do not have permission to update it"
+      );
+    }
+
     return data.draftId;
   }
 
@@ -636,42 +710,68 @@ export async function convertDraftToSheet(
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
-  // Get the draft
-  const draft = await getDraftById(draftId, userId);
-  if (!draft) {
-    throw new Error("Draft not found");
-  }
+  return await db.transaction(async tx => {
+    const draftResult = await tx
+      .select()
+      .from(salesSheetDrafts)
+      .where(
+        and(
+          eq(salesSheetDrafts.id, draftId),
+          eq(salesSheetDrafts.createdBy, userId)
+        )
+      )
+      .limit(1);
 
-  // Recalculate total from items instead of trusting stored draft totalValue
-  interface DraftItem {
-    finalPrice?: number;
-    retailPrice?: number;
-    quantity?: number;
-  }
-  const draftItems = draft.items as unknown as DraftItem[];
-  const recalculatedTotal = Array.isArray(draftItems)
-    ? Math.round(
-        draftItems.reduce(
-          (sum, item) =>
-            sum +
-            (item.finalPrice ?? item.retailPrice ?? 0) * (item.quantity ?? 1),
-          0
-        ) * 100
-      ) / 100
-    : parseFloat(draft.totalValue);
+    const draft = draftResult[0];
+    if (!draft) {
+      throw new Error("Draft not found");
+    }
 
-  // Create the sales sheet
-  const sheetId = await saveSalesSheet({
-    clientId: draft.clientId,
-    items: draft.items as unknown[],
-    totalValue: recalculatedTotal,
-    createdBy: userId,
+    interface DraftSheetItem {
+      finalPrice?: number;
+      retailPrice?: number;
+      quantity?: number;
+    }
+
+    const draftItems = draft.items as unknown as DraftSheetItem[];
+    const recalculatedTotal = Array.isArray(draftItems)
+      ? Math.round(
+          draftItems.reduce(
+            (sum, item) =>
+              sum +
+              (item.finalPrice ?? item.retailPrice ?? 0) * (item.quantity ?? 1),
+            0
+          ) * 100
+        ) / 100
+      : parseFloat(draft.totalValue);
+
+    const insertResult = await tx.insert(salesSheetHistory).values({
+      clientId: draft.clientId,
+      items: draft.items as unknown[],
+      totalValue: recalculatedTotal.toString(),
+      itemCount: Array.isArray(draftItems)
+        ? draftItems.length
+        : draft.itemCount,
+      createdBy: userId,
+    });
+
+    const sheetId = Number(insertResult[0].insertId);
+
+    const deleteResult = await tx
+      .delete(salesSheetDrafts)
+      .where(
+        and(
+          eq(salesSheetDrafts.id, draftId),
+          eq(salesSheetDrafts.createdBy, userId)
+        )
+      );
+
+    if (getMutationAffectedRows(deleteResult) === 0) {
+      throw new Error("Draft could not be removed after conversion");
+    }
+
+    return sheetId;
   });
-
-  // Delete the draft
-  await deleteDraft(draftId, userId);
-
-  return sheetId;
 }
 
 // ============================================================================
@@ -768,7 +868,12 @@ export async function getSalesSheetByToken(
     })
     .from(salesSheetHistory)
     .innerJoin(clients, eq(salesSheetHistory.clientId, clients.id))
-    .where(eq(salesSheetHistory.shareToken, token))
+    .where(
+      and(
+        eq(salesSheetHistory.shareToken, token),
+        isNull(salesSheetHistory.deletedAt)
+      )
+    )
     .limit(1);
 
   if (result.length === 0) {
@@ -1010,6 +1115,7 @@ export interface SavedViewData {
   filters: {
     search: string;
     categories: string[];
+    brands: string[];
     grades: string[];
     priceMin: number | null;
     priceMax: number | null;
@@ -1105,8 +1211,8 @@ export async function saveView(data: SavedViewData): Promise<number> {
  * FIX: Now properly filters by userId - users can only see their own views or universal views
  */
 export async function getViews(
-  clientId?: number,
-  userId?: number
+  clientId: number | undefined,
+  userId: number
 ): Promise<
   Array<{
     id: number;
@@ -1134,7 +1240,7 @@ export async function getViews(
     // Client-specific views owned by user OR universal views
     conditions.push(
       sql`(
-        (${salesSheetTemplates.clientId} = ${clientId} AND ${salesSheetTemplates.createdBy} = ${userId ?? 0})
+        (${salesSheetTemplates.clientId} = ${clientId} AND ${salesSheetTemplates.createdBy} = ${userId})
         OR ${salesSheetTemplates.clientId} IS NULL
       )`
     );
@@ -1153,6 +1259,7 @@ export async function getViews(
     interface FiltersData {
       search?: string;
       categories?: string[];
+      brands?: string[];
       grades?: string[];
       priceMin?: number | null;
       priceMax?: number | null;
@@ -1171,6 +1278,7 @@ export async function getViews(
       filters: {
         search: filtersData?.search ?? "",
         categories: filtersData?.categories ?? [],
+        brands: filtersData?.brands ?? [],
         grades: filtersData?.grades ?? [],
         priceMin: filtersData?.priceMin ?? null,
         priceMax: filtersData?.priceMax ?? null,
@@ -1203,7 +1311,7 @@ export async function getViews(
  */
 export async function loadViewById(
   viewId: number,
-  userId?: number
+  userId: number
 ): Promise<{
   id: number;
   name: string;
@@ -1241,6 +1349,7 @@ export async function loadViewById(
   interface FiltersData {
     search?: string;
     categories?: string[];
+    brands?: string[];
     grades?: string[];
     priceMin?: number | null;
     priceMax?: number | null;
@@ -1266,6 +1375,7 @@ export async function loadViewById(
     filters: {
       search: filtersData?.search ?? "",
       categories: filtersData?.categories ?? [],
+      brands: filtersData?.brands ?? [],
       grades: filtersData?.grades ?? [],
       priceMin: filtersData?.priceMin ?? null,
       priceMax: filtersData?.priceMax ?? null,

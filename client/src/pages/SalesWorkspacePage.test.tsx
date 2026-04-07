@@ -164,4 +164,32 @@ describe("SalesWorkspacePage quote entry flow", () => {
     expect(screen.getByText("order creator page")).toBeInTheDocument();
     expect(screen.queryByText("quotes work surface")).not.toBeInTheDocument();
   });
+
+  it("canonicalizes malformed sales-sheet document deep links into the orders document route", () => {
+    mockActiveTab = "sales-sheets";
+    mockSearch = "?tab=sales-sheets&surface=sheet-native&ordersView=document";
+
+    render(<SalesWorkspacePage />);
+
+    expect(
+      screen.getByText(
+        "redirect:/sales?tab=orders&surface=sheet-native&ordersView=document"
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("sale-catalogue-surface")
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps valid sales-sheet routes on the catalogue surface", async () => {
+    mockActiveTab = "sales-sheets";
+    mockSearch = "?tab=sales-sheets";
+
+    render(<SalesWorkspacePage />);
+
+    expect(
+      await screen.findByTestId("sale-catalogue-surface")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/^redirect:/)).not.toBeInTheDocument();
+  });
 });

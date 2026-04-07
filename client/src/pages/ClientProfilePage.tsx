@@ -354,6 +354,8 @@ export default function ClientProfilePage() {
   const shell = shellQuery.data;
   const money = moneyQuery.data;
   const moneySummary = money?.summary ?? shell?.financials.moneySummary;
+  const supplierSettlementSummary =
+    supplyQuery.data?.supplier?.context?.settlementSummary ?? null;
   const isCustomer = shell?.roles.includes("Customer") ?? false;
   const isSupplier = shell?.roles.includes("Supplier") ?? false;
 
@@ -1087,6 +1089,59 @@ export default function ClientProfilePage() {
                   />
                 </div>
 
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Settlement Context
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <MetricCard
+                        label="Payable Due"
+                        value={formatMoney(
+                          moneySummary?.payable.amountDue ?? 0
+                        )}
+                      />
+                      <MetricCard
+                        label="Paid Out"
+                        value={formatMoney(
+                          moneySummary?.payable.amountPaid ?? 0
+                        )}
+                      />
+                      <MetricCard
+                        label="Below-Range Sales"
+                        value={String(
+                          supplierSettlementSummary?.belowRangeSaleCount ?? 0
+                        )}
+                      />
+                      <MetricCard
+                        label="Below-Range Units"
+                        value={Number(
+                          supplierSettlementSummary?.belowRangeUnitsSold ?? 0
+                        ).toFixed(2)}
+                      />
+                    </div>
+
+                    <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                        Latest settlement exception
+                      </p>
+                      <p className="mt-2 text-sm">
+                        {supplierSettlementSummary?.latestBelowRangeReason ||
+                          "No below-range sale exceptions recorded."}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {supplierSettlementSummary?.latestBelowRangeAt
+                          ? `Updated ${formatDate(
+                              supplierSettlementSummary.latestBelowRangeAt
+                            )}`
+                          : "No follow-up needed right now."}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <div className="grid gap-4 xl:grid-cols-2">
                   <Card>
                     <CardHeader>
@@ -1142,6 +1197,7 @@ export default function ClientProfilePage() {
                               <TableHead>PO</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Date</TableHead>
+                              <TableHead>Expected</TableHead>
                               <TableHead className="text-right">
                                 Total
                               </TableHead>
@@ -1155,6 +1211,9 @@ export default function ClientProfilePage() {
                                   <TableCell>{po.status}</TableCell>
                                   <TableCell>
                                     {formatDate(po.orderDate)}
+                                  </TableCell>
+                                  <TableCell>
+                                    {formatDate(po.expectedDeliveryDate)}
                                   </TableCell>
                                   <TableCell className="text-right">
                                     {formatMoney(po.total)}

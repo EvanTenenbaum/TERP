@@ -217,9 +217,9 @@ describe("canGenerateInvoice", () => {
 });
 
 describe("getMakePaymentRoute", () => {
-  it("routes sales payment handoffs into the invoice workspace with record-payment intent", () => {
+  it("routes sales payment handoffs into the canonical invoice workspace", () => {
     expect(getMakePaymentRoute({ id: 18, invoiceId: 91 })).toBe(
-      "/accounting?tab=invoices&id=91&orderId=18&openRecordPayment=true&from=sales"
+      "/accounting?tab=invoices&invoiceId=91&orderId=18&from=sales"
     );
   });
 

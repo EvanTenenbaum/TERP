@@ -155,48 +155,17 @@ test.describe("GF-002: Procure-to-Pay Golden Flow", () => {
     // No JavaScript errors
     expect(jsErrors).toHaveLength(0);
 
-    // Page heading contains "Purchase Order"
-    const heading = page.locator(
-      "h1, h2, [data-testid='page-title'], .page-title"
-    );
-    const headingText = await heading
-      .first()
-      .textContent({ timeout: 10000 })
-      .catch(() => "");
-    const pageTitle = (headingText ?? "").toLowerCase();
-    const hasPoTitle =
-      pageTitle.includes("purchase order") ||
-      pageTitle.includes("purchase orders") ||
-      (await page
-        .locator("text=/purchase order/i")
-        .first()
-        .isVisible()
-        .catch(() => false));
-    expect(hasPoTitle).toBe(true);
-
-    // Table, list, or empty state is visible
-    const hasContent =
-      (await page
-        .locator("table")
-        .isVisible()
-        .catch(() => false)) ||
-      (await page
-        .locator('[role="table"]')
-        .isVisible()
-        .catch(() => false)) ||
-      (await page
-        .locator('[data-testid="purchase-orders-table"]')
-        .isVisible()
-        .catch(() => false)) ||
-      (await page
-        .locator("text=/no purchase order/i")
-        .isVisible()
-        .catch(() => false)) ||
-      (await page
-        .locator(".empty-state")
-        .isVisible()
-        .catch(() => false));
-    expect(hasContent).toBe(true);
+    await expect(
+      page.getByRole("heading", { name: /purchase orders/i })
+    ).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.locator('[data-powersheet-surface-id="po-queue"]').first()
+    ).toBeVisible({ timeout: 15000 });
+    await expect(
+      page.getByRole("button", { name: /\+?\s*new po/i }).first()
+    ).toBeVisible({ timeout: 15000 });
   });
 
   // -------------------------------------------------------------------------
@@ -211,38 +180,36 @@ test.describe("GF-002: Procure-to-Pay Golden Flow", () => {
     await page.goto("/purchase-orders");
     await page.waitForLoadState("networkidle");
 
-    await page.getByRole("button", { name: "Create PO" }).first().click();
+    await page
+      .getByRole("button", { name: /\+?\s*new po/i })
+      .first()
+      .click();
     await expect(page.getByText("New Purchase Order")).toBeVisible({
       timeout: 10000,
     });
+    await expect(
+      page.locator('[data-powersheet-surface-id="po-document"]').first()
+    ).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole("combobox", { name: /select a supplier/i })
+    ).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/select a supplier first/i)).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByText(/1 line .*\$0\.00/i)).toBeVisible({
+      timeout: 10000,
+    });
 
-    const rowCheckboxes = page.locator('[aria-label^="Select draft row "]');
-    const initialRowCount = await rowCheckboxes.count();
-    expect(initialRowCount).toBeGreaterThan(0);
+    await page.getByRole("combobox", { name: /select a supplier/i }).click();
+    const supplierOptions = page.locator("[cmdk-item]");
+    await expect(supplierOptions.first()).toBeVisible({ timeout: 10000 });
+    await supplierOptions.first().click();
+    await expect(page.getByText(/select a supplier first/i)).not.toBeVisible({
+      timeout: 10000,
+    });
 
-    await rowCheckboxes.first().click();
-    await expect(page.getByText(/1 selected/i)).toBeVisible({ timeout: 5000 });
-
-    const quantityBulkInput = page.getByPlaceholder("Qty");
-    await quantityBulkInput.fill("5");
-    await page.getByRole("button", { name: "Apply Qty" }).click();
-
-    const quantityCell = page
-      .locator('[data-po-draft-field="quantityOrdered"]')
-      .first();
-    await expect(quantityCell).toHaveValue("5");
-
-    const unitCostBulkInput = page.getByPlaceholder("Unit Cost");
-    await unitCostBulkInput.fill("12");
-    await page.getByRole("button", { name: "Apply Cost" }).click();
-
-    const unitCostCell = page
-      .locator('[data-po-draft-field="unitCost"]')
-      .first();
-    await expect(unitCostCell).toHaveValue("12");
-
-    await page.getByRole("button", { name: "Duplicate" }).click();
-    await expect(rowCheckboxes).toHaveCount(initialRowCount + 1, {
+    await page.getByRole("button", { name: /add line/i }).click();
+    await expect(page.getByText(/2 lines? .*\$0\.00/i)).toBeVisible({
       timeout: 10000,
     });
   });

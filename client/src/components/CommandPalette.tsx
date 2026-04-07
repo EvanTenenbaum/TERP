@@ -149,9 +149,11 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
   const isActiveSearch = debouncedQuery.length > 2;
   const hasQuotes = (searchResults?.quotes?.length ?? 0) > 0;
+  const hasOrders = (searchResults?.orders?.length ?? 0) > 0;
   const hasCustomers = (searchResults?.customers?.length ?? 0) > 0;
   const hasProducts = (searchResults?.products?.length ?? 0) > 0;
-  const hasSearchResults = hasQuotes || hasCustomers || hasProducts;
+  const hasSearchResults =
+    hasQuotes || hasOrders || hasCustomers || hasProducts;
 
   return (
     <CommandDialog
@@ -190,6 +192,26 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                     {quote.description && (
                       <span className="ml-2 text-xs text-muted-foreground truncate">
                         {quote.description}
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {!isSearching && hasOrders && (
+              <CommandGroup heading="Orders">
+                {(searchResults?.orders ?? []).map(order => (
+                  <CommandItem
+                    key={`order-${order.id}`}
+                    value={`order-${order.id}`}
+                    onSelect={() => handleNavigate(order.url)}
+                  >
+                    <ReceiptText className="mr-2 h-4 w-4" />
+                    <span>{order.title}</span>
+                    {order.description && (
+                      <span className="ml-2 text-xs text-muted-foreground truncate">
+                        {order.description}
                       </span>
                     )}
                   </CommandItem>

@@ -79,16 +79,6 @@ const queueKeyboardHints: KeyboardHint[] = [
   { key: `${mod}+A`, label: "select all" },
 ];
 
-const documentKeyboardHints: KeyboardHint[] = [
-  { key: "Tab", label: "next cell" },
-  { key: "Shift+Tab", label: "prev cell" },
-  { key: "Enter", label: "next row" },
-  { key: "Escape", label: "cancel edit" },
-  { key: `${mod}+C`, label: "copy" },
-  { key: `${mod}+V`, label: "paste" },
-  { key: `${mod}+Z`, label: "undo" },
-];
-
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -201,6 +191,8 @@ export function OrdersSheetPilotSurface({
   const needIdFromRoute = parsePositiveIntegerParam(searchParams.get("needId"));
   const fromSalesSheet = searchParams.get("fromSalesSheet") === "true";
   const routeMode = searchParams.get("mode");
+  const entryTab = searchParams.get("tab");
+  const isCreateOrderEntry = entryTab === "create-order";
   const currentDocumentMode =
     forceDocumentMode ||
     searchParams.get("ordersView") === "document" ||
@@ -501,7 +493,11 @@ export function OrdersSheetPilotSurface({
           ? `Client #${clientIdFromRoute}`
           : fromSalesSheet
             ? "Sales Catalogue import"
-            : "New draft";
+            : isCreateOrderEntry
+              ? routeMode === "quote"
+                ? "New quote"
+                : "New order"
+              : "New draft";
 
   if (currentDocumentMode) {
     return (
@@ -517,11 +513,9 @@ export function OrdersSheetPilotSurface({
             }
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Queue
+            Queue
           </Button>
-          <Badge variant="outline">Sheet-native Orders</Badge>
-          <Badge variant="secondary">Document mode</Badge>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm font-medium text-foreground">
             {documentContextLabel}
           </span>
           <div className="ml-auto flex items-center gap-2">
@@ -538,19 +532,12 @@ export function OrdersSheetPilotSurface({
               }
             >
               <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
-              Classic Composer
+              Classic Surface
             </Button>
           </div>
         </div>
 
         <OrderCreatorPage surfaceVariant="sheet-native-orders" />
-
-        <div className="flex items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-3 py-1.5">
-          <span className="text-xs font-medium text-muted-foreground">
-            Keyboard:
-          </span>
-          <KeyboardHintBar hints={documentKeyboardHints} className="text-xs" />
-        </div>
       </div>
     );
   }
@@ -634,9 +621,17 @@ export function OrdersSheetPilotSurface({
                 return;
               }
 
-              setLocation(
-                `/accounting?tab=payments&orderId=${selectedOrderRow.orderId}&from=sales`
-              );
+              const params = new URLSearchParams({
+                tab: "invoices",
+                from: "sales",
+              });
+
+              if (selectedOrderRow.invoiceId) {
+                params.set("invoiceId", String(selectedOrderRow.invoiceId));
+                params.set("orderId", String(selectedOrderRow.orderId));
+              }
+
+              setLocation(`/accounting?${params.toString()}`);
             }}
           >
             <Wallet className="mr-2 h-4 w-4" />

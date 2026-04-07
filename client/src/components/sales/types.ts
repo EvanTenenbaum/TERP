@@ -13,6 +13,8 @@ export interface PricedInventoryItem {
   strain?: string;
   strainId?: number;
   strainFamily?: string;
+  brand?: string;
+  batchSku?: string;
   basePrice: number;
   cogsMode?: "FIXED" | "RANGE";
   unitCogs?: number;
@@ -24,6 +26,7 @@ export interface PricedInventoryItem {
   quantity: number;
   grade?: string;
   vendor?: string;
+  imageUrl?: string;
   vendorId?: number;
   priceMarkup: number;
   appliedRules: Array<{
@@ -59,6 +62,7 @@ export const NON_SELLABLE_STATUSES: readonly NonSellableStatus[] = [
 export interface InventoryFilters {
   search: string;
   categories: string[];
+  brands: string[];
   grades: string[];
   priceMin: number | null;
   priceMax: number | null;
@@ -92,6 +96,7 @@ export interface ColumnVisibility {
 export const DEFAULT_FILTERS: InventoryFilters = {
   search: "",
   categories: [],
+  brands: [],
   grades: [],
   priceMin: null,
   priceMax: null,

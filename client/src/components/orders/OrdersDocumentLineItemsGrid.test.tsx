@@ -149,10 +149,14 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(call?.columnDefs[2].cellClass).toBe("powersheet-cell--editable");
     expect(call?.columnDefs[2].suppressPaste).toBe(false);
     expect(call?.columnDefs[2].suppressFillHandle).toBe(false);
+    expect(call?.description).toBeUndefined();
+    expect(call?.summary).toBeUndefined();
+    expect(
+      screen.queryByRole("button", { name: /add item/i })
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /duplicate/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /delete/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /fill price/i })).toBeEnabled();
-    expect(screen.getByText(/4 selected cells/i)).toBeInTheDocument();
   });
 
   it("hides COGS and margin columns when cost visibility is disabled", () => {
@@ -869,9 +873,8 @@ describe("OrdersDocumentLineItemsGrid", () => {
     );
   });
 
-  it("fills price, clears samples, and delegates add-item insertion without replacing orchestration", () => {
+  it("fills price and clears samples without replacing orchestration", () => {
     const onChange = vi.fn();
-    const onAddItem = vi.fn();
 
     render(
       <OrdersDocumentLineItemsGrid
@@ -887,7 +890,6 @@ describe("OrdersDocumentLineItemsGrid", () => {
           }),
         ]}
         onChange={onChange}
-        onAddItem={onAddItem}
       />
     );
 
@@ -899,9 +901,6 @@ describe("OrdersDocumentLineItemsGrid", () => {
     fireEvent.click(screen.getByRole("button", { name: /clear samples/i }));
     const cleared = onChange.mock.calls[1][0] as LineItem[];
     expect(cleared.every(item => item.isSample === false)).toBe(true);
-
-    fireEvent.click(screen.getByRole("button", { name: /add item/i }));
-    expect(onAddItem).toHaveBeenCalledTimes(1);
   });
 
   it("reverts fill-end when a filled value fails field validation", () => {

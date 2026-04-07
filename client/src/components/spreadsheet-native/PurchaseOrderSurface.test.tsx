@@ -401,6 +401,38 @@ describe("PurchaseOrderSurface", () => {
       expect.stringContaining("draftId=draft-123")
     );
   });
+
+  it("offers an Expected Today lens based on the visible queue", () => {
+    const today = new Date().toISOString().slice(0, 10);
+    queueData = [
+      {
+        id: 41,
+        poNumber: "PO-041",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: today,
+        total: "180.00",
+        paymentTerms: "NET_30",
+      },
+      {
+        id: 42,
+        poNumber: "PO-042",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: "2026-05-03",
+        total: "220.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+
+    render(<PurchaseOrderSurface defaultStatusFilter={["CONFIRMED"]} />);
+
+    expect(
+      screen.getByRole("button", { name: /expected today \(1\)/i })
+    ).toBeInTheDocument();
+  });
 });
 
 describe("PurchaseOrderSurface — creation mode", () => {

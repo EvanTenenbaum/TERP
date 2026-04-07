@@ -34,6 +34,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 
 import {
   InspectorPanel,
@@ -373,6 +381,7 @@ export function BillsSurface() {
     useState<number | undefined>(undefined);
   const [selectionSummary, setSelectionSummary] =
     useState<PowersheetSelectionSummary | null>(null);
+  const [showVoidDialog, setShowVoidDialog] = useState(false);
 
   // Persist aging panel state
   const toggleAging = useCallback(() => {
@@ -548,10 +557,15 @@ export function BillsSurface() {
 
   const handleVoid = useCallback(() => {
     if (!selectedRow) return;
-    updateStatusMutation.mutate({
-      id: selectedRow.billId,
-      status: "VOID",
-    });
+    setShowVoidDialog(true);
+  }, [selectedRow]);
+
+  const handleVoidConfirm = useCallback(() => {
+    if (!selectedRow) return;
+    updateStatusMutation.mutate(
+      { id: selectedRow.billId, status: "VOID" },
+      { onSuccess: () => setShowVoidDialog(false) }
+    );
   }, [selectedRow, updateStatusMutation]);
 
   const handlePaymentSuccess = useCallback(() => {
@@ -992,6 +1006,32 @@ export function BillsSurface() {
         preselectedVendorId={payVendorPreselectedVendorId}
         onSuccess={handlePaymentSuccess}
       />
+
+      {/* Void Confirmation Dialog */}
+      <Dialog open={showVoidDialog} onOpenChange={setShowVoidDialog}>
+        <DialogContent data-testid="void-bill-dialog">
+          <DialogHeader>
+            <DialogTitle>Void Bill</DialogTitle>
+            <DialogDescription>
+              Void bill <strong>{selectedRow?.billNumber}</strong>? This cannot
+              be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowVoidDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={updateStatusMutation.isPending}
+              onClick={handleVoidConfirm}
+              data-testid="void-bill-confirm"
+            >
+              {updateStatusMutation.isPending ? "Voiding..." : "Void"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

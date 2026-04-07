@@ -98,6 +98,7 @@ export function SaveViewDialog({
     let count = 0;
     if (filters.search) count++;
     if (filters.categories.length > 0) count++;
+    if (filters.brands.length > 0) count++;
     if (filters.grades.length > 0) count++;
     if (filters.strainFamilies.length > 0) count++;
     if (filters.vendors.length > 0) count++;
@@ -205,6 +206,12 @@ export function SaveViewDialog({
                 <Badge variant="secondary">
                   {filters.grades.length} grade
                   {filters.grades.length !== 1 ? "s" : ""}
+                </Badge>
+              )}
+              {filters.brands.length > 0 && (
+                <Badge variant="secondary">
+                  {filters.brands.length} grower
+                  {filters.brands.length !== 1 ? "s" : ""}
                 </Badge>
               )}
               {filters.inStockOnly && (

@@ -25,6 +25,17 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { FileText, Clock, Package } from "lucide-react";
 
+function buildSharedDescriptor(item: {
+  brand?: string | null;
+  subcategory?: string | null;
+  category?: string | null;
+  batchSku?: string | null;
+}) {
+  return [item.brand, item.subcategory || item.category, item.batchSku]
+    .filter(Boolean)
+    .join(" • ");
+}
+
 export default function SharedSalesSheetPage() {
   const [, params] = useRoute("/shared/sales-sheet/:token");
   const token = params?.token || "";
@@ -82,6 +93,8 @@ export default function SharedSalesSheetPage() {
       day: "numeric",
     });
   };
+
+  const hasImages = sheet.items.some(item => Boolean(item.imageUrl));
 
   return (
     <div className="min-h-screen bg-background">
@@ -150,6 +163,9 @@ export default function SharedSalesSheetPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12">#</TableHead>
+                  {hasImages ? (
+                    <TableHead className="w-20 text-center">Image</TableHead>
+                  ) : null}
                   <TableHead>Item</TableHead>
                   <TableHead className="text-center">Category</TableHead>
                   <TableHead className="text-right">Qty Available</TableHead>
@@ -163,10 +179,39 @@ export default function SharedSalesSheetPage() {
                     <TableCell className="font-medium text-muted-foreground">
                       {index + 1}
                     </TableCell>
-                    <TableCell className="font-medium">{item.name}</TableCell>
+                    {hasImages ? (
+                      <TableCell className="align-middle">
+                        {item.imageUrl ? (
+                          <div className="mx-auto h-14 w-14 overflow-hidden rounded-md border border-border/70 bg-muted/30">
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        ) : (
+                          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-border/70 text-[10px] text-muted-foreground">
+                            No image
+                          </div>
+                        )}
+                      </TableCell>
+                    ) : null}
+                    <TableCell>
+                      <div className="space-y-0.5">
+                        <p className="font-medium">{item.name}</p>
+                        {buildSharedDescriptor(item) ? (
+                          <p className="text-xs text-muted-foreground">
+                            {buildSharedDescriptor(item)}
+                          </p>
+                        ) : null}
+                      </div>
+                    </TableCell>
                     <TableCell className="text-center">
-                      {item.category ? (
-                        <Badge variant="outline">{item.category}</Badge>
+                      {item.subcategory || item.category ? (
+                        <Badge variant="outline">
+                          {item.subcategory || item.category}
+                        </Badge>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
@@ -208,6 +253,9 @@ export default function SharedSalesSheetPage() {
         <div className="mt-8 text-center text-sm text-muted-foreground">
           <p>
             Interested in placing an order? Contact your sales representative.
+          </p>
+          <p className="mt-2">
+            Pricing and availability are subject to final confirmation.
           </p>
           <p className="mt-2">Powered by TERP</p>
         </div>

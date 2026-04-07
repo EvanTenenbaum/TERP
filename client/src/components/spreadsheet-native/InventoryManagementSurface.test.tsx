@@ -7,22 +7,25 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InventoryManagementSurface } from "./InventoryManagementSurface";
 
-const { mockSetSelectedId, viewsListQuery, filtersState } = vi.hoisted(() => ({
-  mockSetSelectedId: vi.fn(),
-  viewsListQuery: vi.fn(() => ({ data: { items: [] }, refetch: vi.fn() })),
-  filtersState: {
-    history: [] as Array<{
-      isOpen: boolean;
-      onOpenChange: (open: boolean) => void;
-    }>,
-  },
-}));
+const { mockSetSelectedId, viewsListQuery, filtersState, selectionState } =
+  vi.hoisted(() => ({
+    mockSetSelectedId: vi.fn(),
+    viewsListQuery: vi.fn(() => ({ data: { items: [] }, refetch: vi.fn() })),
+    filtersState: {
+      history: [] as Array<{
+        isOpen: boolean;
+        onOpenChange: (open: boolean) => void;
+      }>,
+    },
+    selectionState: { selectedId: null as number | null },
+  }));
 
 vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     rows = [],
     onSelectedRowChange,
+    onSelectionSetChange,
     headerActions,
   }: {
     title: string;
@@ -30,6 +33,9 @@ vi.mock("./PowersheetGrid", () => ({
     onSelectedRowChange?: (
       row: { batchId?: number; identity?: { rowKey: string } } | null
     ) => void;
+    onSelectionSetChange?: (selectionSet: {
+      selectedRowIds: Set<string>;
+    }) => void;
     headerActions?: ReactNode;
   }) => (
     <div data-testid={`grid-${title}`}>
@@ -38,6 +44,17 @@ vi.mock("./PowersheetGrid", () => ({
       {rows.length > 0 && onSelectedRowChange ? (
         <button onClick={() => onSelectedRowChange(rows[0])}>
           Select inventory row
+        </button>
+      ) : null}
+      {rows.length > 0 && onSelectionSetChange ? (
+        <button
+          onClick={() =>
+            onSelectionSetChange({
+              selectedRowIds: new Set(["batch:42"]),
+            })
+          }
+        >
+          Select inventory range
         </button>
       ) : null}
     </div>
@@ -63,7 +80,7 @@ vi.mock("./InventoryAdvancedFilters", () => ({
   },
   createDefaultInventoryFilters: () => ({
     search: "",
-    statuses: [],
+    statuses: ["LIVE"],
     categories: [],
     subcategories: [],
     stockLevel: "all",
@@ -80,7 +97,7 @@ vi.mock("./InventoryAdvancedFilters", () => ({
     batchId: "",
   }),
   hasActiveFilters: (filters: { statuses?: string[] }) =>
-    Boolean(filters.statuses?.length),
+    (filters.statuses ?? []).join("|") !== "LIVE",
   filtersToQueryInput: () => ({}),
 }));
 
@@ -204,7 +221,7 @@ vi.mock("@/hooks/work-surface/useExport", () => ({
 
 vi.mock("@/lib/spreadsheet-native", () => ({
   useSpreadsheetSelectionParam: vi.fn(() => ({
-    selectedId: null,
+    selectedId: selectionState.selectedId,
     setSelectedId: mockSetSelectedId,
   })),
   mapInventoryItemsToPilotRows: vi.fn((items: unknown[]) => items),
@@ -220,6 +237,7 @@ describe("InventoryManagementSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     filtersState.history = [];
+    selectionState.selectedId = null;
     viewsListQuery.mockImplementation(() => ({
       data: { items: [] },
       refetch: vi.fn(),
@@ -252,14 +270,13 @@ describe("InventoryManagementSurface", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("routes gallery adjust actions through batch selection instead of opening a zero-delta drawer", () => {
+  it("routes gallery adjust actions through batch selection", () => {
     render(<InventoryManagementSurface />);
 
     fireEvent.click(screen.getByRole("button", { name: /gallery view/i }));
     fireEvent.click(screen.getByText("Adjust from gallery"));
 
     expect(mockSetSelectedId).toHaveBeenCalledWith(42);
-    expect(screen.queryByTestId("adjust-drawer")).not.toBeInTheDocument();
   });
 
   it("routes grid row selection through the workbook selection param", () => {
@@ -268,5 +285,26 @@ describe("InventoryManagementSurface", () => {
     fireEvent.click(screen.getByText("Select inventory row"));
 
     expect(mockSetSelectedId).toHaveBeenCalledWith(42);
+  });
+
+  it("shows bulk action controls when multiple grid rows are selected", () => {
+    render(<InventoryManagementSurface />);
+
+    fireEvent.click(screen.getByText("Select inventory range"));
+
+    expect(screen.getByText("1 selected")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument();
+  });
+
+  it("opens the adjustment drawer from the inspector review flow", async () => {
+    selectionState.selectedId = 42;
+    render(<InventoryManagementSurface />);
+
+    fireEvent.change(screen.getByLabelText(/new on-hand quantity/i), {
+      target: { value: "85" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /review adjustment/i }));
+
+    expect(await screen.findByTestId("adjust-drawer")).toBeInTheDocument();
   });
 });

@@ -166,7 +166,7 @@ test.describe("@staging-critical Comprehensive Page Coverage", () => {
     });
   });
 
-  test("Sales workspace — Create Order", async ({ page }) => {
+  test("Sales workspace — New Order", async ({ page }) => {
     await assertPageLoads(page, "/sales?tab=create-order", {
       screenshot: "02-sales-create-order",
     });

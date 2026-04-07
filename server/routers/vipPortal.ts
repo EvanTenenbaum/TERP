@@ -92,7 +92,14 @@ function toMinutes(time: string | null): number | null {
 
 function formatDateKey(date: Date | string): string {
   const value = date instanceof Date ? date : new Date(date);
-  return value.toISOString().split("T")[0] ?? "";
+  if (Number.isNaN(value.getTime())) {
+    return "";
+  }
+
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(
+    2,
+    "0"
+  )}-${String(value.getDate()).padStart(2, "0")}`;
 }
 
 function formatCurrencyValue(

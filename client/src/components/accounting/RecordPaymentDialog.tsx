@@ -9,23 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
-import { DollarSign, CreditCard, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import {
+  DollarSign,
+  CreditCard,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { format } from "date-fns";
 
 interface RecordPaymentDialogProps {
@@ -62,7 +53,9 @@ export function RecordPaymentDialog({
   const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
   const [referenceNumber, setReferenceNumber] = useState("");
   const [notes, setNotes] = useState("");
-  const [paymentDate, setPaymentDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [paymentDate, setPaymentDate] = useState(
+    format(new Date(), "yyyy-MM-dd")
+  );
 
   const utils = trpc.useUtils();
 
@@ -78,17 +71,42 @@ export function RecordPaymentDialog({
     }
   }, [open, invoice]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onOpenChange(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, onOpenChange]);
+
   const recordPaymentMutation = trpc.payments.recordPayment.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
+      const previousBalance = invoice
+        ? parseFloat(invoice.amountDue)
+        : data.amount + data.amountDue;
       toast.success(
         <div className="flex flex-col gap-1">
-          <span className="font-medium">Payment Recorded</span>
-          <span className="text-sm">
-            Payment #{data.paymentNumber} - ${data.amount.toFixed(2)}
+          <span className="font-medium">
+            Payment recorded for invoice {invoice?.invoiceNumber}
           </span>
-          <span className="text-sm text-muted-foreground">
-            Invoice status: {data.invoiceStatus}
-            {data.amountDue > 0 && ` (${formatCurrency(data.amountDue)} remaining)`}
+          <span className="text-sm">
+            {data.amountDue > 0
+              ? `Remaining balance: ${formatCurrency(data.amountDue)} (was ${formatCurrency(previousBalance)})`
+              : "Balance cleared. $0.00 remaining"}
           </span>
         </div>
       );
@@ -97,7 +115,7 @@ export function RecordPaymentDialog({
       onOpenChange(false);
       onSuccess?.();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || "Failed to record payment");
     },
   });
@@ -123,21 +141,30 @@ export function RecordPaymentDialog({
 
     const amountDue = parseFloat(invoice.amountDue);
     if (paymentAmount > amountDue) {
-      toast.error(`Payment amount cannot exceed amount due (${formatCurrency(amountDue)})`);
+      toast.error(
+        `Payment amount cannot exceed amount due (${formatCurrency(amountDue)})`
+      );
       return;
     }
 
     recordPaymentMutation.mutate({
       invoiceId: invoice.id,
       amount: paymentAmount,
-      paymentMethod: paymentMethod as "CASH" | "CHECK" | "WIRE" | "ACH" | "CREDIT_CARD" | "DEBIT_CARD" | "OTHER",
+      paymentMethod: paymentMethod as
+        | "CASH"
+        | "CHECK"
+        | "WIRE"
+        | "ACH"
+        | "CREDIT_CARD"
+        | "DEBIT_CARD"
+        | "OTHER",
       referenceNumber: referenceNumber || undefined,
       notes: notes || undefined,
       paymentDate: paymentDate,
     });
   };
 
-  if (!invoice) return null;
+  if (!open || !invoice) return null;
 
   const amountDue = parseFloat(invoice.amountDue);
   const amountPaid = parseFloat(invoice.amountPaid);
@@ -147,17 +174,31 @@ export function RecordPaymentDialog({
   const isFullPayment = paymentAmount >= amountDue;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="record-payment-dialog-title"
+      onMouseDown={event => {
+        if (event.target === event.currentTarget) {
+          onOpenChange(false);
+        }
+      }}
+      data-testid="record-payment-dialog"
+    >
+      <div className="w-full max-w-[500px] rounded-lg border bg-background p-6 shadow-lg">
+        <div className="mb-4 flex flex-col gap-2 text-center sm:text-left">
+          <h2
+            id="record-payment-dialog-title"
+            className="flex items-center gap-2 text-lg leading-none font-semibold"
+          >
             <DollarSign className="h-5 w-5" />
             Record Payment
-          </DialogTitle>
-          <DialogDescription>
+          </h2>
+          <p className="text-sm text-muted-foreground">
             Record a payment for invoice {invoice.invoiceNumber}
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Invoice Summary */}
@@ -194,7 +235,7 @@ export function RecordPaymentDialog({
                 min="0.01"
                 max={amountDue}
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={e => setAmount(e.target.value)}
                 className="pl-7"
                 placeholder="0.00"
                 required
@@ -205,13 +246,16 @@ export function RecordPaymentDialog({
                 {isFullPayment ? (
                   <>
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span className="text-green-600">Full payment - invoice will be marked as paid</span>
+                    <span className="text-green-600">
+                      Full payment - invoice will be marked as paid
+                    </span>
                   </>
                 ) : (
                   <>
                     <AlertCircle className="h-4 w-4 text-amber-600" />
                     <span className="text-amber-600">
-                      Partial payment - {formatCurrency(remainingAfterPayment)} will remain due
+                      Partial payment - {formatCurrency(remainingAfterPayment)}{" "}
+                      will remain due
                     </span>
                   </>
                 )}
@@ -222,18 +266,18 @@ export function RecordPaymentDialog({
           {/* Payment Method */}
           <div className="space-y-2">
             <Label htmlFor="paymentMethod">Payment Method *</Label>
-            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select method" />
-              </SelectTrigger>
-              <SelectContent>
-                {PAYMENT_METHODS.map((method) => (
-                  <SelectItem key={method.value} value={method.value}>
-                    {method.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              id="paymentMethod"
+              value={paymentMethod}
+              onChange={e => setPaymentMethod(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+            >
+              {PAYMENT_METHODS.map(method => (
+                <option key={method.value} value={method.value}>
+                  {method.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Payment Date */}
@@ -243,7 +287,7 @@ export function RecordPaymentDialog({
               id="paymentDate"
               type="date"
               value={paymentDate}
-              onChange={(e) => setPaymentDate(e.target.value)}
+              onChange={e => setPaymentDate(e.target.value)}
             />
           </div>
 
@@ -253,7 +297,7 @@ export function RecordPaymentDialog({
             <Input
               id="referenceNumber"
               value={referenceNumber}
-              onChange={(e) => setReferenceNumber(e.target.value)}
+              onChange={e => setReferenceNumber(e.target.value)}
               placeholder="Check #, Transaction ID, etc."
             />
           </div>
@@ -264,13 +308,13 @@ export function RecordPaymentDialog({
             <Textarea
               id="notes"
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              onChange={e => setNotes(e.target.value)}
               placeholder="Optional notes about this payment..."
               rows={2}
             />
           </div>
 
-          <DialogFooter className="gap-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
               type="button"
               variant="outline"
@@ -281,7 +325,11 @@ export function RecordPaymentDialog({
             </Button>
             <Button
               type="submit"
-              disabled={recordPaymentMutation.isPending || !amount || parseFloat(amount) <= 0}
+              disabled={
+                recordPaymentMutation.isPending ||
+                !amount ||
+                parseFloat(amount) <= 0
+              }
             >
               {recordPaymentMutation.isPending ? (
                 <>
@@ -295,10 +343,10 @@ export function RecordPaymentDialog({
                 </>
               )}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 }
 

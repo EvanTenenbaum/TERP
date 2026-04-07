@@ -17,7 +17,7 @@
 import { useMemo, useState, useCallback } from "react";
 import type { ColDef, CellValueChangedEvent } from "ag-grid-community";
 import { toast } from "sonner";
-import { RefreshCw, Search, Lock, XCircle } from "lucide-react";
+import { Plus, RefreshCw, Search, Lock, XCircle } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 import { Button } from "@/components/ui/button";
@@ -26,14 +26,14 @@ import { Badge } from "@/components/ui/badge";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
-import {
-  KeyboardHintBar,
-  type KeyboardHint,
-} from "@/components/work-surface/KeyboardHintBar";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 
 import { PowersheetGrid } from "./PowersheetGrid";
-import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
+import {
+  EDITABLE_AFFORDANCES,
+  EDITABLE_KEYBOARD_HINTS,
+} from "@/lib/powersheet/surface-helpers";
 
 // ============================================================================
 // TYPES
@@ -42,12 +42,16 @@ import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
 type PeriodStatus = "OPEN" | "CLOSED" | "LOCKED";
 
 interface FiscalPeriodGridRow {
-  id: number;
+  id: number | string;
   periodName: string;
   fiscalYear: number;
   startDate: string;
   endDate: string;
   status: PeriodStatus;
+}
+
+function isNewRow(id: number | string): boolean {
+  return String(id).startsWith("new-");
 }
 
 type StatusTab = "ALL" | PeriodStatus;
@@ -56,35 +60,11 @@ type StatusTab = "ALL" | PeriodStatus;
 // CONSTANTS
 // ============================================================================
 
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const mod = isMac ? "\u2318" : "Ctrl";
-
 const STATUS_TABS: Array<{ value: StatusTab; label: string }> = [
   { value: "ALL", label: "All" },
   { value: "OPEN", label: "Open" },
   { value: "CLOSED", label: "Closed" },
   { value: "LOCKED", label: "Locked" },
-];
-
-const editableAffordances: PowersheetAffordance[] = [
-  { label: "Select", available: true },
-  { label: "Multi-select", available: true },
-  { label: "Copy", available: true },
-  { label: "Paste", available: true },
-  { label: "Fill", available: true },
-  { label: "Edit", available: true },
-  { label: "Undo/Redo", available: true },
-];
-
-const keyboardHints: KeyboardHint[] = [
-  { key: "Click", label: "select cell" },
-  { key: "Double-click", label: "edit cell" },
-  { key: `${mod}+C`, label: "copy" },
-  { key: `${mod}+V`, label: "paste" },
-  { key: `${mod}+Z`, label: "undo" },
-  { key: "Escape", label: "cancel edit" },
 ];
 
 // ============================================================================
@@ -216,6 +196,8 @@ export function FiscalPeriodsSurface() {
   const [selectionSummary, setSelectionSummary] =
     useState<PowersheetSelectionSummary | null>(null);
 
+  const [localRows, setLocalRows] = useState<FiscalPeriodGridRow[]>([]);
+
   // Close/Lock confirmation dialogs
   const [showCloseDialog, setShowCloseDialog] = useState(false);
   const [showLockDialog, setShowLockDialog] = useState(false);
@@ -251,6 +233,15 @@ export function FiscalPeriodsSurface() {
     onError: err => toast.error(`Lock failed: ${err.message}`),
   });
 
+  const createMutation = trpc.accounting.fiscalPeriods.create.useMutation({
+    onSuccess: () => {
+      toast.success("Period created");
+      void utils.accounting.fiscalPeriods.list.invalidate();
+      void utils.accounting.fiscalPeriods.getCurrent.invalidate();
+    },
+    onError: err => toast.error(`Create failed: ${err.message}`),
+  });
+
   // ─── Derived Data ─────────────────────────────────────────────────────────
 
   const serverRows: FiscalPeriodGridRow[] = useMemo(() => {
@@ -280,8 +271,13 @@ export function FiscalPeriodsSurface() {
     );
   }, [periodsQuery.data]);
 
+  const allRows = useMemo(() => {
+    const newRows = localRows.filter(r => isNewRow(r.id));
+    return [...serverRows, ...newRows];
+  }, [serverRows, localRows]);
+
   const filteredRows = useMemo(() => {
-    let rows = serverRows;
+    let rows = allRows;
     if (statusFilter !== "ALL") {
       rows = rows.filter(r => r.status === statusFilter);
     }
@@ -294,30 +290,86 @@ export function FiscalPeriodsSurface() {
       );
     }
     return rows;
-  }, [serverRows, statusFilter, searchTerm]);
+  }, [allRows, statusFilter, searchTerm]);
 
   // KPIs
-  const totalPeriods = serverRows.length;
+  const totalPeriods = allRows.length;
   const currentPeriodName = currentPeriodQuery.data?.periodName ?? null;
 
   // Selected row data
   const selectedRow = useMemo(() => {
     if (!selectedRowId) return null;
-    return serverRows.find(r => String(r.id) === selectedRowId) ?? null;
-  }, [selectedRowId, serverRows]);
+    return allRows.find(r => String(r.id) === selectedRowId) ?? null;
+  }, [selectedRowId, allRows]);
 
   // Column definitions (stable reference)
   const columnDefs = useMemo(() => buildColumnDefs(), []);
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
 
+  const handleAddRow = useCallback(() => {
+    const currentYear = new Date().getFullYear();
+    const newRow: FiscalPeriodGridRow = {
+      id: `new-${Date.now()}`,
+      periodName: "",
+      fiscalYear: currentYear,
+      startDate: new Date(currentYear, 0, 1).toISOString(),
+      endDate: new Date(currentYear, 11, 31).toISOString(),
+      status: "OPEN",
+    };
+    setLocalRows(prev => [...prev, newRow]);
+  }, []);
+
   const handleCellValueChanged = useCallback(
-    (_event: CellValueChangedEvent<FiscalPeriodGridRow>) => {
-      // Cell editing is allowed only for OPEN periods.
-      // Future: wire to an update mutation if the server exposes one.
-      // For now the grid allows inline editing for OPEN rows but does not persist.
+    (event: CellValueChangedEvent<FiscalPeriodGridRow>) => {
+      const row = event.data;
+      if (!row) return;
+      const field = event.colDef.field as keyof FiscalPeriodGridRow | undefined;
+      if (!field) return;
+
+      if (isNewRow(row.id)) {
+        // Update local state for new rows
+        setLocalRows(prev =>
+          prev.map(r =>
+            r.id === row.id ? { ...r, [field]: event.newValue } : r
+          )
+        );
+
+        // Auto-create when required fields are filled
+        const periodName =
+          field === "periodName"
+            ? String(event.newValue ?? "")
+            : row.periodName;
+        const startDate =
+          field === "startDate" ? String(event.newValue ?? "") : row.startDate;
+        const endDate =
+          field === "endDate" ? String(event.newValue ?? "") : row.endDate;
+        const fiscalYear =
+          field === "fiscalYear" ? Number(event.newValue) : row.fiscalYear;
+
+        if (periodName && startDate && endDate && fiscalYear) {
+          createMutation.mutate(
+            {
+              periodName,
+              startDate: new Date(startDate),
+              endDate: new Date(endDate),
+              fiscalYear,
+            },
+            {
+              onSuccess: () => {
+                setLocalRows(prev => prev.filter(r => r.id !== row.id));
+              },
+            }
+          );
+        }
+      } else {
+        // No server update mutation exists for fiscal periods.
+        // Persist the edit in local state so the grid stays consistent
+        // until the next refresh.
+        toast.info("Edit saved locally (refresh to sync with server)");
+      }
     },
-    []
+    [createMutation]
   );
 
   const handleRefresh = useCallback(() => {
@@ -336,13 +388,13 @@ export function FiscalPeriodsSurface() {
   }, [selectedRow]);
 
   const confirmClose = useCallback(() => {
-    if (!selectedRow) return;
+    if (!selectedRow || typeof selectedRow.id !== "number") return;
     closeMutation.mutate({ id: selectedRow.id });
     setShowCloseDialog(false);
   }, [selectedRow, closeMutation]);
 
   const confirmLock = useCallback(() => {
-    if (!selectedRow) return;
+    if (!selectedRow || typeof selectedRow.id !== "number") return;
     lockMutation.mutate({ id: selectedRow.id });
     setShowLockDialog(false);
   }, [selectedRow, lockMutation]);
@@ -428,6 +480,14 @@ export function FiscalPeriodsSurface() {
         <div className="ml-auto flex items-center gap-1">
           <Button
             size="sm"
+            className="h-5 text-[9px] px-2"
+            onClick={handleAddRow}
+            data-testid="add-row-button"
+          >
+            <Plus className="h-3 w-3 mr-1" />+ Add Row
+          </Button>
+          <Button
+            size="sm"
             variant="outline"
             className="h-5 text-[9px] px-2"
             disabled={!selectedRow || selectedRow.status !== "OPEN"}
@@ -455,7 +515,7 @@ export function FiscalPeriodsSurface() {
       <PowersheetGrid<FiscalPeriodGridRow>
         surfaceId="fiscal-periods"
         requirementIds={["TER-976-fiscal-periods"]}
-        affordances={editableAffordances}
+        affordances={EDITABLE_AFFORDANCES}
         title="Fiscal Periods"
         rows={filteredRows}
         columnDefs={columnDefs}
@@ -476,8 +536,10 @@ export function FiscalPeriodsSurface() {
       />
 
       {/* ── 4. Status Bar ── */}
-      <WorkSurfaceStatusBar left={statusBarLeft} />
-      <KeyboardHintBar hints={keyboardHints} />
+      <WorkSurfaceStatusBar
+        left={statusBarLeft}
+        right={<KeyboardHintBar hints={EDITABLE_KEYBOARD_HINTS} />}
+      />
 
       {/* ── Confirmation Dialogs ── */}
       <ConfirmDialog

@@ -470,6 +470,16 @@ describe("OrdersSheetPilotSurface", () => {
     expect(screen.getByText("Issued #55")).toBeInTheDocument();
   });
 
+  it("routes the accounting handoff through the invoice workspace payment deep link", () => {
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /accounting/i }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/accounting?tab=invoices&from=sales&invoiceId=55&orderId=2"
+    );
+  });
+
   it("can be forced into document mode without the ordersView query param", () => {
     render(
       <OrdersSheetPilotSurface onOpenClassic={vi.fn()} forceDocumentMode />
@@ -477,7 +487,7 @@ describe("OrdersSheetPilotSurface", () => {
 
     expect(screen.getByText("Orders Document Sheet")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /classic composer/i })
+      screen.getByRole("button", { name: /classic surface/i })
     ).toBeInTheDocument();
   });
 
@@ -489,10 +499,10 @@ describe("OrdersSheetPilotSurface", () => {
 
     expect(screen.getByText("Orders Document Sheet")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /back to queue/i })
+      screen.getByRole("button", { name: /^queue$/i })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /classic composer/i })
+      screen.getByRole("button", { name: /classic surface/i })
     ).toBeInTheDocument();
     expect(mockClientsListUseQuery).toHaveBeenCalledWith(
       { limit: 1000 },
@@ -512,5 +522,16 @@ describe("OrdersSheetPilotSurface", () => {
       { orderId: 0 },
       { enabled: false }
     );
+  });
+
+  it("shows create-order context when the document sheet is opened from the create-order tab", () => {
+    mockSearch = "?tab=create-order&surface=sheet-native&ordersView=document";
+
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByText("New order")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^queue$/i })
+    ).toBeInTheDocument();
   });
 });

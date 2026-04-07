@@ -314,8 +314,14 @@ async function startServer() {
 
     // Sentry is now auto-instrumented via setupExpressErrorHandler
 
-    // Security headers via Helmet
-    app.use(helmet());
+    // Keep production CSP strict, but don't block Vite/Domscribe dev injection.
+    app.use(
+      helmet(
+        process.env.NODE_ENV === "development"
+          ? { contentSecurityPolicy: false }
+          : undefined
+      )
+    );
 
     // CORS whitelist — staging + production origins, or all in dev
     const allowedOrigins = [

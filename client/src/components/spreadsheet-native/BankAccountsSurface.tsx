@@ -23,14 +23,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
-import {
-  KeyboardHintBar,
-  type KeyboardHint,
-} from "@/components/work-surface/KeyboardHintBar";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 
 import { PowersheetGrid } from "./PowersheetGrid";
-import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
+import {
+  fmtCurrency,
+  EDITABLE_AFFORDANCES,
+  EDITABLE_KEYBOARD_HINTS,
+} from "@/lib/powersheet/surface-helpers";
 
 // ============================================================================
 // TYPES
@@ -54,36 +55,12 @@ type TypeFilter = "ALL" | BankAccountType;
 // CONSTANTS
 // ============================================================================
 
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const mod = isMac ? "\u2318" : "Ctrl";
-
 const TYPE_OPTIONS: Array<{ value: TypeFilter; label: string }> = [
   { value: "ALL", label: "All Types" },
   { value: "CHECKING", label: "Checking" },
   { value: "SAVINGS", label: "Savings" },
   { value: "CREDIT_CARD", label: "Credit Card" },
   { value: "MONEY_MARKET", label: "Money Market" },
-];
-
-const editableAffordances: PowersheetAffordance[] = [
-  { label: "Select", available: true },
-  { label: "Multi-select", available: true },
-  { label: "Copy", available: true },
-  { label: "Paste", available: true },
-  { label: "Fill", available: true },
-  { label: "Edit", available: true },
-  { label: "Undo/Redo", available: true },
-];
-
-const keyboardHints: KeyboardHint[] = [
-  { key: "Click", label: "select cell" },
-  { key: "Double-click", label: "edit cell" },
-  { key: `${mod}+C`, label: "copy" },
-  { key: `${mod}+V`, label: "paste" },
-  { key: `${mod}+Z`, label: "undo" },
-  { key: "Escape", label: "cancel edit" },
 ];
 
 // ============================================================================
@@ -94,13 +71,7 @@ function isNewRow(id: number | string): boolean {
   return String(id).startsWith("new-");
 }
 
-function formatCurrency(amount: string | number): string {
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(isNaN(num) ? 0 : num);
-}
+const formatCurrency = fmtCurrency;
 
 // ============================================================================
 // COLUMN DEFINITIONS
@@ -460,7 +431,7 @@ export function BankAccountsSurface() {
       <PowersheetGrid<BankAccountGridRow>
         surfaceId="bank-accounts"
         requirementIds={["TER-976-bank-accounts"]}
-        affordances={editableAffordances}
+        affordances={EDITABLE_AFFORDANCES}
         title="Bank Accounts"
         rows={filteredRows}
         columnDefs={columnDefs}
@@ -477,8 +448,10 @@ export function BankAccountsSurface() {
       />
 
       {/* ── 4. Status Bar ── */}
-      <WorkSurfaceStatusBar left={statusBarLeft} />
-      <KeyboardHintBar hints={keyboardHints} />
+      <WorkSurfaceStatusBar
+        left={statusBarLeft}
+        right={<KeyboardHintBar hints={EDITABLE_KEYBOARD_HINTS} />}
+      />
     </div>
   );
 }

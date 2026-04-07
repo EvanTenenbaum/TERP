@@ -14,10 +14,10 @@ export const STATUS_OPTIONS = [
 export type InventoryBatchStatus = (typeof STATUS_OPTIONS)[number];
 
 export const STATUS_LABELS: Record<InventoryBatchStatus, string> = {
-  AWAITING_INTAKE: "Awaiting Intake",
-  LIVE: "Live",
+  AWAITING_INTAKE: "Incoming",
+  LIVE: "Available",
   ON_HOLD: "On Hold",
-  QUARANTINED: "Quarantined",
+  QUARANTINED: "Quality Hold",
   SOLD_OUT: "Sold Out",
   CLOSED: "Closed",
 };

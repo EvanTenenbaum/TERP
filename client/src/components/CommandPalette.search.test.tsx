@@ -44,7 +44,7 @@ describe("CommandPalette live search", () => {
       (input: { query: string }, options?: { enabled?: boolean }) => {
         if (!options?.enabled) {
           return {
-            data: { quotes: [], customers: [], products: [] },
+            data: { quotes: [], orders: [], customers: [], products: [] },
             isLoading: false,
           };
         }
@@ -53,6 +53,7 @@ describe("CommandPalette live search", () => {
           return {
             data: {
               quotes: [],
+              orders: [],
               customers: [
                 {
                   id: 203,
@@ -67,8 +68,27 @@ describe("CommandPalette live search", () => {
           };
         }
 
+        if (input.query === "emer") {
+          return {
+            data: {
+              quotes: [],
+              orders: [
+                {
+                  id: 31,
+                  title: "Order #SO-031",
+                  description: "Emerald Valley Collective LLC · CONFIRMED",
+                  url: "/sales?tab=orders&id=31",
+                },
+              ],
+              customers: [],
+              products: [],
+            },
+            isLoading: false,
+          };
+        }
+
         return {
-          data: { quotes: [], customers: [], products: [] },
+          data: { quotes: [], orders: [], customers: [], products: [] },
           isLoading: false,
         };
       }
@@ -87,5 +107,21 @@ describe("CommandPalette live search", () => {
 
     expect(screen.getByText("QA Customer")).toBeInTheDocument();
     expect(screen.queryByText("Go to Dashboard")).not.toBeInTheDocument();
+  });
+
+  it("renders live order results for client-name searches", async () => {
+    render(<CommandPalette open onOpenChange={() => {}} />);
+
+    const input = screen.getByPlaceholderText("Type a command or search...");
+    fireEvent.change(input, { target: { value: "emer" } });
+
+    await act(async () => {
+      vi.advanceTimersByTime(301);
+    });
+
+    expect(screen.getByText("Order #SO-031")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Emerald Valley Collective LLC/i)
+    ).toBeInTheDocument();
   });
 });

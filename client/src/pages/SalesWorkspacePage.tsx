@@ -25,6 +25,7 @@ import { SALES_WORKSPACE } from "@/config/workspaces";
 import {
   buildOperationsWorkspacePath,
   buildSalesWorkspacePath,
+  buildSheetNativeOrdersDocumentPath,
 } from "@/lib/workspaceRoutes";
 import {
   buildSurfaceAvailability,
@@ -44,31 +45,62 @@ type SalesQueryTab = SalesTab | "pick-pack";
 
 const SALES_TABS_CONFIG_BASE = [
   ...SALES_WORKSPACE.tabs,
-  { value: "create-order", label: "Create Order" },
+  { value: "create-order", label: "New Order" },
 ] as const satisfies readonly LinearWorkspaceTab<SalesTab>[];
 
 const SALES_TABS = SALES_TABS_CONFIG_BASE.map(
   tab => tab.value
 ) as readonly SalesTab[];
 
+const ORDER_DOCUMENT_PARAM_KEYS = [
+  "orderId",
+  "draftId",
+  "quoteId",
+  "clientId",
+  "needId",
+  "mode",
+  "fromSalesSheet",
+] as const;
+
+function pickDocumentRedirectParams(searchParams: URLSearchParams) {
+  return Object.fromEntries(
+    ORDER_DOCUMENT_PARAM_KEYS.flatMap(key => {
+      const value = searchParams.get(key);
+      return value ? [[key, value]] : [];
+    })
+  );
+}
+
 export default function SalesWorkspacePage() {
   const [, setLocation] = useLocation();
   const search = useSearch();
+  const searchParams = new URLSearchParams(search);
   const { activeTab, setActiveTab } = useQueryTabState<SalesQueryTab>({
     defaultTab: "orders",
     validTabs: [...SALES_TABS, "pick-pack"],
   });
   const redirectParams = Object.fromEntries(
-    Array.from(new URLSearchParams(search).entries()).filter(
+    Array.from(searchParams.entries()).filter(
       ([key]) => key !== "tab" && key !== "classic"
     )
   );
+  const shouldRedirectSalesSheetsDocumentIntent =
+    searchParams.get("tab") === "sales-sheets" &&
+    (searchParams.get("ordersView") === "document" ||
+      searchParams.has("draftId") ||
+      searchParams.has("quoteId") ||
+      searchParams.has("needId") ||
+      searchParams.get("fromSalesSheet") === "true");
+  const salesSheetsDocumentRedirect = shouldRedirectSalesSheetsDocumentIntent
+    ? buildSheetNativeOrdersDocumentPath(
+        pickDocumentRedirectParams(searchParams)
+      )
+    : null;
 
   // BUG-008: When mode=quote is in the URL (from "New Quote" action),
   // relabel the create-order tab to "New Quote" so users understand context.
   const isQuoteMode =
-    activeTab === "create-order" &&
-    new URLSearchParams(search).get("mode") === "quote";
+    activeTab === "create-order" && searchParams.get("mode") === "quote";
   const SALES_TABS_CONFIG: readonly LinearWorkspaceTab<SalesTab>[] = isQuoteMode
     ? SALES_TABS_CONFIG_BASE.map(tab =>
         tab.value === "create-order" ? { ...tab, label: "New Quote" } : tab
@@ -121,7 +153,14 @@ export default function SalesWorkspacePage() {
     )
   );
 
-  useWorkspaceHomeTelemetry("sales", activeTab);
+  useWorkspaceHomeTelemetry(
+    "sales",
+    shouldRedirectSalesSheetsDocumentIntent ? "orders" : activeTab
+  );
+
+  if (salesSheetsDocumentRedirect) {
+    return <Redirect to={salesSheetsDocumentRedirect} />;
+  }
 
   if (activeTab === "pick-pack") {
     return (
@@ -132,12 +171,12 @@ export default function SalesWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={SALES_WORKSPACE.title}
-      description={SALES_WORKSPACE.description}
+      description=""
       section="Sell"
+      density="compact"
       activeTab={activeTab}
       tabs={SALES_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
-      meta={[{ label: "Primary flow", value: "Quote -> Order -> Shipping" }]}
       commandStrip={
         activeTab === "orders" || activeTab === "create-order" ? (
           <SheetModeToggle
