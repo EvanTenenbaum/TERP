@@ -11,6 +11,15 @@
 - Type check:
   - `pnpm check`
   - result: passed
+- Merge-gate follow-up:
+  - `pnpm agent:prepare`
+  - `pnpm lint`
+  - `pnpm vitest run client/src/components/spreadsheet-native/InvoicesSurface.test.tsx client/src/components/spreadsheet-native/SalesCatalogueSurface.test.tsx client/src/components/accounting/RecordPaymentDialog.test.tsx`
+  - `pnpm build`
+  - result: passed
+- Baseline comparison:
+  - see `docs/specs/spreadsheet-native-foundation/p2-remaining-initiative/evidence/ter-1067/2026-04-08-merge-gate.md`
+  - result: the repo-wide red files reproduced on clean `origin/main`
 
 ## Runtime Proof Bundle
 
@@ -40,3 +49,4 @@ These mutations are proof-harness actions only. They are not product code change
 
 - `main`'s old `output/playwright/final-merge-main/summary.json` was too thin to justify later tranche-complete claims.
 - TER-1054 and TER-1057 now have strong local proof, but they still need mainline landing before they can be treated as merged truth.
+- local full `pnpm test` is still baseline-red and can hang in the tail; the clean-`main` comparison in `2026-04-08-merge-gate.md` shows that red set is not introduced by this recovery branch
