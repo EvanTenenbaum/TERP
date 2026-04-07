@@ -1,5 +1,7 @@
 # START HERE: TERP Product Management System (v2)
 
+> Status note (2026-04-06): This file is part of an older product-management subsystem and is not the default TERP repo startup contract anymore. Read `docs/agent-context/START_HERE.md` first for current direction and freshness, then come here only if that bundle explicitly sends you into this subsystem.
+
 **Welcome to the TERP Product Management System!** This is the single source of truth for all development work.
 
 ---
@@ -9,6 +11,7 @@
 ⚠️ **You are working in an isolated sandbox.** Changes you make are NOT visible to other agents or in the GitHub repository until you push them.
 
 **This means**:
+
 - ❌ Creating files locally does NOT make them visible to others
 - ❌ The PM Agent cannot see your work until you push to GitHub
 - ❌ Other agents cannot see your work until you push to GitHub

@@ -1302,8 +1302,8 @@ export function DirectIntakeWorkSurface() {
           params.data && isEmptyTemplateRow(params.data)
             ? "—"
             : params.data
-            ? formatCogsLabel(params.data)
-            : `$${(params.value ?? 0).toFixed(2)}`,
+              ? formatCogsLabel(params.data)
+              : `$${(params.value ?? 0).toFixed(2)}`,
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1325,8 +1325,8 @@ export function DirectIntakeWorkSurface() {
           params.data && isEmptyTemplateRow(params.data)
             ? "—"
             : params.data?.cogsMode === "RANGE"
-            ? `$${(params.value ?? 0).toFixed(2)}`
-            : "Fixed",
+              ? `$${(params.value ?? 0).toFixed(2)}`
+              : "Fixed",
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1348,8 +1348,8 @@ export function DirectIntakeWorkSurface() {
           params.data && isEmptyTemplateRow(params.data)
             ? "—"
             : params.data?.cogsMode === "RANGE"
-            ? `$${(params.value ?? 0).toFixed(2)}`
-            : "Fixed",
+              ? `$${(params.value ?? 0).toFixed(2)}`
+              : "Fixed",
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1995,13 +1995,13 @@ export function DirectIntakeWorkSurface() {
         updateRows(prev =>
           prev.map(r =>
             r.id === row.id
-                ? {
-                    ...r,
-                    status: "error" as const,
-                    errorMessage:
-                      error instanceof Error ? error.message : "Failed",
-                    fieldErrors: undefined,
-                  }
+              ? {
+                  ...r,
+                  status: "error" as const,
+                  errorMessage:
+                    error instanceof Error ? error.message : "Failed",
+                  fieldErrors: undefined,
+                }
               : r
           )
         );

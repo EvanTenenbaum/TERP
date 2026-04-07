@@ -42,7 +42,6 @@ import {
   readinessCheck,
   getHealthMetrics,
 } from "./healthCheck";
-import { getHelmetConfig } from "./securityHeaders";
 import {
   setupGracefulShutdown,
   registerShutdownHandler,
@@ -316,8 +315,14 @@ async function startServer() {
 
     // Sentry is now auto-instrumented via setupExpressErrorHandler
 
-    // Dev mode needs a slightly looser CSP so Vite can inject its React/HMR preamble.
-    app.use(helmet(getHelmetConfig()));
+    // Keep production CSP strict, but don't block Vite/Domscribe dev injection.
+    app.use(
+      helmet(
+        process.env.NODE_ENV === "development"
+          ? { contentSecurityPolicy: false }
+          : undefined
+      )
+    );
 
     // CORS whitelist — staging + production origins, or all in dev
     const allowedOrigins = [

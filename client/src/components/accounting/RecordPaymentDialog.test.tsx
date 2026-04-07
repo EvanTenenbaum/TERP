@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { RecordPaymentDialog } from "./RecordPaymentDialog";
 
 const {
@@ -30,23 +31,28 @@ vi.mock("@/lib/trpc", () => ({
     }),
     payments: {
       recordPayment: {
-        useMutation: vi.fn((config?: { onSuccess?: (data: {
-          paymentNumber: string;
-          amount: number;
-          invoiceStatus: string;
-          amountDue: number;
-        }) => void; onError?: (error: Error) => void }) => ({
-          mutate: (input: unknown) => {
-            mockMutate(input);
-            config?.onSuccess?.({
-              paymentNumber: "PAY-100",
-              amount: 125.5,
-              invoiceStatus: "PARTIALLY_PAID",
-              amountDue: 10,
-            });
-          },
-          isPending: false,
-        })),
+        useMutation: vi.fn(
+          (config?: {
+            onSuccess?: (data: {
+              paymentNumber: string;
+              amount: number;
+              invoiceStatus: string;
+              amountDue: number;
+            }) => void;
+            onError?: (error: Error) => void;
+          }) => ({
+            mutate: (input: unknown) => {
+              mockMutate(input);
+              config?.onSuccess?.({
+                paymentNumber: "PAY-100",
+                amount: 125.5,
+                invoiceStatus: "PARTIALLY_PAID",
+                amountDue: 10,
+              });
+            },
+            isPending: false,
+          })
+        ),
       },
     },
   },
@@ -130,5 +136,12 @@ describe("RecordPaymentDialog", () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
     expect(onSuccess).toHaveBeenCalled();
     expect(mockToastError).not.toHaveBeenCalled();
+    expect(mockToastSuccess).toHaveBeenCalledTimes(1);
+
+    const toastMarkup = renderToStaticMarkup(
+      <>{mockToastSuccess.mock.calls[0]?.[0]}</>
+    );
+    expect(toastMarkup).toContain("Payment recorded for invoice INV-000034");
+    expect(toastMarkup).toContain("Remaining balance: $10.00 (was $125.50)");
   });
 });

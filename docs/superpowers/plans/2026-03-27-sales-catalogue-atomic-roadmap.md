@@ -65,6 +65,7 @@
 **Deliverable:** Component with all 5 layout zones rendering. Tests pass.
 **Code:** Copy VERBATIM from source plan Task 2, Step 3 — this is the full ~400 line component.
 **Cross-reference:** Verify all imports resolve. Key imports to check:
+
 - `@/hooks/useCatalogueDraft` (created in Task 2)
 - `@/components/sales/QuickViewSelector` (existing)
 - `@/components/sales/SaveViewDialog` (existing)
@@ -73,8 +74,8 @@
 - `@/components/work-surface/KeyboardHintBar` (existing)
 - `@/components/ui/confirm-dialog` (existing — exports `ConfirmDialog`)
 - `@/components/ui/client-combobox` (existing — exports `ClientCombobox`)
-**Verify:** `pnpm vitest run client/src/components/spreadsheet-native/SalesCatalogueSurface.test.tsx` → PASS (3 tests)
-**Verify:** `pnpm check` → zero errors
+  **Verify:** `pnpm vitest run client/src/components/spreadsheet-native/SalesCatalogueSurface.test.tsx` → PASS (3 tests)
+  **Verify:** `pnpm check` → zero errors
 
 - [ ] Create component file with exact code from plan Task 2 Step 3
 - [ ] Run tests, confirm all 3 pass
@@ -196,9 +197,16 @@ Each sub-task modifies the SAME file (`SalesCatalogueSurface.tsx`). They MUST ru
 **Deliverable:** `LinearWorkspacePanel value="sales-sheets"` renders `SalesCatalogueSurface` inside Suspense. No PilotSurfaceBoundary.
 
 Replace lines 226-239 (the entire 14-line block) with:
+
 ```tsx
 <LinearWorkspacePanel value="sales-sheets">
-  <Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading catalogue...</div>}>
+  <Suspense
+    fallback={
+      <div className="p-4 text-sm text-muted-foreground">
+        Loading catalogue...
+      </div>
+    }
+  >
     <SalesCatalogueSurface />
   </Suspense>
 </LinearWorkspacePanel>
@@ -214,11 +222,13 @@ Replace lines 226-239 (the entire 14-line block) with:
 **Deliverable:** Tests pass with new component mock. No references to deleted components.
 
 - [ ] Replace mocks for `SalesSheetsPilotSurface` and `SalesSheetCreatorPage` with mock for `SalesCatalogueSurface`:
+
 ```typescript
 vi.mock("@/components/spreadsheet-native/SalesCatalogueSurface", () => ({
   default: () => <div data-testid="sale-catalogue-surface">SalesCatalogueSurface</div>,
 }));
 ```
+
 - [ ] Update assertions that check for old component rendering
 - [ ] Check `ConsolidatedWorkspaces.test.tsx` for similar references — update if needed
 - [ ] `pnpm test` → all tests pass
@@ -235,6 +245,7 @@ vi.mock("@/components/spreadsheet-native/SalesCatalogueSurface", () => ({
 ### Task 18: Verify no remaining imports of dead components
 
 - [ ] Run each grep and confirm only the files being deleted reference them:
+
 ```bash
 rg "SalesSheetCreatorPage" --glob '*.{ts,tsx}' -l
 rg "SalesSheetsPilotSurface" --glob '*.{ts,tsx}' -l
@@ -242,6 +253,7 @@ rg "SalesSheetPreview" --glob '*.{ts,tsx}' -l
 rg "from.*InventoryBrowser" --glob '*.{ts,tsx}' -l
 rg "DraftControls" --glob '*.{ts,tsx}' -l
 ```
+
 - [ ] If any file OUTSIDE the deletion list imports these, fix that file first
 
 ### Task 19: Delete retired components
@@ -294,13 +306,13 @@ Verify each criterion from the spec:
 
 ## Summary
 
-| Wave | Tasks | What ships |
-|------|-------|-----------|
-| 1 | 1-3 | `useCatalogueDraft` hook + tests |
-| 2 | 4-6 | `SalesCatalogueSurface` skeleton + tests |
-| 3 | 7-12 | Missing features wired (filters, drafts, COGS, views, live) |
-| 4 | 13-17 | SalesWorkspacePage routing + test updates |
-| 5 | 18-21 | Dead code cleanup + full verification |
-| 6 | 22-23 | Success criteria check + final fixes |
+| Wave | Tasks | What ships                                                  |
+| ---- | ----- | ----------------------------------------------------------- |
+| 1    | 1-3   | `useCatalogueDraft` hook + tests                            |
+| 2    | 4-6   | `SalesCatalogueSurface` skeleton + tests                    |
+| 3    | 7-12  | Missing features wired (filters, drafts, COGS, views, live) |
+| 4    | 13-17 | SalesWorkspacePage routing + test updates                   |
+| 5    | 18-21 | Dead code cleanup + full verification                       |
+| 6    | 22-23 | Success criteria check + final fixes                        |
 
 **23 atomic tasks across 6 waves. Each task touches 1 file. Each has an exact verification command.**

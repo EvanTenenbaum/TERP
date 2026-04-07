@@ -16,33 +16,33 @@
 
 ### New Files
 
-| File | Responsibility |
-|------|---------------|
-| `client/src/components/spreadsheet-native/InvoicesSurface.tsx` | Unified invoices registry + client ledger sub-view. Toolbar, action bar, grid, collapsible inspector, AR aging panel, client ledger sub-grid, sidecar dialogs. |
-| `client/src/components/spreadsheet-native/InvoicesSurface.test.tsx` | Unit tests — rendering, status filtering, inspector toggle, aging panel, client ledger population |
-| `client/src/components/spreadsheet-native/BillsSurface.tsx` | AP registry — mirror of Invoices. Vendor AP context in inspector. AP aging panel. |
-| `client/src/components/spreadsheet-native/BillsSurface.test.tsx` | Unit tests — rendering, vendor context, action enablement |
-| `client/src/components/spreadsheet-native/PaymentsSurface.tsx` | Unified payment ledger — type filter (Received/Sent), color-coded amounts, invoice deep-links |
-| `client/src/components/spreadsheet-native/PaymentsSurface.test.tsx` | Unit tests — rendering, type filter, amount color-coding |
-| `client/src/components/spreadsheet-native/GeneralLedgerSurface.tsx` | Account-scoped GL browser with Trial Balance collapsible support module |
-| `client/src/components/spreadsheet-native/GeneralLedgerSurface.test.tsx` | Unit tests — account scoping, trial balance rendering |
-| `client/src/components/spreadsheet-native/ChartOfAccountsSurface.tsx` | Grouped editable CoA grid with add-row and inline editing |
-| `client/src/components/spreadsheet-native/ChartOfAccountsSurface.test.tsx` | Unit tests — row grouping, inline edit, add row |
-| `client/src/components/spreadsheet-native/ExpensesSurface.tsx` | Editable expense registry with category filter |
-| `client/src/components/spreadsheet-native/ExpensesSurface.test.tsx` | Unit tests — inline edit, add row, reimbursable toggle |
-| `client/src/components/spreadsheet-native/BankAccountsSurface.tsx` | Editable bank accounts registry |
-| `client/src/components/spreadsheet-native/BankAccountsSurface.test.tsx` | Unit tests — inline edit, active toggle |
-| `client/src/components/spreadsheet-native/BankTransactionsSurface.tsx` | Editable bank transactions with reconciliation toggle |
-| `client/src/components/spreadsheet-native/BankTransactionsSurface.test.tsx` | Unit tests — type filter, reconcile toggle, amount colors |
-| `client/src/components/spreadsheet-native/FiscalPeriodsSurface.tsx` | Editable fiscal periods grouped by year with close/lock workflow |
-| `client/src/components/spreadsheet-native/FiscalPeriodsSurface.test.tsx` | Unit tests — grouped grid, close/lock actions, locked-period cell locking |
+| File                                                                        | Responsibility                                                                                                                                                 |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `client/src/components/spreadsheet-native/InvoicesSurface.tsx`              | Unified invoices registry + client ledger sub-view. Toolbar, action bar, grid, collapsible inspector, AR aging panel, client ledger sub-grid, sidecar dialogs. |
+| `client/src/components/spreadsheet-native/InvoicesSurface.test.tsx`         | Unit tests — rendering, status filtering, inspector toggle, aging panel, client ledger population                                                              |
+| `client/src/components/spreadsheet-native/BillsSurface.tsx`                 | AP registry — mirror of Invoices. Vendor AP context in inspector. AP aging panel.                                                                              |
+| `client/src/components/spreadsheet-native/BillsSurface.test.tsx`            | Unit tests — rendering, vendor context, action enablement                                                                                                      |
+| `client/src/components/spreadsheet-native/PaymentsSurface.tsx`              | Unified payment ledger — type filter (Received/Sent), color-coded amounts, invoice deep-links                                                                  |
+| `client/src/components/spreadsheet-native/PaymentsSurface.test.tsx`         | Unit tests — rendering, type filter, amount color-coding                                                                                                       |
+| `client/src/components/spreadsheet-native/GeneralLedgerSurface.tsx`         | Account-scoped GL browser with Trial Balance collapsible support module                                                                                        |
+| `client/src/components/spreadsheet-native/GeneralLedgerSurface.test.tsx`    | Unit tests — account scoping, trial balance rendering                                                                                                          |
+| `client/src/components/spreadsheet-native/ChartOfAccountsSurface.tsx`       | Grouped editable CoA grid with add-row and inline editing                                                                                                      |
+| `client/src/components/spreadsheet-native/ChartOfAccountsSurface.test.tsx`  | Unit tests — row grouping, inline edit, add row                                                                                                                |
+| `client/src/components/spreadsheet-native/ExpensesSurface.tsx`              | Editable expense registry with category filter                                                                                                                 |
+| `client/src/components/spreadsheet-native/ExpensesSurface.test.tsx`         | Unit tests — inline edit, add row, reimbursable toggle                                                                                                         |
+| `client/src/components/spreadsheet-native/BankAccountsSurface.tsx`          | Editable bank accounts registry                                                                                                                                |
+| `client/src/components/spreadsheet-native/BankAccountsSurface.test.tsx`     | Unit tests — inline edit, active toggle                                                                                                                        |
+| `client/src/components/spreadsheet-native/BankTransactionsSurface.tsx`      | Editable bank transactions with reconciliation toggle                                                                                                          |
+| `client/src/components/spreadsheet-native/BankTransactionsSurface.test.tsx` | Unit tests — type filter, reconcile toggle, amount colors                                                                                                      |
+| `client/src/components/spreadsheet-native/FiscalPeriodsSurface.tsx`         | Editable fiscal periods grouped by year with close/lock workflow                                                                                               |
+| `client/src/components/spreadsheet-native/FiscalPeriodsSurface.test.tsx`    | Unit tests — grouped grid, close/lock actions, locked-period cell locking                                                                                      |
 
 ### Modified Files
 
-| File | Change |
-|------|--------|
-| `client/src/pages/AccountingWorkspacePage.tsx` | Remove SheetModeToggle, pilot availability checks, classic surface imports. Wire all 9 new lazy-loaded surfaces. |
-| `client/src/pages/accounting/AccountingDashboard.tsx` | Density token pass — tighter padding, smaller fonts, 6px radius |
+| File                                                  | Change                                                                                                           |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `client/src/pages/AccountingWorkspacePage.tsx`        | Remove SheetModeToggle, pilot availability checks, classic surface imports. Wire all 9 new lazy-loaded surfaces. |
+| `client/src/pages/accounting/AccountingDashboard.tsx` | Density token pass — tighter padding, smaller fonts, 6px radius                                                  |
 
 ---
 
@@ -51,30 +51,51 @@
 These are the real types from the codebase that tasks reference. Copied here so each task is self-contained.
 
 ### Invoices tRPC — list return shape
+
 ```typescript
 // trpc.invoices.list.useQuery({ status?, clientId?, limit?, offset? })
 {
   items: Array<{
-    id: number; invoiceNumber: string | null; customerId: number | null;
-    invoiceDate: Date | string | null; dueDate: Date | string | null;
-    totalAmount: string | null; amountPaid: string | null; amountDue: string | null;
-    status: string | null; version?: number | null;
+    id: number;
+    invoiceNumber: string | null;
+    customerId: number | null;
+    invoiceDate: Date | string | null;
+    dueDate: Date | string | null;
+    totalAmount: string | null;
+    amountPaid: string | null;
+    amountDue: string | null;
+    status: string | null;
+    version?: number | null;
     client?: { name?: string | null };
   }>;
-  total: number; limit: number; offset: number;
+  total: number;
+  limit: number;
+  offset: number;
 }
 ```
 
 ### Invoices tRPC — summary return shape
+
 ```typescript
 // trpc.invoices.getSummary.useQuery()
 {
-  byStatus: Array<{ status: string; count: number; totalAmount: number; amountDue: number }>;
-  totals: { totalInvoices: number; totalAmount: number; totalOutstanding: number; overdueAmount: number };
+  byStatus: Array<{
+    status: string;
+    count: number;
+    totalAmount: number;
+    amountDue: number;
+  }>;
+  totals: {
+    totalInvoices: number;
+    totalAmount: number;
+    totalOutstanding: number;
+    overdueAmount: number;
+  }
 }
 ```
 
 ### Invoices tRPC — mutations
+
 ```typescript
 // invoices.markSent — input: { id: number }
 // invoices.void — input: { id: number; reason: string }
@@ -84,6 +105,7 @@ These are the real types from the codebase that tasks reference. Copied here so 
 ```
 
 ### Bills tRPC
+
 ```typescript
 // accounting.bills.list.useQuery({ vendorId?, status?, limit?, offset?, searchTerm? })
 // Returns paginated { items: Bill[], total, limit, offset }
@@ -96,6 +118,7 @@ These are the real types from the codebase that tasks reference. Copied here so 
 ```
 
 ### Payments tRPC
+
 ```typescript
 // accounting.payments.list.useQuery({ paymentType?, limit?, offset? })
 // Returns paginated { items: Payment[], total }
@@ -104,17 +127,32 @@ These are the real types from the codebase that tasks reference. Copied here so 
 ```
 
 ### Client Ledger tRPC
+
 ```typescript
 // clientLedger.getLedger.useQuery({ clientId, startDate?, endDate?, transactionTypes?, limit?, offset? })
 {
-  clientId: number; clientName: string; currentBalance: number; balanceDescription: string;
+  clientId: number;
+  clientName: string;
+  currentBalance: number;
+  balanceDescription: string;
   transactions: Array<{
-    id: string; date: Date | string; type: string; description: string;
-    referenceType?: string; referenceId?: number;
-    debitAmount: number; creditAmount: number; runningBalance: number; createdBy: string;
+    id: string;
+    date: Date | string;
+    type: string;
+    description: string;
+    referenceType?: string;
+    referenceId?: number;
+    debitAmount: number;
+    creditAmount: number;
+    runningBalance: number;
+    createdBy: string;
   }>;
   totalCount: number;
-  summary: { totalDebits: number; totalCredits: number; netChange: number };
+  summary: {
+    totalDebits: number;
+    totalCredits: number;
+    netChange: number;
+  }
 }
 
 // clientLedger.addLedgerAdjustment — input: { clientId, transactionType: "CREDIT"|"DEBIT", amount, description, effectiveDate? }
@@ -122,6 +160,7 @@ These are the real types from the codebase that tasks reference. Copied here so 
 ```
 
 ### General Ledger tRPC
+
 ```typescript
 // accounting.ledger.list.useQuery({ accountId?, startDate?, endDate?, fiscalPeriodId?, isPosted?, limit?, offset? })
 // GL entry: { id, entryNumber, entryDate, accountId, debit, credit, description, fiscalPeriodId, isPosted, referenceType?, referenceId? }
@@ -132,6 +171,7 @@ These are the real types from the codebase that tasks reference. Copied here so 
 ```
 
 ### Chart of Accounts tRPC
+
 ```typescript
 // accounting.accounts.list.useQuery({ accountType?, isActive? })
 // Returns paginated: { items: Account[], total }
@@ -143,6 +183,7 @@ These are the real types from the codebase that tasks reference. Copied here so 
 ```
 
 ### Expenses tRPC
+
 ```typescript
 // accounting.expenses.list.useQuery({ categoryId?, limit?, offset? })
 // Expense: { id, expenseNumber, expenseDate, description?, amount, isReimbursable, isReimbursed }
@@ -156,6 +197,7 @@ These are the real types from the codebase that tasks reference. Copied here so 
 ```
 
 ### Bank Accounts tRPC
+
 ```typescript
 // accounting.bankAccounts.list.useQuery({ accountType?, isActive? })
 // BankAccount: { id, accountName, accountNumber, accountType, bankName, currentBalance, isActive }
@@ -166,6 +208,7 @@ These are the real types from the codebase that tasks reference. Copied here so 
 ```
 
 ### Bank Transactions tRPC
+
 ```typescript
 // accounting.bankTransactions.list.useQuery({ transactionType?, isReconciled?, limit?, offset? })
 // BankTransaction: { id, transactionDate, transactionType, description?, referenceNumber?, amount, isReconciled }
@@ -176,6 +219,7 @@ These are the real types from the codebase that tasks reference. Copied here so 
 ```
 
 ### Fiscal Periods tRPC
+
 ```typescript
 // accounting.fiscalPeriods.list.useQuery({ status?, year? })
 // FiscalPeriod: { id, periodName, startDate, endDate, fiscalYear, status, createdAt }
@@ -188,6 +232,7 @@ These are the real types from the codebase that tasks reference. Copied here so 
 ```
 
 ### Shared Component Props
+
 ```typescript
 // PowersheetGrid<Row>
 { surfaceId: string; requirementIds: string[]; affordances: PowersheetAffordance[];
@@ -227,6 +272,7 @@ These are the real types from the codebase that tasks reference. Copied here so 
 ### Task 1: InvoicesSurface — Tests
 
 **Files:**
+
 - Create: `client/src/components/spreadsheet-native/InvoicesSurface.test.tsx`
 
 - [ ] **Step 1: Write the test file**
@@ -244,21 +290,36 @@ const mockInvoicesList = vi.fn().mockReturnValue({
   data: {
     items: [
       {
-        id: 1, invoiceNumber: "INV-001", customerId: 10,
-        invoiceDate: "2026-03-15", dueDate: "2026-03-15",
-        totalAmount: "4200.00", amountPaid: "0", amountDue: "4200.00",
-        status: "OVERDUE", client: { name: "Green Leaf Co" },
+        id: 1,
+        invoiceNumber: "INV-001",
+        customerId: 10,
+        invoiceDate: "2026-03-15",
+        dueDate: "2026-03-15",
+        totalAmount: "4200.00",
+        amountPaid: "0",
+        amountDue: "4200.00",
+        status: "OVERDUE",
+        client: { name: "Green Leaf Co" },
       },
       {
-        id: 2, invoiceNumber: "INV-002", customerId: 11,
-        invoiceDate: "2026-03-18", dueDate: "2026-04-02",
-        totalAmount: "1850.00", amountPaid: "1850.00", amountDue: "0",
-        status: "PAID", client: { name: "Herbal Direct" },
+        id: 2,
+        invoiceNumber: "INV-002",
+        customerId: 11,
+        invoiceDate: "2026-03-18",
+        dueDate: "2026-04-02",
+        totalAmount: "1850.00",
+        amountPaid: "1850.00",
+        amountDue: "0",
+        status: "PAID",
+        client: { name: "Herbal Direct" },
       },
     ],
-    total: 2, limit: 50, offset: 0,
+    total: 2,
+    limit: 50,
+    offset: 0,
   },
-  isLoading: false, error: null,
+  isLoading: false,
+  error: null,
 });
 
 vi.mock("@/lib/trpc", () => ({
@@ -268,28 +329,63 @@ vi.mock("@/lib/trpc", () => ({
       getSummary: {
         useQuery: () => ({
           data: {
-            byStatus: [{ status: "OVERDUE", count: 3, totalAmount: 12600, amountDue: 12600 }],
-            totals: { totalInvoices: 47, totalAmount: 86400, totalOutstanding: 24500, overdueAmount: 12600 },
+            byStatus: [
+              {
+                status: "OVERDUE",
+                count: 3,
+                totalAmount: 12600,
+                amountDue: 12600,
+              },
+            ],
+            totals: {
+              totalInvoices: 47,
+              totalAmount: 86400,
+              totalOutstanding: 24500,
+              overdueAmount: 12600,
+            },
           },
           isLoading: false,
         }),
       },
       markSent: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
       void: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
-      checkOverdue: { useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }) },
+      checkOverdue: {
+        useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+      },
     },
     accounting: {
       invoices: {
-        getARAging: { useQuery: () => ({ data: { current: 12450, days30: 6800, days60: 3200, days90: 1500, days90Plus: 550 }, isLoading: false }) },
-        generateNumber: { useQuery: () => ({ data: { invoiceNumber: "INV-048" } }) },
+        getARAging: {
+          useQuery: () => ({
+            data: {
+              current: 12450,
+              days30: 6800,
+              days60: 3200,
+              days90: 1500,
+              days90Plus: 550,
+            },
+            isLoading: false,
+          }),
+        },
+        generateNumber: {
+          useQuery: () => ({ data: { invoiceNumber: "INV-048" } }),
+        },
       },
     },
     clientLedger: {
-      getLedger: { useQuery: () => ({ data: null, isLoading: false, error: null }) },
+      getLedger: {
+        useQuery: () => ({ data: null, isLoading: false, error: null }),
+      },
     },
     useUtils: () => ({
-      invoices: { list: { invalidate: vi.fn() }, getSummary: { invalidate: vi.fn() } },
-      accounting: { payments: { list: { invalidate: vi.fn() } }, invoices: { getARAging: { invalidate: vi.fn() } } },
+      invoices: {
+        list: { invalidate: vi.fn() },
+        getSummary: { invalidate: vi.fn() },
+      },
+      accounting: {
+        payments: { list: { invalidate: vi.fn() } },
+        invoices: { getARAging: { invalidate: vi.fn() } },
+      },
       clientLedger: { getLedger: { invalidate: vi.fn() } },
     }),
   },
@@ -297,27 +393,63 @@ vi.mock("@/lib/trpc", () => ({
 
 vi.mock("wouter", () => ({ useSearch: () => "" }));
 vi.mock("@/lib/spreadsheet-native", () => ({
-  useSpreadsheetSelectionParam: () => ({ selectedId: null, setSelectedId: vi.fn() }),
+  useSpreadsheetSelectionParam: () => ({
+    selectedId: null,
+    setSelectedId: vi.fn(),
+  }),
 }));
 vi.mock("@/components/work-surface/invoiceDeepLink", () => ({
   parseInvoiceDeepLink: () => ({ statusFilter: null }),
 }));
 vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({ rows, title }: { rows: unknown[]; title: string }) => (
-    <div data-testid={`grid-${title.replace(/\s/g, "-").toLowerCase()}`}>{rows.length} rows</div>
+    <div data-testid={`grid-${title.replace(/\s/g, "-").toLowerCase()}`}>
+      {rows.length} rows
+    </div>
   ),
 }));
 vi.mock("@/components/work-surface/InspectorPanel", () => ({
-  InspectorPanel: ({ children, title }: { children: React.ReactNode; title: string }) => <div data-testid="inspector">{title}{children}</div>,
-  InspectorSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  InspectorField: ({ children, label }: { children: React.ReactNode; label: string }) => <div>{label}: {children}</div>,
+  InspectorPanel: ({
+    children,
+    title,
+  }: {
+    children: React.ReactNode;
+    title: string;
+  }) => (
+    <div data-testid="inspector">
+      {title}
+      {children}
+    </div>
+  ),
+  InspectorSection: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  InspectorField: ({
+    children,
+    label,
+  }: {
+    children: React.ReactNode;
+    label: string;
+  }) => (
+    <div>
+      {label}: {children}
+    </div>
+  ),
 }));
 vi.mock("@/components/work-surface/WorkSurfaceStatusBar", () => ({
-  WorkSurfaceStatusBar: ({ left }: { left: React.ReactNode }) => <div data-testid="status-bar">{left}</div>,
+  WorkSurfaceStatusBar: ({ left }: { left: React.ReactNode }) => (
+    <div data-testid="status-bar">{left}</div>
+  ),
 }));
-vi.mock("@/components/work-surface/KeyboardHintBar", () => ({ KeyboardHintBar: () => <div /> }));
-vi.mock("@/components/work-surface/golden-flows/InvoiceToPaymentFlow", () => ({ InvoiceToPaymentFlow: () => null }));
-vi.mock("@/components/accounting/GLReversalStatus", () => ({ InvoiceGLStatus: () => <div /> }));
+vi.mock("@/components/work-surface/KeyboardHintBar", () => ({
+  KeyboardHintBar: () => <div />,
+}));
+vi.mock("@/components/work-surface/golden-flows/InvoiceToPaymentFlow", () => ({
+  InvoiceToPaymentFlow: () => null,
+}));
+vi.mock("@/components/accounting/GLReversalStatus", () => ({
+  InvoiceGLStatus: () => <div />,
+}));
 
 import InvoicesSurface from "./InvoicesSurface";
 
@@ -331,7 +463,16 @@ describe("InvoicesSurface", () => {
 
   it("renders all status filter tabs", () => {
     render(<InvoicesSurface />);
-    for (const tab of ["All", "Draft", "Sent", "Viewed", "Partial", "Paid", "Overdue", "Void"]) {
+    for (const tab of [
+      "All",
+      "Draft",
+      "Sent",
+      "Viewed",
+      "Partial",
+      "Paid",
+      "Overdue",
+      "Void",
+    ]) {
       expect(screen.getByRole("button", { name: tab })).toBeInTheDocument();
     }
   });
@@ -345,7 +486,9 @@ describe("InvoicesSurface", () => {
 
   it("renders invoices grid with data", () => {
     render(<InvoicesSurface />);
-    expect(screen.getByTestId("grid-invoices-registry")).toHaveTextContent("2 rows");
+    expect(screen.getByTestId("grid-invoices-registry")).toHaveTextContent(
+      "2 rows"
+    );
   });
 
   it("renders AR Aging toggle", () => {
@@ -376,6 +519,7 @@ Expected: FAIL — module `./InvoicesSurface` not found
 ### Task 2: InvoicesSurface — Implementation
 
 **Files:**
+
 - Create: `client/src/components/spreadsheet-native/InvoicesSurface.tsx`
 
 This is the largest surface (~600-800 lines). It combines the invoices registry with an embedded client ledger sub-view. The implementation agent should use the existing `InvoicesPilotSurface.tsx` and `ClientLedgerPilotSurface.tsx` as primary references.
@@ -387,22 +531,43 @@ The component must contain these sections in this order:
 **1. Imports** — React hooks, AG Grid ColDef, wouter useSearch, sonner toast, date-fns (format, differenceInDays), lucide icons (FileText, Send, CreditCard, XCircle, Download, Printer, Plus, RefreshCw, Search, ChevronDown, ChevronUp), tRPC + inferRouterOutputs, shadcn components (Button, Input, Badge, Progress, Dialog, Textarea, Label), InspectorPanel + InspectorSection + InspectorField, WorkSurfaceStatusBar, KeyboardHintBar, InvoiceToPaymentFlow, InvoiceGLStatus, PowersheetGrid + PowersheetAffordance, PowersheetSelectionSummary, INVOICE_STATUS_TOKENS, cn, parseInvoiceDeepLink, useSpreadsheetSelectionParam
 
 **2. Types** — Extract from tRPC: `InvoiceItem` (from invoices.list), `LedgerTransaction` (from clientLedger.getLedger). Define `StatusTab` union. Define `InvoiceGridRow` interface:
+
 ```typescript
 interface InvoiceGridRow {
-  rowKey: string; invoiceId: number; invoiceNumber: string;
-  clientName: string; customerId: number;
-  invoiceDate: string; dueDate: string; dueDateRaw: string;
-  totalAmount: string; totalAmountFormatted: string;
-  amountDue: string; amountDueFormatted: string; amountPaid: string;
-  paymentPct: number; status: string; daysOverdue: number; version: number | null;
+  rowKey: string;
+  invoiceId: number;
+  invoiceNumber: string;
+  clientName: string;
+  customerId: number;
+  invoiceDate: string;
+  dueDate: string;
+  dueDateRaw: string;
+  totalAmount: string;
+  totalAmountFormatted: string;
+  amountDue: string;
+  amountDueFormatted: string;
+  amountPaid: string;
+  paymentPct: number;
+  status: string;
+  daysOverdue: number;
+  version: number | null;
 }
 ```
+
 Define `LedgerGridRow` interface:
+
 ```typescript
 interface LedgerGridRow {
-  rowKey: string; date: string; type: string; description: string;
-  referenceType: string | null; referenceId: number | null;
-  debit: string; credit: string; balance: string; balanceNum: number;
+  rowKey: string;
+  date: string;
+  type: string;
+  description: string;
+  referenceType: string | null;
+  referenceId: number | null;
+  debit: string;
+  credit: string;
+  balance: string;
+  balanceNum: number;
 }
 ```
 
@@ -411,6 +576,7 @@ interface LedgerGridRow {
 **4. Helpers** — `fmtCurrency` (Intl.NumberFormat USD), `fmtDate` (date-fns format "MMM d, yyyy"), `getDaysOverdue` (differenceInDays), `mapInvoicesToGridRows` (with BUG-053 dedup by Set, BUG-054/055/057 amountDue clamping: PAID/VOID → $0, otherwise clamp to [0, totalAmount]), `mapLedgerToGridRows`
 
 **5. Column defs** — `invoiceColumnDefs: ColDef<InvoiceGridRow>[]`:
+
 - Invoice # (85px, locked mono)
 - Client (110px flex, locked, blue underline cellRenderer)
 - Date (70px, locked)
@@ -421,6 +587,7 @@ interface LedgerGridRow {
 - Days (50px, locked, valueFormatter showing "Nd" or "—")
 
 And `ledgerColumnDefs: ColDef<LedgerGridRow>[]`:
+
 - Date (70px, locked)
 - Type (70px, locked, color badge cellRenderer)
 - Description (flex, locked)
@@ -431,6 +598,7 @@ And `ledgerColumnDefs: ColDef<LedgerGridRow>[]`:
 **6. Component function** — `export default function InvoicesSurface()`:
 
 State layers (follow existing pilot pattern):
+
 1. Route parsing: `useSearch()` + `parseInvoiceDeepLink(routeSearch)`
 2. Selection: `useSpreadsheetSelectionParam("invoiceId")`
 3. Filters: `statusFilter` (StatusTab), `searchTerm`, `page`
@@ -443,6 +611,7 @@ State layers (follow existing pilot pattern):
 10. Action enablement: `canMarkSent` (status===DRAFT), `canVoid` (not VOID/PAID), `canRecordPayment` (not VOID/PAID)
 
 **7. JSX return** — vertical flex layout:
+
 ```
 <div className="flex flex-col h-full">
   {/* 1. Toolbar */}
@@ -518,6 +687,7 @@ Layout: Toolbar + Action Bar + Grid + Collapsible Inspector + AR Aging + Client 
 ### Task 3: BillsSurface — Tests + Implementation
 
 **Files:**
+
 - Create: `client/src/components/spreadsheet-native/BillsSurface.test.tsx`
 - Create: `client/src/components/spreadsheet-native/BillsSurface.tsx`
 
@@ -535,49 +705,112 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     accounting: {
       bills: {
-        list: { useQuery: () => ({
-          data: {
-            items: [
-              { id: 1, billNumber: "BILL-018", vendorId: 5, vendorName: "Alpine Growers",
-                billDate: "2026-03-10", dueDate: "2026-03-25",
-                totalAmount: "8400.00", amountPaid: "0", amountDue: "8400.00", status: "APPROVED" },
-              { id: 2, billNumber: "BILL-019", vendorId: 6, vendorName: "Canopy Supply",
-                billDate: "2026-03-14", dueDate: "2026-03-29",
-                totalAmount: "3200.00", amountPaid: "0", amountDue: "3200.00", status: "DRAFT" },
-            ],
-            total: 31, limit: 50, offset: 0,
-          },
-          isLoading: false, error: null,
-        }) },
+        list: {
+          useQuery: () => ({
+            data: {
+              items: [
+                {
+                  id: 1,
+                  billNumber: "BILL-018",
+                  vendorId: 5,
+                  vendorName: "Alpine Growers",
+                  billDate: "2026-03-10",
+                  dueDate: "2026-03-25",
+                  totalAmount: "8400.00",
+                  amountPaid: "0",
+                  amountDue: "8400.00",
+                  status: "APPROVED",
+                },
+                {
+                  id: 2,
+                  billNumber: "BILL-019",
+                  vendorId: 6,
+                  vendorName: "Canopy Supply",
+                  billDate: "2026-03-14",
+                  dueDate: "2026-03-29",
+                  totalAmount: "3200.00",
+                  amountPaid: "0",
+                  amountDue: "3200.00",
+                  status: "DRAFT",
+                },
+              ],
+              total: 31,
+              limit: 50,
+              offset: 0,
+            },
+            isLoading: false,
+            error: null,
+          }),
+        },
         getById: { useQuery: () => ({ data: null }) },
-        getAPAging: { useQuery: () => ({ data: { current: 9800, days30: 5200, days60: 2400, days90: 800, days90Plus: 0 } }) },
-        updateStatus: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+        getAPAging: {
+          useQuery: () => ({
+            data: {
+              current: 9800,
+              days30: 5200,
+              days60: 2400,
+              days90: 800,
+              days90Plus: 0,
+            },
+          }),
+        },
+        updateStatus: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
       },
       arApDashboard: {
-        getAPSummary: { useQuery: () => ({ data: { totalAP: 18200, billCount: 31 } }) },
-        getOverdueBills: { useQuery: () => ({ data: { items: [], pagination: { total: 2 } } }) },
+        getAPSummary: {
+          useQuery: () => ({ data: { totalAP: 18200, billCount: 31 } }),
+        },
+        getOverdueBills: {
+          useQuery: () => ({ data: { items: [], pagination: { total: 2 } } }),
+        },
       },
     },
-    useUtils: () => ({ accounting: { bills: { list: { invalidate: vi.fn() } } } }),
+    useUtils: () => ({
+      accounting: { bills: { list: { invalidate: vi.fn() } } },
+    }),
   },
 }));
 
 vi.mock("wouter", () => ({ useSearch: () => "" }));
 vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({ rows, title }: { rows: unknown[]; title: string }) => (
-    <div data-testid={`grid-${title.replace(/\s/g, "-").toLowerCase()}`}>{rows.length} rows</div>
+    <div data-testid={`grid-${title.replace(/\s/g, "-").toLowerCase()}`}>
+      {rows.length} rows
+    </div>
   ),
 }));
 vi.mock("@/components/work-surface/InspectorPanel", () => ({
-  InspectorPanel: ({ children }: { children: React.ReactNode }) => <div data-testid="inspector">{children}</div>,
-  InspectorSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  InspectorField: ({ children, label }: { children: React.ReactNode; label: string }) => <div>{label}: {children}</div>,
+  InspectorPanel: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="inspector">{children}</div>
+  ),
+  InspectorSection: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  InspectorField: ({
+    children,
+    label,
+  }: {
+    children: React.ReactNode;
+    label: string;
+  }) => (
+    <div>
+      {label}: {children}
+    </div>
+  ),
 }));
 vi.mock("@/components/work-surface/WorkSurfaceStatusBar", () => ({
-  WorkSurfaceStatusBar: ({ left }: { left: React.ReactNode }) => <div data-testid="status-bar">{left}</div>,
+  WorkSurfaceStatusBar: ({ left }: { left: React.ReactNode }) => (
+    <div data-testid="status-bar">{left}</div>
+  ),
 }));
-vi.mock("@/components/work-surface/KeyboardHintBar", () => ({ KeyboardHintBar: () => <div /> }));
-vi.mock("@/components/accounting/PayVendorModal", () => ({ PayVendorModal: () => null }));
+vi.mock("@/components/work-surface/KeyboardHintBar", () => ({
+  KeyboardHintBar: () => <div />,
+}));
+vi.mock("@/components/accounting/PayVendorModal", () => ({
+  PayVendorModal: () => null,
+}));
 
 import BillsSurface from "./BillsSurface";
 
@@ -591,7 +824,16 @@ describe("BillsSurface", () => {
 
   it("renders AP-specific status tabs", () => {
     render(<BillsSurface />);
-    for (const tab of ["All", "Draft", "Submitted", "Approved", "Received", "Paid", "Overdue", "Void"]) {
+    for (const tab of [
+      "All",
+      "Draft",
+      "Submitted",
+      "Approved",
+      "Received",
+      "Paid",
+      "Overdue",
+      "Void",
+    ]) {
       expect(screen.getByRole("button", { name: tab })).toBeInTheDocument();
     }
   });
@@ -606,7 +848,9 @@ describe("BillsSurface", () => {
 
   it("renders bills grid", () => {
     render(<BillsSurface />);
-    expect(screen.getByTestId("grid-bills-registry")).toHaveTextContent("2 rows");
+    expect(screen.getByTestId("grid-bills-registry")).toHaveTextContent(
+      "2 rows"
+    );
   });
 
   it("renders AP Aging toggle", () => {
@@ -662,6 +906,7 @@ Actions: Pay Vendor, Mark Received, Void. AP Aging panel."
 ### Task 4: PaymentsSurface — Tests + Implementation
 
 **Files:**
+
 - Create: `client/src/components/spreadsheet-native/PaymentsSurface.test.tsx`
 - Create: `client/src/components/spreadsheet-native/PaymentsSurface.tsx`
 
@@ -679,42 +924,91 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     accounting: {
       payments: {
-        list: { useQuery: () => ({
-          data: {
-            items: [
-              { id: 1, paymentNumber: "PMT-RCV-042", paymentDate: "2026-03-20",
-                paymentType: "RECEIVED", paymentMethod: "WIRE", amount: "1850.00",
-                referenceNumber: "WR-88412", invoiceId: 2, notes: "March payment" },
-              { id: 2, paymentNumber: "PMT-SNT-019", paymentDate: "2026-03-18",
-                paymentType: "SENT", paymentMethod: "CHECK", amount: "5600.00",
-                referenceNumber: "CHK-1042", invoiceId: null, notes: "" },
-            ],
-            total: 142, limit: 50, offset: 0,
-          },
-          isLoading: false, error: null,
-        }) },
+        list: {
+          useQuery: () => ({
+            data: {
+              items: [
+                {
+                  id: 1,
+                  paymentNumber: "PMT-RCV-042",
+                  paymentDate: "2026-03-20",
+                  paymentType: "RECEIVED",
+                  paymentMethod: "WIRE",
+                  amount: "1850.00",
+                  referenceNumber: "WR-88412",
+                  invoiceId: 2,
+                  notes: "March payment",
+                },
+                {
+                  id: 2,
+                  paymentNumber: "PMT-SNT-019",
+                  paymentDate: "2026-03-18",
+                  paymentType: "SENT",
+                  paymentMethod: "CHECK",
+                  amount: "5600.00",
+                  referenceNumber: "CHK-1042",
+                  invoiceId: null,
+                  notes: "",
+                },
+              ],
+              total: 142,
+              limit: 50,
+              offset: 0,
+            },
+            isLoading: false,
+            error: null,
+          }),
+        },
       },
     },
-    useUtils: () => ({ accounting: { payments: { list: { invalidate: vi.fn() } } }, invoices: { list: { invalidate: vi.fn() }, getSummary: { invalidate: vi.fn() } } }),
+    useUtils: () => ({
+      accounting: { payments: { list: { invalidate: vi.fn() } } },
+      invoices: {
+        list: { invalidate: vi.fn() },
+        getSummary: { invalidate: vi.fn() },
+      },
+    }),
   },
 }));
 
 vi.mock("wouter", () => ({ useSearch: () => "" }));
 vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({ rows, title }: { rows: unknown[]; title: string }) => (
-    <div data-testid={`grid-${title.replace(/\s/g, "-").toLowerCase()}`}>{rows.length} rows</div>
+    <div data-testid={`grid-${title.replace(/\s/g, "-").toLowerCase()}`}>
+      {rows.length} rows
+    </div>
   ),
 }));
 vi.mock("@/components/work-surface/InspectorPanel", () => ({
-  InspectorPanel: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  InspectorSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  InspectorField: ({ children, label }: { children: React.ReactNode; label: string }) => <div>{label}: {children}</div>,
+  InspectorPanel: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  InspectorSection: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+  InspectorField: ({
+    children,
+    label,
+  }: {
+    children: React.ReactNode;
+    label: string;
+  }) => (
+    <div>
+      {label}: {children}
+    </div>
+  ),
 }));
 vi.mock("@/components/work-surface/WorkSurfaceStatusBar", () => ({
-  WorkSurfaceStatusBar: ({ left }: { left: React.ReactNode }) => <div data-testid="status-bar">{left}</div>,
+  WorkSurfaceStatusBar: ({ left }: { left: React.ReactNode }) => (
+    <div data-testid="status-bar">{left}</div>
+  ),
 }));
-vi.mock("@/components/work-surface/KeyboardHintBar", () => ({ KeyboardHintBar: () => <div /> }));
-vi.mock("@/components/work-surface/golden-flows/InvoiceToPaymentFlow", () => ({ InvoiceToPaymentFlow: () => null }));
+vi.mock("@/components/work-surface/KeyboardHintBar", () => ({
+  KeyboardHintBar: () => <div />,
+}));
+vi.mock("@/components/work-surface/golden-flows/InvoiceToPaymentFlow", () => ({
+  InvoiceToPaymentFlow: () => null,
+}));
 vi.mock("@/hooks/usePermissions", () => ({ usePermissions: () => ({}) }));
 
 import PaymentsSurface from "./PaymentsSurface";
@@ -740,7 +1034,9 @@ describe("PaymentsSurface", () => {
 
   it("renders payments grid", () => {
     render(<PaymentsSurface />);
-    expect(screen.getByTestId("grid-payments-registry")).toHaveTextContent("2 rows");
+    expect(screen.getByTestId("grid-payments-registry")).toHaveTextContent(
+      "2 rows"
+    );
   });
 });
 ```
@@ -748,6 +1044,7 @@ describe("PaymentsSurface", () => {
 - [ ] **Step 2: Run tests to verify failure, then implement PaymentsSurface.tsx**
 
 Simplest Phase 1 surface. Key characteristics:
+
 - **Filter tabs**: ALL | RECEIVED | SENT (3 tabs, not 8)
 - **Actions**: Record Payment (opens InvoiceToPaymentFlow), Void
 - **Grid columns**: Payment # (mono), Date, Type (RECEIVED green badge / SENT red badge), Method, Amount (mono right, green for received / red for sent via `cellStyle`), Invoice (mono, clickable — navigates to `?tab=invoices&invoiceId=N`), Reference (flex)
@@ -776,11 +1073,13 @@ Type filter (Received/Sent), color-coded amounts, invoice deep-links."
 ### Task 5: Wire Phase 1 into AccountingWorkspacePage
 
 **Files:**
+
 - Modify: `client/src/pages/AccountingWorkspacePage.tsx`
 
 - [ ] **Step 1: Replace AccountingWorkspacePage**
 
 Remove these imports:
+
 - `SheetModeToggle`
 - `useSpreadsheetPilotAvailability`, `useSpreadsheetSurfaceMode`, `buildSurfaceAvailability` from `@/lib/spreadsheet-native`
 - `InvoicesWorkSurface` (direct import)
@@ -788,18 +1087,27 @@ Remove these imports:
 - `PaymentsPilotSurface` (lazy)
 
 Remove these state variables:
+
 - `pilotSurfaceSupported`, `sheetPilotEnabled`, `availabilityReady`, `surfaceMode`, `setSurfaceMode`
 
 Remove `commandStrip` prop from `LinearWorkspaceShell`.
 
 Add lazy imports:
+
 ```tsx
-const InvoicesSurface = lazy(() => import("@/components/spreadsheet-native/InvoicesSurface"));
-const BillsSurface = lazy(() => import("@/components/spreadsheet-native/BillsSurface"));
-const PaymentsSurface = lazy(() => import("@/components/spreadsheet-native/PaymentsSurface"));
+const InvoicesSurface = lazy(
+  () => import("@/components/spreadsheet-native/InvoicesSurface")
+);
+const BillsSurface = lazy(
+  () => import("@/components/spreadsheet-native/BillsSurface")
+);
+const PaymentsSurface = lazy(
+  () => import("@/components/spreadsheet-native/PaymentsSurface")
+);
 ```
 
 Replace panels:
+
 ```tsx
 <LinearWorkspacePanel value="invoices">
   <PilotSurfaceBoundary fallback={<div className="p-4 text-muted-foreground">Loading invoices...</div>}>
@@ -840,6 +1148,7 @@ Invoices, Bills, Payments use unified surfaces. Removed: SheetModeToggle, surfac
 ### Task 6: GeneralLedgerSurface — Tests + Implementation
 
 **Files:**
+
 - Create: `client/src/components/spreadsheet-native/GeneralLedgerSurface.test.tsx`
 - Create: `client/src/components/spreadsheet-native/GeneralLedgerSurface.tsx`
 
@@ -850,6 +1159,7 @@ Key assertions: Renders "General Ledger" title, account selector, fiscal period 
 - [ ] **Step 2: Implement GeneralLedgerSurface**
 
 Key characteristics:
+
 - **Toolbar**: "General Ledger" + inline `AccountSelector` (value/onChange) + `FiscalPeriodSelector` (value/onChange) + date range (two date inputs or Popover calendar) + Trial Balance toggle + search + refresh
 - **Action bar**: All/Posted/Draft tabs + right-aligned running balance display (`Balance: ${fmtCurrency(accountBalance)} DR/CR`) + Post Journal Entry / Reverse Entry / Export CSV buttons
 - **Grid columns**: Entry # (mono), Date, Account (mono), Debit (mono right bold if non-zero), Credit (mono right red if non-zero), Description (flex), Status (POST/DRAFT badge)
@@ -877,6 +1187,7 @@ Account-scoped entry browser. Reference navigation to source documents."
 ### Task 7: ChartOfAccountsSurface — Tests + Implementation
 
 **Files:**
+
 - Create: `client/src/components/spreadsheet-native/ChartOfAccountsSurface.test.tsx`
 - Create: `client/src/components/spreadsheet-native/ChartOfAccountsSurface.tsx`
 
@@ -887,6 +1198,7 @@ Key assertions: Renders type filter tabs (All Types, Asset, Liability, Equity, R
 - [ ] **Step 2: Implement ChartOfAccountsSurface**
 
 First **editable** surface. Key characteristics:
+
 - **Grid props**: `selectionMode: "cell-range"`, `enableFillHandle: true`, `enableUndoRedo: true`, `stopEditingWhenCellsLoseFocus: true`
 - **Row grouping**: AG Grid `rowGroup: true` on accountType column. Color-coded group headers via custom CSS classes per type.
 - **AccountGridRow**: id (number or string like `new-${Date.now()}`), accountNumber, accountName, accountType, normalBalance, isActive, description, isNew (boolean derived from id prefix)
@@ -900,6 +1212,7 @@ First **editable** surface. Key characteristics:
     singleClickEdit: true,
   }
   ```
+
   - Acct # — editable only for new rows, locked after creation
   - Account Name — always editable
   - Type — editable only for new rows (dropdown: ASSET/LIABILITY/EQUITY/REVENUE/EXPENSE)
@@ -931,13 +1244,18 @@ Add Row creates temp row, persists via accounts.create."
 ### Task 8: Wire Phase 2
 
 **Files:**
+
 - Modify: `client/src/pages/AccountingWorkspacePage.tsx`
 
 - [ ] **Step 1: Add lazy imports for GL and CoA, replace panels, remove old imports**
 
 ```tsx
-const GeneralLedgerSurface = lazy(() => import("@/components/spreadsheet-native/GeneralLedgerSurface"));
-const ChartOfAccountsSurface = lazy(() => import("@/components/spreadsheet-native/ChartOfAccountsSurface"));
+const GeneralLedgerSurface = lazy(
+  () => import("@/components/spreadsheet-native/GeneralLedgerSurface")
+);
+const ChartOfAccountsSurface = lazy(
+  () => import("@/components/spreadsheet-native/ChartOfAccountsSurface")
+);
 ```
 
 Remove `GeneralLedger` and `ChartOfAccounts` classic page imports.
@@ -960,12 +1278,14 @@ All four surfaces follow the editable registry pattern established in Task 7 (Ch
 ### Task 9: ExpensesSurface — Tests + Implementation
 
 **Files:**
+
 - Create: `client/src/components/spreadsheet-native/ExpensesSurface.test.tsx`
 - Create: `client/src/components/spreadsheet-native/ExpensesSurface.tsx`
 
 - [ ] **Step 1: Write tests, implement, verify**
 
 Editable registry. Key characteristics:
+
 - **KPI badges**: `$total` (amber, from `expenses.getBreakdownByCategory.total`), `N entries` (blue, from list count), `N pending reimb.` (pink, from `expenses.getPendingReimbursements` length)
 - **Action bar**: Category dropdown (from `expenseCategories.list`) + "Reimbursable only" checkbox toggle + Export CSV
 - **Grid columns**: Expense # (locked, auto-gen), Date (editable), Description (editable), Category (editable dropdown), Amount (editable mono right), Reimbursable (editable checkbox), Reimbursed (editable checkbox)
@@ -985,12 +1305,14 @@ git commit -m "feat(accounting): add ExpensesSurface — editable expense regist
 ### Task 10: BankAccountsSurface — Tests + Implementation
 
 **Files:**
+
 - Create: `client/src/components/spreadsheet-native/BankAccountsSurface.test.tsx`
 - Create: `client/src/components/spreadsheet-native/BankAccountsSurface.tsx`
 
 - [ ] **Step 1: Write tests, implement, verify**
 
 Simplest editable surface.
+
 - **KPI badges**: `$total cash` (green, from `bankAccounts.getTotalCashBalance.totalBalance`), `N accounts` (blue), `N active` (green)
 - **Action bar**: Type filter dropdown (Checking/Savings/Credit Card/Money Market)
 - **Grid columns**: Account Name (editable), Account # (editable mono), Bank Name (editable), Type (editable dropdown), Balance (editable mono right), Active (editable checkbox)
@@ -1008,12 +1330,14 @@ git commit -m "feat(accounting): add BankAccountsSurface — editable bank accou
 ### Task 11: BankTransactionsSurface — Tests + Implementation
 
 **Files:**
+
 - Create: `client/src/components/spreadsheet-native/BankTransactionsSurface.test.tsx`
 - Create: `client/src/components/spreadsheet-native/BankTransactionsSurface.tsx`
 
 - [ ] **Step 1: Write tests, implement, verify**
 
 Editable registry.
+
 - **KPI badges**: `$deposits` (green), `$withdrawals` (red), `N unreconciled` (amber) — all aggregated from gridRows
 - **Action bar**: Type filter tabs (All/Deposit/Withdrawal/Transfer/Fee) + Reconciled/Unreconciled toggle + "Toggle Reconciled" action + Export CSV
 - **Grid columns**: Date (editable), Type (editable dropdown with badge rendering), Description (editable), Reference # (editable mono), Amount (editable mono right, green for DEPOSIT, red for WITHDRAWAL via `cellStyle`), Reconciled (editable checkbox)
@@ -1032,12 +1356,14 @@ git commit -m "feat(accounting): add BankTransactionsSurface — editable with r
 ### Task 12: FiscalPeriodsSurface — Tests + Implementation
 
 **Files:**
+
 - Create: `client/src/components/spreadsheet-native/FiscalPeriodsSurface.test.tsx`
 - Create: `client/src/components/spreadsheet-native/FiscalPeriodsSurface.tsx`
 
 - [ ] **Step 1: Write tests, implement, verify**
 
 Editable registry with row grouping and status-dependent cell locking.
+
 - **KPI badges**: `N periods` (blue), current open period name (green, from `fiscalPeriods.getCurrent`)
 - **Action bar**: Status filter (All/Open/Closed/Locked) + Close Period + Lock Period
 - **Row grouping**: by `fiscalYear` (AG Grid rowGroup)
@@ -1059,15 +1385,24 @@ git commit -m "feat(accounting): add FiscalPeriodsSurface — grouped with close
 ### Task 13: Wire Phase 3
 
 **Files:**
+
 - Modify: `client/src/pages/AccountingWorkspacePage.tsx`
 
 - [ ] **Step 1: Add lazy imports for all 4 Phase 3 surfaces, replace panels, remove classic imports**
 
 ```tsx
-const ExpensesSurface = lazy(() => import("@/components/spreadsheet-native/ExpensesSurface"));
-const BankAccountsSurface = lazy(() => import("@/components/spreadsheet-native/BankAccountsSurface"));
-const BankTransactionsSurface = lazy(() => import("@/components/spreadsheet-native/BankTransactionsSurface"));
-const FiscalPeriodsSurface = lazy(() => import("@/components/spreadsheet-native/FiscalPeriodsSurface"));
+const ExpensesSurface = lazy(
+  () => import("@/components/spreadsheet-native/ExpensesSurface")
+);
+const BankAccountsSurface = lazy(
+  () => import("@/components/spreadsheet-native/BankAccountsSurface")
+);
+const BankTransactionsSurface = lazy(
+  () => import("@/components/spreadsheet-native/BankTransactionsSurface")
+);
+const FiscalPeriodsSurface = lazy(
+  () => import("@/components/spreadsheet-native/FiscalPeriodsSurface")
+);
 ```
 
 Remove classic page imports: `Expenses`, `BankAccounts`, `BankTransactions`, `FiscalPeriods`.
@@ -1094,25 +1429,26 @@ All classic page imports removed. Every non-dashboard tab uses a unified surface
 ### Task 14: Dashboard Density Tokens
 
 **Files:**
+
 - Modify: `client/src/pages/accounting/AccountingDashboard.tsx`
 
 - [ ] **Step 1: Apply density token replacements**
 
 No layout changes — only CSS class swaps:
 
-| Find | Replace | Context |
-|------|---------|---------|
-| `rounded-xl` | `rounded-md` | Card borders |
-| `rounded-lg` | `rounded` | Buttons |
-| `p-4` | `p-2.5` | CardContent padding |
-| `p-6` | `p-3` | Outer container |
-| `gap-4` | `gap-2` | Grid gaps |
-| `gap-6` | `gap-3` | Section gaps |
-| `text-3xl` | `text-xl` | Page title |
-| `text-2xl` | `text-lg` | KPI values |
-| `text-xl` | `text-sm` | Card titles |
-| `space-y-2` | `space-y-1` | Header spacing |
-| `mt-1` (after descriptions) | `mt-0.5` | Description margin |
+| Find                        | Replace      | Context             |
+| --------------------------- | ------------ | ------------------- |
+| `rounded-xl`                | `rounded-md` | Card borders        |
+| `rounded-lg`                | `rounded`    | Buttons             |
+| `p-4`                       | `p-2.5`      | CardContent padding |
+| `p-6`                       | `p-3`        | Outer container     |
+| `gap-4`                     | `gap-2`      | Grid gaps           |
+| `gap-6`                     | `gap-3`      | Section gaps        |
+| `text-3xl`                  | `text-xl`    | Page title          |
+| `text-2xl`                  | `text-lg`    | KPI values          |
+| `text-xl`                   | `text-sm`    | Card titles         |
+| `space-y-2`                 | `space-y-1`  | Header spacing      |
+| `mt-1` (after descriptions) | `mt-0.5`     | Description margin  |
 
 Do NOT change: layout structure, quick action card positions, color scheme (green "Start here", amber "Pay supplier"), AR/AP totals logic, overdue tables, navigation buttons, modal triggers.
 

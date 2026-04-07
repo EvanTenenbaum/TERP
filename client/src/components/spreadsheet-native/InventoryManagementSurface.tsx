@@ -43,7 +43,10 @@ import {
   useSpreadsheetSelectionParam,
 } from "@/lib/spreadsheet-native";
 import type { InventoryPilotRow } from "@/lib/spreadsheet-native";
-import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
+import type {
+  PowersheetSelectionSet,
+  PowersheetSelectionSummary,
+} from "@/lib/powersheet/contracts";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -231,6 +234,7 @@ export function InventoryManagementSurface() {
   const [saveViewDialogOpen, setSaveViewDialogOpen] = useState(false);
   const [saveViewName, setSaveViewName] = useState("");
   const [saveViewShared, setSaveViewShared] = useState(false);
+  const [inspectorTargetQty, setInspectorTargetQty] = useState("");
 
   const canUpdateInventory = hasPermission("inventory:update");
   const canDeleteInventory = hasPermission("inventory:delete");
@@ -423,6 +427,68 @@ export function InventoryManagementSurface() {
     selectedBatchId !== null &&
     selectedRowOnGrid === null &&
     selectedRow !== null;
+  const rowKeyToBatchId = useMemo(
+    () => new Map(rows.map(row => [row.identity.rowKey, row.batchId] as const)),
+    [rows]
+  );
+  const categoryOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(rows.map(row => row.category).filter(Boolean) as string[])
+      ).sort((a, b) => a.localeCompare(b)),
+    [rows]
+  );
+  const subcategoryOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(rows.map(row => row.subcategory).filter(Boolean) as string[])
+      ).sort((a, b) => a.localeCompare(b)),
+    [rows]
+  );
+  const supplierOptions = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          rows
+            .filter(row => row.vendorName)
+            .map(row => [
+              row.vendorName,
+              { id: row.vendorName, name: row.vendorName },
+            ])
+        ).values()
+      ),
+    [rows]
+  );
+  const brandOptions = useMemo(
+    () =>
+      Array.from(
+        new Map(
+          rows
+            .filter(row => row.brandName)
+            .map(row => [
+              row.brandName,
+              { id: row.brandName, name: row.brandName },
+            ])
+        ).values()
+      ),
+    [rows]
+  );
+  const gradeOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(rows.map(row => row.grade).filter(Boolean) as string[])
+      ).sort((a, b) => a.localeCompare(b)),
+    [rows]
+  );
+  const selectedOnHandQty = selectedRow?.onHandQty ?? null;
+
+  useEffect(() => {
+    if (selectedBatchId === null || selectedOnHandQty === null) {
+      setInspectorTargetQty("");
+      return;
+    }
+    setInspectorTargetQty(String(selectedOnHandQty));
+  }, [selectedBatchId, selectedOnHandQty]);
 
   const locationRows = useMemo<InventoryLocationRow[]>(
     () =>
@@ -442,13 +508,16 @@ export function InventoryManagementSurface() {
     [detailQuery.data?.locations, selectedBatchId]
   );
 
-  // Derive bulk selection from grid selection summary
-  useEffect(() => {
-    if (!queueSelectionSummary) return;
-    if ((queueSelectionSummary.selectedRowCount ?? 0) <= 1) {
-      setBulkSelectedIds([]);
-    }
-  }, [queueSelectionSummary]);
+  // Derive bulk selection from actual selected row ids.
+  const handleSelectionSetChange = useCallback(
+    (selectionSet: PowersheetSelectionSet) => {
+      const ids = Array.from(selectionSet.selectedRowIds)
+        .map(rowId => rowKeyToBatchId.get(rowId))
+        .filter((id): id is number => typeof id === "number");
+      setBulkSelectedIds(ids);
+    },
+    [rowKeyToBatchId]
+  );
 
   // ============================================================================
   // Column definitions
@@ -711,13 +780,34 @@ export function InventoryManagementSurface() {
 
   const handleGalleryAdjustQty = useCallback(
     (batchId: number) => {
-      // Select the batch to open the inspector panel where the user can
-      // use the "Adjust Quantity" section. Opening the drawer directly
-      // from gallery would result in a zero-delta (previousValue === currentValue).
       setSelectedBatchId(batchId);
+      setViewMode("grid");
     },
     [setSelectedBatchId]
   );
+
+  const handleInspectorReviewAdjustment = useCallback(() => {
+    if (!selectedRow) return;
+    const nextValue = Number(inspectorTargetQty);
+    if (!Number.isFinite(nextValue)) {
+      toast.error("Enter a valid on-hand quantity before reviewing.");
+      return;
+    }
+    if (nextValue === selectedRow.onHandQty) {
+      toast.error(
+        "Change the on-hand quantity before opening the adjustment review."
+      );
+      return;
+    }
+    setAdjustDrawerState({
+      isOpen: true,
+      batchId: selectedRow.batchId,
+      sku: selectedRow.sku,
+      productName: selectedRow.productName,
+      previousValue: selectedRow.onHandQty,
+      currentValue: nextValue,
+    });
+  }, [inspectorTargetQty, selectedRow]);
 
   // ============================================================================
   // Derived
@@ -845,7 +935,7 @@ export function InventoryManagementSurface() {
             }
           >
             <SelectTrigger className="h-7 w-[160px] text-xs">
-              <SelectValue placeholder="All statuses" />
+              <SelectValue placeholder="Available now" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="__all__">All statuses</SelectItem>
@@ -896,7 +986,9 @@ export function InventoryManagementSurface() {
               <SelectValue placeholder="Saved Views" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__default__">Default (no view)</SelectItem>
+              <SelectItem value="__default__">
+                Default (available now)
+              </SelectItem>
               {views.map(view => (
                 <SelectItem key={view.id} value={String(view.id)}>
                   {view.name}
@@ -992,6 +1084,11 @@ export function InventoryManagementSurface() {
           onFiltersChange={setFilters}
           isOpen={filtersOpen}
           onOpenChange={setFiltersOpen}
+          categoryOptions={categoryOptions}
+          subcategoryOptions={subcategoryOptions}
+          supplierOptions={supplierOptions}
+          brandOptions={brandOptions}
+          gradeOptions={gradeOptions}
         />
 
         {/* ── 4. Main Content (Grid / Gallery) ── */}
@@ -1018,6 +1115,7 @@ export function InventoryManagementSurface() {
             selectionMode="cell-range"
             enableFillHandle={false}
             enableUndoRedo={true}
+            onSelectionSetChange={handleSelectionSetChange}
             onSelectionSummaryChange={setQueueSelectionSummary}
             isLoading={enhancedQuery.isLoading}
             errorMessage={enhancedQuery.error?.message ?? null}
@@ -1078,17 +1176,25 @@ export function InventoryManagementSurface() {
                 Valuation
               </div>
               <div className="mt-1 text-sm font-medium">
-                {formatCurrency(selectedRow.unitCogs)} / unit
+                {formatCurrency(selectedRow.unitCogs)} / unit ·{" "}
+                {selectedRow.unitCogs !== null &&
+                selectedRow.unitCogs !== undefined
+                  ? formatCurrency(selectedRow.unitCogs * selectedRow.onHandQty)
+                  : "—"}
               </div>
             </div>
             <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
               <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                 Locations
               </div>
-              <div className="mt-1 text-sm font-medium">
+              <button
+                type="button"
+                className="mt-1 text-sm font-medium text-primary underline-offset-2 hover:underline"
+                onClick={() => setSelectedBatchId(selectedRow.batchId)}
+              >
                 {detailSummary?.locationCount ?? 0} location
-                {(detailSummary?.locationCount ?? 0) !== 1 ? "s" : ""}
-              </div>
+                {(detailSummary?.locationCount ?? 0) !== 1 ? "s" : ""} →
+              </button>
             </div>
           </div>
         )}
@@ -1222,6 +1328,26 @@ export function InventoryManagementSurface() {
 
               {canUpdateInventory && (
                 <InspectorSection title="Actions">
+                  <InspectorField label="Adjust Quantity">
+                    <div className="space-y-2">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        value={inspectorTargetQty}
+                        onChange={event =>
+                          setInspectorTargetQty(event.target.value)
+                        }
+                        aria-label="New on-hand quantity"
+                      />
+                      <Button
+                        className="w-full"
+                        variant="outline"
+                        onClick={handleInspectorReviewAdjustment}
+                      >
+                        Review Adjustment
+                      </Button>
+                    </div>
+                  </InspectorField>
                   <InspectorField label="Status">
                     <Select
                       value={selectedRow?.status ?? ""}

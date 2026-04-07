@@ -119,13 +119,13 @@ Before investigating any bug, check `.claude/known-bug-patterns.md` first. Run a
 
 ## Essential References
 
-| File                                            | Purpose                                    |
-| ----------------------------------------------- | ------------------------------------------ |
-| `docs/roadmaps/MASTER_ROADMAP.md`               | Task source of truth (backup to Linear)    |
-| `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json` | Machine-readable TER-795 row-status and build snapshot |
-| `docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md` | Generated local Orders runtime gate snapshot |
-| `docs/specs/spreadsheet-native-foundation/orders-runtime/PROOF_BUDGET.md` | Generated local advisory proof-budget snapshot |
-| `docs/ACTIVE_SESSIONS.md`                       | Currently active agent work                |
-| `.claude/known-bug-patterns.md`                 | Recurring bug catalog                      |
-| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` | Prod migration procedures                  |
-| `docs/TESTING.md`                               | Testing guide — all test commands & layers |
+| File                                                                            | Purpose                                                |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `docs/roadmaps/MASTER_ROADMAP.md`                                               | Task source of truth (backup to Linear)                |
+| `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`    | Machine-readable TER-795 row-status and build snapshot |
+| `docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md` | Generated local Orders runtime gate snapshot           |
+| `docs/specs/spreadsheet-native-foundation/orders-runtime/PROOF_BUDGET.md`       | Generated local advisory proof-budget snapshot         |
+| `docs/ACTIVE_SESSIONS.md`                                                       | Currently active agent work                            |
+| `.claude/known-bug-patterns.md`                                                 | Recurring bug catalog                                  |
+| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md`                                 | Prod migration procedures                              |
+| `docs/TESTING.md`                                                               | Testing guide — all test commands & layers             |

@@ -44,14 +44,15 @@ Do NOT skip tasks. Do NOT assume a task passes because a related task passed. Ea
 
 ### 1.3 — Dead route redirects work (TER-859)
 
-| Navigate to | Expected redirect | Expected tab |
-|-------------|-------------------|-------------|
-| `/suppliers` | `/relationships` | suppliers tab active |
-| `/accounts-receivable` | `/accounting` | invoices tab active |
-| `/payments` | `/accounting` | payments tab active |
-| `/admin` | `/settings` | default settings tab |
+| Navigate to            | Expected redirect | Expected tab         |
+| ---------------------- | ----------------- | -------------------- |
+| `/suppliers`           | `/relationships`  | suppliers tab active |
+| `/accounts-receivable` | `/accounting`     | invoices tab active  |
+| `/payments`            | `/accounting`     | payments tab active  |
+| `/admin`               | `/settings`       | default settings tab |
 
 For each row:
+
 1. Type the URL directly in the address bar
 2. **ASSERT:** URL changes to the expected redirect
 3. **ASSERT:** Correct tab is active after redirect
@@ -116,6 +117,7 @@ For each surface below, navigate to the URL and verify NO internal engineering t
 ### 2.5 — Invoices, Returns, Payments, Fulfillment, Intake, Samples, Client Ledger surfaces
 
 For each of these surfaces, navigate to the respective tab and:
+
 1. **ASSERT:** No "Pilot:" badge anywhere on the page
 2. **ASSERT:** No `releaseGateIds` or `antiDriftSummary` text visible
 3. **ASSERT:** No `import.meta.env.DEV`-gated debug panels visible
@@ -578,33 +580,34 @@ For each of these surfaces, navigate to the respective tab and:
 
 ## Execution checklist
 
-| Section | Tasks | Verified by | PASS/FAIL |
-|---------|-------|-------------|-----------|
-| 1. Global Infrastructure | 5 tasks | | |
-| 2. Dev Metadata | 5 tasks | | |
-| 3. Settings & Security | 4 tasks | | |
-| 4. Data Pollution | 3 tasks | | |
-| 5. Sales Orders | 4 tasks | | |
-| 6. Sales Quotes | 3 tasks | | |
-| 7. Shipping | 5 tasks | | |
-| 8. Demand & Supply | 2 tasks | | |
-| 9. Invoices & Accounting | 6 tasks | | |
-| 10. Purchase Orders | 4 tasks | | |
-| 11. Inventory | 5 tasks | | |
-| 12. Calendar | 4 tasks | | |
-| 13. Relationships & Credits | 6 tasks | | |
-| 14. Mobile Navigation | 4 tasks | | |
-| 15. Feature Flags | 1 task | | |
-| 16. Notifications | 2 tasks | | |
-| 17. Analytics | 3 tasks | | |
-| 18. Remaining | 3 tasks | | |
-| **TOTAL** | **69 tasks** | | |
+| Section                     | Tasks        | Verified by | PASS/FAIL |
+| --------------------------- | ------------ | ----------- | --------- |
+| 1. Global Infrastructure    | 5 tasks      |             |           |
+| 2. Dev Metadata             | 5 tasks      |             |           |
+| 3. Settings & Security      | 4 tasks      |             |           |
+| 4. Data Pollution           | 3 tasks      |             |           |
+| 5. Sales Orders             | 4 tasks      |             |           |
+| 6. Sales Quotes             | 3 tasks      |             |           |
+| 7. Shipping                 | 5 tasks      |             |           |
+| 8. Demand & Supply          | 2 tasks      |             |           |
+| 9. Invoices & Accounting    | 6 tasks      |             |           |
+| 10. Purchase Orders         | 4 tasks      |             |           |
+| 11. Inventory               | 5 tasks      |             |           |
+| 12. Calendar                | 4 tasks      |             |           |
+| 13. Relationships & Credits | 6 tasks      |             |           |
+| 14. Mobile Navigation       | 4 tasks      |             |           |
+| 15. Feature Flags           | 1 task       |             |           |
+| 16. Notifications           | 2 tasks      |             |           |
+| 17. Analytics               | 3 tasks      |             |           |
+| 18. Remaining               | 3 tasks      |             |           |
+| **TOTAL**                   | **69 tasks** |             |           |
 
 ---
 
 ## Failure handling
 
 If any task fails:
+
 1. Capture: screenshot, URL, console errors, network errors
 2. Record the exact step that failed
 3. Classify severity: P0 (blocking), P1 (major), P2 (minor), P3 (cosmetic)

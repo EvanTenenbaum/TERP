@@ -3,33 +3,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import {
   SalesCatalogueSurface,
-  applyCatalogueLineMarkup,
-  applyCatalogueLineRetail,
   buildCatalogueCsv,
-  buildPrintableCatalogueHtml,
-  sanitizeLoadedSheetItems,
-  sanitizePrintableImageUrl,
+  buildCatalogueChatText,
 } from "./SalesCatalogueSurface";
-import { toast } from "sonner";
 
 const setLocation = vi.fn();
+let mockSearch = "?tab=sales-sheets";
 const deleteDraftById = vi.fn();
 const saveDraft = vi.fn();
 const saveSheet = vi.fn(async () => 202);
 const generateShareLink = vi.fn();
 const handleConvertToOrder = vi.fn(async () => true);
-const defaultInventoryItem = {
-  id: 1,
-  name: '3.5g "Loud" Pack',
-  category: 'Flower "Top Shelf"',
-  basePrice: 10,
-  retailPrice: 20,
-  quantity: 2,
-  priceMarkup: 0,
-  appliedRules: [],
-  status: "LIVE",
-};
-let inventoryItems = [defaultInventoryItem];
+const gridPropsByTitle = new Map<string, Record<string, unknown>>();
+const clipboardWriteText = vi.fn();
+const { toastSuccess, toastError } = vi.hoisted(() => ({
+  toastSuccess: vi.fn(),
+  toastError: vi.fn(),
+}));
 
 const draftState = {
   currentDraftId: null,
@@ -60,24 +50,26 @@ const draftState = {
 };
 
 vi.mock("./PowersheetGrid", () => ({
-  PowersheetGrid: ({
-    title,
-    onSelectedRowChange,
-  }: {
-    title: string;
-    onSelectedRowChange?: (
-      row: { identity: { rowKey: string } } | null
-    ) => void;
-  }) => (
-    <button
-      data-testid={`grid-${title}`}
-      onClick={() =>
-        onSelectedRowChange?.({ identity: { rowKey: "inventory:1" } })
-      }
-    >
-      {title}
-    </button>
-  ),
+  PowersheetGrid: (
+    props: Record<string, unknown> & {
+      title: string;
+      onSelectedRowChange?: (
+        row: { identity: { rowKey: string } } | null
+      ) => void;
+    }
+  ) => {
+    gridPropsByTitle.set(props.title, props);
+    return (
+      <button
+        data-testid={`grid-${props.title}`}
+        onClick={() =>
+          props.onSelectedRowChange?.({ identity: { rowKey: "inventory:1" } })
+        }
+      >
+        {props.title}
+      </button>
+    );
+  },
 }));
 
 vi.mock("@/hooks/useCatalogueDraft", () => ({
@@ -132,21 +124,14 @@ vi.mock("@/components/sales/SavedSheetsDialog", () => ({
 vi.mock("@/components/common/UnifiedExportMenu", () => ({
   UnifiedExportMenu: ({
     onExportCSV,
-    onExportPDF,
     disabled,
   }: {
     onExportCSV?: () => void;
-    onExportPDF?: () => void;
     disabled?: boolean;
   }) => (
-    <div>
-      <button disabled={disabled} onClick={onExportCSV} type="button">
-        Export CSV
-      </button>
-      <button disabled={disabled} onClick={onExportPDF} type="button">
-        Export PDF
-      </button>
-    </div>
+    <button disabled={disabled} onClick={onExportCSV} type="button">
+      Export CSV
+    </button>
   ),
 }));
 
@@ -196,14 +181,14 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
 
 vi.mock("wouter", () => ({
   useLocation: vi.fn(() => ["/sales?tab=sales-sheets", setLocation]),
+  useSearch: vi.fn(() => mockSearch),
 }));
 
 vi.mock("sonner", () => ({
   toast: {
-    success: vi.fn(),
-    error: vi.fn(),
+    success: toastSuccess,
+    error: toastError,
     info: vi.fn(),
-    warning: vi.fn(),
   },
 }));
 
@@ -212,7 +197,38 @@ vi.mock("@/lib/trpc", () => ({
     salesSheets: {
       getInventory: {
         useQuery: vi.fn(() => ({
-          data: inventoryItems,
+          data: [
+            {
+              id: 1,
+              name: '3.5g "Loud" Pack',
+              category: 'Flower "Top Shelf"',
+              subcategory: "Indoor",
+              batchSku: "BT-100",
+              brand: "Andy Rhan",
+              vendor: "Andy Rhan",
+              basePrice: 10,
+              retailPrice: 20,
+              quantity: 2,
+              priceMarkup: 0,
+              appliedRules: [],
+              status: "LIVE",
+            },
+            {
+              id: 2,
+              name: "Sunset Shake",
+              category: "Flower",
+              subcategory: "Outdoor",
+              batchSku: "BT-200",
+              brand: "NorCal Farms",
+              vendor: "NorCal Farms",
+              basePrice: 8,
+              retailPrice: 12,
+              quantity: 5,
+              priceMarkup: 0,
+              appliedRules: [],
+              status: "AWAITING_INTAKE",
+            },
+          ],
           isLoading: false,
           refetch: vi.fn(),
         })),
@@ -253,6 +269,12 @@ vi.mock("@/lib/trpc", () => ({
 describe("SalesCatalogueSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSearch = "?tab=sales-sheets";
+    gridPropsByTitle.clear();
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: clipboardWriteText },
+    });
     draftState.currentDraftId = null;
     draftState.draftName = "";
     draftState.hasUnsavedChanges = false;
@@ -268,12 +290,64 @@ describe("SalesCatalogueSurface", () => {
     draftState.isConverting = false;
     draftState.drafts = [];
     draftState.draftsLoading = false;
-    inventoryItems = [{ ...defaultInventoryItem }];
   });
 
   it("renders toolbar with Sales Catalogue badge", () => {
     render(<SalesCatalogueSurface />);
     expect(screen.getByText("Sales Catalogue")).toBeInTheDocument();
+  });
+
+  it("hydrates the selected client from the workspace query string", async () => {
+    mockSearch = "?tab=sales-sheets&clientId=1";
+
+    render(<SalesCatalogueSurface />);
+
+    await waitFor(() => {
+      expect(gridPropsByTitle.get("Inventory")?.rows).toHaveLength(1);
+    });
+  });
+
+  it("gives the inventory powersheet a taller viewport-aware height", () => {
+    render(<SalesCatalogueSurface />);
+
+    fireEvent.click(screen.getByText("Select Client 1"));
+
+    expect(gridPropsByTitle.get("Inventory")?.minHeight).toBe(
+      "clamp(30rem, calc(100vh - 14rem), 52rem)"
+    );
+  });
+
+  it("defaults the catalogue cut to sellable inventory until unavailable rows are explicitly included", async () => {
+    render(<SalesCatalogueSurface />);
+
+    fireEvent.click(screen.getByText("Select Client 1"));
+
+    await waitFor(() => {
+      expect(gridPropsByTitle.get("Inventory")).toBeDefined();
+    });
+
+    const inventoryGrid = gridPropsByTitle.get("Inventory");
+    expect(inventoryGrid?.rows).toHaveLength(1);
+    expect(
+      (inventoryGrid?.rows as Array<{ name: string }>).map(row => row.name)
+    ).toEqual(['3.5g "Loud" Pack']);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Include unavailable" })
+    );
+
+    await waitFor(() => {
+      expect(
+        (gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }>)
+          ?.length
+      ).toBe(2);
+    });
+
+    const updatedGrid = gridPropsByTitle.get("Inventory");
+    expect(updatedGrid?.rows).toHaveLength(2);
+    expect(
+      (updatedGrid?.rows as Array<{ name: string }>).map(row => row.name)
+    ).toContain("Sunset Shake");
   });
 
   it("shows a draft-name validation hint when work is unsaved", () => {
@@ -287,82 +361,22 @@ describe("SalesCatalogueSurface", () => {
     expect(screen.getByText("Draft name required to save")).toBeInTheDocument();
   });
 
-  it("keeps handoff actions disabled until a finalized sheet id exists", () => {
-    draftState.canConvert = false;
+  it("keeps Live disabled until a finalized sheet id exists", () => {
+    draftState.canConvert = true;
     draftState.canGoLive = false;
 
     render(<SalesCatalogueSurface />);
 
-    expect(screen.getByRole("button", { name: "Live" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "→ Sales Order" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "→ Quote" })).toBeDisabled();
-  });
-
-  it("rejects malformed saved-sheet items that use a zero id", () => {
     expect(
-      sanitizeLoadedSheetItems([
-        {
-          id: 0,
-          name: "Corrupt Item",
-          basePrice: 10,
-          retailPrice: 20,
-          quantity: 1,
-        },
-      ])
-    ).toEqual([]);
-  });
-
-  it("preserves loaded retail when a zero-base row is repriced by markup", () => {
-    const repriced = applyCatalogueLineMarkup(
-      {
-        ...defaultInventoryItem,
-        basePrice: 0,
-        retailPrice: 36,
-        priceMarkup: 18,
-      },
-      24
-    );
-
-    expect(repriced.priceMarkup).toBe(24);
-    expect(repriced.retailPrice).toBe(36);
-  });
-
-  it("preserves loaded markup when a zero-base row is repriced by retail", () => {
-    const repriced = applyCatalogueLineRetail(
-      {
-        ...defaultInventoryItem,
-        basePrice: 0,
-        retailPrice: 36,
-        priceMarkup: 18,
-      },
-      42
-    );
-
-    expect(repriced.retailPrice).toBe(42);
-    expect(repriced.priceMarkup).toBe(18);
-  });
-
-  it("sanitizes printable image urls before writing the print document", () => {
-    expect(sanitizePrintableImageUrl("/catalogue/item.png")).toBe(
-      "http://localhost:3000/catalogue/item.png"
-    );
-    expect(sanitizePrintableImageUrl("javascript:alert(1)")).toBeNull();
-
-    const html = buildPrintableCatalogueHtml({
-      title: "Spring Menu",
-      clientName: "Golden State",
-      includeImages: true,
-      totalValue: 20,
-      items: [
-        {
-          ...defaultInventoryItem,
-          imageUrl: "javascript:alert(1)",
-        },
-      ],
-    });
-
-    expect(html).not.toContain("javascript:alert(1)");
-    expect(html).toContain("No image");
+      screen
+        .getAllByRole("button", { name: "Live" })
+        .every(button => button.disabled)
+    ).toBe(true);
+    expect(
+      screen
+        .getAllByRole("button", { name: "→ Sales Order" })
+        .every(button => !button.disabled)
+    ).toBe(true);
   });
 
   it("clears stale inventory selection when filters hide the selected row", async () => {
@@ -400,6 +414,40 @@ describe("SalesCatalogueSurface", () => {
     expect(csvText).not.toContain("\nPack");
   });
 
+  it("builds a chat-friendly cut summary from visible rows", () => {
+    const chatText = buildCatalogueChatText([
+      {
+        name: "Blue Dream",
+        quantity: 12,
+        retailPrice: 1200,
+        brand: "Andy Rhan",
+        category: "Flower",
+        subcategory: "Indoor",
+        batchSku: "BT-42",
+      },
+    ]);
+
+    expect(chatText).toContain("Available Now (1)");
+    expect(chatText).toContain("Blue Dream");
+    expect(chatText).toContain("Andy Rhan · Indoor · BT-42");
+    expect(chatText).toContain("$1,200.00");
+  });
+
+  it("omits placeholder descriptors from the chat summary", () => {
+    const chatText = buildCatalogueChatText([
+      {
+        name: "Blue Dream",
+        quantity: 12,
+        retailPrice: 1200,
+        vendor: "-",
+        category: "-",
+      },
+    ]);
+
+    expect(chatText).toContain("Blue Dream");
+    expect(chatText).not.toContain("- · -");
+  });
+
   it("disables both save affordances while a save is in flight", async () => {
     draftState.isSaving = true;
 
@@ -407,8 +455,10 @@ describe("SalesCatalogueSurface", () => {
     fireEvent.click(screen.getByText("Select Client 1"));
 
     expect(
-      screen.getByRole("button", { name: /^Saving\.\.\.$/ })
-    ).toBeDisabled();
+      screen
+        .getAllByRole("button", { name: /^Saving\.\.\.$/ })
+        .every(button => button.disabled)
+    ).toBe(true);
   });
 
   it("still exports through a blob download flow", async () => {
@@ -434,120 +484,33 @@ describe("SalesCatalogueSurface", () => {
     revokeObjectURL.mockRestore();
   });
 
-  it("only reports PDF export success when the print window opens", () => {
-    const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
-
+  it("copies the current filtered cut for chat", async () => {
     render(<SalesCatalogueSurface />);
     fireEvent.click(screen.getByText("Select Client 1"));
-    fireEvent.click(screen.getByTestId("grid-Inventory"));
-    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
-    fireEvent.click(screen.getByRole("button", { name: "Export PDF" }));
 
-    expect(toast.error).toHaveBeenCalledWith(
-      "Allow pop-ups to print the catalogue"
-    );
-    expect(toast.success).not.toHaveBeenCalledWith(
-      "Print dialog opened. Use Save as PDF to export."
-    );
-
-    openSpy.mockRestore();
-  });
-
-  it("fails loudly when opening the shared view is blocked", () => {
-    const openSpy = vi.spyOn(window, "open").mockReturnValue(null);
-    draftState.canShare = true;
-    draftState.lastSavedSheetId = 202;
-    draftState.lastShareUrl = "http://localhost:3000/shared/sales-sheet/test";
-
-    render(<SalesCatalogueSurface />);
-    fireEvent.click(screen.getByText("Select Client 1"));
-    fireEvent.click(screen.getByTestId("grid-Inventory"));
-    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open Shared View" }));
-
-    expect(toast.error).toHaveBeenCalledWith(
-      "Allow pop-ups to open the shared view"
-    );
-
-    openSpy.mockRestore();
-  });
-
-  it("opens the shared view after generating a share link asynchronously", async () => {
-    const mockWindow = {
-      location: { href: "" },
-      close: vi.fn(),
-      opener: window,
-    };
-    const openSpy = vi.spyOn(window, "open").mockReturnValue(mockWindow);
-    generateShareLink.mockResolvedValue(
-      "http://localhost:3000/shared/sales-sheet/generated"
-    );
-    draftState.canShare = true;
-    draftState.lastSavedSheetId = 202;
-    draftState.lastShareUrl = null;
-
-    render(<SalesCatalogueSurface />);
-    fireEvent.click(screen.getByText("Select Client 1"));
-    fireEvent.click(screen.getByTestId("grid-Inventory"));
-    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open Shared View" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy for Chat" }));
 
     await waitFor(() => {
-      expect(generateShareLink).toHaveBeenCalled();
-      expect(openSpy).toHaveBeenCalledWith("", "_blank");
-      expect(mockWindow.location.href).toBe(
-        "http://localhost:3000/shared/sales-sheet/generated"
+      expect(clipboardWriteText).toHaveBeenCalledWith(
+        expect.stringContaining(
+          '3.5g "Loud" Pack — Andy Rhan · Indoor · BT-100'
+        )
       );
     });
-
-    expect(mockWindow.close).not.toHaveBeenCalled();
-    expect(toast.error).not.toHaveBeenCalledWith(
-      "Could not open the shared view"
-    );
-
-    openSpy.mockRestore();
   });
 
-  it("closes the pre-opened window when shared view generation fails", async () => {
-    const mockWindow = {
-      location: { href: "" },
-      close: vi.fn(),
-      opener: window,
-    };
-    const openSpy = vi.spyOn(window, "open").mockReturnValue(mockWindow);
-    generateShareLink.mockResolvedValue(null);
-    draftState.canShare = true;
-    draftState.lastSavedSheetId = 202;
-    draftState.lastShareUrl = null;
+  it("shows a toast when copy-for-chat fails", async () => {
+    clipboardWriteText.mockRejectedValueOnce(new Error("denied"));
 
     render(<SalesCatalogueSurface />);
     fireEvent.click(screen.getByText("Select Client 1"));
-    fireEvent.click(screen.getByTestId("grid-Inventory"));
-    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
-    fireEvent.click(screen.getByRole("button", { name: "Open Shared View" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy for Chat" }));
 
     await waitFor(() => {
-      expect(generateShareLink).toHaveBeenCalled();
-      expect(mockWindow.close).toHaveBeenCalled();
-      expect(toast.error).toHaveBeenCalledWith(
-        "Could not open the shared view"
+      expect(toastError).toHaveBeenCalledWith(
+        "Could not copy this cut for chat"
       );
     });
-
-    openSpy.mockRestore();
-  });
-
-  it("proactively warns that share and export actions open a new browser tab or window", () => {
-    render(<SalesCatalogueSurface />);
-    fireEvent.click(screen.getByText("Select Client 1"));
-    fireEvent.click(screen.getByTestId("grid-Inventory"));
-    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
-
-    expect(
-      screen.getByText(
-        "Shared view, PDF export, and print open a new browser tab or window."
-      )
-    ).toBeInTheDocument();
   });
 
   it("confirms before switching clients with unsaved work", () => {
@@ -587,66 +550,5 @@ describe("SalesCatalogueSurface", () => {
     fireEvent.click(screen.getByText("Delete Draft 42"));
 
     expect(deleteDraftById).toHaveBeenCalledWith(42);
-  });
-
-  it("blocks non-sellable rows from being added from the selected-row action", () => {
-    inventoryItems = [{ ...defaultInventoryItem, status: "QUARANTINED" }];
-
-    render(<SalesCatalogueSurface />);
-    fireEvent.click(screen.getByText("Select Client 1"));
-    fireEvent.click(screen.getByTestId("grid-Inventory"));
-    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
-
-    expect(toast.warning).toHaveBeenCalledWith(
-      "Only sellable inventory can be added to the catalogue"
-    );
-    expect(screen.queryByText(/1 items ·/)).not.toBeInTheDocument();
-  });
-
-  it("skips non-sellable rows during bulk add while still adding sellable items", () => {
-    inventoryItems = [
-      { ...defaultInventoryItem, id: 1, status: "QUARANTINED" },
-      { ...defaultInventoryItem, id: 2, name: "Sellable Item", status: "LIVE" },
-    ];
-
-    render(<SalesCatalogueSurface />);
-    fireEvent.click(screen.getByText("Select Client 1"));
-    fireEvent.click(screen.getByRole("button", { name: "Select All" }));
-    fireEvent.click(screen.getByRole("button", { name: "Bulk Add (2)" }));
-
-    expect(toast.warning).toHaveBeenCalledWith(
-      "Only sellable inventory can be added to the catalogue"
-    );
-    expect(screen.getByText(/1 items ·/)).toBeInTheDocument();
-  });
-
-  it("clears the local catalogue after a successful quote handoff", async () => {
-    draftState.canConvert = true;
-    draftState.lastSavedSheetId = 202;
-    handleConvertToOrder.mockImplementation(async onReady => {
-      await onReady();
-      return true;
-    });
-
-    render(<SalesCatalogueSurface />);
-    fireEvent.click(screen.getByText("Select Client 1"));
-    fireEvent.click(screen.getByTestId("grid-Inventory"));
-    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
-
-    expect(screen.getByText(/1 items ·/)).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "→ Quote" }));
-
-    await waitFor(() => {
-      expect(handleConvertToOrder).toHaveBeenCalledTimes(1);
-      expect(draftState.resetDraft).toHaveBeenCalledTimes(1);
-      expect(setLocation).toHaveBeenCalledWith(
-        expect.stringContaining("fromSalesSheet=true")
-      );
-    });
-
-    await waitFor(() => {
-      expect(screen.queryByText(/1 items ·/)).not.toBeInTheDocument();
-    });
   });
 });

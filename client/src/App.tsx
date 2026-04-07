@@ -627,7 +627,11 @@ function Router() {
                 />
                 <Route
                   path="/admin/users"
-                  component={RedirectWithTab("/admin/users", "/settings", "users")}
+                  component={RedirectWithTab(
+                    "/admin/users",
+                    "/settings",
+                    "users"
+                  )}
                 />
                 <Route
                   path="/admin/roles/new"

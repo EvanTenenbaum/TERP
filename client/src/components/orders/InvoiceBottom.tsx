@@ -64,12 +64,12 @@ export function InvoiceBottom({
   showCogs = false,
   showMargin = false,
 }: InvoiceBottomProps) {
-  const [adjustmentMode, setAdjustmentMode] = useState<
-    "DISCOUNT" | "MARKUP"
-  >(adjustment?.mode ?? "DISCOUNT");
-  const [adjustmentType, setAdjustmentType] = useState<
-    "PERCENT" | "DOLLAR"
-  >(adjustment?.type ?? "DOLLAR");
+  const [adjustmentMode, setAdjustmentMode] = useState<"DISCOUNT" | "MARKUP">(
+    adjustment?.mode ?? "DISCOUNT"
+  );
+  const [adjustmentType, setAdjustmentType] = useState<"PERCENT" | "DOLLAR">(
+    adjustment?.type ?? "DOLLAR"
+  );
   const [adjustmentAmount, setAdjustmentAmount] = useState(
     adjustment ? String(adjustment.amount) : ""
   );
@@ -97,7 +97,8 @@ export function InvoiceBottom({
   }, [freight]);
 
   const parsedAdjustmentAmount = Number.parseFloat(adjustmentAmount);
-  const hasAdjustment = Number.isFinite(parsedAdjustmentAmount) && parsedAdjustmentAmount > 0;
+  const hasAdjustment =
+    Number.isFinite(parsedAdjustmentAmount) && parsedAdjustmentAmount > 0;
   const adjustmentDisplayAmount = adjustment
     ? adjustment.type === "PERCENT"
       ? (subtotal * adjustment.amount) / 100
@@ -123,7 +124,9 @@ export function InvoiceBottom({
         <div className="space-y-3">
           <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px_120px]">
             <div className="space-y-1">
-              <Label htmlFor="invoice-adjustment-amount">Whole Order Change</Label>
+              <Label htmlFor="invoice-adjustment-amount">
+                Whole Order Change
+              </Label>
               <div className="flex gap-2">
                 <Input
                   id="invoice-adjustment-amount"
@@ -215,7 +218,10 @@ export function InvoiceBottom({
                     onPaymentTermsChange(value as PaymentTerms)
                   }
                 >
-                  <SelectTrigger id="invoice-payment-terms" aria-label="Payment Terms">
+                  <SelectTrigger
+                    id="invoice-payment-terms"
+                    aria-label="Payment Terms"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -295,7 +301,9 @@ export function InvoiceBottom({
                 <span className="text-muted-foreground">Margin</span>
                 <span className="font-medium">
                   {currency(totalMargin)}
-                  {typeof marginPercent === "number" ? ` (${marginPercent.toFixed(1)}%)` : ""}
+                  {typeof marginPercent === "number"
+                    ? ` (${marginPercent.toFixed(1)}%)`
+                    : ""}
                 </span>
               </div>
             ) : null}

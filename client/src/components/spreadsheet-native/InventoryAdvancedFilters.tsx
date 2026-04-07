@@ -63,7 +63,7 @@ export interface InventoryAdvancedFiltersProps {
 export function createDefaultInventoryFilters(): InventoryFilterState {
   return {
     search: "",
-    statuses: [],
+    statuses: ["LIVE"],
     categories: [],
     subcategories: [],
     stockLevel: "all",
@@ -85,7 +85,7 @@ export function hasActiveFilters(filters: InventoryFilterState): boolean {
   const defaults = createDefaultInventoryFilters();
   return (
     filters.search !== defaults.search ||
-    filters.statuses.length > 0 ||
+    filters.statuses.join("|") !== defaults.statuses.join("|") ||
     filters.categories.length > 0 ||
     filters.subcategories.length > 0 ||
     filters.stockLevel !== defaults.stockLevel ||

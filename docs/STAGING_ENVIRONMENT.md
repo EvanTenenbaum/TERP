@@ -20,15 +20,15 @@ The staging environment is a complete, isolated replica of the TERP production s
 
 ### Key Differences from Production
 
-| Setting            | Production                 | Staging                  |
-| ------------------ | -------------------------- | ------------------------ |
-| Deploy Path        | Manual promotion           | `main`                   |
-| `DEMO_MODE`        | `false`                    | `true` (auto-login)      |
-| `QA_AUTH_ENABLED`  | `false`                    | `true`                   |
-| `ENABLE_TEST_AUTH` | `false`                    | `true`                   |
-| `VITE_APP_TITLE`   | `TERP`                     | `TERP [STAGING]`         |
-| Instance Count     | 2 (autoscaled)            | 1 (fixed)                |
-| Database           | Production cluster         | Separate staging cluster |
+| Setting            | Production         | Staging                  |
+| ------------------ | ------------------ | ------------------------ |
+| Deploy Path        | Manual promotion   | `main`                   |
+| `DEMO_MODE`        | `false`            | `true` (auto-login)      |
+| `QA_AUTH_ENABLED`  | `false`            | `true`                   |
+| `ENABLE_TEST_AUTH` | `false`            | `true`                   |
+| `VITE_APP_TITLE`   | `TERP`             | `TERP [STAGING]`         |
+| Instance Count     | 2 (autoscaled)     | 1 (fixed)                |
+| Database           | Production cluster | Separate staging cluster |
 
 ## Access
 

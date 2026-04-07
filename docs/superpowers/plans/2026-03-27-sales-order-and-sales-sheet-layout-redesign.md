@@ -9,6 +9,7 @@
 **Tech Stack:** React 19, Tailwind 4, shadcn/ui, AG Grid (PowersheetGrid), existing TERP components
 
 **Design References:**
+
 - `docs/design/spreadsheet-native-golden-flows-2026-03-18/sales-order-sheet.svg`
 - `docs/design/spreadsheet-native-golden-flows-2026-03-18/sales-sheet.svg`
 - `docs/design/spreadsheet-native-golden-flows-2026-03-18/sales-order-creation-direction.md`
@@ -127,32 +128,32 @@
 
 ### Files to Modify
 
-| File | Change | Scope |
-|------|--------|-------|
-| `client/src/pages/OrderCreatorPage.tsx` | Major layout restructure of JSX (lines 1594–2206) | Layout only — no logic changes |
-| `client/src/components/spreadsheet-native/SalesSheetsPilotSurface.tsx` | Layout restructure + richer output panel | Layout + minor new UI |
-| `client/src/pages/SalesSheetCreatorPage.tsx` | Align classic layout closer to design | Layout adjustments |
+| File                                                                   | Change                                            | Scope                          |
+| ---------------------------------------------------------------------- | ------------------------------------------------- | ------------------------------ |
+| `client/src/pages/OrderCreatorPage.tsx`                                | Major layout restructure of JSX (lines 1594–2206) | Layout only — no logic changes |
+| `client/src/components/spreadsheet-native/SalesSheetsPilotSurface.tsx` | Layout restructure + richer output panel          | Layout + minor new UI          |
+| `client/src/pages/SalesSheetCreatorPage.tsx`                           | Align classic layout closer to design             | Layout adjustments             |
 
 ### Files to Create
 
-| File | Purpose |
-|------|---------|
-| `client/src/components/orders/OrderWorkspaceLayout.tsx` | Extracted layout shell for the 2-column + support modules composition |
-| `client/src/components/orders/OrderStatusCards.tsx` | Compact Autosave / Credit / Finalize status cards for header area |
-| `client/src/components/orders/WholeOrderChangesPanel.tsx` | Combined adjustment + notes + order-level controls |
-| `client/src/components/orders/CompactSupportModule.tsx` | Reusable compact card for Referral / Credit below inventory |
-| `client/src/components/sales/SalesSheetOutputPanel.tsx` | Richer preview + output panel with Save/Share/PDF/Print |
-| `client/src/components/sales/SalesSheetHandoffStrip.tsx` | Explicit Share + Convert + Live action strip |
+| File                                                      | Purpose                                                               |
+| --------------------------------------------------------- | --------------------------------------------------------------------- |
+| `client/src/components/orders/OrderWorkspaceLayout.tsx`   | Extracted layout shell for the 2-column + support modules composition |
+| `client/src/components/orders/OrderStatusCards.tsx`       | Compact Autosave / Credit / Finalize status cards for header area     |
+| `client/src/components/orders/WholeOrderChangesPanel.tsx` | Combined adjustment + notes + order-level controls                    |
+| `client/src/components/orders/CompactSupportModule.tsx`   | Reusable compact card for Referral / Credit below inventory           |
+| `client/src/components/sales/SalesSheetOutputPanel.tsx`   | Richer preview + output panel with Save/Share/PDF/Print               |
+| `client/src/components/sales/SalesSheetHandoffStrip.tsx`  | Explicit Share + Convert + Live action strip                          |
 
 ### Test Files
 
-| File | Tests |
-|------|-------|
-| `client/src/components/orders/OrderWorkspaceLayout.test.tsx` | Layout renders both columns, responsive collapse |
-| `client/src/components/orders/OrderStatusCards.test.tsx` | Status card states (healthy, warning, explicit) |
+| File                                                           | Tests                                                 |
+| -------------------------------------------------------------- | ----------------------------------------------------- |
+| `client/src/components/orders/OrderWorkspaceLayout.test.tsx`   | Layout renders both columns, responsive collapse      |
+| `client/src/components/orders/OrderStatusCards.test.tsx`       | Status card states (healthy, warning, explicit)       |
 | `client/src/components/orders/WholeOrderChangesPanel.test.tsx` | Adjustment + notes render, save/finalize buttons work |
-| `client/src/components/sales/SalesSheetOutputPanel.test.tsx` | Output buttons, dirty-state blocking |
-| `client/src/components/sales/SalesSheetHandoffStrip.test.tsx` | Convert/share/live buttons, disabled states |
+| `client/src/components/sales/SalesSheetOutputPanel.test.tsx`   | Output buttons, dirty-state blocking                  |
+| `client/src/components/sales/SalesSheetHandoffStrip.test.tsx`  | Convert/share/live buttons, disabled states           |
 
 ---
 
@@ -163,6 +164,7 @@
 Extract the Autosave, Credit, and Finalize trust-cue indicators from the sidebar into compact status cards that sit in the header area, matching the design's top-right status region.
 
 **Files:**
+
 - Create: `client/src/components/orders/OrderStatusCards.tsx`
 - Test: `client/src/components/orders/OrderStatusCards.test.tsx`
 
@@ -361,6 +363,7 @@ git commit -m "feat(orders): add OrderStatusCards for header trust-cue indicator
 Reusable compact card used for Referral and Credit support modules that sit below the inventory panel.
 
 **Files:**
+
 - Create: `client/src/components/orders/CompactSupportModule.tsx`
 
 - [ ] **Step 1: Write the component**
@@ -422,6 +425,7 @@ git commit -m "feat(orders): add CompactSupportModule for below-inventory suppor
 Combined panel for order-level adjustments, notes, order type selector, totals, and save/finalize controls — replaces the scattered right-sidebar elements.
 
 **Files:**
+
 - Create: `client/src/components/orders/WholeOrderChangesPanel.tsx`
 - Test: `client/src/components/orders/WholeOrderChangesPanel.test.tsx`
 
@@ -435,7 +439,11 @@ import { WholeOrderChangesPanel } from "./WholeOrderChangesPanel";
 
 describe("WholeOrderChangesPanel", () => {
   const defaultProps = {
-    adjustment: { mode: "DISCOUNT" as const, type: "PERCENT" as const, value: 0 },
+    adjustment: {
+      mode: "DISCOUNT" as const,
+      type: "PERCENT" as const,
+      value: 0,
+    },
     subtotal: 1000,
     onAdjustmentChange: vi.fn(),
     showAdjustmentOnDocument: true,
@@ -656,22 +664,23 @@ git commit -m "feat(orders): add WholeOrderChangesPanel for below-order support 
 This is the core change. Replace the `grid-cols-3` (2/3 + 1/3 sidebar) layout with the design's equal-weight split + support modules below.
 
 **Files:**
+
 - Modify: `client/src/pages/OrderCreatorPage.tsx` (lines 1594–2206)
 
 **Important:** All existing functionality stays. We are moving existing elements into new positions, not adding or removing features. The right sidebar's contents get redistributed:
 
-| Current sidebar element | New location |
-|------------------------|--------------|
-| PricingContextPanel | Stays accessible via Customer Actions drawer (already there) |
-| Customer Actions card | Merges into header area (customer already shown there) |
-| CreditLimitBanner | Compact support module below inventory (left) |
-| ReferralCreditsPanel | Compact support module below inventory (left) |
-| FloatingOrderPreview | Removed as separate panel — the order grid IS the preview |
-| OrderTotalsPanel | Inside WholeOrderChangesPanel (below right) |
-| Order Type selector | Inside WholeOrderChangesPanel (below right) |
-| Save Draft button | Header bar + WholeOrderChangesPanel |
-| Save Options dropdown | Inside WholeOrderChangesPanel |
-| Finalize button | Header bar + WholeOrderChangesPanel |
+| Current sidebar element | New location                                                 |
+| ----------------------- | ------------------------------------------------------------ |
+| PricingContextPanel     | Stays accessible via Customer Actions drawer (already there) |
+| Customer Actions card   | Merges into header area (customer already shown there)       |
+| CreditLimitBanner       | Compact support module below inventory (left)                |
+| ReferralCreditsPanel    | Compact support module below inventory (left)                |
+| FloatingOrderPreview    | Removed as separate panel — the order grid IS the preview    |
+| OrderTotalsPanel        | Inside WholeOrderChangesPanel (below right)                  |
+| Order Type selector     | Inside WholeOrderChangesPanel (below right)                  |
+| Save Draft button       | Header bar + WholeOrderChangesPanel                          |
+| Save Options dropdown   | Inside WholeOrderChangesPanel                                |
+| Finalize button         | Header bar + WholeOrderChangesPanel                          |
 
 - [ ] **Step 1: Read the full render section of OrderCreatorPage**
 
@@ -868,7 +877,11 @@ In the header section (~lines 1615–1621), replace the save state indicator are
       <Button
         variant="outline"
         size="sm"
-        disabled={items.length === 0 || createDraftMutation.isPending || updateDraftMutation.isPending}
+        disabled={
+          items.length === 0 ||
+          createDraftMutation.isPending ||
+          updateDraftMutation.isPending
+        }
         onClick={() => handleSaveDraft()}
       >
         <Save className="h-4 w-4 mr-1.5" />
@@ -890,6 +903,7 @@ In the header section (~lines 1615–1621), replace the save state indicator are
 - [ ] **Step 6: Remove the old right sidebar column**
 
 Delete the entire `{/* Right Column: Totals & Preview (1/3) */}` block (old lines ~1817–2090) since all its contents have been redistributed to:
+
 - Status cards → header area
 - Customer Actions → already in header drawer
 - Credit/Referral → compact modules below inventory
@@ -931,6 +945,7 @@ Matches the spreadsheet-native golden-flow design:
 Richer preview panel with summary cards (Items, Value, Share status) and first-class output buttons (Save, Share, PDF, Print).
 
 **Files:**
+
 - Create: `client/src/components/sales/SalesSheetOutputPanel.tsx`
 - Test: `client/src/components/sales/SalesSheetOutputPanel.test.tsx`
 
@@ -965,12 +980,16 @@ describe("SalesSheetOutputPanel", () => {
   });
 
   it("shows share as blocked when unsaved", () => {
-    render(<SalesSheetOutputPanel {...defaultProps} hasUnsavedChanges={true} />);
+    render(
+      <SalesSheetOutputPanel {...defaultProps} hasUnsavedChanges={true} />
+    );
     expect(screen.getByText("Blocked")).toBeInTheDocument();
   });
 
   it("disables share button when unsaved", () => {
-    render(<SalesSheetOutputPanel {...defaultProps} hasUnsavedChanges={true} />);
+    render(
+      <SalesSheetOutputPanel {...defaultProps} hasUnsavedChanges={true} />
+    );
     expect(screen.getByRole("button", { name: /Share/i })).toBeDisabled();
   });
 
@@ -1046,10 +1065,7 @@ export function SalesSheetOutputPanel({
       {/* Summary cards */}
       <div className="flex items-center gap-2">
         <SummaryCard label="ITEMS" value={String(itemCount)} />
-        <SummaryCard
-          label="VALUE"
-          value={`$${totalValue.toLocaleString()}`}
-        />
+        <SummaryCard label="VALUE" value={`$${totalValue.toLocaleString()}`} />
         <SummaryCard
           label="SHARE"
           value={hasUnsavedChanges ? "Blocked" : "Ready"}
@@ -1058,11 +1074,7 @@ export function SalesSheetOutputPanel({
 
       {/* Output action buttons */}
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          onClick={onSave}
-          disabled={isSaving}
-        >
+        <Button size="sm" onClick={onSave} disabled={isSaving}>
           <Save className="mr-1.5 h-4 w-4" />
           {isSaving ? "Saving..." : "Save Sheet"}
         </Button>
@@ -1127,6 +1139,7 @@ git commit -m "feat(sales-sheets): add SalesSheetOutputPanel with summary cards 
 Explicit action strip for Share Link, To Sales Order, To Quote, and Live.
 
 **Files:**
+
 - Create: `client/src/components/sales/SalesSheetHandoffStrip.tsx`
 - Test: `client/src/components/sales/SalesSheetHandoffStrip.test.tsx`
 
@@ -1291,6 +1304,7 @@ git commit -m "feat(sales-sheets): add SalesSheetHandoffStrip for explicit conve
 Wire the new output panel and handoff strip into the sheet-native sales sheet surface.
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/SalesSheetsPilotSurface.tsx`
 
 - [ ] **Step 1: Read the full file**
@@ -1364,23 +1378,27 @@ Replace the `{/* ── browser + preview split ── */}` section (lines ~974�
 After the browser+preview grid and before the version history section, add:
 
 ```tsx
-{/* ── handoff strip ──────────────────────────────────────────────── */}
-{selectedClientId && selectedItems.length > 0 && (
-  <SalesSheetHandoffStrip
-    canConvert={canConvert}
-    canShare={canShare}
-    itemCount={selectedItems.length}
-    onShareLink={handleGenerateShareLink}
-    onConvertToOrder={handleConvertToOrder}
-    onConvertToQuote={() => {
-      // Same as convert but with quote flag
-      handleConvertToOrder(); // existing handler already navigates with fromSalesSheet
-    }}
-    onStartLive={() => {
-      toast.info("Live Shopping session — coming soon");
-    }}
-  />
-)}
+{
+  /* ── handoff strip ──────────────────────────────────────────────── */
+}
+{
+  selectedClientId && selectedItems.length > 0 && (
+    <SalesSheetHandoffStrip
+      canConvert={canConvert}
+      canShare={canShare}
+      itemCount={selectedItems.length}
+      onShareLink={handleGenerateShareLink}
+      onConvertToOrder={handleConvertToOrder}
+      onConvertToQuote={() => {
+        // Same as convert but with quote flag
+        handleConvertToOrder(); // existing handler already navigates with fromSalesSheet
+      }}
+      onStartLive={() => {
+        toast.info("Live Shopping session — coming soon");
+      }}
+    />
+  );
+}
 ```
 
 - [ ] **Step 6: Simplify toolbar — move share/export from dropdown to output panel**
@@ -1415,6 +1433,7 @@ Matches the spreadsheet-native golden-flow design:
 Apply similar structural improvements to the classic mode so both modes feel consistent.
 
 **Files:**
+
 - Modify: `client/src/pages/SalesSheetCreatorPage.tsx`
 
 - [ ] **Step 1: Read the full file**
@@ -1432,66 +1451,76 @@ import { SalesSheetHandoffStrip } from "@/components/sales/SalesSheetHandoffStri
 Replace lines ~544–581 (the Convert to Quote button) with:
 
 ```tsx
-{/* Handoff strip */}
-{selectedItems.length > 0 && selectedClientId && (
-  <SalesSheetHandoffStrip
-    canConvert={!hasUnsavedChanges && selectedItems.length > 0}
-    canShare={!hasUnsavedChanges && currentDraftId !== null}
-    itemCount={selectedItems.length}
-    onShareLink={() => { /* TODO: wire to existing share mutation if available */ }}
-    onConvertToOrder={() => {
-      sessionStorage.setItem(
-        "salesSheetToQuote",
-        JSON.stringify({
-          clientId: selectedClientId,
-          items: selectedItems.map(item => ({
-            id: item.id,
-            name: item.name,
-            basePrice: item.basePrice,
-            retailPrice: item.retailPrice,
-            quantity: item.quantity,
-            category: item.category,
-            vendor: item.vendor,
-            cogsMode: item.cogsMode,
-            unitCogs: item.unitCogs,
-            unitCogsMin: item.unitCogsMin,
-            unitCogsMax: item.unitCogsMax,
-            effectiveCogs: item.effectiveCogs,
-            effectiveCogsBasis: item.effectiveCogsBasis,
-          })),
-        })
-      );
-      setLocation(buildSalesWorkspacePath("create-order", { fromSalesSheet: true }));
-    }}
-    onConvertToQuote={() => {
-      sessionStorage.setItem(
-        "salesSheetToQuote",
-        JSON.stringify({
-          clientId: selectedClientId,
-          items: selectedItems.map(item => ({
-            id: item.id,
-            name: item.name,
-            basePrice: item.basePrice,
-            retailPrice: item.retailPrice,
-            quantity: item.quantity,
-            category: item.category,
-            vendor: item.vendor,
-            cogsMode: item.cogsMode,
-            unitCogs: item.unitCogs,
-            unitCogsMin: item.unitCogsMin,
-            unitCogsMax: item.unitCogsMax,
-            effectiveCogs: item.effectiveCogs,
-            effectiveCogsBasis: item.effectiveCogsBasis,
-          })),
-        })
-      );
-      setLocation(buildSalesWorkspacePath("create-order", { fromSalesSheet: true }));
-    }}
-    onStartLive={() => {
-      toast.info("Live Shopping session — coming soon");
-    }}
-  />
-)}
+{
+  /* Handoff strip */
+}
+{
+  selectedItems.length > 0 && selectedClientId && (
+    <SalesSheetHandoffStrip
+      canConvert={!hasUnsavedChanges && selectedItems.length > 0}
+      canShare={!hasUnsavedChanges && currentDraftId !== null}
+      itemCount={selectedItems.length}
+      onShareLink={() => {
+        /* TODO: wire to existing share mutation if available */
+      }}
+      onConvertToOrder={() => {
+        sessionStorage.setItem(
+          "salesSheetToQuote",
+          JSON.stringify({
+            clientId: selectedClientId,
+            items: selectedItems.map(item => ({
+              id: item.id,
+              name: item.name,
+              basePrice: item.basePrice,
+              retailPrice: item.retailPrice,
+              quantity: item.quantity,
+              category: item.category,
+              vendor: item.vendor,
+              cogsMode: item.cogsMode,
+              unitCogs: item.unitCogs,
+              unitCogsMin: item.unitCogsMin,
+              unitCogsMax: item.unitCogsMax,
+              effectiveCogs: item.effectiveCogs,
+              effectiveCogsBasis: item.effectiveCogsBasis,
+            })),
+          })
+        );
+        setLocation(
+          buildSalesWorkspacePath("create-order", { fromSalesSheet: true })
+        );
+      }}
+      onConvertToQuote={() => {
+        sessionStorage.setItem(
+          "salesSheetToQuote",
+          JSON.stringify({
+            clientId: selectedClientId,
+            items: selectedItems.map(item => ({
+              id: item.id,
+              name: item.name,
+              basePrice: item.basePrice,
+              retailPrice: item.retailPrice,
+              quantity: item.quantity,
+              category: item.category,
+              vendor: item.vendor,
+              cogsMode: item.cogsMode,
+              unitCogs: item.unitCogs,
+              unitCogsMin: item.unitCogsMin,
+              unitCogsMax: item.unitCogsMax,
+              effectiveCogs: item.effectiveCogs,
+              effectiveCogsBasis: item.effectiveCogsBasis,
+            })),
+          })
+        );
+        setLocation(
+          buildSalesWorkspacePath("create-order", { fromSalesSheet: true })
+        );
+      }}
+      onStartLive={() => {
+        toast.info("Live Shopping session — coming soon");
+      }}
+    />
+  );
+}
 ```
 
 - [ ] **Step 4: Run type check**
@@ -1530,6 +1559,7 @@ All four must pass with zero errors.
 - [ ] **Step 2: Fix any issues found**
 
 Address each error/warning. Common expected issues:
+
 - Unused imports from removed right-sidebar code in OrderCreatorPage
 - Possible test selector updates if tests reference removed DOM structure
 
@@ -1547,6 +1577,7 @@ After deploying to staging (merge to main triggers auto-deploy):
 - [ ] **Step 1: Verify Sales Order creation flow**
 
 Navigate to `/sales?tab=orders&surface=sheet-native`, open a document. Verify:
+
 - Inventory browser occupies left half
 - Order document grid occupies right half
 - Referral + Credit modules appear below inventory
@@ -1557,6 +1588,7 @@ Navigate to `/sales?tab=orders&surface=sheet-native`, open a document. Verify:
 - [ ] **Step 2: Verify Sales Sheet flow**
 
 Navigate to `/sales?tab=sales-sheets&surface=sheet-native`. Verify:
+
 - Inventory browser on left, preview + output panel on right
 - Summary cards show items, value, share status
 - Save/Share/PDF/Print buttons in output panel
@@ -1575,13 +1607,13 @@ Resize browser to tablet/mobile widths. Both layouts should collapse to single-c
 
 ## Risk Assessment
 
-| Risk | Mitigation |
-|------|-----------|
-| OrderCreatorPage is 2206 lines; large layout change | All features preserved — this is a composition change, not a rewrite. Existing tests validate behavior. |
-| Existing E2E tests may break on selector changes | `data-testid` attributes preserved. Run `pnpm test:e2e:deep` after merge. |
-| Responsive breakpoints may not work perfectly | Tailwind grid responsive classes (`lg:grid-cols-2`) match existing pattern. Mobile falls back to stacked. |
-| PricingContextPanel loses prominence | Kept as expandable section below main grid; still accessible via Customer Actions drawer. |
-| FloatingOrderPreview removed | The order document grid itself is the live preview. Totals stay visible in WholeOrderChangesPanel. |
+| Risk                                                | Mitigation                                                                                                |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| OrderCreatorPage is 2206 lines; large layout change | All features preserved — this is a composition change, not a rewrite. Existing tests validate behavior.   |
+| Existing E2E tests may break on selector changes    | `data-testid` attributes preserved. Run `pnpm test:e2e:deep` after merge.                                 |
+| Responsive breakpoints may not work perfectly       | Tailwind grid responsive classes (`lg:grid-cols-2`) match existing pattern. Mobile falls back to stacked. |
+| PricingContextPanel loses prominence                | Kept as expandable section below main grid; still accessible via Customer Actions drawer.                 |
+| FloatingOrderPreview removed                        | The order document grid itself is the live preview. Totals stay visible in WholeOrderChangesPanel.        |
 
 ## Non-Goals
 

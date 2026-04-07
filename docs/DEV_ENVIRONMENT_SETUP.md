@@ -19,10 +19,10 @@ Current workflow deploys every change to production, causing:
 
 ### Environment Strategy
 
-| Environment     | Branch      | URL                                 | Purpose             | Deploy Time |
-| --------------- | ----------- | ----------------------------------- | ------------------- | ----------- |
-| **Production**  | `main`      | terp-app-b9s35.ondigitalocean.app   | Live users          | 5-10 min    |
-| **Development** | `develop`   | terp-dev-app.ondigitalocean.app     | Testing & iteration | 3-5 min     |
+| Environment     | Branch    | URL                               | Purpose             | Deploy Time |
+| --------------- | --------- | --------------------------------- | ------------------- | ----------- |
+| **Production**  | `main`    | terp-app-b9s35.ondigitalocean.app | Live users          | 5-10 min    |
+| **Development** | `develop` | terp-dev-app.ondigitalocean.app   | Testing & iteration | 3-5 min     |
 
 ---
 

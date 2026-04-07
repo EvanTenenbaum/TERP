@@ -30,8 +30,12 @@ describe("InvoiceBottom", () => {
 
     expect(screen.getByText("Subtotal")).toBeInTheDocument();
     expect(screen.getByText("$1200.00")).toBeInTheDocument();
-    expect(screen.getByText("Credit utilization is elevated.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Open Credit" })).toBeInTheDocument();
+    expect(
+      screen.getByText("Credit utilization is elevated.")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Open Credit" })
+    ).toBeInTheDocument();
   });
 
   it("calls change handlers for payment terms and decimal freight", () => {

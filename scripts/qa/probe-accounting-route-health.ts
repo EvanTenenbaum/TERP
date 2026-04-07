@@ -18,7 +18,9 @@ interface CheckResult {
   detail?: string;
 }
 
-function collectLicenseWarnings(messages: Array<{ type: string; text: string }>) {
+function collectLicenseWarnings(
+  messages: Array<{ type: string; text: string }>
+) {
   return messages.filter(entry =>
     /license key not found|trial|watermark|using_this_\{ag_grid\}/i.test(
       entry.text
@@ -93,7 +95,9 @@ async function main() {
     const handoffBanner = page.locator(
       '[data-testid="invoice-payment-handoff-banner"]'
     );
-    const handoffBannerVisible = await handoffBanner.isVisible().catch(() => false);
+    const handoffBannerVisible = await handoffBanner
+      .isVisible()
+      .catch(() => false);
     const handoffBannerText = handoffBannerVisible
       ? await handoffBanner.textContent()
       : "";
@@ -163,7 +167,11 @@ async function main() {
 
   const failedChecks = checks.filter(check => !check.pass);
 
-  if (licenseWarnings.length > 0 || pageErrors.length > 0 || failedChecks.length) {
+  if (
+    licenseWarnings.length > 0 ||
+    pageErrors.length > 0 ||
+    failedChecks.length
+  ) {
     console.error(
       JSON.stringify(
         {
@@ -181,7 +189,7 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(
+  console.info(
     JSON.stringify(
       {
         result: "PASS",

@@ -14,16 +14,17 @@
 
 **Why:** TER-842, TER-845, TER-830, and TER-833 were closed as `Done` without sufficient evidence. The remediation plan (Epic B, Task 3) identified this. These corrections must happen in Linear by Evan.
 
-| Ticket  | Current | Target        | Reason                                                                 |
-|---------|---------|---------------|------------------------------------------------------------------------|
-| TER-842 | Done    | In Progress   | Phase 6 "flip remaining modules" — flipped without 2-week soak/telemetry gate |
-| TER-845 | Done    | In Progress   | Phase 5 "flip 3 modules" — same premature flip, no soak evidence       |
-| TER-830 | Done    | In Progress   | QA ticket closed without SHIP/NO-SHIP proof artifact                   |
-| TER-833 | Done    | In Progress   | QA ticket closed without SHIP/NO-SHIP proof artifact                   |
+| Ticket  | Current | Target      | Reason                                                                        |
+| ------- | ------- | ----------- | ----------------------------------------------------------------------------- |
+| TER-842 | Done    | In Progress | Phase 6 "flip remaining modules" — flipped without 2-week soak/telemetry gate |
+| TER-845 | Done    | In Progress | Phase 5 "flip 3 modules" — same premature flip, no soak evidence              |
+| TER-830 | Done    | In Progress | QA ticket closed without SHIP/NO-SHIP proof artifact                          |
+| TER-833 | Done    | In Progress | QA ticket closed without SHIP/NO-SHIP proof artifact                          |
 
 - [ ] **Step 1: Open each ticket in Linear and change status to `In Progress`**
 
 - [ ] **Step 2: Add comment to TER-842 and TER-845:**
+
   > Reopened: default flip was applied before the plan's own 2-week soak gate. Defaults rolled back in commit `9fd11446`. Soak + telemetry evidence required before re-closing.
 
 - [ ] **Step 3: Add comment to TER-830 and TER-833:**
@@ -42,6 +43,7 @@
 **Fix direction:** Remove or rewire the "Mark as Paid" button to route through the `payments.recordPayment` endpoint (or the InvoiceToPaymentFlow golden flow), ensuring GL entries are always created.
 
 **Key files:**
+
 - `client/src/components/spreadsheet-native/InvoicesPilotSurface.tsx` — surface with the bypass button
 - `server/routers/payments.ts:258-447` — correct `recordPayment` endpoint with GL posting
 - `server/routers/invoices.ts` — likely has the direct status-flip mutation
@@ -53,6 +55,7 @@
 **Fix direction:** After `recordPayment` mutation succeeds, invalidate the `accounting.payments.list` query cache (or migrate PaymentsPilotSurface to use the same `payments` router for reads).
 
 **Key files:**
+
 - `client/src/components/spreadsheet-native/PaymentsPilotSurface.tsx:470` — uses `trpc.accounting.payments.list`
 - `client/src/components/work-surface/golden-flows/InvoiceToPaymentFlow.tsx` — calls `trpc.payments.recordPayment`
 
@@ -65,6 +68,7 @@
 - [ ] **Step 1: Verify the index is in schema.ts**
 
   Check that `drizzle/schema.ts` contains in the invoices table indexes:
+
   ```typescript
   referenceIdx: index("idx_invoices_reference").on(
     table.referenceType,
@@ -79,6 +83,7 @@
   ```
 
   Expected: Creates `drizzle/migrations/0062_*.sql` with:
+
   ```sql
   CREATE INDEX `idx_invoices_reference` ON `invoices` (`referenceType`, `referenceId`);
   ```
@@ -113,10 +118,12 @@
 - **Seed:** `server/services/seedFeatureFlags.ts` is idempotent and seeds ~20 flags
 
 **Most likely cause of 0 rows:**
+
 1. **Seed hasn't run yet** — the `seedFeatureFlags()` function must execute on app startup for flags to exist. If the deployment didn't trigger seeding (new environment, cold start, migration timing), the table is empty.
 2. **Environment mismatch** — querying a database instance that hasn't been seeded (e.g., a fresh staging DB after rebuild without running seeds).
 
 **Resolution:** No code change needed. Verify on next staging deploy that `seedFeatureFlags()` runs on startup and the `feature_flags` table is populated:
+
 ```sql
 SELECT COUNT(*) FROM feature_flags WHERE deleted_at IS NULL;
 -- Expected: ~20 rows

@@ -32,11 +32,13 @@ This file maps where state lives and how mutations produce side effects.
 `/orders/create` -> `orders.createDraftEnhanced` -> `orders.finalizeDraft`
 
 Current side effects:
+
 - Draft + line items created
 - Finalize path reserves inventory and updates draft status
 - Sample items decrement sample allocation fields at finalize
 
 Evidence:
+
 - `server/routers/orders.ts:703` (`createDraftEnhanced`)
 - `server/routers/orders.ts:1074` (`finalizeDraft`)
 
@@ -45,28 +47,33 @@ Evidence:
 `/orders` -> `orders.confirmDraftOrder`
 
 Current side effects:
+
 - Decrements on-hand/sample inventory in this path
 - Updates sale/payment terms
 - Updates consignment payable logic
 
 Evidence:
+
 - `client/src/components/work-surface/OrdersWorkSurface.tsx:598`
 - `server/ordersDb.ts:1163` (`confirmDraftOrder`)
 
 ### C) Shipping and Invoice Creation
 
 `updateOrderStatus(..., SHIPPED)` currently:
+
 - Runs inventory decrement helper
 - Creates invoice from order
 - Optionally records cash payment
 - Syncs client balance
 
 Evidence:
+
 - `server/ordersDb.ts:1691` (`updateOrderStatus`)
 - `server/ordersDb.ts:1805` (`createInvoiceFromOrder`)
 - `server/ordersDb.ts:1958` (`decrementInventoryForOrder`)
 
 Correctness hotspot:
+
 - Inventory movement policy is not unified with canonical target (reserve-at-finalize + decrement onHand+reserved at ship).
 
 ### D) Payment Side Effects (Split vs Canonical)
@@ -90,24 +97,29 @@ Current code paths:
    - Evidence: `server/routers/accounting.ts:915`, `server/arApDb.ts:191`
 
 Canonical target (decision):
+
 - Use `payments.recordPayment` as source-of-truth path.
 
 Current mismatch:
+
 - Invoice payment UI currently calls `accounting.payments.create`.
 - Evidence: `client/src/components/work-surface/golden-flows/InvoiceToPaymentFlow.tsx:767`
 
 ### E) Auth/Logout Side Effects
 
 Current behavior:
+
 - Logout clears session token path, but context may still provision public/demo fallback user.
 - Frontend treats any `auth.me` result as authenticated.
 
 Evidence:
+
 - `server/routers/auth.ts:22`
 - `server/_core/context.ts:203`, `server/_core/context.ts:230`
 - `client/src/_core/hooks/useAuth.ts:50`
 
 Canonical target (decision):
+
 - Production should not fall back into internal app access after logout.
 
 ### F) Samples Side Effects
@@ -116,6 +128,7 @@ Canonical target (decision):
 - `samples.fulfillRequest` is permission-gated (`samples:allocate`) and mutates inventory/sample movement state.
 
 Evidence:
+
 - `client/src/App.tsx:350`
 - `client/src/config/navigation.ts:174`
 - `server/routers/samples.ts:166`
@@ -138,6 +151,7 @@ Evidence:
 5. Feature-flag audit history reliability in production.
 
 Primary evidence pointers:
+
 - `server/routers/orders.ts`, `server/ordersDb.ts`
 - `server/routers/payments.ts`, `server/routers/accounting.ts`, `server/arApDb.ts`
 - `server/_core/context.ts`, `server/routers/auth.ts`, `client/src/_core/hooks/useAuth.ts`

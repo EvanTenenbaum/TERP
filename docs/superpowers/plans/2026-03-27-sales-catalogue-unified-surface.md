@@ -26,14 +26,14 @@ These features exist in the classic `SalesSheetCreatorPage` / `SalesSheetPreview
 
 ## File Structure
 
-| Action | Path | Responsibility |
-|--------|------|---------------|
-| Create | `client/src/components/spreadsheet-native/SalesCatalogueSurface.tsx` | Main unified surface — toolbar, action bar, split grids, handoff bar, status bar |
-| Create | `client/src/hooks/useCatalogueDraft.ts` | Draft lifecycle: create, update, auto-save, delete, dirty tracking |
-| Create | `client/src/components/spreadsheet-native/SalesCatalogueSurface.test.tsx` | Component tests |
-| Create | `client/src/hooks/useCatalogueDraft.test.ts` | Hook tests |
-| Modify | `client/src/pages/SalesWorkspacePage.tsx` | Replace sales-sheets panel + remove SheetModeToggle |
-| Delete | (deferred cleanup) | SalesSheetCreatorPage, SalesSheetsPilotSurface, SalesSheetPreview, InventoryBrowser, DraftControls |
+| Action | Path                                                                      | Responsibility                                                                                     |
+| ------ | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Create | `client/src/components/spreadsheet-native/SalesCatalogueSurface.tsx`      | Main unified surface — toolbar, action bar, split grids, handoff bar, status bar                   |
+| Create | `client/src/hooks/useCatalogueDraft.ts`                                   | Draft lifecycle: create, update, auto-save, delete, dirty tracking                                 |
+| Create | `client/src/components/spreadsheet-native/SalesCatalogueSurface.test.tsx` | Component tests                                                                                    |
+| Create | `client/src/hooks/useCatalogueDraft.test.ts`                              | Hook tests                                                                                         |
+| Modify | `client/src/pages/SalesWorkspacePage.tsx`                                 | Replace sales-sheets panel + remove SheetModeToggle                                                |
+| Delete | (deferred cleanup)                                                        | SalesSheetCreatorPage, SalesSheetsPilotSurface, SalesSheetPreview, InventoryBrowser, DraftControls |
 
 ---
 
@@ -42,6 +42,7 @@ These features exist in the classic `SalesSheetCreatorPage` / `SalesSheetPreview
 Extracts draft state management from `SalesSheetsPilotSurface` into a reusable hook. Handles draft CRUD, auto-save with stale-closure-safe refs, dirty tracking, and share link generation.
 
 **Files:**
+
 - Create: `client/src/hooks/useCatalogueDraft.ts`
 - Create: `client/src/hooks/useCatalogueDraft.test.ts`
 - Reference: `client/src/components/spreadsheet-native/SalesSheetsPilotSurface.tsx` (lines 130-400)
@@ -60,14 +61,24 @@ import { useCatalogueDraft } from "./useCatalogueDraft";
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     salesSheets: {
-      saveDraft: { useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })) },
-      deleteDraft: { useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })) },
+      saveDraft: {
+        useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+      },
+      deleteDraft: {
+        useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+      },
       getDrafts: { useQuery: vi.fn(() => ({ data: [], isLoading: false })) },
       getDraftById: { useQuery: vi.fn(() => ({ data: null })) },
-      generateShareLink: { useMutation: vi.fn(() => ({ mutateAsync: vi.fn() })) },
-      save: { useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })) },
+      generateShareLink: {
+        useMutation: vi.fn(() => ({ mutateAsync: vi.fn() })),
+      },
+      save: {
+        useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+      },
     },
-    useUtils: vi.fn(() => ({ salesSheets: { getDrafts: { invalidate: vi.fn() } } })),
+    useUtils: vi.fn(() => ({
+      salesSheets: { getDrafts: { invalidate: vi.fn() } },
+    })),
   },
 }));
 
@@ -186,14 +197,22 @@ export function useCatalogueDraft({
   const currentDraftIdRef = useRef<number | null>(null);
 
   // ── keep refs in sync ───────────────────────────────────────────────────
-  useEffect(() => { selectedItemsRef.current = items; }, [items]);
-  useEffect(() => { draftNameRef.current = draftName; }, [draftName]);
-  useEffect(() => { selectedClientIdRef.current = clientId; }, [clientId]);
-  useEffect(() => { currentDraftIdRef.current = currentDraftId; }, [currentDraftId]);
+  useEffect(() => {
+    selectedItemsRef.current = items;
+  }, [items]);
+  useEffect(() => {
+    draftNameRef.current = draftName;
+  }, [draftName]);
+  useEffect(() => {
+    selectedClientIdRef.current = clientId;
+  }, [clientId]);
+  useEffect(() => {
+    currentDraftIdRef.current = currentDraftId;
+  }, [currentDraftId]);
 
   // ── mutations ───────────────────────────────────────────────────────────
   const saveDraftMutation = trpc.salesSheets.saveDraft.useMutation({
-    onSuccess: (data) => {
+    onSuccess: data => {
       // Server returns { draftId }, not { id }
       if (data?.draftId && !currentDraftIdRef.current) {
         setCurrentDraftId(data.draftId);
@@ -229,7 +248,7 @@ export function useCatalogueDraft({
       void utils.salesSheets.getDrafts.invalidate();
       toast.success("Draft deleted");
     },
-    onError: (error) => {
+    onError: error => {
       isDeletingDraftRef.current = false;
       toast.error("Failed to delete draft: " + error.message);
     },
@@ -248,7 +267,7 @@ export function useCatalogueDraft({
         "salesSheetToQuote",
         JSON.stringify({
           clientId,
-          items: items.map((item) => ({
+          items: items.map(item => ({
             id: item.id,
             name: item.name,
             basePrice: item.basePrice,
@@ -266,7 +285,7 @@ export function useCatalogueDraft({
         })
       );
     },
-    onError: (error) => {
+    onError: error => {
       toast.error("Failed to convert: " + error.message);
     },
   });
@@ -277,15 +296,17 @@ export function useCatalogueDraft({
     { enabled: clientId !== null }
   );
 
-  const drafts: DraftInfo[] = (draftsQuery.data ?? []).map((d: Record<string, unknown>) => ({
-    id: d.id as number,
-    name: d.name as string,
-    clientId: d.clientId as number,
-    itemCount: d.itemCount as number,
-    totalValue: d.totalValue as string,
-    updatedAt: d.updatedAt as Date | null,
-    createdAt: d.createdAt as Date | null,
-  }));
+  const drafts: DraftInfo[] = (draftsQuery.data ?? []).map(
+    (d: Record<string, unknown>) => ({
+      id: d.id as number,
+      name: d.name as string,
+      clientId: d.clientId as number,
+      itemCount: d.itemCount as number,
+      totalValue: d.totalValue as string,
+      updatedAt: d.updatedAt as Date | null,
+      createdAt: d.createdAt as Date | null,
+    })
+  );
 
   // ── mark dirty on item changes ──────────────────────────────────────────
   useEffect(() => {
@@ -440,7 +461,8 @@ export function useCatalogueDraft({
     // Share requires a FINALIZED sheet ID (not a draft).
     // The generateShareLink API operates on salesSheetHistory, not drafts.
     // canShare is true only after salesSheets.save has been called and returned a sheetId.
-    canShare: !hasUnsavedChanges && lastSavedSheetId !== null && items.length > 0,
+    canShare:
+      !hasUnsavedChanges && lastSavedSheetId !== null && items.length > 0,
     canConvert: !hasUnsavedChanges && clientId !== null && items.length > 0,
     lastSavedSheetId,
     saveDraft,
@@ -474,6 +496,7 @@ git commit -m "feat(sales-catalogue): add useCatalogueDraft hook for draft lifec
 The main unified surface with all layout zones. This is the largest task — builds the complete component with toolbar, action bar, split grids, handoff bar, and status bar.
 
 **Files:**
+
 - Create: `client/src/components/spreadsheet-native/SalesCatalogueSurface.tsx`
 - Reference: `client/src/components/spreadsheet-native/SalesSheetsPilotSurface.tsx` (column defs, row mapping)
 - Reference: `client/src/components/sales/types.ts` (all types)
@@ -1291,6 +1314,7 @@ git commit -m "feat(sales-catalogue): add SalesCatalogueSurface unified componen
 QA review found 6 HIGH findings — features referenced in the spec or existing in the old surfaces that the initial component code omits. This task wires them all.
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/SalesCatalogueSurface.tsx`
 
 - [ ] **Step 1: Add AdvancedFilters with state + apply filters to inventory data**
@@ -1300,40 +1324,58 @@ The action bar has no Filters button wired. Add these to the component:
 1. Import `AdvancedFilters` from `@/components/sales/AdvancedFilters`
 2. Add state: `const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);`
 3. Add a Filters button to the action bar after Save View:
+
 ```tsx
-<Button size="sm" variant="outline" className="h-6 px-2 text-[10px]"
-  onClick={() => setShowAdvancedFilters(prev => !prev)}>
-  Filters {filters.categories.length + filters.grades.length + filters.vendors.length > 0 ? "●" : ""}
+<Button
+  size="sm"
+  variant="outline"
+  className="h-6 px-2 text-[10px]"
+  onClick={() => setShowAdvancedFilters(prev => !prev)}
+>
+  Filters{" "}
+  {filters.categories.length + filters.grades.length + filters.vendors.length >
+  0
+    ? "●"
+    : ""}
 </Button>
 ```
+
 4. Render `<AdvancedFilters>` conditionally between the action bar and the grids:
+
 ```tsx
-{showAdvancedFilters && selectedClientId && (
-  <AdvancedFilters
-    filters={filters}
-    sort={sort}
-    onFiltersChange={setFilters}
-    onSortChange={setSort}
-    inventory={inventoryQuery.data ?? []}
-    isOpen={showAdvancedFilters}
-    onOpenChange={setShowAdvancedFilters}
-  />
-)}
+{
+  showAdvancedFilters && selectedClientId && (
+    <AdvancedFilters
+      filters={filters}
+      sort={sort}
+      onFiltersChange={setFilters}
+      onSortChange={setSort}
+      inventory={inventoryQuery.data ?? []}
+      isOpen={showAdvancedFilters}
+      onOpenChange={setShowAdvancedFilters}
+    />
+  );
+}
 ```
+
 5. Update the `inventoryRows` memo to apply ALL filters (not just searchTerm). Reference the existing `SalesSheetCreatorPage` filtering logic — it passes `filters` to `InventoryBrowser` which applies them internally. Since we're replacing `InventoryBrowser` with a PowersheetGrid, apply filters in the `inventoryRows` memo:
+
 ```tsx
 const inventoryRows = useMemo(() => {
   let items = inventoryQuery.data ?? [];
   const lower = searchTerm.trim().toLowerCase();
   if (lower) {
-    items = items.filter(item =>
-      item.name.toLowerCase().includes(lower) ||
-      (item.category ?? "").toLowerCase().includes(lower) ||
-      (item.vendor ?? "").toLowerCase().includes(lower)
+    items = items.filter(
+      item =>
+        item.name.toLowerCase().includes(lower) ||
+        (item.category ?? "").toLowerCase().includes(lower) ||
+        (item.vendor ?? "").toLowerCase().includes(lower)
     );
   }
   if (filters.categories.length > 0) {
-    items = items.filter(item => filters.categories.includes(item.category ?? ""));
+    items = items.filter(item =>
+      filters.categories.includes(item.category ?? "")
+    );
   }
   if (filters.grades.length > 0) {
     items = items.filter(item => filters.grades.includes(item.grade ?? ""));
@@ -1358,22 +1400,32 @@ const inventoryRows = useMemo(() => {
 
 1. Import `DraftDialog` from `@/components/sales/DraftDialog` and `SavedSheetsDialog` from `@/components/sales/SavedSheetsDialog`
 2. Add state:
+
 ```tsx
 const [showDraftDialog, setShowDraftDialog] = useState(false);
 const [showSavedSheetsDialog, setShowSavedSheetsDialog] = useState(false);
 ```
+
 3. Add `salesSheets.getHistory` query for saved sheets:
+
 ```tsx
 const savedSheetsQuery = trpc.salesSheets.getHistory.useQuery(
   { clientId: selectedClientId! },
   { enabled: selectedClientId !== null }
 );
 ```
+
 4. Wire the MoreHorizontal dropdown (already imported but unused) in the toolbar:
+
 ```tsx
 <DropdownMenu>
   <DropdownMenuTrigger asChild>
-    <Button size="sm" variant="outline" className="h-7 px-2" disabled={!selectedClientId}>
+    <Button
+      size="sm"
+      variant="outline"
+      className="h-7 px-2"
+      disabled={!selectedClientId}
+    >
       <MoreHorizontal className="h-3 w-3" />
     </Button>
   </DropdownMenuTrigger>
@@ -1394,7 +1446,9 @@ const savedSheetsQuery = trpc.salesSheets.getHistory.useQuery(
   </DropdownMenuContent>
 </DropdownMenu>
 ```
+
 5. Render the dialogs at the bottom of the component:
+
 ```tsx
 <DraftDialog
   open={showDraftDialog}
@@ -1436,7 +1490,9 @@ const savedSheetsQuery = trpc.salesSheets.getHistory.useQuery(
   }}
 />
 ```
+
 6. Add `utils` from tRPC:
+
 ```tsx
 const utils = trpc.useUtils();
 ```
@@ -1447,7 +1503,8 @@ Add a COGS column to `inventoryColumnDefs`, conditionally shown based on organiz
 
 ```tsx
 // Add query at component level:
-const displaySettingsQuery = trpc.organizationSettings.getDisplaySettings.useQuery();
+const displaySettingsQuery =
+  trpc.organizationSettings.getDisplaySettings.useQuery();
 const showCogs = displaySettingsQuery.data?.showCogsInOrders ?? false;
 
 // Add column conditionally in inventoryColumnDefs:
@@ -1462,8 +1519,9 @@ const inventoryColumnDefs = useMemo<ColDef<InventoryBrowserRow>[]>(() => {
       headerName: "COGS",
       minWidth: 75,
       maxWidth: 95,
-      valueGetter: (params) => params.data?._raw.effectiveCogs ?? params.data?._raw.unitCogs ?? 0,
-      valueFormatter: (params) => formatCurrency(Number(params.value ?? 0)),
+      valueGetter: params =>
+        params.data?._raw.effectiveCogs ?? params.data?._raw.unitCogs ?? 0,
+      valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
       cellClass: "powersheet-cell--locked",
     });
   }
@@ -1516,11 +1574,20 @@ useEffect(() => {
       v.clientId === selectedClientId && v.isDefault
   );
   if (defaultView) {
-    setFilters((defaultView as { filters: InventoryFilters }).filters ?? DEFAULT_FILTERS);
-    setSort((defaultView as { sort: InventorySortConfig }).sort ?? DEFAULT_SORT);
-    setColumnVisibility((defaultView as { columnVisibility: ColumnVisibility }).columnVisibility ?? DEFAULT_COLUMN_VISIBILITY);
+    setFilters(
+      (defaultView as { filters: InventoryFilters }).filters ?? DEFAULT_FILTERS
+    );
+    setSort(
+      (defaultView as { sort: InventorySortConfig }).sort ?? DEFAULT_SORT
+    );
+    setColumnVisibility(
+      (defaultView as { columnVisibility: ColumnVisibility })
+        .columnVisibility ?? DEFAULT_COLUMN_VISIBILITY
+    );
     setCurrentViewId(defaultView.id);
-    toast.info(`Loaded default view: ${(defaultView as { name: string }).name}`);
+    toast.info(
+      `Loaded default view: ${(defaultView as { name: string }).name}`
+    );
   }
 }, [selectedClientId, savedViewsQuery.data]);
 ```
@@ -1575,6 +1642,7 @@ git commit -m "feat(sales-catalogue): wire AdvancedFilters, DraftDialog, SavedSh
 Replace the sales-sheets panel's dual-surface rendering and SheetModeToggle with the unified SalesCatalogueSurface.
 
 **Files:**
+
 - Modify: `client/src/pages/SalesWorkspacePage.tsx:93-108,166-171,226-239`
 
 - [ ] **Step 1: Remove sales-sheets surface mode hooks and SheetModeToggle wiring**
@@ -1584,6 +1652,7 @@ In `client/src/pages/SalesWorkspacePage.tsx`, remove the sales-sheets pilot avai
 Make these exact changes to the imports section (lines 1-22):
 
 1. **Remove** the `SalesSheetsPilotSurface` lazy import (lines 10-12):
+
 ```typescript
 // DELETE:
 const SalesSheetsPilotSurface = lazy(
@@ -1592,12 +1661,14 @@ const SalesSheetsPilotSurface = lazy(
 ```
 
 2. **Remove** the `SalesSheetCreatorPage` import (line 21):
+
 ```typescript
 // DELETE:
 import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
 ```
 
 3. **Add** the lazy import for `SalesCatalogueSurface` (after the other lazy imports, before the static imports):
+
 ```typescript
 const SalesCatalogueSurface = lazy(
   () => import("@/components/spreadsheet-native/SalesCatalogueSurface")
@@ -1605,10 +1676,13 @@ const SalesCatalogueSurface = lazy(
 ```
 
 4. **Add `Suspense`** to the React import (line 1). Change:
+
 ```typescript
 import { lazy } from "react";
 ```
+
 to:
+
 ```typescript
 import { lazy, Suspense } from "react";
 ```
@@ -1618,10 +1692,10 @@ import { lazy, Suspense } from "react";
 Replace the ENTIRE `LinearWorkspacePanel value="sales-sheets"` block (lines 226-239):
 
 **Before (lines 226-239):**
+
 ```tsx
 <LinearWorkspacePanel value="sales-sheets">
-  {salesSheetsPilotEnabled &&
-  salesSheetsSurfaceMode === "sheet-native" ? (
+  {salesSheetsPilotEnabled && salesSheetsSurfaceMode === "sheet-native" ? (
     <PilotSurfaceBoundary fallback={<SalesSheetCreatorPage embedded />}>
       <SalesSheetsPilotSurface
         onOpenClassic={() =>
@@ -1636,9 +1710,16 @@ Replace the ENTIRE `LinearWorkspacePanel value="sales-sheets"` block (lines 226-
 ```
 
 **After:**
+
 ```tsx
 <LinearWorkspacePanel value="sales-sheets">
-  <Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading catalogue...</div>}>
+  <Suspense
+    fallback={
+      <div className="p-4 text-sm text-muted-foreground">
+        Loading catalogue...
+      </div>
+    }
+  >
     <SalesCatalogueSurface />
   </Suspense>
 </LinearWorkspacePanel>
@@ -1679,6 +1760,7 @@ git commit -m "feat(sales-catalogue): wire SalesCatalogueSurface into SalesWorks
 Remove the classic and pilot surfaces that are now replaced. This is done as a separate commit so it's easy to revert if something is missed.
 
 **Files:**
+
 - Delete: `client/src/pages/SalesSheetCreatorPage.tsx`
 - Delete: `client/src/components/spreadsheet-native/SalesSheetsPilotSurface.tsx`
 - Delete: `client/src/components/spreadsheet-native/SalesSheetsPilotSurface.test.tsx`
@@ -1688,6 +1770,7 @@ Remove the classic and pilot surfaces that are now replaced. This is done as a s
 - Delete: `client/src/components/sales/DraftControls.tsx`
 
 **NOTE:** Do NOT delete these shared components that are still used elsewhere:
+
 - `client/src/components/sales/types.ts` — used by SalesCatalogueSurface
 - `client/src/components/sales/QuickViewSelector.tsx` — used by SalesCatalogueSurface
 - `client/src/components/sales/SaveViewDialog.tsx` — used by SalesCatalogueSurface
@@ -1736,12 +1819,14 @@ Expected: all four pass with zero errors. If TypeScript or build fails, it means
 `SalesWorkspacePage.test.tsx` mocks `SalesSheetsPilotSurface` and `SalesSheetCreatorPage`. These mocks must be updated:
 
 1. Check `client/src/pages/SalesWorkspacePage.test.tsx` — replace mocks for `SalesSheetsPilotSurface` and `SalesSheetCreatorPage` with a mock for `SalesCatalogueSurface`:
+
 ```typescript
 vi.mock("@/components/spreadsheet-native/SalesCatalogueSurface", () => ({
   default: () => <div data-testid="sale-catalogue-surface">SalesCatalogueSurface</div>,
   SalesCatalogueSurface: () => <div data-testid="sale-catalogue-surface">SalesCatalogueSurface</div>,
 }));
 ```
+
 2. Update any assertions that check for old component rendering to check for `SalesCatalogueSurface` instead.
 3. Check `ConsolidatedWorkspaces.test.tsx` for similar references.
 4. Re-run: `pnpm test`
@@ -1760,6 +1845,7 @@ git commit -m "chore(sales-catalogue): retire SalesSheetCreatorPage, SalesSheets
 End-to-end check that the unified surface works correctly.
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/SalesCatalogueSurface.tsx` (if fixes needed)
 - Modify: `client/src/hooks/useCatalogueDraft.ts` (if fixes needed)
 
@@ -1801,6 +1887,7 @@ git commit -m "fix(sales-catalogue): address verification findings"
 ## Phase 2 Note
 
 Phase 2 (Sales Order Surface) requires a separate implementation plan. It involves:
+
 - Decomposing `OrderCreatorPage` (21,560 lines) into `useOrderDraft()` hook + `SalesOrderSurface` component
 - Creating the invoice-bottom pattern (Subtotal, Discount, Freight, Total, Payment Terms, Credit info)
 - Creating the Order Adjustments panel (Referral, Notes, Draft status)
@@ -1815,23 +1902,24 @@ Phase 2 plan will be written after Phase 1 ships and the layout pattern is valid
 
 These schemas were verified against `server/routers/salesSheets.ts` on 2026-03-27. If the implementing agent gets a TypeScript error on a tRPC call, check this appendix first.
 
-| Procedure | Input | Return |
-|-----------|-------|--------|
-| `getInventory` | `{ clientId: number }` (positive) | `PricedInventoryItem[]` |
-| `saveDraft` | `{ draftId?: number, clientId: number, name: string (1-255), items: draftItemSchema[], totalValue: number }` | `{ draftId: number }` |
-| `deleteDraft` | `{ draftId: number }` | `{ success: true }` |
-| `getDrafts` | `{ clientId?: number }` (entire object optional) | `SalesSheetDraft[]` |
-| `getDraftById` | `{ draftId: number }` | `SalesSheetDraft \| null` |
-| `save` | `{ clientId: number, items: salesSheetItemSchema[], totalValue: number }` | `number` (sheetId) |
-| `getHistory` | `{ clientId: number, limit?: number }` | `SalesSheetHistory[]` |
-| `getById` | `{ sheetId: number }` | `SalesSheetHistory \| null` |
-| `generateShareLink` | `{ sheetId: number, expiresInDays?: number (1-90, default 7) }` | `{ token, expiresAt, shareUrl }` |
-| `getViews` | `{ clientId?: number }` (entire object optional) | `SavedView[]` |
-| `saveView` | `{ id?: number, name: string, description?: string, clientId?: number, filters, sort, columnVisibility, isDefault: boolean }` | `{ viewId: number }` |
-| `convertToLiveSession` | `{ sheetId: number }` | `{ sessionId: number }` |
-| `convertToOrder` | `{ sheetId: number, orderType?: "DRAFT"\|"QUOTE"\|"ORDER" }` | `{ orderId: number }` |
+| Procedure              | Input                                                                                                                         | Return                           |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| `getInventory`         | `{ clientId: number }` (positive)                                                                                             | `PricedInventoryItem[]`          |
+| `saveDraft`            | `{ draftId?: number, clientId: number, name: string (1-255), items: draftItemSchema[], totalValue: number }`                  | `{ draftId: number }`            |
+| `deleteDraft`          | `{ draftId: number }`                                                                                                         | `{ success: true }`              |
+| `getDrafts`            | `{ clientId?: number }` (entire object optional)                                                                              | `SalesSheetDraft[]`              |
+| `getDraftById`         | `{ draftId: number }`                                                                                                         | `SalesSheetDraft \| null`        |
+| `save`                 | `{ clientId: number, items: salesSheetItemSchema[], totalValue: number }`                                                     | `number` (sheetId)               |
+| `getHistory`           | `{ clientId: number, limit?: number }`                                                                                        | `SalesSheetHistory[]`            |
+| `getById`              | `{ sheetId: number }`                                                                                                         | `SalesSheetHistory \| null`      |
+| `generateShareLink`    | `{ sheetId: number, expiresInDays?: number (1-90, default 7) }`                                                               | `{ token, expiresAt, shareUrl }` |
+| `getViews`             | `{ clientId?: number }` (entire object optional)                                                                              | `SavedView[]`                    |
+| `saveView`             | `{ id?: number, name: string, description?: string, clientId?: number, filters, sort, columnVisibility, isDefault: boolean }` | `{ viewId: number }`             |
+| `convertToLiveSession` | `{ sheetId: number }`                                                                                                         | `{ sessionId: number }`          |
+| `convertToOrder`       | `{ sheetId: number, orderType?: "DRAFT"\|"QUOTE"\|"ORDER" }`                                                                  | `{ orderId: number }`            |
 
 **Critical notes:**
+
 - `saveDraft` returns `{ draftId }`, NOT `{ id }`. Use `data.draftId`.
 - `save` returns a raw `number` (the sheetId), NOT an object. Use `data` directly as the sheetId.
 - `generateShareLink` requires a **finalized sheet ID** from `save`, NOT a draft ID.
@@ -1840,19 +1928,20 @@ These schemas were verified against `server/routers/salesSheets.ts` on 2026-03-2
 
 ## Appendix: Verified Component Prop Signatures
 
-| Component | Required Props | Optional Props |
-|-----------|---------------|----------------|
-| `QuickViewSelector` | `clientId: number`, `onLoadView: (view: {filters, sort, columnVisibility}) => void` | `currentViewId?: number \| null` |
-| `SaveViewDialog` | `open: boolean`, `onOpenChange: (open: boolean) => void`, `clientId: number`, `filters`, `sort`, `columnVisibility` | `clientName?: string`, `onSaved?: (viewId: number) => void` |
-| `DraftDialog` | `open`, `onOpenChange`, `drafts: DraftInfo[]`, `isLoading: boolean`, `onLoadDraft: (draftId: number) => void`, `onDeleteDraft: (draftId: number) => void`, `isDeleting: boolean` | — |
-| `SavedSheetsDialog` | `open`, `onOpenChange`, `savedSheets: SavedSheetInfo[]`, `isLoading: boolean`, `onLoadSavedSheet: (sheetId: number) => void` | — |
-| `AdvancedFilters` | `filters`, `sort`, `onFiltersChange`, `onSortChange`, `inventory: PricedInventoryItem[]`, `isOpen: boolean`, `onOpenChange: (open: boolean) => void` | — |
-| `ConfirmDialog` | `open`, `onOpenChange`, `title: string`, `description: string \| ReactNode`, `onConfirm: () => void` | `confirmLabel?`, `cancelLabel?`, `variant?: "default" \| "destructive"`, `isLoading?: boolean` |
-| `ClientCombobox` | `value: number \| null`, `onValueChange: (id: number \| null) => void`, `clients: ClientOption[]` | `isLoading?`, `placeholder?`, `emptyText?`, `disabled?`, `className?` |
+| Component           | Required Props                                                                                                                                                                   | Optional Props                                                                                 |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `QuickViewSelector` | `clientId: number`, `onLoadView: (view: {filters, sort, columnVisibility}) => void`                                                                                              | `currentViewId?: number \| null`                                                               |
+| `SaveViewDialog`    | `open: boolean`, `onOpenChange: (open: boolean) => void`, `clientId: number`, `filters`, `sort`, `columnVisibility`                                                              | `clientName?: string`, `onSaved?: (viewId: number) => void`                                    |
+| `DraftDialog`       | `open`, `onOpenChange`, `drafts: DraftInfo[]`, `isLoading: boolean`, `onLoadDraft: (draftId: number) => void`, `onDeleteDraft: (draftId: number) => void`, `isDeleting: boolean` | —                                                                                              |
+| `SavedSheetsDialog` | `open`, `onOpenChange`, `savedSheets: SavedSheetInfo[]`, `isLoading: boolean`, `onLoadSavedSheet: (sheetId: number) => void`                                                     | —                                                                                              |
+| `AdvancedFilters`   | `filters`, `sort`, `onFiltersChange`, `onSortChange`, `inventory: PricedInventoryItem[]`, `isOpen: boolean`, `onOpenChange: (open: boolean) => void`                             | —                                                                                              |
+| `ConfirmDialog`     | `open`, `onOpenChange`, `title: string`, `description: string \| ReactNode`, `onConfirm: () => void`                                                                             | `confirmLabel?`, `cancelLabel?`, `variant?: "default" \| "destructive"`, `isLoading?: boolean` |
+| `ClientCombobox`    | `value: number \| null`, `onValueChange: (id: number \| null) => void`, `clients: ClientOption[]`                                                                                | `isLoading?`, `placeholder?`, `emptyText?`, `disabled?`, `className?`                          |
 
 ## Appendix: SalesWorkspacePage Exact Diff
 
 **Delete these sections (line numbers from current file):**
+
 - Lines 10-12: `SalesSheetsPilotSurface` lazy import
 - Line 21: `SalesSheetCreatorPage` import
 - Lines 93-108: Sales-sheets surface mode hooks (16 lines)
@@ -1860,12 +1949,20 @@ These schemas were verified against `server/routers/salesSheets.ts` on 2026-03-2
 - Lines 226-239: `LinearWorkspacePanel value="sales-sheets"` dual-surface block (14 lines)
 
 **Add:**
+
 - Line 1: Change `import { lazy } from "react"` to `import { lazy, Suspense } from "react"`
 - After other lazy imports: `const SalesCatalogueSurface = lazy(() => import("@/components/spreadsheet-native/SalesCatalogueSurface"));`
 - Replace lines 226-239 with:
+
 ```tsx
 <LinearWorkspacePanel value="sales-sheets">
-  <Suspense fallback={<div className="p-4 text-sm text-muted-foreground">Loading catalogue...</div>}>
+  <Suspense
+    fallback={
+      <div className="p-4 text-sm text-muted-foreground">
+        Loading catalogue...
+      </div>
+    }
+  >
     <SalesCatalogueSurface />
   </Suspense>
 </LinearWorkspacePanel>

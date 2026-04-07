@@ -24,6 +24,7 @@ This is the rapid lookup index for live walkthroughs.
   - logout then `/` -> dashboard re-entry (fallback user behavior)
 
 Relevant code anchors:
+
 - `server/routers/orders.ts` (`getAll`, `createDraftEnhanced`, `finalizeDraft`, `shipOrder`)
 - `server/ordersDb.ts` (`confirmDraftOrder`, `updateOrderStatus`, `decrementInventoryForOrder`)
 - `server/routers/credit.ts` (`getVisibilitySettings`)

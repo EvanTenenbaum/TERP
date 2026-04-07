@@ -47,6 +47,7 @@ import type {
 
 interface FilterOptions {
   categories: string[];
+  brands: string[];
   grades: string[];
   strainFamilies: string[];
   vendors: string[];
@@ -76,6 +77,9 @@ export function AdvancedFilters({
 }: AdvancedFiltersProps) {
   // FIX: Local state for search with debouncing to prevent excessive re-filtering
   const [localSearch, setLocalSearch] = useState(filters.search);
+  const searchDebounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   // FIX: Use ref to get current filters without adding to dependency array
   const filtersRef = useRef(filters);
@@ -83,26 +87,36 @@ export function AdvancedFilters({
     filtersRef.current = filters;
   }, [filters]);
 
+  const clearPendingSearchUpdate = useCallback(() => {
+    if (searchDebounceTimerRef.current !== null) {
+      clearTimeout(searchDebounceTimerRef.current);
+      searchDebounceTimerRef.current = null;
+    }
+  }, []);
+
   // Sync local search with external filters when they change
   useEffect(() => {
+    clearPendingSearchUpdate();
     setLocalSearch(filters.search);
-  }, [filters.search]);
+  }, [clearPendingSearchUpdate, filters.search]);
 
   // FIX: Debounce search updates - only depend on localSearch and filters.search
   // Using ref to get current filters avoids resetting timer on other filter changes
   useEffect(() => {
-    const timer = setTimeout(() => {
+    clearPendingSearchUpdate();
+    searchDebounceTimerRef.current = setTimeout(() => {
       if (localSearch !== filtersRef.current.search) {
         onFiltersChange({ ...filtersRef.current, search: localSearch });
       }
     }, SEARCH_DEBOUNCE_MS);
 
-    return () => clearTimeout(timer);
-  }, [localSearch, onFiltersChange]);
+    return clearPendingSearchUpdate;
+  }, [clearPendingSearchUpdate, localSearch, onFiltersChange]);
 
   // Extract unique filter options from inventory
   const filterOptions = useMemo<FilterOptions>(() => {
     const categories = new Set<string>();
+    const brands = new Set<string>();
     const grades = new Set<string>();
     const strainFamilies = new Set<string>();
     const vendors = new Set<string>();
@@ -111,6 +125,7 @@ export function AdvancedFilters({
 
     inventory.forEach(item => {
       if (item.category) categories.add(item.category);
+      if (item.brand) brands.add(item.brand);
       if (item.grade) grades.add(item.grade);
       if (item.strainFamily) strainFamilies.add(item.strainFamily);
       if (item.vendor) vendors.add(item.vendor);
@@ -120,6 +135,7 @@ export function AdvancedFilters({
 
     return {
       categories: Array.from(categories).sort(),
+      brands: Array.from(brands).sort(),
       grades: Array.from(grades).sort(),
       strainFamilies: Array.from(strainFamilies).sort(),
       vendors: Array.from(vendors).sort(),
@@ -135,6 +151,7 @@ export function AdvancedFilters({
     let count = 0;
     if (filters.search) count++;
     if (filters.categories.length > 0) count++;
+    if (filters.brands.length > 0) count++;
     if (filters.grades.length > 0) count++;
     if (filters.strainFamilies.length > 0) count++;
     if (filters.vendors.length > 0) count++;
@@ -146,7 +163,7 @@ export function AdvancedFilters({
   // Handle multi-select toggle
   const toggleArrayFilter = useCallback(
     (
-      key: "categories" | "grades" | "strainFamilies" | "vendors",
+      key: "categories" | "brands" | "grades" | "strainFamilies" | "vendors",
       value: string
     ) => {
       const currentValues = filters[key];
@@ -160,10 +177,12 @@ export function AdvancedFilters({
 
   // Reset all filters
   const resetFilters = useCallback(() => {
+    clearPendingSearchUpdate();
     setLocalSearch(""); // FIX: Also reset local search state
     onFiltersChange({
       search: "",
       categories: [],
+      brands: [],
       grades: [],
       priceMin: null,
       priceMax: null,
@@ -171,7 +190,7 @@ export function AdvancedFilters({
       vendors: [],
       inStockOnly: false,
     });
-  }, [onFiltersChange]);
+  }, [clearPendingSearchUpdate, onFiltersChange]);
 
   // Handle price range change
   const handlePriceRangeChange = useCallback(
@@ -278,7 +297,7 @@ export function AdvancedFilters({
               </Label>
               <Input
                 id="search-filter"
-                placeholder="Search by name, category, strain..."
+                placeholder="Search by product, grower, supplier, batch..."
                 value={localSearch}
                 onChange={e => setLocalSearch(e.target.value)}
                 className="h-8"
@@ -330,6 +349,39 @@ export function AdvancedFilters({
                       }
                     >
                       {category}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Growers */}
+            {filterOptions.brands.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8 gap-1">
+                    Grower
+                    {filters.brands.length > 0 && (
+                      <Badge variant="secondary" className="ml-1 h-4 px-1">
+                        {filters.brands.length}
+                      </Badge>
+                    )}
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="start"
+                  className="w-48 max-h-64 overflow-y-auto"
+                >
+                  <DropdownMenuLabel>Growers</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {filterOptions.brands.map(brand => (
+                    <DropdownMenuCheckboxItem
+                      key={brand}
+                      checked={filters.brands.includes(brand)}
+                      onCheckedChange={() => toggleArrayFilter("brands", brand)}
+                    >
+                      {brand}
                     </DropdownMenuCheckboxItem>
                   ))}
                 </DropdownMenuContent>
@@ -469,7 +521,11 @@ export function AdvancedFilters({
                   Search: {filters.search}
                   <X
                     className="h-3 w-3 cursor-pointer"
-                    onClick={() => onFiltersChange({ ...filters, search: "" })}
+                    onClick={() => {
+                      clearPendingSearchUpdate();
+                      setLocalSearch("");
+                      onFiltersChange({ ...filters, search: "" });
+                    }}
                   />
                 </Badge>
               )}
@@ -479,6 +535,15 @@ export function AdvancedFilters({
                   <X
                     className="h-3 w-3 cursor-pointer"
                     onClick={() => toggleArrayFilter("categories", cat)}
+                  />
+                </Badge>
+              ))}
+              {filters.brands.map(brand => (
+                <Badge key={brand} variant="secondary" className="gap-1">
+                  Grower: {brand}
+                  <X
+                    className="h-3 w-3 cursor-pointer"
+                    onClick={() => toggleArrayFilter("brands", brand)}
                   />
                 </Badge>
               ))}

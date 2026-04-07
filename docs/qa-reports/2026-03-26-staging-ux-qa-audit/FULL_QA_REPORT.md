@@ -12,12 +12,14 @@
 This pass found **113 distinct issues** across dashboard, sales, procurement, inventory, shipping, accounting, credits, relationships, settings, analytics, calendar, and responsive layouts.
 
 Severity breakdown:
+
 - Critical: 6
 - High: 46
 - Medium: 60
 - Low: 1
 
 Most important patterns:
+
 - Internal rollout language and dev-facing metadata are leaking into operator-facing surfaces.
 - Staging is heavily polluted with test and demo data, which breaks user trust across queues, analytics, relationships, and calendar.
 - Validation and permission failures often surface as generic toasts, silent no-ops, or raw backend errors instead of actionable guidance.

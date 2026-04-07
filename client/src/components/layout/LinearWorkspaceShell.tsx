@@ -24,6 +24,7 @@ interface LinearWorkspaceShellProps<T extends string> {
   commandStrip?: ReactNode;
   children: ReactNode;
   className?: string;
+  density?: "default" | "compact";
   /** Navigation section label (e.g. "Sell", "Buy", "Finance") shown as a hierarchy cue */
   section?: string;
 }
@@ -67,6 +68,7 @@ export function LinearWorkspaceShell<T extends string>({
   commandStrip,
   children,
   className,
+  density = "default",
   section,
 }: LinearWorkspaceShellProps<T>) {
   const showHeader = Boolean(title || description || section);
@@ -123,6 +125,7 @@ export function LinearWorkspaceShell<T extends string>({
     <section
       className={cn("linear-workspace-shell", className)}
       data-single-tab={!showTabs}
+      data-density={density}
     >
       {showHeader && (
         <header className="linear-workspace-header">

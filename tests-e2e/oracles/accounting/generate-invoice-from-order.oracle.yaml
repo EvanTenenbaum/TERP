@@ -39,7 +39,7 @@ preconditions:
 steps:
   - action: navigate
     path: "/sales?tab=orders"
-    wait_for: "body"
+    wait_for: "input[placeholder='Search order or client'], [role='grid'], main"
 
   - action: wait
     network_idle: true

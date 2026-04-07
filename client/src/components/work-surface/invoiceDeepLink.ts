@@ -15,7 +15,9 @@ type InvoiceStatusFilter =
   | "OVERDUE"
   | "VOID";
 
-function parseInvoiceStatusFilter(value: string | null): InvoiceStatusFilter | null {
+function parseInvoiceStatusFilter(
+  value: string | null
+): InvoiceStatusFilter | null {
   switch (value) {
     case "DRAFT":
     case "SENT":

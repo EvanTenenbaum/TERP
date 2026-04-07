@@ -227,9 +227,9 @@ TEST_URL=https://terp-app-b9s35.ondigitalocean.app pnpm test:smoke
 ```markdown
 ## Thursday Verification Results
 
-**Tester**: ****\_\_\_****
-**Date**: ****\_\_\_****
-**Environment**: ****\_\_\_****
+**Tester**: \***\*\_\_\_\*\***
+**Date**: \***\*\_\_\_\*\***
+**Environment**: \***\*\_\_\_\*\***
 
 ### Critical Path Tests
 
@@ -242,7 +242,7 @@ TEST_URL=https://terp-app-b9s35.ondigitalocean.app pnpm test:smoke
 - [ ] Can submit order
 
 **Result**: PASS / FAIL
-**Notes**: ****\_\_\_****
+**Notes**: \***\*\_\_\_\*\***
 
 #### 2. Batch Detail View (BUG-041)
 
@@ -253,7 +253,7 @@ TEST_URL=https://terp-app-b9s35.ondigitalocean.app pnpm test:smoke
 - [ ] Audit log section visible
 
 **Result**: PASS / FAIL
-**Notes**: ****\_\_\_****
+**Notes**: \***\*\_\_\_\*\***
 
 #### 3. Products Page (QA-049)
 
@@ -262,7 +262,7 @@ TEST_URL=https://terp-app-b9s35.ondigitalocean.app pnpm test:smoke
 - [ ] Count shows 121+ products
 
 **Result**: PASS / FAIL
-**Notes**: ****\_\_\_****
+**Notes**: \***\*\_\_\_\*\***
 
 #### 4. Samples Page (QA-050)
 
@@ -271,7 +271,7 @@ TEST_URL=https://terp-app-b9s35.ondigitalocean.app pnpm test:smoke
 - [ ] Tab counts are accurate
 
 **Result**: PASS / FAIL
-**Notes**: ****\_\_\_****
+**Notes**: \***\*\_\_\_\*\***
 
 #### 5. Global Search (BUG-042)
 
@@ -280,7 +280,7 @@ TEST_URL=https://terp-app-b9s35.ondigitalocean.app pnpm test:smoke
 - [ ] Results include products
 
 **Result**: PASS / FAIL
-**Notes**: ****\_\_\_****
+**Notes**: \***\*\_\_\_\*\***
 
 #### 6. Retry Buttons (BUG-045, BUG-048)
 
@@ -290,7 +290,7 @@ TEST_URL=https://terp-app-b9s35.ondigitalocean.app pnpm test:smoke
 - [ ] Retry works
 
 **Result**: PASS / FAIL
-**Notes**: ****\_\_\_****
+**Notes**: \***\*\_\_\_\*\***
 
 #### 7. Auth Errors (BUG-046)
 
@@ -299,7 +299,7 @@ TEST_URL=https://terp-app-b9s35.ondigitalocean.app pnpm test:smoke
 - [ ] Not "Authentication required"
 
 **Result**: PASS / FAIL
-**Notes**: ****\_\_\_****
+**Notes**: \***\*\_\_\_\*\***
 
 ### Overall Status
 
@@ -501,6 +501,6 @@ git push origin main
 - [ ] Rollback tested
 - [ ] Previous deployment ID saved
 
-**Sign-off**: ****\_\_\_****
-**Date**: ****\_\_\_****
+**Sign-off**: \***\*\_\_\_\*\***
+**Date**: \***\*\_\_\_\*\***
 ```

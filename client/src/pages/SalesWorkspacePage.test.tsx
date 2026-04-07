@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import SalesWorkspacePage from "./SalesWorkspacePage";
 
+const mockUseWorkspaceHomeTelemetry = vi.hoisted(() => vi.fn());
 const mockSetLocation = vi.fn();
 const mockSetActiveTab = vi.fn();
 
@@ -21,7 +22,9 @@ let mockActiveTab:
   | "pick-pack" = "quotes";
 let mockSearch = "?tab=quotes";
 let mockPilotEnabled = false;
+let mockAvailabilityReady = true;
 let mockSurfaceMode: "classic" | "sheet-native" = "classic";
+let mockOpenClassicOrderId: number | null = null;
 
 vi.mock("wouter", () => ({
   Redirect: ({ to }: { to: string }) => <div>redirect:{to}</div>,
@@ -37,14 +40,14 @@ vi.mock("@/hooks/useQueryTabState", () => ({
 }));
 
 vi.mock("@/hooks/useWorkspaceHomeTelemetry", () => ({
-  useWorkspaceHomeTelemetry: vi.fn(),
+  useWorkspaceHomeTelemetry: mockUseWorkspaceHomeTelemetry,
 }));
 
 vi.mock("@/lib/spreadsheet-native", () => ({
   buildSurfaceAvailability: vi.fn(),
   useSpreadsheetPilotAvailability: () => ({
     sheetPilotEnabled: mockPilotEnabled,
-    availabilityReady: true,
+    availabilityReady: mockAvailabilityReady,
   }),
   useSpreadsheetSurfaceMode: () => ({
     surfaceMode: mockSurfaceMode,
@@ -91,7 +94,19 @@ vi.mock("@/components/spreadsheet-native/QuotesPilotSurface", () => ({
 }));
 
 vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
-  default: () => <div>orders pilot surface</div>,
+  default: function MockOrdersSheetPilotSurface({
+    onOpenClassic,
+  }: {
+    onOpenClassic?: (orderId?: number | null) => void;
+  }) {
+    React.useEffect(() => {
+      if (mockOpenClassicOrderId !== null) {
+        onOpenClassic?.(mockOpenClassicOrderId);
+      }
+    }, [onOpenClassic]);
+
+    return <div>orders pilot surface</div>;
+  },
 }));
 
 vi.mock("@/components/spreadsheet-native/SalesCatalogueSurface", () => ({
@@ -135,9 +150,12 @@ describe("SalesWorkspacePage quote entry flow", () => {
     mockActiveTab = "quotes";
     mockSearch = "?tab=quotes";
     mockPilotEnabled = false;
+    mockAvailabilityReady = true;
     mockSurfaceMode = "classic";
+    mockOpenClassicOrderId = null;
     mockSetLocation.mockReset();
     mockSetActiveTab.mockReset();
+    mockUseWorkspaceHomeTelemetry.mockReset();
   });
 
   it("keeps the quotes tab registry-only even when sheet-native is enabled", async () => {
@@ -159,31 +177,127 @@ describe("SalesWorkspacePage quote entry flow", () => {
     render(<SalesWorkspacePage />);
 
     expect(screen.getByText("New Quote")).toBeInTheDocument();
-    expect(await screen.findByTestId("sales-order-surface")).toBeInTheDocument();
+    expect(
+      await screen.findByTestId("sales-order-surface")
+    ).toBeInTheDocument();
     expect(screen.queryByText("quotes work surface")).not.toBeInTheDocument();
   });
 
-  it("renames the create-order tab to New Order for the default sales entry", () => {
-    mockActiveTab = "orders";
-    mockSearch = "?tab=orders";
-
-    render(<SalesWorkspacePage />);
-
-    expect(screen.getByText("New Order")).toBeInTheDocument();
-    expect(screen.queryByText("Create Order")).not.toBeInTheDocument();
-  });
-
-  it("redirects malformed sales-sheets document links into the orders document route", () => {
+  it("canonicalizes malformed sales-sheet document deep links into the orders document route", () => {
     mockActiveTab = "sales-sheets";
-    mockSearch =
-      "?tab=sales-sheets&surface=sheet-native&ordersView=document&clientId=7&mode=quote";
+    mockSearch = "?tab=sales-sheets&surface=sheet-native&ordersView=document";
 
     render(<SalesWorkspacePage />);
 
     expect(
       screen.getByText(
-        "redirect:/sales?tab=orders&surface=sheet-native&ordersView=document&clientId=7&mode=quote"
+        "redirect:/sales?tab=orders&surface=sheet-native&ordersView=document"
       )
     ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("sale-catalogue-surface")
+    ).not.toBeInTheDocument();
+  });
+
+  it("keeps valid sales-sheet routes on the catalogue surface", async () => {
+    mockActiveTab = "sales-sheets";
+    mockSearch = "?tab=sales-sheets";
+
+    render(<SalesWorkspacePage />);
+
+    expect(
+      await screen.findByTestId("sale-catalogue-surface")
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/^redirect:/)).not.toBeInTheDocument();
+  });
+
+  it("redirects forced document links into the classic flow when the pilot flag is disabled", () => {
+    mockActiveTab = "orders";
+    mockPilotEnabled = false;
+    mockSurfaceMode = "classic";
+    mockSearch =
+      "?tab=orders&ordersView=document&draftId=1&fromSalesSheet=true";
+
+    render(<SalesWorkspacePage />);
+
+    expect(
+      screen.getByText(
+        "redirect:/sales?tab=create-order&draftId=1&fromSalesSheet=true"
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText("orders pilot surface")).not.toBeInTheDocument();
+  });
+
+  it("strips document-trigger params from classic order fallbacks to avoid redirect loops", () => {
+    mockActiveTab = "orders";
+    mockPilotEnabled = false;
+    mockAvailabilityReady = true;
+    mockSurfaceMode = "classic";
+    mockSearch =
+      "?tab=orders&orderId=42&clientId=7&needId=13&fromSalesSheet=true";
+
+    render(<SalesWorkspacePage />);
+
+    expect(
+      screen.getByText("redirect:/sales?tab=orders&clientId=7&orderId=42")
+    ).toBeInTheDocument();
+  });
+
+  it("holds forced document links on a loading state until pilot availability resolves", () => {
+    mockActiveTab = "orders";
+    mockPilotEnabled = false;
+    mockAvailabilityReady = false;
+    mockSurfaceMode = "classic";
+    mockSearch =
+      "?tab=orders&ordersView=document&draftId=1&fromSalesSheet=true";
+
+    render(<SalesWorkspacePage />);
+
+    expect(screen.getByText("Loading orders document...")).toBeInTheDocument();
+    expect(screen.queryByText(/^redirect:/)).not.toBeInTheDocument();
+  });
+
+  it("preserves classic order context when leaving the pilot document view", async () => {
+    mockActiveTab = "orders";
+    mockPilotEnabled = true;
+    mockSurfaceMode = "sheet-native";
+    mockOpenClassicOrderId = 42;
+    mockSearch =
+      "?tab=orders&ordersView=document&draftId=1&clientId=7&needId=13&mode=quote&fromSalesSheet=true";
+
+    render(<SalesWorkspacePage />);
+
+    expect(await screen.findByText("orders pilot surface")).toBeInTheDocument();
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/sales?tab=orders&clientId=7&needId=13&fromSalesSheet=true&orderId=42"
+    );
+  });
+
+  it("uses redirect-specific telemetry labels instead of misreporting tab views", () => {
+    mockActiveTab = "sales-sheets";
+    mockSearch = "?tab=sales-sheets&ordersView=document&draftId=1";
+
+    render(<SalesWorkspacePage />);
+
+    expect(mockUseWorkspaceHomeTelemetry).toHaveBeenCalledWith(
+      "sales",
+      "sales-sheets-document-redirect"
+    );
+  });
+
+  it("filters pick-pack redirect params down to shipping-safe context", () => {
+    mockActiveTab = "pick-pack";
+    mockSearch =
+      "?tab=pick-pack&orderId=123&draftId=456&quoteId=789&fromSalesSheet=true";
+
+    render(<SalesWorkspacePage />);
+
+    expect(
+      screen.getByText("redirect:/inventory?tab=shipping&orderId=123")
+    ).toBeInTheDocument();
+    expect(mockUseWorkspaceHomeTelemetry).toHaveBeenCalledWith(
+      "sales",
+      "pick-pack-redirect"
+    );
   });
 });

@@ -30,15 +30,11 @@ steps:
   # Navigate to the unified invoices surface where the follow-up queue lives.
   - action: navigate
     path: "/accounting?tab=invoices"
-    wait_for: "body"
+    wait_for: "[data-testid='overdue-follow-up-banner'], [data-testid='focus-overdue-button'], main"
 
   - action: wait
     network_idle: true
     timeout: 10000
-
-  - action: wait
-    for: "[data-testid='overdue-follow-up-banner'], [data-testid='focus-overdue-button'], main"
-    timeout: 20000
 
   # Trigger the manual overdue refresh from the sheet-native follow-up queue.
   - action: click

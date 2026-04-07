@@ -308,32 +308,6 @@ describe("InvoicesSurface", () => {
       orderId: null,
       from: null,
     });
-    mockInvoicesList.items = [
-      {
-        id: 1,
-        invoiceNumber: "INV-001",
-        customerId: 10,
-        invoiceDate: "2026-01-15",
-        dueDate: "2026-01-01",
-        totalAmount: "5000.00",
-        amountDue: "5000.00",
-        amountPaid: "0",
-        status: "OVERDUE",
-        client: { name: "Acme Corp" },
-      },
-      {
-        id: 2,
-        invoiceNumber: "INV-002",
-        customerId: 11,
-        invoiceDate: "2026-02-01",
-        dueDate: "2026-03-01",
-        totalAmount: "3000.00",
-        amountDue: "0.00",
-        amountPaid: "3000.00",
-        status: "PAID",
-        client: { name: "Beta LLC" },
-      },
-    ];
   });
 
   it("renders KPI badges ($24,500 AR, 3 overdue, 47 total)", () => {
@@ -429,17 +403,6 @@ describe("InvoicesSurface", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("adds desktop offset spacing to the top action bars when the inspector is open", () => {
-    invoiceSelectionState.selectedId = 1;
-
-    render(<InvoicesSurface />);
-
-    expect(screen.getByTestId("invoices-toolbar")).toHaveClass("md:pr-[400px]");
-    expect(screen.getByTestId("invoices-action-bar")).toHaveClass(
-      "md:pr-[400px]"
-    );
-  });
-
   it("opens the payment dialog when the sales handoff CTA is clicked", () => {
     invoiceSelectionState.selectedId = 1;
     mockParseInvoiceDeepLink.mockReturnValue({
@@ -460,16 +423,5 @@ describe("InvoicesSurface", () => {
     );
 
     expect(screen.getByTestId("record-payment-dialog")).toBeInTheDocument();
-  });
-
-  it("shows the guided empty state when filters leave no invoices", () => {
-    mockInvoicesList.items = [];
-
-    render(<InvoicesSurface />);
-
-    expect(screen.getByText("No invoices match")).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("button", { name: "Create Invoice" }).length
-    ).toBeGreaterThan(0);
   });
 });

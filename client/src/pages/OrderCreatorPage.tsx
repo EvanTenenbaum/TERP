@@ -29,10 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ClientCombobox,
-  type ClientOption,
-} from "@/components/ui/client-combobox";
+import { ClientCombobox } from "@/components/ui/client-combobox";
 import { cn } from "@/lib/utils";
 import {
   buildSalesWorkspacePath,
@@ -50,7 +47,6 @@ import {
 } from "@/components/ui/drawer";
 
 import { toast } from "sonner";
-import { queueInventoryBrowserSearchFocus } from "@/lib/orders/inventoryBrowserFocus";
 import {
   ShoppingCart,
   Save,
@@ -60,7 +56,6 @@ import {
   ChevronDown,
   FileText,
   Send,
-  UserPlus,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -85,14 +80,21 @@ import { OrderTotalsPanel } from "@/components/orders/OrderTotalsPanel";
 import { FloatingOrderPreview } from "@/components/orders/FloatingOrderPreview";
 import { CreditLimitBanner } from "@/components/orders/CreditLimitBanner";
 import { CreditWarningDialog } from "@/components/orders/CreditWarningDialog";
+import { ClientCommitContextCard } from "@/components/orders/ClientCommitContextCard";
 import { ReferredBySelector } from "@/components/orders/ReferredBySelector";
 import { ReferralCreditsPanel } from "@/components/orders/ReferralCreditsPanel";
 import { CreditLimitWidget } from "@/components/credit/CreditLimitWidget";
 import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
 import { PricingContextPanel } from "@/components/pricing/PricingContextPanel";
 import { InventoryBrowser } from "@/components/sales/InventoryBrowser";
+import {
+  clearPortableSalesCut,
+  readPortableSalesCut,
+  type PortableSalesCut,
+} from "@/components/sales/filtering";
 import { ProfileQuickPanel } from "@/components/clients/ProfileQuickPanel";
 import { QuickCreateClient } from "@/components/clients/QuickCreateClient";
+import { AdaptiveSplitLayout } from "@/components/layout/AdaptiveSplitLayout";
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import {
@@ -143,7 +145,7 @@ interface InventoryItemForOrder {
 
 type LineItemMarginSource = "CUSTOMER_PROFILE" | "DEFAULT" | "MANUAL";
 
-type CustomerDrawerSection = "money" | "sales-pricing";
+type CustomerDrawerSection = "overview" | "money" | "sales-pricing";
 
 const orderValidationSchema = z.object({
   clientId: z.number().positive("Select a client"),
@@ -430,6 +432,7 @@ export default function OrderCreatorPageV2({
     () => new URLSearchParams(searchString),
     [searchString]
   );
+  const salesWorkspaceTab = searchParams.get("tab");
   const draftIdFromRoute = parseRouteEntityId(searchParams.get("draftId"));
   const quoteIdFromRoute = parseRouteEntityId(searchParams.get("quoteId"));
   const clientIdFromRoute = parseRouteEntityId(searchParams.get("clientId"));
@@ -437,6 +440,8 @@ export default function OrderCreatorPageV2({
   const routeMode = searchParams.get("mode");
   const isDuplicateRoute =
     routeMode === "duplicate" && quoteIdFromRoute !== null;
+  const isSheetNativeCreateEntry =
+    inSheetNativeOrdersSurface && salesWorkspaceTab === "create-order";
   const routeOrderId = draftIdFromRoute ?? quoteIdFromRoute;
   const isSalesSheetImport = searchParams.get("fromSalesSheet") === "true";
   const hasRouteSeedContext =
@@ -449,9 +454,6 @@ export default function OrderCreatorPageV2({
   // State
   const [clientId, setClientId] = useState<number | null>(null);
   const [quickCreateClientOpen, setQuickCreateClientOpen] = useState(false);
-  const [recentlyCreatedClients, setRecentlyCreatedClients] = useState<
-    ClientOption[]
-  >([]);
   const [linkedNeedId, setLinkedNeedId] = useState<number | null>(null);
   const [items, setItems] = useState<LineItem[]>([]);
   const [adjustment, setAdjustment] = useState<OrderAdjustment | null>(null);
@@ -463,6 +465,7 @@ export default function OrderCreatorPageV2({
   const [customerDrawerSection, setCustomerDrawerSection] =
     useState<CustomerDrawerSection>("money");
   const customerDrawerOriginRef = useRef<HTMLElement | null>(null);
+  const [portableCut, setPortableCut] = useState<PortableSalesCut | null>(null);
 
   // CHAOS-007: Unsaved changes warning
   const { setHasUnsavedChanges, ConfirmNavigationDialog } =
@@ -494,6 +497,26 @@ export default function OrderCreatorPageV2({
         : buildSalesWorkspacePath("orders", params),
     [inSheetNativeOrdersSurface]
   );
+  const sheetNativeTitle = isSheetNativeCreateEntry
+    ? routeMode === "quote"
+      ? "Start a new quote"
+      : "Start a new sales order"
+    : "Orders Document Sheet";
+  const sheetNativeDescription = isSheetNativeCreateEntry
+    ? routeMode === "quote"
+      ? "Choose a customer, add line items, and send a quote without leaving the workspace."
+      : "Choose a customer, add line items, and confirm a new order without leaving the workspace."
+    : null;
+  const emptyStateTitle = isSheetNativeCreateEntry
+    ? routeMode === "quote"
+      ? "Select a customer to start this quote"
+      : "Select a customer to start this order"
+    : "Select a customer to begin";
+  const emptyStateDescription = isSheetNativeCreateEntry
+    ? routeMode === "quote"
+      ? "Choose a customer from the dropdown above to begin a new quote."
+      : "Choose a customer from the dropdown above to begin a new order draft."
+    : "Choose a customer from the dropdown above";
 
   // Referral tracking state (WS-004)
   const [referredByClientId, setReferredByClientId] = useState<number | null>(
@@ -612,6 +635,8 @@ export default function OrderCreatorPageV2({
     seededRouteKeyRef.current = null;
     pendingPersistFingerprintRef.current = null;
     persistedFingerprintRef.current = EMPTY_ORDER_FINGERPRINT;
+    setPortableCut(null);
+    clearPortableSalesCut();
     setSaved();
   }, [setSaved]);
 
@@ -622,15 +647,18 @@ export default function OrderCreatorPageV2({
 
     const drawerSection = searchParams.get("customerDrawer");
     if (
+      drawerSection === "overview" ||
       drawerSection === "credit" ||
       drawerSection === "pricing" ||
       drawerSection === "money" ||
       drawerSection === "sales-pricing"
     ) {
       setCustomerDrawerSection(
-        drawerSection === "credit" || drawerSection === "money"
-          ? "money"
-          : "sales-pricing"
+        drawerSection === "overview"
+          ? "overview"
+          : drawerSection === "credit" || drawerSection === "money"
+            ? "money"
+            : "sales-pricing"
       );
       setCustomerDrawerOpen(true);
     }
@@ -673,29 +701,10 @@ export default function OrderCreatorPageV2({
   const { data: clientsData, isLoading: clientsLoading } =
     trpc.clients.list.useQuery({ limit: 1000 });
   const clients = useMemo(
-    () => (Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? [])),
+    () =>
+      Array.isArray(clientsData) ? clientsData : (clientsData?.items ?? []),
     [clientsData]
   );
-  const buyerClientOptions = useMemo(() => {
-    const deduped = new Map<number, ClientOption>();
-
-    clients
-      .filter(client => client.isBuyer)
-      .forEach(client => {
-        deduped.set(client.id, {
-          id: client.id,
-          name: client.name,
-          email: client.email,
-          clientType: "buyer",
-        });
-      });
-
-    recentlyCreatedClients.forEach(client => {
-      deduped.set(client.id, client);
-    });
-
-    return Array.from(deduped.values());
-  }, [clients, recentlyCreatedClients]);
   const {
     data: routeOrderData,
     error: routeOrderError,
@@ -766,6 +775,7 @@ export default function OrderCreatorPageV2({
     setActiveDraftVersion(
       isDuplicateRoute ? null : (routeOrderData.order.version ?? 1)
     );
+    setPortableCut(null);
     hydratedRouteKeyRef.current = hydrationKey;
     seededRouteKeyRef.current = null;
     pendingPersistFingerprintRef.current = null;
@@ -813,6 +823,7 @@ export default function OrderCreatorPageV2({
     hydratedRouteKeyRef.current = null;
     pendingPersistFingerprintRef.current = null;
     persistedFingerprintRef.current = EMPTY_ORDER_FINGERPRINT;
+    setPortableCut(null);
     setSaved();
     setOrderType(resolveRouteSeedOrderType(routeMode));
     seededRouteKeyRef.current = seedKey;
@@ -856,6 +867,12 @@ export default function OrderCreatorPageV2({
       hydratedRouteKeyRef.current = null;
       pendingPersistFingerprintRef.current = null;
       persistedFingerprintRef.current = EMPTY_ORDER_FINGERPRINT;
+      const nextPortableCut = readPortableSalesCut();
+      setPortableCut(
+        nextPortableCut && nextPortableCut.clientId === data.clientId
+          ? nextPortableCut
+          : null
+      );
       setSaved();
       sessionStorage.removeItem("salesSheetToQuote");
     } catch {
@@ -972,6 +989,11 @@ export default function OrderCreatorPageV2({
     requestAnimationFrame(() => {
       customerDrawerOriginRef.current?.focus();
     });
+  }, []);
+
+  const clearPortableCut = useCallback(() => {
+    setPortableCut(null);
+    clearPortableSalesCut();
   }, []);
 
   const handleCustomerDrawerOpenChange = useCallback(
@@ -1423,16 +1445,6 @@ export default function OrderCreatorPageV2({
 
   const handleQuickCreateClientSuccess = useCallback(
     (client: { id: number; name: string }) => {
-      setRecentlyCreatedClients(previous => {
-        const next = previous.filter(entry => entry.id !== client.id);
-        next.unshift({
-          id: client.id,
-          name: client.name,
-          clientType: "buyer",
-        });
-        return next.slice(0, 10);
-      });
-
       handleOrderValidationChange("clientId", client.id);
       handleOrderValidationBlur("clientId");
       setClientId(client.id);
@@ -1706,6 +1718,305 @@ export default function OrderCreatorPageV2({
     },
     [registerLineItemRemovalUndo]
   );
+  const activeClientId = clientId ?? 0;
+
+  const primaryOrderSheetColumn = (
+    <div className="min-w-0 space-y-4">
+      <Card id="inventory-browser-section">
+        <CardContent className="pt-4">
+          {inventoryError ? (
+            <div className="text-center py-8">
+              <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
+              <p className="text-destructive mb-2 font-medium">
+                Failed to load inventory
+              </p>
+              <p className="text-sm text-muted-foreground mb-4">
+                {inventoryError.message}
+              </p>
+              {inventoryQuery.canRetry ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={inventoryQuery.handleRetry}
+                  disabled={inventoryQuery.isLoading}
+                >
+                  {inventoryQuery.isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Retrying...
+                    </>
+                  ) : (
+                    <>
+                      Retry ({inventoryQuery.remainingRetries} attempts
+                      remaining)
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <div className="text-sm text-muted-foreground">
+                  <p className="mb-2">Maximum retries reached. Please try:</p>
+                  <ul className="list-disc text-left inline-block">
+                    <li>Selecting a different customer</li>
+                    <li>Refreshing the page</li>
+                    <li>Contacting support if the issue persists</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          ) : (
+            <InventoryBrowser
+              inventory={inventory || []}
+              isLoading={inventoryLoading}
+              onAddItems={handleAddItem}
+              selectedItems={items.map(item => ({
+                id: item.batchId,
+              }))}
+              portableCut={portableCut}
+              onClearPortableCut={clearPortableCut}
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="pt-4">
+          {inSheetNativeOrdersSurface ? (
+            <OrdersDocumentLineItemsGrid
+              items={items}
+              clientId={clientId}
+              onChange={handleLineItemsChange}
+              showCogsColumn={showCogs}
+              showMarginColumn={showMargin}
+            />
+          ) : (
+            <>
+              <h3 className="mb-2 text-sm font-semibold">Line Items</h3>
+              <LineItemTable
+                items={items}
+                clientId={clientId}
+                onChange={handleLineItemsChange}
+                showCogs={showCogs}
+                showMargin={showMargin}
+              />
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      <OrderAdjustmentPanel
+        value={adjustment}
+        subtotal={totals.subtotal}
+        onChange={setAdjustment}
+        showOnDocument={showAdjustmentOnDocument}
+        onShowOnDocumentChange={setShowAdjustmentOnDocument}
+      />
+    </div>
+  );
+
+  const secondaryOrderSheetColumn = (
+    <div className="min-w-0 self-start space-y-4 lg:sticky lg:top-4">
+      <ClientCommitContextCard
+        clientId={activeClientId}
+        canViewPricingContext={canViewPricingContext}
+        onOpenOverview={() => openCustomerDrawer("overview")}
+        onOpenMoney={() => openCustomerDrawer("money")}
+        onOpenPricing={() => openCustomerDrawer("sales-pricing")}
+      />
+
+      {canViewPricingContext ? (
+        <PricingContextPanel
+          clientId={activeClientId}
+          orderTotal={totals.total}
+        />
+      ) : (
+        <Card>
+          <CardContent className="py-6">
+            <p className="text-center text-sm text-muted-foreground">
+              Pricing context requires pricing access.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {clientDetails && orderType === "SALE" && !canViewPricingContext && (
+        <CreditLimitBanner client={clientDetails} orderTotal={totals.total} />
+      )}
+
+      {clientId && (
+        <ReferralCreditsPanel
+          clientId={activeClientId}
+          orderTotal={totals.total}
+        />
+      )}
+
+      <details open>
+        <summary className="cursor-pointer text-sm font-medium text-muted-foreground mb-2 select-none">
+          Order Preview
+        </summary>
+        <FloatingOrderPreview
+          clientName={clientDetails?.name || "Client"}
+          items={items}
+          subtotal={totals.subtotal}
+          adjustmentAmount={totals.adjustmentAmount}
+          adjustmentLabel={
+            adjustment?.mode === "DISCOUNT" ? "Discount" : "Markup"
+          }
+          showAdjustment={showAdjustmentOnDocument}
+          total={totals.total}
+          orderType={orderType}
+          showCogs={showCogs}
+          showMargin={showMargin}
+          onUpdateItem={(batchId, updates) => {
+            setItems(prevItems =>
+              prevItems.map(item =>
+                item.batchId === batchId ? { ...item, ...updates } : item
+              )
+            );
+          }}
+          onRemoveItem={handlePreviewRemoveItem}
+        />
+      </details>
+
+      <OrderTotalsPanel
+        totals={totals}
+        warnings={warnings}
+        isValid={isValid}
+        showCogs={showCogs}
+        showMargin={showMargin}
+      />
+
+      <Card>
+        <CardContent className="pt-6 space-y-3">
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1">
+              Order Type
+              {orderTypeFieldState.showSuccess ? (
+                <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
+              ) : null}
+              {orderTypeFieldState.showError ? (
+                <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+              ) : null}
+            </Label>
+            <Select
+              value={orderType}
+              onValueChange={value => {
+                const nextOrderType = value as "QUOTE" | "SALE";
+                setOrderType(nextOrderType);
+                handleOrderValidationChange("orderType", nextOrderType);
+                handleOrderValidationBlur("orderType");
+              }}
+            >
+              <SelectTrigger
+                className={cn(
+                  "w-full",
+                  orderTypeFieldState.showError && "border-red-500",
+                  orderTypeFieldState.showSuccess && "border-emerald-500"
+                )}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="SALE">Sale Order</SelectItem>
+                <SelectItem value="QUOTE">Quote</SelectItem>
+              </SelectContent>
+            </Select>
+            {orderTypeFieldState.showError ? (
+              <p className="text-xs text-destructive">
+                {orderTypeFieldState.error}
+              </p>
+            ) : null}
+          </div>
+
+          <Button
+            data-testid="order-save-draft-button"
+            className="w-full"
+            variant="outline"
+            disabled={
+              items.length === 0 ||
+              createDraftMutation.isPending ||
+              updateDraftMutation.isPending
+            }
+            onClick={() => handleSaveDraft()}
+          >
+            <Save className="h-4 w-4 mr-2" />
+            {createDraftMutation.isPending || updateDraftMutation.isPending
+              ? "Saving..."
+              : "Save Draft"}
+          </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                data-testid="order-save-menu-trigger"
+                className="w-full"
+                variant="outline"
+                disabled={items.length === 0 || createDraftMutation.isPending}
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Save Options
+                <ChevronDown className="h-4 w-4 ml-auto" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56">
+              <DropdownMenuLabel>Save Options</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                data-testid="order-save-draft-action"
+                onClick={() => handleSaveDraft()}
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Save as Draft
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                data-testid="order-save-quote-action"
+                onClick={() => {
+                  setOrderType("QUOTE");
+                  handleSaveDraft("QUOTE");
+                }}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Save & Send as Quote
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Button
+            className="w-full"
+            onClick={handlePreviewAndFinalize}
+            disabled={
+              !isValid ||
+              finalizeMutation.isPending ||
+              (createDraftMutation.isPending && isFinalizingRef.current)
+            }
+          >
+            {finalizeMutation.isPending ||
+            (createDraftMutation.isPending && isFinalizingRef.current) ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                {orderType === "QUOTE"
+                  ? "Creating Quote..."
+                  : "Confirming Order..."}
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                {orderType === "QUOTE" ? "Confirm Quote" : "Confirm Order"}
+              </>
+            )}
+          </Button>
+
+          {!isValid && items.length > 0 && (
+            <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded text-sm">
+              <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
+              <p className="text-destructive">
+                Fix validation errors before confirming
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 
   return (
     <PageErrorBoundary pageName="OrderCreator">
@@ -1714,19 +2025,38 @@ export default function OrderCreatorPageV2({
         className="container mx-auto p-3 md:p-4 space-y-4"
       >
         <section className="rounded-xl border border-border/70 bg-card shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-border/70 px-4 py-4 md:flex-row md:items-start md:justify-between">
-            <div>
-              <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight">
+          <div
+            className={cn(
+              "border-b border-border/70 px-4",
+              inSheetNativeOrdersSurface
+                ? "flex flex-wrap items-center justify-between gap-3 py-3"
+                : "flex flex-col gap-4 py-4 md:flex-row md:items-start md:justify-between"
+            )}
+          >
+            <div className="min-w-0">
+              <h2
+                className={cn(
+                  "flex items-center gap-2 font-semibold tracking-tight",
+                  inSheetNativeOrdersSurface ? "text-base" : "text-xl"
+                )}
+              >
                 <ShoppingCart className="h-5 w-5" />
                 {inSheetNativeOrdersSurface
-                  ? "Orders Document Sheet"
+                  ? sheetNativeTitle
                   : "Create Sales Order"}
               </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {inSheetNativeOrdersSurface
-                  ? "Build, review, and confirm drafts without leaving the sheet-native Orders workspace."
-                  : "Build the order, review margin, then save or finalize without leaving the sales workspace."}
-              </p>
+              {inSheetNativeOrdersSurface ? (
+                sheetNativeDescription ? (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {sheetNativeDescription}
+                  </p>
+                ) : null
+              ) : (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Build the order, review margin, then save or finalize without
+                  leaving the sales workspace.
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2">
               {clientId &&
@@ -1748,36 +2078,34 @@ export default function OrderCreatorPageV2({
                   <AlertCircle className="h-3.5 w-3.5 text-destructive" />
                 ) : null}
               </span>
-              <div className="flex gap-2">
-                <ClientCombobox
-                  value={clientId}
-                  onValueChange={id => {
-                    handleOrderValidationChange("clientId", id ?? undefined);
-                    handleOrderValidationBlur("clientId");
-                    setClientId(id);
-                    if (id !== clientId) {
-                      setItems([]);
-                    }
-                  }}
-                  className={cn(
-                    "flex-1",
-                    clientFieldState.showError && "border-red-500",
-                    clientFieldState.showSuccess && "border-emerald-500"
-                  )}
-                  clients={buyerClientOptions}
-                  isLoading={clientsLoading}
-                  placeholder="Search for a customer..."
-                  emptyText="No customers found"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setQuickCreateClientOpen(true)}
-                >
-                  <UserPlus className="mr-2 h-4 w-4" />
-                  Quick Add
-                </Button>
-              </div>
+              <ClientCombobox
+                value={clientId}
+                onValueChange={id => {
+                  handleOrderValidationChange("clientId", id ?? undefined);
+                  handleOrderValidationBlur("clientId");
+                  setClientId(id);
+                  // Clear items when changing client
+                  if (id !== clientId) {
+                    clearPortableCut();
+                    setItems([]);
+                  }
+                }}
+                className={cn(
+                  clientFieldState.showError && "border-red-500",
+                  clientFieldState.showSuccess && "border-emerald-500"
+                )}
+                clients={(clients || [])
+                  .filter(c => c.isBuyer)
+                  .map(client => ({
+                    id: client.id,
+                    name: client.name,
+                    email: client.email,
+                    clientType: "buyer",
+                  }))}
+                isLoading={clientsLoading}
+                placeholder="Search for a customer..."
+                emptyText="No customers found"
+              />
               {clientFieldState.showError ? (
                 <p className="text-xs text-destructive">
                   {clientFieldState.error}
@@ -1814,420 +2142,30 @@ export default function OrderCreatorPageV2({
 
           <div className="p-4">
             {clientId ? (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                {/* Left Column: Inventory Browser & Line Items & Adjustment (2/3) */}
-                <div className="lg:col-span-2 space-y-4">
-                  {/* Inventory Browser */}
-                  <Card id="inventory-browser-section">
-                    <CardContent className="pt-4">
-                      {inventoryError ? (
-                        <div className="text-center py-8">
-                          <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />
-                          <p className="text-destructive mb-2 font-medium">
-                            Failed to load inventory
-                          </p>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            {inventoryError.message}
-                          </p>
-                          {inventoryQuery.canRetry ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={inventoryQuery.handleRetry}
-                              disabled={inventoryQuery.isLoading}
-                            >
-                              {inventoryQuery.isLoading ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                  Retrying...
-                                </>
-                              ) : (
-                                <>
-                                  Retry ({inventoryQuery.remainingRetries}{" "}
-                                  attempts remaining)
-                                </>
-                              )}
-                            </Button>
-                          ) : (
-                            <div className="text-sm text-muted-foreground">
-                              <p className="mb-2">
-                                Maximum retries reached. Please try:
-                              </p>
-                              <ul className="list-disc text-left inline-block">
-                                <li>Selecting a different customer</li>
-                                <li>Refreshing the page</li>
-                                <li>
-                                  Contacting support if the issue persists
-                                </li>
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <InventoryBrowser
-                          inventory={inventory || []}
-                          isLoading={inventoryLoading}
-                          onAddItems={handleAddItem}
-                          selectedItems={items.map(item => ({
-                            id: item.batchId,
-                          }))}
-                        />
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Line Items */}
-                  <Card>
-                    <CardContent className="pt-4">
-                      {inSheetNativeOrdersSurface ? (
-                        <OrdersDocumentLineItemsGrid
-                          items={items}
-                          clientId={clientId}
-                          onChange={handleLineItemsChange}
-                          showCogsColumn={showCogs}
-                          showMarginColumn={showMargin}
-                          onAddItem={() => {
-                            const inventoryBrowser = document.getElementById(
-                              "inventory-browser-section"
-                            );
-                            if (inventoryBrowser) {
-                              queueInventoryBrowserSearchFocus(
-                                inventoryBrowser
-                              );
-                            } else {
-                              toast.info(
-                                "Please use the inventory browser above to add items"
-                              );
-                            }
-                          }}
-                        />
-                      ) : (
-                        <>
-                          <h3 className="mb-2 text-sm font-semibold">
-                            Line Items
-                          </h3>
-                          <LineItemTable
-                            items={items}
-                            clientId={clientId}
-                            onChange={handleLineItemsChange}
-                            showCogs={showCogs}
-                            showMargin={showMargin}
-                            onAddItem={() => {
-                              const inventoryBrowser = document.getElementById(
-                                "inventory-browser-section"
-                              );
-                              if (inventoryBrowser) {
-                                queueInventoryBrowserSearchFocus(
-                                  inventoryBrowser
-                                );
-                              } else {
-                                toast.info(
-                                  "Please use the inventory browser above to add items"
-                                );
-                              }
-                            }}
-                          />
-                        </>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Order Adjustment */}
-                  <OrderAdjustmentPanel
-                    value={adjustment}
-                    subtotal={totals.subtotal}
-                    onChange={setAdjustment}
-                    showOnDocument={showAdjustmentOnDocument}
-                    onShowOnDocumentChange={setShowAdjustmentOnDocument}
+              <>
+                {inSheetNativeOrdersSurface ? (
+                  <AdaptiveSplitLayout
+                    primary={primaryOrderSheetColumn}
+                    secondary={secondaryOrderSheetColumn}
+                    autoSaveId="orders-document-sheet-layout"
+                    desktopClassName="min-h-[960px]"
                   />
-                </div>
-
-                {/* Right Column: Totals & Preview (1/3) */}
-                <div className="space-y-4 lg:sticky lg:top-4 self-start">
-                  {canViewPricingContext ? (
-                    <PricingContextPanel
-                      clientId={clientId}
-                      orderTotal={totals.total}
-                    />
-                  ) : (
-                    <Card>
-                      <CardContent className="py-6">
-                        <p className="text-center text-sm text-muted-foreground">
-                          Pricing context requires pricing access.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  <Card>
-                    <CardContent className="pt-4 space-y-3">
-                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                        Customer Actions
-                      </p>
-                      <div className="space-y-1.5">
-                        <p className="text-sm font-semibold">
-                          {clientDetails?.name ?? "Selected customer"}
-                        </p>
-                        {clientDetails?.email ? (
-                          <p className="text-xs text-muted-foreground">
-                            {clientDetails.email}
-                          </p>
-                        ) : null}
-                        {referredByClientId ? (
-                          <p className="text-xs text-muted-foreground">
-                            Referred by{" "}
-                            {clients.find(c => c.id === referredByClientId)
-                              ?.name ?? `Client #${referredByClientId}`}
-                          </p>
-                        ) : null}
-                      </div>
-                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="justify-start"
-                          onClick={event =>
-                            openCustomerDrawer("money", event.currentTarget)
-                          }
-                        >
-                          Credit Limit
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="justify-start"
-                          onClick={event =>
-                            openCustomerDrawer(
-                              "sales-pricing",
-                              event.currentTarget
-                            )
-                          }
-                          disabled={!canViewPricingContext}
-                        >
-                          Pricing Profile
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Credit Limit Banner */}
-                  {clientDetails && orderType === "SALE" && (
-                    <CreditLimitBanner
-                      client={clientDetails}
-                      orderTotal={totals.total}
-                    />
-                  )}
-
-                  {/* Referral Credits Panel (WS-004) */}
-                  {clientId && (
-                    <ReferralCreditsPanel
-                      clientId={clientId}
-                      orderTotal={totals.total}
-                    />
-                  )}
-
-                  {/* TER-206: Collapsible order preview */}
-                  <details open>
-                    <summary className="cursor-pointer text-sm font-medium text-muted-foreground mb-2 select-none">
-                      Order Preview
-                    </summary>
-                    <FloatingOrderPreview
-                      clientName={clientDetails?.name || "Client"}
-                      items={items}
-                      subtotal={totals.subtotal}
-                      adjustmentAmount={totals.adjustmentAmount}
-                      adjustmentLabel={
-                        adjustment?.mode === "DISCOUNT" ? "Discount" : "Markup"
-                      }
-                      showAdjustment={showAdjustmentOnDocument}
-                      total={totals.total}
-                      orderType={orderType}
-                      showCogs={showCogs}
-                      showMargin={showMargin}
-                      onUpdateItem={(batchId, updates) => {
-                        setItems(prevItems =>
-                          prevItems.map(item =>
-                            item.batchId === batchId
-                              ? { ...item, ...updates }
-                              : item
-                          )
-                        );
-                      }}
-                      onRemoveItem={handlePreviewRemoveItem}
-                    />
-                  </details>
-
-                  {/* Totals */}
-                  <OrderTotalsPanel
-                    totals={totals}
-                    warnings={warnings}
-                    isValid={isValid}
-                    showCogs={showCogs}
-                    showMargin={showMargin}
-                  />
-
-                  {/* FEAT-005: Unified Draft/Quote Workflow with Dropdown Menu */}
-                  <Card>
-                    <CardContent className="pt-6 space-y-3">
-                      {/* Order Type Selector */}
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-1">
-                          Order Type
-                          {orderTypeFieldState.showSuccess ? (
-                            <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
-                          ) : null}
-                          {orderTypeFieldState.showError ? (
-                            <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-                          ) : null}
-                        </Label>
-                        <Select
-                          value={orderType}
-                          onValueChange={value => {
-                            const nextOrderType = value as "QUOTE" | "SALE";
-                            setOrderType(nextOrderType);
-                            handleOrderValidationChange(
-                              "orderType",
-                              nextOrderType
-                            );
-                            handleOrderValidationBlur("orderType");
-                          }}
-                        >
-                          <SelectTrigger
-                            className={cn(
-                              "w-full",
-                              orderTypeFieldState.showError && "border-red-500",
-                              orderTypeFieldState.showSuccess &&
-                                "border-emerald-500"
-                            )}
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="SALE">Sale Order</SelectItem>
-                            <SelectItem value="QUOTE">Quote</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        {orderTypeFieldState.showError ? (
-                          <p className="text-xs text-destructive">
-                            {orderTypeFieldState.error}
-                          </p>
-                        ) : null}
-                      </div>
-
-                      {/* TER-645: Direct Save Draft button for reliable E2E access */}
-                      <Button
-                        data-testid="order-save-draft-button"
-                        className="w-full"
-                        variant="outline"
-                        disabled={
-                          items.length === 0 ||
-                          createDraftMutation.isPending ||
-                          updateDraftMutation.isPending
-                        }
-                        onClick={() => handleSaveDraft()}
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        {createDraftMutation.isPending ||
-                        updateDraftMutation.isPending
-                          ? "Saving..."
-                          : "Save Draft"}
-                      </Button>
-
-                      {/* Unified Save Dropdown Menu */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            data-testid="order-save-menu-trigger"
-                            className="w-full"
-                            variant="outline"
-                            disabled={
-                              items.length === 0 ||
-                              createDraftMutation.isPending
-                            }
-                          >
-                            <Save className="h-4 w-4 mr-2" />
-                            Save Options
-                            <ChevronDown className="h-4 w-4 ml-auto" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent className="w-56">
-                          <DropdownMenuLabel>Save Options</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            data-testid="order-save-draft-action"
-                            onClick={() => handleSaveDraft()}
-                          >
-                            <FileText className="h-4 w-4 mr-2" />
-                            Save as Draft
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            data-testid="order-save-quote-action"
-                            onClick={() => {
-                              setOrderType("QUOTE");
-                              handleSaveDraft("QUOTE");
-                            }}
-                          >
-                            <Send className="h-4 w-4 mr-2" />
-                            Save & Send as Quote
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-
-                      {/* Primary Finalize/Confirm Button */}
-                      <Button
-                        className="w-full"
-                        onClick={handlePreviewAndFinalize}
-                        disabled={
-                          !isValid ||
-                          finalizeMutation.isPending ||
-                          (createDraftMutation.isPending &&
-                            isFinalizingRef.current)
-                        }
-                      >
-                        {finalizeMutation.isPending ||
-                        (createDraftMutation.isPending &&
-                          isFinalizingRef.current) ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            {orderType === "QUOTE"
-                              ? "Creating Quote..."
-                              : "Confirming Order..."}
-                          </>
-                        ) : (
-                          <>
-                            <CheckCircle className="h-4 w-4 mr-2" />
-                            {orderType === "QUOTE"
-                              ? "Confirm Quote"
-                              : "Confirm Order"}
-                          </>
-                        )}
-                      </Button>
-
-                      {!isValid && items.length > 0 && (
-                        <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded text-sm">
-                          <AlertCircle className="h-4 w-4 text-destructive mt-0.5" />
-                          <p className="text-destructive">
-                            Fix validation errors before confirming
-                          </p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+                    <div className="lg:col-span-2">
+                      {primaryOrderSheetColumn}
+                    </div>
+                    <div>{secondaryOrderSheetColumn}</div>
+                  </div>
+                )}
+              </>
             ) : (
               <Card>
                 <CardContent className="py-12">
                   <div className="text-center text-muted-foreground">
                     <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">
-                      Select a customer to begin
-                    </p>
-                    <p className="text-sm">
-                      Choose a customer from the dropdown above
-                    </p>
+                    <p className="text-lg font-medium">{emptyStateTitle}</p>
+                    <p className="text-sm">{emptyStateDescription}</p>
                   </div>
                 </CardContent>
               </Card>

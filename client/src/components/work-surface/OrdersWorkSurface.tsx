@@ -1297,7 +1297,10 @@ export function OrdersWorkSurface() {
 
   const selectedOrderInvoiceId = useMemo(
     () =>
-      resolveOrderInvoiceId(selectedOrder?.invoiceId, linkedInvoiceQuery.data?.id),
+      resolveOrderInvoiceId(
+        selectedOrder?.invoiceId,
+        linkedInvoiceQuery.data?.id
+      ),
     [linkedInvoiceQuery.data?.id, selectedOrder?.invoiceId]
   );
 

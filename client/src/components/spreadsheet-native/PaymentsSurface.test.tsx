@@ -243,53 +243,65 @@ describe("PaymentsSurface", () => {
       isLoading: false,
       refetch: vi.fn(),
     });
-    mockPaymentsListUseQuery.mockImplementation((input?: { invoiceId?: number }) => {
-      const filteredItems =
-        typeof input?.invoiceId === "number"
-          ? [
-              {
-                id: 34,
-                paymentNumber: "PAY-INV-000034",
-                paymentDate: "2026-02-12",
-                paymentType: "RECEIVED",
-                paymentMethod: "WIRE",
-                amount: "18524.66",
-                referenceNumber: "WIRE-34",
-                invoiceId: input.invoiceId,
-                notes: "Order-linked payment",
-              },
-            ]
-          : PAYMENT_ITEMS;
+    mockPaymentsListUseQuery.mockImplementation(
+      (input?: { invoiceId?: number }) => {
+        const filteredItems =
+          typeof input?.invoiceId === "number"
+            ? [
+                {
+                  id: 34,
+                  paymentNumber: "PAY-INV-000034",
+                  paymentDate: "2026-02-12",
+                  paymentType: "RECEIVED",
+                  paymentMethod: "WIRE",
+                  amount: "18524.66",
+                  referenceNumber: "WIRE-34",
+                  invoiceId: input.invoiceId,
+                  notes: "Order-linked payment",
+                },
+              ]
+            : PAYMENT_ITEMS;
 
-      return {
-        data: {
-          items: filteredItems,
-          nextCursor: null,
-          hasMore: false,
-          pagination: { total: filteredItems.length, limit: 50, offset: 0 },
-        },
-        isLoading: false,
-        error: null,
-        isFetching: false,
-        refetch: vi.fn(),
-      };
+        return {
+          data: {
+            items: filteredItems,
+            nextCursor: null,
+            hasMore: false,
+            pagination: { total: filteredItems.length, limit: 50, offset: 0 },
+          },
+          isLoading: false,
+          error: null,
+          isFetching: false,
+          refetch: vi.fn(),
+        };
+      }
+    );
+
+    render(<PaymentsSurface />);
+
+    expect(
+      screen.getByTestId("payments-order-handoff-banner")
+    ).toHaveTextContent("invoice #34 for order #34");
+    expect(screen.getByText(/1 rows/)).toBeInTheDocument();
+  });
+
+  it("keeps the order handoff responsive when no linked invoice is found", () => {
+    mockUseSearch.mockReturnValue("?tab=payments&orderId=88&from=sales");
+    mockInvoicesGetByReferenceUseQuery.mockReturnValue({
+      data: null,
+      isLoading: false,
+      refetch: vi.fn(),
     });
 
     render(<PaymentsSurface />);
 
-    expect(screen.getByTestId("payments-order-handoff-banner")).toHaveTextContent(
-      "invoice #34 for order #34"
+    expect(mockPaymentsListUseQuery).toHaveBeenCalledWith(
+      { paymentType: undefined, invoiceId: undefined },
+      expect.objectContaining({ enabled: true })
     );
-    expect(screen.getByText(/1 rows/)).toBeInTheDocument();
-  });
-
-  it("shows an invoice-scope banner for direct invoice deep links", () => {
-    mockUseSearch.mockReturnValue("?tab=payments&invoiceId=10");
-
-    render(<PaymentsSurface />);
-
-    expect(screen.getByTestId("payments-invoice-scope-banner")).toHaveTextContent(
-      "invoice #10"
-    );
+    expect(
+      screen.getByTestId("payments-order-handoff-banner")
+    ).toHaveTextContent("does not have a linked invoice yet");
+    expect(screen.getByText(/0 rows/)).toBeInTheDocument();
   });
 });

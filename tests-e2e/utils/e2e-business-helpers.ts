@@ -20,6 +20,10 @@ type InventoryListResponse = {
   }>;
 };
 
+type StockBatchCandidate = StockBatch & {
+  availableQty: number;
+};
+
 type OrderCreateResponse = {
   id: number;
   orderNumber?: string;
@@ -69,6 +73,80 @@ function getClientItems(
   return [];
 }
 
+function normalizeBatchCandidate(
+  item: InventoryListResponse["items"] extends Array<infer T> ? T : never
+): StockBatchCandidate | null {
+  const batch = item.batch;
+  if (typeof batch?.id !== "number") {
+    return null;
+  }
+
+  const onHandQty = toNumber(batch.onHandQty);
+  const reservedQty = toNumber(batch.reservedQty);
+  const availableQty = onHandQty - reservedQty;
+
+  return {
+    id: batch.id,
+    sku: batch.sku ?? `BATCH-${batch.id}`,
+    totalQty: toNumber(batch.totalQty),
+    onHandQty,
+    unitCogs: toNumber(batch.unitCogs),
+    batchStatus: batch.batchStatus ?? "UNKNOWN",
+    availableQty,
+  };
+}
+
+async function listInventoryBatchCandidates(
+  page: Page
+): Promise<StockBatchCandidate[]> {
+  const result = await trpcQuery<InventoryListResponse>(
+    page,
+    "inventory.list",
+    {
+      limit: 200,
+    }
+  );
+
+  const batches = Array.isArray(result.items) ? result.items : [];
+  return batches
+    .map(normalizeBatchCandidate)
+    .filter((batch): batch is StockBatchCandidate => !!batch)
+    .sort((a, b) => b.availableQty - a.availableQty);
+}
+
+async function promoteAwaitingIntakeBatch(
+  page: Page,
+  batch: StockBatchCandidate
+): Promise<StockBatch> {
+  await trpcMutation(page, "inventory.updateStatus", {
+    id: batch.id,
+    status: "LIVE",
+    reason:
+      "Golden-flow bootstrap: promoting seeded inventory to LIVE for sellable local QA stock",
+  });
+
+  const refreshedBatch = (await listInventoryBatchCandidates(page)).find(
+    candidate => candidate.id === batch.id
+  );
+
+  if (!refreshedBatch) {
+    throw new Error(
+      `Promoted batch ${batch.id} was not visible in inventory.list afterwards`
+    );
+  }
+
+  if (
+    refreshedBatch.batchStatus !== "LIVE" ||
+    refreshedBatch.availableQty <= 0
+  ) {
+    throw new Error(
+      `Batch ${batch.id} did not become sellable after promotion (status=${refreshedBatch.batchStatus}, availableQty=${refreshedBatch.availableQty})`
+    );
+  }
+
+  return refreshedBatch;
+}
+
 export async function findBuyerClient(page: Page): Promise<BuyerClient> {
   const primary = await trpcQuery<ClientListResponse>(page, "clients.list", {
     clientTypes: ["buyer"],
@@ -96,50 +174,26 @@ export async function findBuyerClient(page: Page): Promise<BuyerClient> {
 }
 
 export async function findBatchWithStock(page: Page): Promise<StockBatch> {
-  const result = await trpcQuery<InventoryListResponse>(
-    page,
-    "inventory.list",
-    {
-      limit: 200,
-    }
+  const candidates = await listInventoryBatchCandidates(page);
+  const liveBatch = candidates.find(
+    batch => batch.batchStatus === "LIVE" && batch.availableQty > 0
   );
-  const batches = Array.isArray(result.items) ? result.items : [];
-  const candidates = batches
-    .map(item => {
-      const batch = item.batch;
-      if (typeof batch?.id !== "number") {
-        return null;
-      }
-      const onHandQty = toNumber(batch.onHandQty);
-      const reservedQty = toNumber(batch.reservedQty);
-      return {
-        id: batch.id,
-        sku: batch.sku ?? `BATCH-${batch.id}`,
-        totalQty: toNumber(batch.totalQty),
-        onHandQty,
-        unitCogs: toNumber(batch.unitCogs),
-        batchStatus: batch.batchStatus ?? "UNKNOWN",
-        availableQty: onHandQty - reservedQty,
-      };
-    })
-    .filter(
-      (batch): batch is StockBatch & { availableQty: number } =>
-        !!batch &&
-        batch.batchStatus === "LIVE" &&
-        batch.onHandQty > 0 &&
-        batch.onHandQty - toNumber(0) > 0
-    )
-    // Prefer batch with most available stock to reduce cross-test interference
-    .sort((a, b) => b.availableQty - a.availableQty);
-  const match = candidates.find(b => b.availableQty > 0) ?? candidates[0];
 
-  if (!match) {
-    throw new Error(
-      "No LIVE inventory batch with available stock found. Seed sellable inventory before running this flow."
-    );
+  if (liveBatch) {
+    return liveBatch;
   }
 
-  return match;
+  const promotableBatch = candidates.find(
+    batch => batch.batchStatus === "AWAITING_INTAKE" && batch.availableQty > 0
+  );
+
+  if (promotableBatch) {
+    return promoteAwaitingIntakeBatch(page, promotableBatch);
+  }
+
+  throw new Error(
+    "No LIVE inventory batch with available stock found, and no AWAITING_INTAKE batch could be promoted for local golden-flow QA."
+  );
 }
 
 export async function createSaleOrder(

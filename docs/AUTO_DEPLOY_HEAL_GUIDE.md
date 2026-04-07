@@ -58,6 +58,7 @@ All attempts failed? → ❌ Create GitHub issue
 **Location**: `scripts/auto-deploy-heal.sh`
 
 **Features**:
+
 - Monitors deployment with timeout (10 min per attempt)
 - Analyzes build and deploy logs
 - Identifies error types
@@ -66,6 +67,7 @@ All attempts failed? → ❌ Create GitHub issue
 - Tracks attempts to prevent loops
 
 **Error Types Detected**:
+
 - TypeScript errors
 - Missing dependencies
 - Out of memory
@@ -79,6 +81,7 @@ All attempts failed? → ❌ Create GitHub issue
 **Location**: `.husky/post-push`
 
 **Behavior**:
+
 - Triggers on push to `main` branch only
 - Starts auto-heal script in background
 - Non-blocking (you can continue working)
@@ -89,6 +92,7 @@ All attempts failed? → ❌ Create GitHub issue
 **Location**: `.github/workflows/auto-deploy-monitor.yml`
 
 **Features**:
+
 - Runs on every push to `main` and monitors the resulting staging deployment
 - Monitors deployment from GitHub
 - Creates issues on failure
@@ -100,6 +104,7 @@ All attempts failed? → ❌ Create GitHub issue
 **Location**: `.kiro/hooks/auto-deploy-monitor.json`
 
 **Behavior**:
+
 - Triggers when agent completes work involving deployment
 - Sends message to start monitoring
 - Provides instructions for manual intervention if needed
@@ -118,12 +123,14 @@ All attempts failed? → ❌ Create GitHub issue
 ### What Gets Fixed Automatically
 
 ✅ **Can Auto-Fix**:
+
 - Missing dependencies (reinstall)
 - Lockfile issues (update lockfile)
 - Port conflicts (retry)
 - Transient network issues (retry)
 
 ❌ **Requires Manual Fix**:
+
 - TypeScript errors (code issues)
 - Memory issues (need bigger instance)
 - Database connection (config issue)
@@ -222,6 +229,7 @@ Edit `.github/workflows/auto-deploy-monitor.yml`:
 ### Auto-Heal Not Starting
 
 **Check**:
+
 ```bash
 # Verify script exists and is executable
 ls -la scripts/auto-deploy-heal.sh
@@ -234,6 +242,7 @@ chmod +x scripts/auto-deploy-heal.sh
 ### Deployment Still Failing
 
 **Check logs**:
+
 ```bash
 # View auto-heal logs
 cat .deployment-status-<commit>.log
@@ -244,6 +253,7 @@ cat .deployment-status-<commit>.log
 ```
 
 **Common issues**:
+
 1. **Same error repeating**: Auto-heal stopped to prevent loop
 2. **Timeout**: Deployment taking > 10 minutes
 3. **Manual fix needed**: Error type requires human intervention
@@ -251,6 +261,7 @@ cat .deployment-status-<commit>.log
 ### GitHub Action Not Running
 
 **Check**:
+
 ```bash
 # Verify workflow file exists
 ls -la .github/workflows/auto-deploy-monitor.yml
@@ -265,6 +276,7 @@ ls -la .github/workflows/auto-deploy-monitor.yml
 ### Multiple Monitors Running
 
 **Clean up**:
+
 ```bash
 # Kill all monitoring processes
 pkill -f auto-deploy-heal
@@ -377,6 +389,7 @@ When assigning deployment tasks:
 
 ```markdown
 **Deployment Verification**:
+
 - [ ] Push to main
 - [ ] Auto-heal monitors deployment
 - [ ] Verify deployment succeeds (check status file)

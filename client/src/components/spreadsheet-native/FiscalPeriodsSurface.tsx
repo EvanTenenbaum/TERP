@@ -324,9 +324,7 @@ export function FiscalPeriodsSurface() {
     (event: CellValueChangedEvent<FiscalPeriodGridRow>) => {
       const row = event.data;
       if (!row) return;
-      const field = event.colDef.field as
-        | keyof FiscalPeriodGridRow
-        | undefined;
+      const field = event.colDef.field as keyof FiscalPeriodGridRow | undefined;
       if (!field) return;
 
       if (isNewRow(row.id)) {
@@ -339,15 +337,15 @@ export function FiscalPeriodsSurface() {
 
         // Auto-create when required fields are filled
         const periodName =
-          field === "periodName" ? String(event.newValue ?? "") : row.periodName;
+          field === "periodName"
+            ? String(event.newValue ?? "")
+            : row.periodName;
         const startDate =
           field === "startDate" ? String(event.newValue ?? "") : row.startDate;
         const endDate =
           field === "endDate" ? String(event.newValue ?? "") : row.endDate;
         const fiscalYear =
-          field === "fiscalYear"
-            ? Number(event.newValue)
-            : row.fiscalYear;
+          field === "fiscalYear" ? Number(event.newValue) : row.fiscalYear;
 
         if (periodName && startDate && endDate && fiscalYear) {
           createMutation.mutate(
@@ -538,7 +536,10 @@ export function FiscalPeriodsSurface() {
       />
 
       {/* ── 4. Status Bar ── */}
-      <WorkSurfaceStatusBar left={statusBarLeft} right={<KeyboardHintBar hints={EDITABLE_KEYBOARD_HINTS} />} />
+      <WorkSurfaceStatusBar
+        left={statusBarLeft}
+        right={<KeyboardHintBar hints={EDITABLE_KEYBOARD_HINTS} />}
+      />
 
       {/* ── Confirmation Dialogs ── */}
       <ConfirmDialog

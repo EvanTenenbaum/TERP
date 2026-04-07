@@ -1584,8 +1584,8 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           params.data && isEmptyTemplateRow(params.data)
             ? "—"
             : params.data
-            ? formatCogsLabel(params.data)
-            : `$${((params.value as number) ?? 0).toFixed(2)}`,
+              ? formatCogsLabel(params.data)
+              : `$${((params.value as number) ?? 0).toFixed(2)}`,
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1613,8 +1613,8 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           params.data && isEmptyTemplateRow(params.data)
             ? "—"
             : params.data?.cogsMode === "RANGE"
-            ? `$${((params.value as number) ?? 0).toFixed(2)}`
-            : "Fixed",
+              ? `$${((params.value as number) ?? 0).toFixed(2)}`
+              : "Fixed",
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1642,8 +1642,8 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           params.data && isEmptyTemplateRow(params.data)
             ? "—"
             : params.data?.cogsMode === "RANGE"
-            ? `$${((params.value as number) ?? 0).toFixed(2)}`
-            : "Fixed",
+              ? `$${((params.value as number) ?? 0).toFixed(2)}`
+              : "Fixed",
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -2233,9 +2233,9 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
               ? {
                   ...r,
                   status: "error" as const,
-                    errorMessage:
-                      error instanceof Error ? error.message : "Failed",
-                    fieldErrors: undefined,
+                  errorMessage:
+                    error instanceof Error ? error.message : "Failed",
+                  fieldErrors: undefined,
                 }
               : r
           )

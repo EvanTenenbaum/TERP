@@ -59,6 +59,7 @@ Evidence: `client/src/App.tsx` (public routes section at the top of `Router()`).
 Evidence: routes in `client/src/App.tsx`; grouping in `client/src/config/navigation.ts`; detailed tRPC usage in `routes.csv`.
 
 Canonical operations note:
+
 - Long-term canonical order creation path is `/orders/create` (`createDraftEnhanced` + `finalizeDraft`).
 - `/orders` should remain list/manage surface and not primary confirmation entry.
 - Evidence: `server/routers/orders.ts:703`, `server/routers/orders.ts:1074`, `server/routers/orders.ts:614`, `client/src/components/work-surface/OrdersWorkSurface.tsx:598`.

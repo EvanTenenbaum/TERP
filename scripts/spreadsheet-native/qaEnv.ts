@@ -1,4 +1,7 @@
-import { getCodexEnvPath, loadCodexEnv as loadSharedCodexEnv } from "../_lib/loadCodexEnv";
+import {
+  getCodexEnvPath,
+  loadCodexEnv as loadSharedCodexEnv,
+} from "../_lib/loadCodexEnv";
 
 export function loadCodexEnv() {
   loadSharedCodexEnv();

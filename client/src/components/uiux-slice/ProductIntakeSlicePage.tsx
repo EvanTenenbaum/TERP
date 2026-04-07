@@ -95,7 +95,9 @@ const formatCurrency = (value: number): string =>
 
 function hasMissingCostData(line: ProductIntakeDraftLine): boolean {
   if (line.cogsMode === "RANGE") {
-    return Number(line.unitCostMin ?? 0) <= 0 || Number(line.unitCostMax ?? 0) <= 0;
+    return (
+      Number(line.unitCostMin ?? 0) <= 0 || Number(line.unitCostMax ?? 0) <= 0
+    );
   }
   return Number(line.unitCost ?? 0) <= 0;
 }
@@ -1509,13 +1511,48 @@ export function ProductIntakeSlicePage() {
                         hasMissingCostData(line) ? "bg-amber-50/80" : undefined
                       )}
                     >
-                      {canEdit ? line.cogsMode === "RANGE" ? (
-                        <div className="grid grid-cols-2 gap-2">
+                      {canEdit ? (
+                        line.cogsMode === "RANGE" ? (
+                          <div className="grid grid-cols-2 gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={line.unitCostMin ?? 0}
+                              className={
+                                hasMissingCostData(line)
+                                  ? "border-amber-300 bg-amber-50"
+                                  : undefined
+                              }
+                              onChange={e =>
+                                updateLine(line.id, {
+                                  unitCostMin: Number(e.target.value || 0),
+                                })
+                              }
+                            />
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={line.unitCostMax ?? 0}
+                              className={
+                                hasMissingCostData(line)
+                                  ? "border-amber-300 bg-amber-50"
+                                  : undefined
+                              }
+                              onChange={e =>
+                                updateLine(line.id, {
+                                  unitCostMax: Number(e.target.value || 0),
+                                })
+                              }
+                            />
+                          </div>
+                        ) : (
                           <Input
                             type="number"
                             min="0"
                             step="0.01"
-                            value={line.unitCostMin ?? 0}
+                            value={line.unitCost}
                             className={
                               hasMissingCostData(line)
                                 ? "border-amber-300 bg-amber-50"
@@ -1523,44 +1560,11 @@ export function ProductIntakeSlicePage() {
                             }
                             onChange={e =>
                               updateLine(line.id, {
-                                unitCostMin: Number(e.target.value || 0),
+                                unitCost: Number(e.target.value || 0),
                               })
                             }
                           />
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={line.unitCostMax ?? 0}
-                            className={
-                              hasMissingCostData(line)
-                                ? "border-amber-300 bg-amber-50"
-                                : undefined
-                            }
-                            onChange={e =>
-                              updateLine(line.id, {
-                                unitCostMax: Number(e.target.value || 0),
-                              })
-                            }
-                          />
-                        </div>
-                      ) : (
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={line.unitCost}
-                          className={
-                            hasMissingCostData(line)
-                              ? "border-amber-300 bg-amber-50"
-                              : undefined
-                          }
-                          onChange={e =>
-                            updateLine(line.id, {
-                              unitCost: Number(e.target.value || 0),
-                            })
-                          }
-                        />
+                        )
                       ) : (
                         <span
                           className={cn(

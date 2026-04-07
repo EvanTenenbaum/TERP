@@ -38,10 +38,14 @@ describe("orders router helpers", () => {
     ]);
 
     expect(
-      lookup.get(buildPersistedDraftItemKey(101, false))?.map(item => item.productId)
+      lookup
+        .get(buildPersistedDraftItemKey(101, false))
+        ?.map(item => item.productId)
     ).toEqual([11, 33]);
     expect(
-      lookup.get(buildPersistedDraftItemKey(101, true))?.map(item => item.productId)
+      lookup
+        .get(buildPersistedDraftItemKey(101, true))
+        ?.map(item => item.productId)
     ).toEqual([22]);
   });
 
@@ -49,9 +53,9 @@ describe("orders router helpers", () => {
     expect(
       isOrderAlreadyConfirmed({ isDraft: false, confirmedAt: new Date() })
     ).toBe(true);
-    expect(
-      isOrderAlreadyConfirmed({ isDraft: false, confirmedAt: null })
-    ).toBe(false);
+    expect(isOrderAlreadyConfirmed({ isDraft: false, confirmedAt: null })).toBe(
+      false
+    );
     expect(
       isOrderAlreadyConfirmed({ isDraft: true, confirmedAt: new Date() })
     ).toBe(false);

@@ -276,7 +276,7 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
   emptyDescription: string;
   headerActions?: ReactNode;
   summary?: ReactNode;
-  minHeight?: number;
+  minHeight?: number | string;
   onCellValueChanged?: (event: CellValueChangedEvent<Row>) => void;
   selectionMode?: SpreadsheetPilotGridSelectionMode;
   selectionSurface?: PowersheetSelectionSummary["focusedSurface"];

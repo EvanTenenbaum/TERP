@@ -27,14 +27,14 @@ Scope creep is a bug. Note other issues in your return — don't fix them.
 
 ## TERP Conventions (Violations = QA Rejection)
 
-| Pattern | Rule |
-|---------|------|
-| Party Model | Use `clients` table with `isSeller=true`, never `vendors` |
+| Pattern           | Rule                                                                         |
+| ----------------- | ---------------------------------------------------------------------------- | --- | ----------------------- |
+| Party Model       | Use `clients` table with `isSeller=true`, never `vendors`                    |
 | Actor Attribution | Use `getAuthenticatedUserId(ctx)`, never `input.createdBy` or `input.userId` |
-| Deletes | Soft delete with `deletedAt`, never `DELETE FROM` |
-| Types | No `any` types. Use proper types or `unknown` |
-| Errors | Never swallow. Log and re-throw or handle explicitly |
-| Default User ID | Never use `ctx.user?.id || 1` or `ctx.user?.id ?? 1` |
+| Deletes           | Soft delete with `deletedAt`, never `DELETE FROM`                            |
+| Types             | No `any` types. Use proper types or `unknown`                                |
+| Errors            | Never swallow. Log and re-throw or handle explicitly                         |
+| Default User ID   | Never use `ctx.user?.id                                                      |     | 1`or`ctx.user?.id ?? 1` |
 
 ## CI-Blocked Patterns (Auto-Reject)
 
@@ -55,18 +55,20 @@ db.delete(
 
 1. **Read the spec** provided in context thoroughly
 2. **Think hard** about edge cases before coding
-3. **Create feature branch**:
+3. **If the task touches rendered UI and browser truth matters**, load the `terp-domscribe` skill and inspect the live runtime before editing.
+4. **Create feature branch**:
    ```bash
    git checkout main
    git pull origin main
    git checkout -b feature/[TASK_ID]-[short-slug]
    ```
-4. **Implement** following TERP conventions
-5. **Run verification** (ALL must pass):
+5. **Implement** following TERP conventions
+6. **For UI changes**, re-check the rendered result after the edit when local runtime truth is important.
+7. **Run verification** (ALL must pass):
    ```bash
    pnpm check && pnpm lint && pnpm test && pnpm build
    ```
-6. **Commit** with conventional format:
+8. **Commit** with conventional format:
    ```bash
    git add -A
    git commit -m "type(scope): description"
@@ -76,12 +78,12 @@ db.delete(
 
 These are mandatory. Do not skip any:
 
-| Command | What It Checks |
-|---------|----------------|
+| Command      | What It Checks         |
+| ------------ | ---------------------- |
 | `pnpm check` | TypeScript compilation |
-| `pnpm lint` | ESLint rules |
-| `pnpm test` | Unit tests |
-| `pnpm build` | Production build |
+| `pnpm lint`  | ESLint rules           |
+| `pnpm test`  | Unit tests             |
+| `pnpm build` | Production build       |
 
 If any fail, **fix and re-run** until all pass.
 
@@ -90,14 +92,17 @@ If any fail, **fix and re-run** until all pass.
 Check the mode assigned to your task:
 
 ### 🟢 SAFE Mode
+
 - Documentation, simple bug fixes, test additions
 - Standard verification required
 
 ### 🟡 STRICT Mode (Default)
+
 - New features, UI changes, business logic
 - Full verification + explicit testing at each step
 
 ### 🔴 RED Mode
+
 - Auth/RBAC, payments, accounting, migrations
 - Requires rollback plan before starting
 - Document every step taken
@@ -118,7 +123,9 @@ FILES MODIFIED:
 
 VERIFICATION OUTPUT:
 ```
+
 [exact terminal output of pnpm check && pnpm lint && pnpm test && pnpm build]
+
 ```
 
 SELF-ASSESSMENT:

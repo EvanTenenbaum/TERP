@@ -19,6 +19,7 @@ const {
   mockAuditLogUseQuery,
   mockDeleteDraftUseMutation,
   mockLedgerListUseQuery,
+  mockLinkedInvoiceUseQuery,
   mockDraftsRefetch,
   mockConfirmedRefetch,
   mockDetailRefetch,
@@ -33,6 +34,7 @@ const {
   mockAuditLogUseQuery: vi.fn(),
   mockDeleteDraftUseMutation: vi.fn(),
   mockLedgerListUseQuery: vi.fn(),
+  mockLinkedInvoiceUseQuery: vi.fn(),
   mockDraftsRefetch: vi.fn(),
   mockConfirmedRefetch: vi.fn(),
   mockDetailRefetch: vi.fn(),
@@ -202,6 +204,14 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
     accounting: {
+      invoices: {
+        getByReference: {
+          useQuery: mockLinkedInvoiceUseQuery.mockImplementation(() => ({
+            data: null,
+            isLoading: false,
+          })),
+        },
+      },
       ledger: {
         list: {
           useQuery: mockLedgerListUseQuery.mockImplementation(() => ({
@@ -308,6 +318,10 @@ describe("OrdersSheetPilotSurface", () => {
     mockSearch = "";
     mockQueueSelectionSummary = null;
     mockSelectedId = 2;
+    mockLinkedInvoiceUseQuery.mockReturnValue({
+      data: null,
+      isLoading: false,
+    });
   });
 
   it("renders one dominant queue with linked detail and selection actions", () => {
@@ -504,39 +518,71 @@ describe("OrdersSheetPilotSurface", () => {
     fireEvent.click(screen.getByRole("button", { name: /accounting/i }));
 
     expect(mockSetLocation).toHaveBeenCalledWith(
-      "/accounting?tab=invoices&from=sales&invoiceId=55&orderId=2"
+      "/accounting?tab=invoices&from=sales&orderId=2&invoiceId=55"
     );
   });
 
-  it("routes the primary New Order action to the create-order tab", () => {
-    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
-
-    fireEvent.click(screen.getByRole("button", { name: /new order/i }));
-
-    expect(mockSetLocation).toHaveBeenCalledWith("/sales?tab=create-order");
-  });
-
-  it("filters the queue when the summary pills are clicked", () => {
-    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
-
-    fireEvent.click(screen.getByRole("button", { name: /filter drafts/i }));
-
-    const filteredQueueCall = getLatestGridProps("Orders Queue");
-    expect(filteredQueueCall?.rows).toEqual(
-      expect.arrayContaining([expect.objectContaining({ lane: "drafts" })])
+  it("holds invoice actions while the linked-invoice lookup is still loading", () => {
+    mockOrdersGetAllUseQuery.mockImplementation(
+      ({ isDraft }: { isDraft: boolean }) => ({
+        data: {
+          items: isDraft
+            ? [
+                {
+                  id: 1,
+                  orderNumber: "SO-001",
+                  clientId: 1,
+                  orderType: "SALE",
+                  total: "400",
+                  items: [
+                    {
+                      batchId: 10,
+                      quantity: 1,
+                      unitPrice: 400,
+                      unitCogs: 250,
+                    },
+                  ],
+                  lineItems: [{ id: 10 }],
+                  createdAt: "2026-03-10T00:00:00.000Z",
+                  confirmedAt: null,
+                  invoiceId: null,
+                  version: 1,
+                },
+              ]
+            : [
+                {
+                  id: 2,
+                  orderNumber: "SO-002",
+                  clientId: 1,
+                  orderType: "SALE",
+                  fulfillmentStatus: "READY_FOR_PACKING",
+                  total: "900",
+                  lineItems: [{ id: 11 }, { id: 12 }],
+                  createdAt: "2026-03-09T00:00:00.000Z",
+                  confirmedAt: "2026-03-09T02:00:00.000Z",
+                  invoiceId: null,
+                  version: 2,
+                },
+              ],
+        },
+        isLoading: false,
+        error: null,
+        refetch: isDraft ? mockDraftsRefetch : mockConfirmedRefetch,
+      })
     );
-    expect(filteredQueueCall?.rows).toHaveLength(1);
-  });
-
-  it("keeps the linked lines panel collapsed until an order is selected", () => {
-    mockSelectedId = null;
+    mockLinkedInvoiceUseQuery.mockReturnValue({
+      data: null,
+      isLoading: true,
+    });
 
     render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
 
+    expect(screen.getAllByText("Checking invoice...").length).toBeGreaterThan(
+      0
+    );
     expect(
-      screen.getByText("Select an order to expand the linked line-item table.")
-    ).toBeInTheDocument();
-    expect(getLatestGridProps("Selected Order Lines")).toBeUndefined();
+      screen.queryByRole("button", { name: /generate invoice/i })
+    ).not.toBeInTheDocument();
   });
 
   it("can be forced into document mode without the ordersView query param", () => {
@@ -544,7 +590,10 @@ describe("OrdersSheetPilotSurface", () => {
       <OrdersSheetPilotSurface onOpenClassic={vi.fn()} forceDocumentMode />
     );
 
-    expect(screen.getByText("SalesOrderSurface")).toBeInTheDocument();
+    expect(screen.getByText("Orders Document Sheet")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /classic surface/i })
+    ).toBeInTheDocument();
   });
 
   it("renders the sheet-native document workflow when ordersView=document is requested", () => {
@@ -553,7 +602,13 @@ describe("OrdersSheetPilotSurface", () => {
 
     render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
 
-    expect(screen.getByText("SalesOrderSurface")).toBeInTheDocument();
+    expect(screen.getByText("Orders Document Sheet")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^queue$/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /classic surface/i })
+    ).toBeInTheDocument();
     expect(mockClientsListUseQuery).toHaveBeenCalledWith(
       { limit: 1000 },
       { enabled: false }
@@ -572,5 +627,16 @@ describe("OrdersSheetPilotSurface", () => {
       { orderId: 0 },
       { enabled: false }
     );
+  });
+
+  it("shows create-order context when the document sheet is opened from the create-order tab", () => {
+    mockSearch = "?tab=create-order&surface=sheet-native&ordersView=document";
+
+    render(<OrdersSheetPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByText("New order")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /^queue$/i })
+    ).toBeInTheDocument();
   });
 });

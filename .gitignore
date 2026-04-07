@@ -52,6 +52,7 @@ pids
 *.seed
 *.pid.lock
 *.bak
+.domscribe/
 
 # Coverage directory used by tools like istanbul
 coverage/

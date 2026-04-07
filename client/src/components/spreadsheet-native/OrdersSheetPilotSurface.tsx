@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import type { ColDef } from "ag-grid-community";
 import {
   AlertTriangle,
+  ArrowLeft,
   FileText,
   Plus,
   RefreshCw,
@@ -16,6 +17,7 @@ import { trpc } from "@/lib/trpc";
 import {
   buildOperationsWorkspacePath,
   buildSalesWorkspacePath,
+  buildSheetNativeOrdersPath,
   buildSheetNativeOrdersDocumentPath,
 } from "@/lib/workspaceRoutes";
 import { getFulfillmentDisplayLabel } from "@/lib/fulfillmentDisplay";
@@ -199,7 +201,10 @@ export function OrdersSheetPilotSurface({
     searchParams.get("clientId")
   );
   const needIdFromRoute = parsePositiveIntegerParam(searchParams.get("needId"));
+  const routeMode = searchParams.get("mode");
+  const entryTab = searchParams.get("tab");
   const fromSalesSheet = searchParams.get("fromSalesSheet") === "true";
+  const isCreateOrderEntry = entryTab === "create-order";
   const currentDocumentMode =
     forceDocumentMode ||
     searchParams.get("ordersView") === "document" ||
@@ -509,6 +514,10 @@ export function OrdersSheetPilotSurface({
       ? linkedInvoiceId
       : null;
   }, [linkedInvoiceQuery.data?.id, selectedOrderRow?.invoiceId]);
+  const invoiceLookupPending =
+    selectedOrderRow?.lane === "confirmed" &&
+    (selectedOrderRow.invoiceId ?? null) === null &&
+    linkedInvoiceQuery.isLoading;
 
   const canOpenAccounting = selectedOrderRow?.lane === "confirmed";
   const canOpenShipping = Boolean(
@@ -516,8 +525,74 @@ export function OrdersSheetPilotSurface({
   );
   const rowScopedActionsBlocked = queueSelectionTouchesMultipleRows;
   const totalOrderCount = draftRows.length + confirmedRows.length;
+  const classicDocumentParams = {
+    draftId: draftIdFromRoute ?? undefined,
+    quoteId: quoteIdFromRoute ?? undefined,
+    clientId: clientIdFromRoute ?? undefined,
+    needId: needIdFromRoute ?? undefined,
+    mode: routeMode ?? undefined,
+    fromSalesSheet: fromSalesSheet ? true : undefined,
+  };
+  const documentContextLabel =
+    draftIdFromRoute !== null
+      ? `Draft #${draftIdFromRoute}`
+      : quoteIdFromRoute !== null
+        ? `Quote #${quoteIdFromRoute}`
+        : clientIdFromRoute !== null
+          ? `Client #${clientIdFromRoute}`
+          : fromSalesSheet
+            ? "Sales Catalogue import"
+            : isCreateOrderEntry
+              ? routeMode === "quote"
+                ? "New quote"
+                : "New order"
+              : "New draft";
   if (currentDocumentMode) {
-    return <SalesOrderSurface />;
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-3 py-2">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              setLocation(
+                buildSheetNativeOrdersPath({
+                  orderId: draftIdFromRoute ?? undefined,
+                })
+              )
+            }
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Queue
+          </Button>
+          <span className="text-sm font-medium text-foreground">
+            Orders Document Sheet
+          </span>
+          <span className="text-xs text-muted-foreground">
+            {documentContextLabel}
+          </span>
+          <div className="ml-auto flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() =>
+                setLocation(
+                  buildSalesWorkspacePath("create-order", {
+                    ...classicDocumentParams,
+                    classic: true,
+                  })
+                )
+              }
+            >
+              <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
+              Classic Surface
+            </Button>
+          </div>
+        </div>
+
+        <SalesOrderSurface />
+      </div>
+    );
   }
 
   return (
@@ -756,14 +831,16 @@ export function OrdersSheetPilotSurface({
             <div className="mt-1 text-sm font-medium">
               {selectedOrderRow.lane === "drafts"
                 ? "Not applicable"
-                : selectedOrderInvoiceId !== null
-                  ? `Issued #${selectedOrderInvoiceId}`
-                  : canGenerateInvoiceForRow({
-                        ...selectedOrderRow,
-                        invoiceId: selectedOrderInvoiceId,
-                      })
-                    ? "Ready to invoice"
-                    : "Not yet invoiced"}
+                : invoiceLookupPending
+                  ? "Checking invoice..."
+                  : selectedOrderInvoiceId !== null
+                    ? `Issued #${selectedOrderInvoiceId}`
+                    : canGenerateInvoiceForRow({
+                          ...selectedOrderRow,
+                          invoiceId: selectedOrderInvoiceId,
+                        })
+                      ? "Ready to invoice"
+                      : "Not yet invoiced"}
             </div>
           </div>
           {/* BUG-019: Payment status — never show bare "-".
@@ -913,14 +990,16 @@ export function OrdersSheetPilotSurface({
                 <p>
                   {selectedOrderRow.lane === "drafts"
                     ? "Not applicable"
-                    : selectedOrderInvoiceId !== null
-                      ? `Invoice #${selectedOrderInvoiceId}`
-                      : canGenerateInvoiceForRow({
-                            ...selectedOrderRow,
-                            invoiceId: selectedOrderInvoiceId,
-                          })
-                        ? "Ready to invoice"
-                        : "Not yet invoiced"}
+                    : invoiceLookupPending
+                      ? "Checking invoice..."
+                      : selectedOrderInvoiceId !== null
+                        ? `Invoice #${selectedOrderInvoiceId}`
+                        : canGenerateInvoiceForRow({
+                              ...selectedOrderRow,
+                              invoiceId: selectedOrderInvoiceId,
+                            })
+                          ? "Ready to invoice"
+                          : "Not yet invoiced"}
                 </p>
               </InspectorField>
               {/* BUG-019: Payment status — data not available on pilot row, direct to Accounting */}
@@ -934,29 +1013,30 @@ export function OrdersSheetPilotSurface({
             </InspectorSection>
 
             {/* BUG-012: Generate Invoice only shown when state allows it */}
-            {canGenerateInvoiceForRow({
-              ...selectedOrderRow,
-              invoiceId: selectedOrderInvoiceId,
-            }) && (
-              <InspectorSection title="Actions">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full justify-start"
-                  disabled={generateInvoiceMutation.isPending}
-                  onClick={() =>
-                    generateInvoiceMutation.mutate({
-                      orderId: selectedOrderRow.orderId,
-                    })
-                  }
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  {generateInvoiceMutation.isPending
-                    ? "Generating..."
-                    : "Generate Invoice"}
-                </Button>
-              </InspectorSection>
-            )}
+            {!invoiceLookupPending &&
+              canGenerateInvoiceForRow({
+                ...selectedOrderRow,
+                invoiceId: selectedOrderInvoiceId,
+              }) && (
+                <InspectorSection title="Actions">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full justify-start"
+                    disabled={generateInvoiceMutation.isPending}
+                    onClick={() =>
+                      generateInvoiceMutation.mutate({
+                        orderId: selectedOrderRow.orderId,
+                      })
+                    }
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    {generateInvoiceMutation.isPending
+                      ? "Generating..."
+                      : "Generate Invoice"}
+                  </Button>
+                </InspectorSection>
+              )}
           </div>
         ) : null}
       </InspectorPanel>

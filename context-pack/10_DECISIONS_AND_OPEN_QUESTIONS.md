@@ -84,11 +84,12 @@ These decisions are treated as authoritative for walkthroughs and QA.
      - `client/src/App.tsx:488` (fallback `NotFound`; no `/settings/display` route)
 
 10. **Sample fulfillment positioning**
-   - Decision: user-facing for internal authorized users (permissioned), not public and not backend-only.
-   - Evidence:
-     - `client/src/App.tsx:350` (`/samples` route)
-     - `client/src/config/navigation.ts:174` (Samples in inventory nav)
-     - `server/routers/samples.ts:166` (`fulfillRequest` with `samples:allocate` permission)
+
+- Decision: user-facing for internal authorized users (permissioned), not public and not backend-only.
+- Evidence:
+  - `client/src/App.tsx:350` (`/samples` route)
+  - `client/src/config/navigation.ts:174` (Samples in inventory nav)
+  - `server/routers/samples.ts:166` (`fulfillRequest` with `samples:allocate` permission)
 
 ## Live Validation Snapshot (Most Recent)
 
@@ -105,6 +106,7 @@ Observed in this pass:
 - Logout -> `/login` then direct navigation to `/` still re-enters internal dashboard (fallback user behavior persists).
 
 Evidence pointers:
+
 - `server/routers/featureFlags.ts:372`, `server/featureFlagsDb.ts:458`
 - `client/src/App.tsx:305`, `client/src/App.tsx:488`
 - `server/routers/orders.ts` (`getAll`)

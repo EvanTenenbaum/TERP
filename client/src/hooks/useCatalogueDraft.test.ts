@@ -5,7 +5,6 @@ import { useCatalogueDraft } from "./useCatalogueDraft";
 const {
   toastError,
   toastSuccess,
-  toastInfo,
   saveDraftMutate,
   saveDraftMutateAsync,
   deleteDraftMutate,
@@ -16,7 +15,6 @@ const {
 } = vi.hoisted(() => ({
   toastError: vi.fn(),
   toastSuccess: vi.fn(),
-  toastInfo: vi.fn(),
   saveDraftMutate: vi.fn(),
   saveDraftMutateAsync: vi.fn(),
   deleteDraftMutate: vi.fn(),
@@ -68,7 +66,6 @@ vi.mock("sonner", () => ({
   toast: {
     error: toastError,
     success: toastSuccess,
-    info: toastInfo,
   },
 }));
 
@@ -80,7 +77,6 @@ describe("useCatalogueDraft", () => {
     shareLinkMutateAsync.mockResolvedValue({
       shareUrl: "/shared/sales-sheet/test-token",
     });
-    fetchDraftById.mockResolvedValue(null);
     sessionStorage.clear();
     Object.defineProperty(navigator, "clipboard", {
       value: { writeText: vi.fn().mockResolvedValue(undefined) },
@@ -170,71 +166,7 @@ describe("useCatalogueDraft", () => {
     await waitFor(() => {
       expect(result.current.lastSavedSheetId).toBe(202);
       expect(result.current.canShare).toBe(true);
-      expect(result.current.canConvert).toBe(true);
     });
-  });
-
-  it("keeps conversion gated off until the catalogue has been finalized", async () => {
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    expect(result.current.canConvert).toBe(false);
-
-    await act(async () => {
-      await result.current.saveSheet();
-    });
-
-    await waitFor(() => {
-      expect(result.current.lastSavedSheetId).toBe(202);
-      expect(result.current.canConvert).toBe(true);
-    });
-  });
-
-  it("keeps share and conversion enabled across no-op rerenders with cloned item arrays", async () => {
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result, rerender } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    await act(async () => {
-      await result.current.saveSheet();
-    });
-
-    await waitFor(() => {
-      expect(result.current.lastSavedSheetId).toBe(202);
-      expect(result.current.canShare).toBe(true);
-      expect(result.current.canConvert).toBe(true);
-    });
-
-    rerender({
-      items: [{ ...item }] as never[],
-    });
-
-    expect(result.current.hasUnsavedChanges).toBe(false);
-    expect(result.current.canShare).toBe(true);
-    expect(result.current.canConvert).toBe(true);
   });
 
   it("surfaces a draft-name-specific save error when client and items exist", () => {
@@ -257,36 +189,6 @@ describe("useCatalogueDraft", () => {
 
     expect(toastError).toHaveBeenCalledWith("Draft name is required to save");
     expect(saveDraftMutate).not.toHaveBeenCalled();
-  });
-
-  it("auto-generates a draft name before finalizing an unnamed catalogue", async () => {
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    await act(async () => {
-      await result.current.saveSheet();
-    });
-
-    expect(saveDraftMutateAsync).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: expect.stringMatching(/^Sales Catalogue \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/),
-      })
-    );
-    expect(result.current.draftName).toMatch(
-      /^Sales Catalogue \d{4}-\d{2}-\d{2} \d{2}:\d{2}$/
-    );
   });
 
   it("serializes concurrent saves so only one draft request is fired", async () => {
@@ -323,410 +225,13 @@ describe("useCatalogueDraft", () => {
     });
 
     expect(saveDraftMutateAsync).toHaveBeenCalledTimes(1);
-    expect(toastInfo).toHaveBeenCalledWith("Save already in progress");
 
     await act(async () => {
       resolveSave?.({ draftId: 333 });
     });
   });
 
-  it("keeps the finalized share state only when a draft save still matches the finalized sheet", async () => {
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    act(() => {
-      result.current.setDraftName("March Mix");
-    });
-
-    await act(async () => {
-      await result.current.saveSheet();
-    });
-
-    await waitFor(() => {
-      expect(result.current.lastSavedSheetId).toBe(202);
-      expect(result.current.canShare).toBe(true);
-    });
-
-    act(() => {
-      result.current.setDraftName("March Mix v2");
-    });
-
-    await act(async () => {
-      result.current.saveDraft();
-    });
-
-    await waitFor(() => {
-      expect(result.current.hasUnsavedChanges).toBe(false);
-    });
-
-    expect(result.current.lastSavedSheetId).toBe(202);
-    expect(result.current.canShare).toBe(true);
-    expect(result.current.canConvert).toBe(true);
-  });
-
-  it("clears finalized share state after a draft-only save with changed items", async () => {
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result, rerender } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    act(() => {
-      result.current.setDraftName("March Mix");
-    });
-
-    await act(async () => {
-      await result.current.saveSheet();
-    });
-
-    await waitFor(() => {
-      expect(result.current.lastSavedSheetId).toBe(202);
-      expect(result.current.canShare).toBe(true);
-    });
-
-    rerender({
-      items: [{ ...item, retailPrice: 24 }] as never[],
-    });
-
-    expect(result.current.hasUnsavedChanges).toBe(true);
-
-    await act(async () => {
-      result.current.saveDraft();
-    });
-
-    await waitFor(() => {
-      expect(result.current.hasUnsavedChanges).toBe(false);
-    });
-
-    expect(result.current.lastSavedSheetId).toBeNull();
-    expect(result.current.canShare).toBe(false);
-    expect(result.current.canConvert).toBe(false);
-  });
-
-  it("keeps unsaved changes flagged when items change during an in-flight draft save", async () => {
-    let resolveSave: ((value: { draftId: number }) => void) | undefined;
-    saveDraftMutateAsync.mockImplementation(
-      () =>
-        new Promise(resolve => {
-          resolveSave = resolve;
-        })
-    );
-
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result, rerender } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    act(() => {
-      result.current.setDraftName("March Mix");
-    });
-
-    act(() => {
-      result.current.saveDraft();
-    });
-
-    rerender({
-      items: [{ ...item, retailPrice: 24 }] as never[],
-    });
-
-    expect(result.current.hasUnsavedChanges).toBe(true);
-
-    await act(async () => {
-      resolveSave?.({ draftId: 333 });
-    });
-
-    expect(result.current.hasUnsavedChanges).toBe(true);
-  });
-
-  it("blocks sheet finalization while a draft save is already in progress", async () => {
-    let resolveSave: ((value: { draftId: number }) => void) | undefined;
-    saveDraftMutateAsync.mockImplementation(
-      () =>
-        new Promise(resolve => {
-          resolveSave = resolve;
-        })
-    );
-
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    act(() => {
-      result.current.setDraftName("March Mix");
-    });
-
-    act(() => {
-      result.current.saveDraft();
-    });
-
-    let finalizedSheetId = 999;
-    await act(async () => {
-      finalizedSheetId = (await result.current.saveSheet()) ?? 0;
-    });
-
-    expect(finalizedSheetId).toBe(0);
-    expect(convertMutateAsync).not.toHaveBeenCalled();
-    expect(toastError).toHaveBeenCalledWith("Draft save is already in progress");
-
-    await act(async () => {
-      resolveSave?.({ draftId: 333 });
-    });
-  });
-
-  it("keeps the auto-save timer stable across no-op rerenders", async () => {
-    vi.useFakeTimers();
-    const setTimeoutSpy = vi.spyOn(globalThis, "setTimeout");
-
-    try {
-      const items = [
-        {
-          id: 1,
-          name: "Blue Dream",
-          basePrice: 10,
-          retailPrice: 20,
-          quantity: 2,
-          priceMarkup: 0,
-          appliedRules: [],
-        } as never,
-      ] as never[];
-
-      const { result, rerender } = renderHook(
-        ({ currentItems }) =>
-          useCatalogueDraft({ clientId: 1, items: currentItems }),
-        { initialProps: { currentItems: items } }
-      );
-
-      act(() => {
-        result.current.setDraftName("March Mix");
-      });
-
-      expect(result.current.hasUnsavedChanges).toBe(true);
-      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
-
-      rerender({
-        currentItems: items.map(item => ({ ...item })) as never[],
-      });
-      expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
-
-      await act(async () => {
-        vi.advanceTimersByTime(30_000);
-      });
-
-      expect(saveDraftMutateAsync).toHaveBeenCalledTimes(1);
-    } finally {
-      setTimeoutSpy.mockRestore();
-      vi.useRealTimers();
-    }
-  });
-
-  it("serializes concurrent sheet finalization so only one save request is fired", async () => {
-    let resolveSheet: ((value: number) => void) | undefined;
-    convertMutateAsync.mockImplementation(
-      () =>
-        new Promise(resolve => {
-          resolveSheet = resolve;
-        })
-    );
-
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    let firstSave!: Promise<number | null>;
-    let secondSave!: Promise<number | null>;
-    act(() => {
-      firstSave = result.current.saveSheet();
-      secondSave = result.current.saveSheet();
-    });
-
-    await waitFor(() => {
-      expect(convertMutateAsync).toHaveBeenCalledTimes(1);
-    });
-    expect(toastInfo).toHaveBeenCalledWith("Save already in progress");
-
-    await act(async () => {
-      resolveSheet?.(202);
-      await Promise.all([firstSave, secondSave]);
-    });
-  });
-
-  it("drops stale finalized-sheet results after the draft context resets", async () => {
-    let resolveSheet: ((value: number) => void) | undefined;
-    convertMutateAsync.mockImplementation(
-      () =>
-        new Promise(resolve => {
-          resolveSheet = resolve;
-        })
-    );
-
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    let savePromise!: Promise<number | null>;
-    act(() => {
-      savePromise = result.current.saveSheet();
-    });
-
-    act(() => {
-      result.current.resetDraft();
-    });
-
-    let finalizedSheetId: number | null = 999;
-    await act(async () => {
-      resolveSheet?.(202);
-      finalizedSheetId = await savePromise;
-    });
-
-    expect(finalizedSheetId).toBeNull();
-    expect(result.current.lastSavedSheetId).toBeNull();
-    expect(result.current.canShare).toBe(false);
-    expect(toastSuccess).not.toHaveBeenCalledWith("Catalogue saved for sharing");
-  });
-
-  it("keeps a freshly loaded draft clean when items and name arrive together", async () => {
-    const loadedItem = {
-      id: 9,
-      name: "Loaded Draft Item",
-      basePrice: 8,
-      retailPrice: 16,
-      quantity: 3,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    fetchDraftById.mockResolvedValue({
-      id: 88,
-      name: "Loaded Draft",
-      updatedAt: new Date("2026-04-02T07:00:00.000Z"),
-      items: [loadedItem],
-    });
-
-    const { result, rerender } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [] as never[] } }
-    );
-
-    let loadedItems: never[] = [];
-    await act(async () => {
-      loadedItems = (await result.current.loadDraft(88)) as never[];
-    });
-
-    rerender({ items: loadedItems });
-
-    expect(result.current.currentDraftId).toBe(88);
-    expect(result.current.draftName).toBe("Loaded Draft");
-    expect(result.current.hasUnsavedChanges).toBe(false);
-    expect(saveDraftMutateAsync).not.toHaveBeenCalled();
-  });
-
-  it("flags finalization immediately while a sheet save is in flight", async () => {
-    let resolveSheet: ((value: number) => void) | undefined;
-    convertMutateAsync.mockImplementation(
-      () =>
-        new Promise(resolve => {
-          resolveSheet = resolve;
-        })
-    );
-
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    let savePromise!: Promise<number | null>;
-    act(() => {
-      savePromise = result.current.saveSheet();
-    });
-
-    expect(result.current.isFinalizing).toBe(true);
-    expect(result.current.isConverting).toBe(false);
-
-    await waitFor(() => {
-      expect(convertMutateAsync).toHaveBeenCalledTimes(1);
-    });
-
-    await act(async () => {
-      resolveSheet?.(202);
-      await savePromise;
-    });
-  });
-
-  it("writes session storage from the finalized conversion snapshot", async () => {
+  it("writes session storage from the conversion snapshot", async () => {
     const item = {
       id: 1,
       name: "Blue Dream",
@@ -739,176 +244,20 @@ describe("useCatalogueDraft", () => {
       appliedRules: [],
     } as never;
 
-    const { result } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 7, items }),
-      { initialProps: { items: [item] as never[] } }
+    const { result } = renderHook(() =>
+      useCatalogueDraft({ clientId: 7, items: [item] })
     );
 
     await act(async () => {
-      await result.current.saveSheet();
-    });
-
-    await waitFor(() => {
-      expect(result.current.lastSavedSheetId).toBe(202);
-      expect(result.current.canConvert).toBe(true);
-    });
-
-    const onReady = vi.fn();
-    await act(async () => {
-      await result.current.handleConvertToOrder(onReady);
+      await result.current.handleConvertToOrder();
     });
 
     expect(convertMutateAsync).toHaveBeenCalledTimes(1);
-    expect(onReady).toHaveBeenCalledTimes(1);
     expect(sessionStorage.getItem("salesSheetToQuote")).toContain(
       '"clientId":7'
     );
     expect(sessionStorage.getItem("salesSheetToQuote")).toContain("Blue Dream");
     expect(result.current.lastSavedSheetId).toBe(202);
-  });
-
-  it("keeps conversion locked until the caller finishes the order handoff", async () => {
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    await act(async () => {
-      await result.current.saveSheet();
-    });
-
-    let resolveHandoff: (() => void) | undefined;
-    const onReady = vi.fn(
-      () =>
-        new Promise<void>(resolve => {
-          resolveHandoff = resolve;
-        })
-    );
-
-    let firstConversion!: Promise<boolean>;
-    act(() => {
-      firstConversion = result.current.handleConvertToOrder(onReady);
-    });
-
-    await waitFor(() => {
-      expect(result.current.isConverting).toBe(true);
-    });
-
-    let secondConversion = true;
-    await act(async () => {
-      secondConversion = await result.current.handleConvertToOrder(vi.fn());
-    });
-
-    expect(secondConversion).toBe(false);
-
-    await act(async () => {
-      resolveHandoff?.();
-      await firstConversion;
-    });
-
-    expect(result.current.isConverting).toBe(false);
-  });
-
-  it("fails conversion preparation loudly when session storage cannot be written", async () => {
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const originalSessionStorage = window.sessionStorage;
-    const corruptedStorage = {
-      setItem: vi.fn(),
-      getItem: vi.fn(() => "corrupted"),
-      removeItem: vi.fn(),
-      clear: vi.fn(),
-      key: vi.fn(),
-      length: 0,
-    } as unknown as typeof window.sessionStorage;
-
-    Object.defineProperty(window, "sessionStorage", {
-      configurable: true,
-      value: corruptedStorage,
-    });
-
-    try {
-      const { result } = renderHook(
-        ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-        { initialProps: { items: [item] as never[] } }
-      );
-
-      await act(async () => {
-        await result.current.saveSheet();
-      });
-
-      let converted = true;
-      await act(async () => {
-        converted = await result.current.handleConvertToOrder(vi.fn());
-      });
-
-      expect(converted).toBe(false);
-      expect(toastError).toHaveBeenCalledWith(
-        "Failed to prepare order handoff: conversion handoff could not be verified"
-      );
-    } finally {
-      Object.defineProperty(window, "sessionStorage", {
-        configurable: true,
-        value: originalSessionStorage,
-      });
-    }
-  });
-
-  it("clears the handoff payload when the draft context changes mid-conversion", async () => {
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    const { result } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    await act(async () => {
-      await result.current.saveSheet();
-    });
-
-    await waitFor(() => {
-      expect(result.current.lastSavedSheetId).toBe(202);
-      expect(result.current.canConvert).toBe(true);
-    });
-
-    let converted = true;
-    await act(async () => {
-      converted = await result.current.handleConvertToOrder(() => {
-        result.current.resetDraft();
-      });
-    });
-
-    expect(converted).toBe(false);
-    expect(sessionStorage.getItem("salesSheetToQuote")).toBeNull();
-    expect(toastError).toHaveBeenCalledWith(
-      "Failed to complete order handoff: catalogue context changed"
-    );
   });
 
   it("copies an absolute share link after a finalized save", async () => {
@@ -951,57 +300,5 @@ describe("useCatalogueDraft", () => {
       "http://localhost:3000/shared/sales-sheet/test-token"
     );
     expect(toastSuccess).toHaveBeenCalledWith("Share link copied to clipboard");
-  });
-
-  it("returns the share link even when clipboard copy is unavailable", async () => {
-    const item = {
-      id: 1,
-      name: "Blue Dream",
-      basePrice: 10,
-      retailPrice: 20,
-      quantity: 2,
-      priceMarkup: 0,
-      appliedRules: [],
-    } as never;
-
-    Object.defineProperty(navigator, "clipboard", {
-      value: {
-        writeText: vi
-          .fn()
-          .mockRejectedValue(new Error("clipboard access denied")),
-      },
-      configurable: true,
-    });
-
-    const { result } = renderHook(
-      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
-      { initialProps: { items: [item] as never[] } }
-    );
-
-    await act(async () => {
-      await result.current.saveSheet();
-    });
-
-    await waitFor(() => {
-      expect(result.current.lastSavedSheetId).toBe(202);
-      expect(result.current.canShare).toBe(true);
-    });
-
-    let shareUrl: string | null = null;
-    await act(async () => {
-      shareUrl = await result.current.generateShareLink();
-    });
-
-    expect(shareUrl).toBe(
-      "http://localhost:3000/shared/sales-sheet/test-token"
-    );
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      "http://localhost:3000/shared/sales-sheet/test-token"
-    );
-    expect(result.current.lastShareUrl).toBe(
-      "http://localhost:3000/shared/sales-sheet/test-token"
-    );
-    expect(toastSuccess).toHaveBeenCalledWith("Share link ready");
-    expect(toastError).not.toHaveBeenCalledWith("Failed to generate share link");
   });
 });

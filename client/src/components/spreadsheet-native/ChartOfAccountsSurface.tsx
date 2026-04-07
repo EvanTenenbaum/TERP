@@ -26,14 +26,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
-import {
-  KeyboardHintBar,
-  type KeyboardHint,
-} from "@/components/work-surface/KeyboardHintBar";
+import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
 
 import { PowersheetGrid } from "./PowersheetGrid";
-import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
+import {
+  EDITABLE_AFFORDANCES,
+  EDITABLE_KEYBOARD_HINTS,
+} from "@/lib/powersheet/surface-helpers";
 
 // ============================================================================
 // TYPES
@@ -55,11 +55,6 @@ type TypeTab = "ALL" | AccountType;
 // CONSTANTS
 // ============================================================================
 
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const mod = isMac ? "\u2318" : "Ctrl";
-
 const TYPE_TABS: Array<{ value: TypeTab; label: string }> = [
   { value: "ALL", label: "All Types" },
   { value: "ASSET", label: "Asset" },
@@ -67,25 +62,6 @@ const TYPE_TABS: Array<{ value: TypeTab; label: string }> = [
   { value: "EQUITY", label: "Equity" },
   { value: "REVENUE", label: "Revenue" },
   { value: "EXPENSE", label: "Expense" },
-];
-
-const editableAffordances: PowersheetAffordance[] = [
-  { label: "Select", available: true },
-  { label: "Multi-select", available: true },
-  { label: "Copy", available: true },
-  { label: "Paste", available: true },
-  { label: "Fill", available: true },
-  { label: "Edit", available: true },
-  { label: "Undo/Redo", available: true },
-];
-
-const keyboardHints: KeyboardHint[] = [
-  { key: "Click", label: "select cell" },
-  { key: "Double-click", label: "edit cell" },
-  { key: `${mod}+C`, label: "copy" },
-  { key: `${mod}+V`, label: "paste" },
-  { key: `${mod}+Z`, label: "undo" },
-  { key: "Escape", label: "cancel edit" },
 ];
 
 // ============================================================================
@@ -412,7 +388,7 @@ export function ChartOfAccountsSurface() {
       <PowersheetGrid<AccountGridRow>
         surfaceId="chart-of-accounts"
         requirementIds={["TER-976-chart-of-accounts"]}
-        affordances={editableAffordances}
+        affordances={EDITABLE_AFFORDANCES}
         title="Chart of Accounts"
         rows={filteredRows}
         columnDefs={columnDefs}
@@ -429,8 +405,10 @@ export function ChartOfAccountsSurface() {
       />
 
       {/* ── 4. Status Bar ── */}
-      <WorkSurfaceStatusBar left={statusBarLeft} />
-      <KeyboardHintBar hints={keyboardHints} />
+      <WorkSurfaceStatusBar
+        left={statusBarLeft}
+        right={<KeyboardHintBar hints={EDITABLE_KEYBOARD_HINTS} />}
+      />
     </div>
   );
 }

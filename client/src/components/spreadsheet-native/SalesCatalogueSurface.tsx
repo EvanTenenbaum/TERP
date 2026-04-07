@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CellClickedEvent, ColDef } from "ag-grid-community";
 import {
+  Copy,
   ArrowRight,
   ExternalLink,
   FileText,
@@ -25,7 +26,7 @@ import {
   Settings2,
   Trash2,
 } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
@@ -59,11 +60,16 @@ import {
   DEFAULT_FILTERS,
   DEFAULT_SORT,
   DEFAULT_COLUMN_VISIBILITY,
-  NON_SELLABLE_STATUSES,
   type InventoryFilters,
   type InventorySortConfig,
   type ColumnVisibility,
 } from "@/components/sales/types";
+import {
+  clearPortableSalesCut,
+  matchesSalesInventoryFilters,
+  normalizeSalesFilters,
+  writePortableSalesCut,
+} from "@/components/sales/filtering";
 import { useCatalogueDraft } from "@/hooks/useCatalogueDraft";
 
 // ── types ────────────────────────────────────────────────────────────────────
@@ -74,8 +80,11 @@ interface InventoryBrowserRow {
   selectedForAdd: boolean;
   name: string;
   category: string;
+  subcategory: string;
   strain: string;
+  brand: string;
   vendor: string;
+  batchSku: string;
   basePrice: number;
   markup: number;
   retailPrice: number;
@@ -106,6 +115,12 @@ const formatCurrency = (value: number) =>
     value
   );
 
+function isCatalogueItemSellable(item: PricedInventoryItem): boolean {
+  const availableUnits = Math.max(0, Math.floor(item.quantity || 0));
+  const statusAllowsSale = !item.status || item.status === "LIVE";
+  return statusAllowsSale && availableUnits > 0;
+}
+
 export const escapeCsvField = (value: string) =>
   value.replace(/\r\n|\n|\r/g, " ").replace(/"/g, '""');
 
@@ -120,46 +135,6 @@ const calculateMarkupFromRetail = (basePrice: number, retailPrice: number) =>
     ? roundToTenth(((retailPrice - basePrice) / basePrice) * 100)
     : 0;
 
-export function applyCatalogueLineMarkup(
-  item: PricedInventoryItem,
-  markup: number
-): PricedInventoryItem {
-  const nextMarkup = roundToTenth(markup);
-
-  if (item.basePrice <= 0) {
-    return {
-      ...item,
-      priceMarkup: nextMarkup,
-    };
-  }
-
-  return {
-    ...item,
-    priceMarkup: nextMarkup,
-    retailPrice: calculateRetailFromMarkup(item.basePrice, nextMarkup),
-  };
-}
-
-export function applyCatalogueLineRetail(
-  item: PricedInventoryItem,
-  retailPrice: number
-): PricedInventoryItem {
-  const nextRetail = roundToCents(retailPrice);
-
-  if (item.basePrice <= 0) {
-    return {
-      ...item,
-      retailPrice: nextRetail,
-    };
-  }
-
-  return {
-    ...item,
-    retailPrice: nextRetail,
-    priceMarkup: calculateMarkupFromRetail(item.basePrice, nextRetail),
-  };
-}
-
 const escapeHtml = (value: string) =>
   value
     .replace(/&/g, "&amp;")
@@ -167,28 +142,6 @@ const escapeHtml = (value: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
-
-export function sanitizePrintableImageUrl(
-  value: string | null | undefined
-): string | null {
-  const trimmed = value?.trim();
-  if (!trimmed) return null;
-
-  try {
-    const parsed =
-      typeof window !== "undefined"
-        ? new URL(trimmed, window.location.origin)
-        : new URL(trimmed);
-
-    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-      return null;
-    }
-
-    return parsed.toString();
-  } catch {
-    return null;
-  }
-}
 
 export function buildCatalogueCsv(items: PricedInventoryItem[]) {
   return [
@@ -206,6 +159,9 @@ export function buildCatalogueJson(items: PricedInventoryItem[]) {
       id: item.id,
       name: item.name,
       category: item.category ?? null,
+      subcategory: item.subcategory ?? null,
+      brand: item.brand ?? null,
+      batchSku: item.batchSku ?? null,
       quantity: item.quantity,
       retailPrice: item.retailPrice,
       markup: item.priceMarkup,
@@ -215,6 +171,48 @@ export function buildCatalogueJson(items: PricedInventoryItem[]) {
     null,
     2
   );
+}
+
+export function buildCatalogueChatText(
+  items: Array<{
+    name: string;
+    quantity: number;
+    retailPrice: number;
+    brand?: string | null;
+    vendor?: string | null;
+    category?: string | null;
+    subcategory?: string | null;
+    batchSku?: string | null;
+  }>
+) {
+  const cleanedItems = items.filter(item => item.quantity > 0);
+  if (cleanedItems.length === 0) {
+    return "No inventory matches this cut right now.";
+  }
+
+  return [
+    `Available Now (${cleanedItems.length})`,
+    ...cleanedItems.map(item => {
+      const descriptor = buildCatalogueDescriptor(item);
+      return `• ${item.name}${descriptor ? ` — ${descriptor}` : ""} — ${item.quantity} @ ${formatCurrency(item.retailPrice)}`;
+    }),
+  ].join("\n");
+}
+
+function buildCatalogueDescriptor(item: {
+  brand?: string | null;
+  vendor?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  batchSku?: string | null;
+}) {
+  return [
+    item.brand || item.vendor,
+    item.subcategory || item.category,
+    item.batchSku,
+  ]
+    .filter(value => Boolean(value) && value !== "-")
+    .join(" · ");
 }
 
 function downloadBlob(content: string, type: string, filename: string) {
@@ -227,7 +225,7 @@ function downloadBlob(content: string, type: string, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-export function buildPrintableCatalogueHtml({
+function buildPrintableCatalogueHtml({
   title,
   clientName,
   items,
@@ -242,15 +240,14 @@ export function buildPrintableCatalogueHtml({
 }) {
   const itemMarkup = items
     .map(item => {
-      const printableImageUrl = sanitizePrintableImageUrl(item.imageUrl);
-
+      const descriptor = buildCatalogueDescriptor(item);
       return `
         <article class="catalogue-row">
           ${
             includeImages
               ? `<div class="catalogue-image">${
-                  printableImageUrl
-                    ? `<img src="${escapeHtml(printableImageUrl)}" alt="${escapeHtml(item.name)}" />`
+                  item.imageUrl
+                    ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" />`
                     : `<div class="catalogue-image-fallback">No image</div>`
                 }</div>`
               : ""
@@ -261,6 +258,11 @@ export function buildPrintableCatalogueHtml({
               <span>${formatCurrency(item.retailPrice)}</span>
             </div>
             <p>${escapeHtml(item.category ?? "Uncategorized")}</p>
+            ${
+              descriptor
+                ? `<p class="catalogue-descriptor">${escapeHtml(descriptor)}</p>`
+                : ""
+            }
             <div class="catalogue-meta">
               <span>Qty ${item.quantity}</span>
               <span>${item.priceMarkup >= 0 ? "+" : ""}${item.priceMarkup.toFixed(1)}% markup</span>
@@ -268,7 +270,7 @@ export function buildPrintableCatalogueHtml({
             </div>
           </div>
         </article>
-      `
+      `;
     })
     .join("");
 
@@ -294,7 +296,9 @@ export function buildPrintableCatalogueHtml({
           .catalogue-head h3 { margin: 0; font-size: 18px; }
           .catalogue-head span { font-size: 18px; font-weight: 700; }
           .catalogue-copy p { margin: 0; color: rgba(24, 29, 31, 0.7); }
+          .catalogue-descriptor { font-size: 13px; font-weight: 600; color: rgba(24, 29, 31, 0.82); }
           .catalogue-meta { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: rgba(24, 29, 31, 0.72); text-transform: uppercase; letter-spacing: 0.04em; }
+          .catalogue-note { font-size: 12px; color: rgba(24, 29, 31, 0.68); border-top: 1px solid rgba(24, 29, 31, 0.12); padding-top: 12px; }
           @media print { body { margin: 0; } }
         </style>
       </head>
@@ -308,6 +312,7 @@ export function buildPrintableCatalogueHtml({
             <div class="catalogue-total">${formatCurrency(totalValue)}</div>
           </header>
           <section class="catalogue-list">${itemMarkup}</section>
+          <p class="catalogue-note">Pricing and availability are subject to final confirmation.</p>
         </div>
         <script>
           window.onload = function () { window.print(); };
@@ -329,6 +334,8 @@ const keyboardHints: KeyboardHint[] = [
   { key: "Shift+Click", label: "extend" },
 ];
 
+const catalogueInventoryGridHeight = "clamp(30rem, calc(100vh - 14rem), 52rem)";
+
 function mapInventoryToRows(
   items: PricedInventoryItem[],
   selectedIds: Set<number>,
@@ -340,8 +347,11 @@ function mapInventoryToRows(
     selectedForAdd: checkedIds.has(item.id),
     name: item.name,
     category: item.category ?? "-",
+    subcategory: item.subcategory ?? "-",
     strain: item.strain ?? item.strainFamily ?? "-",
+    brand: item.brand ?? "-",
     vendor: item.vendor ?? "-",
+    batchSku: item.batchSku ?? "-",
     basePrice: item.basePrice,
     markup: item.priceMarkup,
     retailPrice: item.retailPrice,
@@ -377,7 +387,7 @@ function coerceOptionalNumber(value: unknown): number | null | undefined {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-export function sanitizeLoadedSheetItems(items: unknown): PricedInventoryItem[] {
+function sanitizeLoadedSheetItems(items: unknown): PricedInventoryItem[] {
   if (!Array.isArray(items)) return [];
 
   return items.flatMap(item => {
@@ -391,8 +401,7 @@ export function sanitizeLoadedSheetItems(items: unknown): PricedInventoryItem[] 
     const quantity = Number(raw.quantity);
 
     if (
-      !Number.isInteger(id) ||
-      id <= 0 ||
+      !Number.isFinite(id) ||
       !name ||
       !Number.isFinite(basePrice) ||
       !Number.isFinite(retailPrice) ||
@@ -408,6 +417,8 @@ export function sanitizeLoadedSheetItems(items: unknown): PricedInventoryItem[] 
         category: typeof raw.category === "string" ? raw.category : undefined,
         subcategory:
           typeof raw.subcategory === "string" ? raw.subcategory : undefined,
+        brand: typeof raw.brand === "string" ? raw.brand : undefined,
+        batchSku: typeof raw.batchSku === "string" ? raw.batchSku : undefined,
         strain: typeof raw.strain === "string" ? raw.strain : undefined,
         strainId: typeof raw.strainId === "number" ? raw.strainId : undefined,
         strainFamily:
@@ -463,16 +474,11 @@ export function sanitizeLoadedSheetItems(items: unknown): PricedInventoryItem[] 
   });
 }
 
-function isNonSellableInventoryStatus(status: string | null | undefined) {
-  return NON_SELLABLE_STATUSES.includes(
-    (status ?? "LIVE") as (typeof NON_SELLABLE_STATUSES)[number]
-  );
-}
-
 // ── component ────────────────────────────────────────────────────────────────
 
 export function SalesCatalogueSurface() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
   const utils = trpc.useUtils();
 
   // ── client state ───────────────────────────────────────────────────────
@@ -497,6 +503,8 @@ export function SalesCatalogueSurface() {
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(
     DEFAULT_COLUMN_VISIBILITY
   );
+  const [includeUnavailableInventory, setIncludeUnavailableInventory] =
+    useState(false);
   const [currentViewId, setCurrentViewId] = useState<number | null>(null);
   const [showSaveViewDialog, setShowSaveViewDialog] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
@@ -508,6 +516,7 @@ export function SalesCatalogueSurface() {
   const [showSavedSheetsDialog, setShowSavedSheetsDialog] = useState(false);
   const [pendingClientId, setPendingClientId] = useState<number | null>(null);
   const defaultViewAppliedClientIdRef = useRef<number | null>(null);
+  const hydratedQueryClientIdRef = useRef<number | null>(null);
 
   // ── draft hook ─────────────────────────────────────────────────────────
   const draft = useCatalogueDraft({
@@ -533,6 +542,17 @@ export function SalesCatalogueSurface() {
         email: c.email,
       }));
   }, [clientsQuery.data]);
+
+  const requestedClientId = useMemo(() => {
+    const params = new URLSearchParams(search);
+    const rawClientId = params.get("clientId");
+    if (!rawClientId) {
+      return null;
+    }
+
+    const parsedClientId = Number(rawClientId);
+    return Number.isFinite(parsedClientId) ? parsedClientId : null;
+  }, [search]);
 
   const inventoryQuery = trpc.salesSheets.getInventory.useQuery(
     { clientId: selectedClientId ?? 0 },
@@ -592,8 +612,9 @@ export function SalesCatalogueSurface() {
     );
     if (defaultView) {
       setFilters(
-        (defaultView as { filters: InventoryFilters }).filters ??
-          DEFAULT_FILTERS
+        normalizeSalesFilters(
+          (defaultView as { filters: InventoryFilters }).filters
+        )
       );
       setSort(
         (defaultView as { sort: InventorySortConfig }).sort ?? DEFAULT_SORT
@@ -619,56 +640,19 @@ export function SalesCatalogueSurface() {
   );
 
   const inventoryRows = useMemo(() => {
-    let items = inventoryQuery.data ?? [];
+    const items = (inventoryQuery.data ?? []).filter(
+      (item: PricedInventoryItem) => {
+        if (!matchesSalesInventoryFilters(item, filters)) {
+          return false;
+        }
 
-    // Apply text search
-    const lower = filters.search.trim().toLowerCase();
-    if (lower) {
-      items = items.filter(
-        (item: PricedInventoryItem) =>
-          item.name.toLowerCase().includes(lower) ||
-          (item.category ?? "").toLowerCase().includes(lower) ||
-          (item.vendor ?? "").toLowerCase().includes(lower) ||
-          (item.strain ?? item.strainFamily ?? "").toLowerCase().includes(lower)
-      );
-    }
+        if (!includeUnavailableInventory && !isCatalogueItemSellable(item)) {
+          return false;
+        }
 
-    // Apply advanced filters
-    if (filters.categories.length > 0) {
-      items = items.filter((item: PricedInventoryItem) =>
-        filters.categories.includes(item.category ?? "")
-      );
-    }
-    if (filters.grades.length > 0) {
-      items = items.filter((item: PricedInventoryItem) =>
-        filters.grades.includes(item.grade ?? "")
-      );
-    }
-    if (filters.vendors.length > 0) {
-      items = items.filter((item: PricedInventoryItem) =>
-        filters.vendors.includes(item.vendor ?? "")
-      );
-    }
-    if (filters.strainFamilies.length > 0) {
-      items = items.filter((item: PricedInventoryItem) =>
-        filters.strainFamilies.includes(item.strainFamily ?? "")
-      );
-    }
-    if (filters.priceMin !== null) {
-      const priceMin = filters.priceMin;
-      items = items.filter(
-        (item: PricedInventoryItem) => item.retailPrice >= priceMin
-      );
-    }
-    if (filters.priceMax !== null) {
-      const priceMax = filters.priceMax;
-      items = items.filter(
-        (item: PricedInventoryItem) => item.retailPrice <= priceMax
-      );
-    }
-    if (filters.inStockOnly) {
-      items = items.filter((item: PricedInventoryItem) => item.quantity > 0);
-    }
+        return true;
+      }
+    );
 
     const sortedItems = [...items].sort((a, b) => {
       const getSortValue = (item: PricedInventoryItem) => {
@@ -715,6 +699,7 @@ export function SalesCatalogueSurface() {
     selectedItemIds,
     checkedInventoryIds,
     filters,
+    includeUnavailableInventory,
     sort,
   ]);
 
@@ -824,16 +809,14 @@ export function SalesCatalogueSurface() {
         headerName: "",
         maxWidth: 28,
         valueGetter: params => params.data?.status ?? "LIVE",
-        cellRenderer: (params: { value: string }) =>
-          NON_SELLABLE_STATUSES.includes(
-            params.value as (typeof NON_SELLABLE_STATUSES)[number]
-          )
+        cellRenderer: (params: { data?: InventoryBrowserRow }) =>
+          params.data &&
+          (!params.data.quantity || params.data.status !== "LIVE")
             ? "\u26a0"
             : "",
-        cellStyle: (params: { value: string }) =>
-          NON_SELLABLE_STATUSES.includes(
-            params.value as (typeof NON_SELLABLE_STATUSES)[number]
-          )
+        cellStyle: (params: { data?: InventoryBrowserRow }) =>
+          params.data &&
+          (!params.data.quantity || params.data.status !== "LIVE")
             ? { color: "var(--color-amber-500)", fontWeight: "bold" }
             : null,
         headerTooltip: "Non-sellable batch warning",
@@ -844,6 +827,30 @@ export function SalesCatalogueSurface() {
         headerName: "Product",
         flex: 1.5,
         minWidth: 160,
+        cellRenderer: (params: { data?: InventoryBrowserRow }) => {
+          const row = params.data;
+          if (!row) {
+            return "";
+          }
+
+          const identityMeta = buildCatalogueDescriptor({
+            brand: row.brand,
+            subcategory: row.subcategory,
+            category: row.category,
+            batchSku: row.batchSku,
+          });
+
+          return (
+            <div className="flex min-w-0 flex-col py-0.5">
+              <span className="truncate font-medium">{row.name}</span>
+              {identityMeta ? (
+                <span className="truncate text-[10px] text-muted-foreground">
+                  {identityMeta}
+                </span>
+              ) : null}
+            </div>
+          );
+        },
         cellClass: "powersheet-cell--locked",
       },
       {
@@ -864,7 +871,7 @@ export function SalesCatalogueSurface() {
       },
       {
         field: "vendor",
-        headerName: "Vendor",
+        headerName: "Supplier",
         minWidth: 90,
         maxWidth: 120,
         hide: !columnVisibility.vendor,
@@ -979,6 +986,7 @@ export function SalesCatalogueSurface() {
   // ── handlers ───────────────────────────────────────────────────────────
   const performClientChange = useCallback(
     (clientId: number | null) => {
+      clearPortableSalesCut();
       setSelectedClientId(clientId);
       setSelectedItems([]);
       setSelectedInventoryRowId(null);
@@ -993,6 +1001,22 @@ export function SalesCatalogueSurface() {
     },
     [resetCatalogueDraft]
   );
+
+  useEffect(() => {
+    if (
+      requestedClientId === null ||
+      hydratedQueryClientIdRef.current === requestedClientId
+    ) {
+      return;
+    }
+
+    if (!clientList.some(client => client.id === requestedClientId)) {
+      return;
+    }
+
+    hydratedQueryClientIdRef.current = requestedClientId;
+    performClientChange(requestedClientId);
+  }, [clientList, performClientChange, requestedClientId]);
 
   const handleClientChange = useCallback(
     (clientId: number | null) => {
@@ -1039,30 +1063,13 @@ export function SalesCatalogueSurface() {
     []
   );
 
-  const getSellableItemsForCatalogue = useCallback(
-    (itemsToAdd: PricedInventoryItem[]) => {
-      const sellableItems = itemsToAdd.filter(
-        item => !isNonSellableInventoryStatus(item.status)
-      );
-
-      if (sellableItems.length !== itemsToAdd.length) {
-        toast.warning("Only sellable inventory can be added to the catalogue");
-      }
-
-      return sellableItems;
-    },
-    []
-  );
-
   const handleAddSelectedItem = useCallback(() => {
     if (!selectedInventoryRowId) return;
     const row = inventoryRows.find(
       r => r.identity.rowKey === selectedInventoryRowId
     );
     if (!row || selectedItemIds.has(row.inventoryId)) return;
-    const sellableItems = getSellableItemsForCatalogue([row._raw]);
-    if (sellableItems.length === 0) return;
-    appendItemsToCatalogue(sellableItems);
+    appendItemsToCatalogue([row._raw]);
     setCheckedInventoryIds(prev => {
       const next = new Set(prev);
       next.delete(row.inventoryId);
@@ -1070,34 +1077,25 @@ export function SalesCatalogueSurface() {
     });
   }, [
     appendItemsToCatalogue,
-    getSellableItemsForCatalogue,
     selectedInventoryRowId,
     inventoryRows,
     selectedItemIds,
   ]);
 
   const handleBulkAddVisible = useCallback(() => {
-    const requestedItems = checkedVisibleRows
+    const itemsToAdd = checkedVisibleRows
       .filter(row => !selectedItemIds.has(row.inventoryId))
       .map(row => row._raw);
 
-    if (requestedItems.length === 0) return;
-
-    const itemsToAdd = getSellableItemsForCatalogue(requestedItems);
     if (itemsToAdd.length === 0) return;
 
     appendItemsToCatalogue(itemsToAdd);
     setCheckedInventoryIds(prev => {
       const next = new Set(prev);
-      requestedItems.forEach(item => next.delete(item.id));
+      itemsToAdd.forEach(item => next.delete(item.id));
       return next;
     });
-  }, [
-    appendItemsToCatalogue,
-    checkedVisibleRows,
-    getSellableItemsForCatalogue,
-    selectedItemIds,
-  ]);
+  }, [appendItemsToCatalogue, checkedVisibleRows, selectedItemIds]);
 
   const handleSelectAllVisible = useCallback(() => {
     setCheckedInventoryIds(
@@ -1120,9 +1118,7 @@ export function SalesCatalogueSurface() {
 
       if (event.colDef.field === "inSheet") {
         if (row.inSheet) return;
-        const sellableItems = getSellableItemsForCatalogue([row._raw]);
-        if (sellableItems.length === 0) return;
-        appendItemsToCatalogue(sellableItems);
+        appendItemsToCatalogue([row._raw]);
         return;
       }
 
@@ -1139,7 +1135,7 @@ export function SalesCatalogueSurface() {
         });
       }
     },
-    [appendItemsToCatalogue, getSellableItemsForCatalogue]
+    [appendItemsToCatalogue]
   );
 
   const handleRemoveSelectedItem = useCallback(() => {
@@ -1170,7 +1166,7 @@ export function SalesCatalogueSurface() {
       columnVisibility: ColumnVisibility;
     }) => {
       setCurrentViewId(view.id);
-      setFilters(view.filters);
+      setFilters(normalizeSalesFilters(view.filters));
       setSort(view.sort);
       setColumnVisibility(view.columnVisibility);
     },
@@ -1195,30 +1191,24 @@ export function SalesCatalogueSurface() {
   }, [draftFileName, selectedItems]);
 
   const handlePrintCatalogue = useCallback(() => {
-    if (selectedItems.length === 0) return false;
+    if (selectedItems.length === 0) return;
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Allow pop-ups to print the catalogue");
-      return false;
+      return;
     }
 
-    try {
-      printWindow.document.write(
-        buildPrintableCatalogueHtml({
-          title: draftFileName || "Sales Catalogue",
-          clientName: selectedClientName,
-          items: selectedItems,
-          includeImages: includeImagesInPreview,
-          totalValue: totalSheetValue,
-        })
-      );
-      printWindow.document.close();
-      return true;
-    } catch {
-      toast.error("Failed to prepare the printable catalogue");
-      return false;
-    }
+    printWindow.document.write(
+      buildPrintableCatalogueHtml({
+        title: draftFileName || "Sales Catalogue",
+        clientName: selectedClientName,
+        items: selectedItems,
+        includeImages: includeImagesInPreview,
+        totalValue: totalSheetValue,
+      })
+    );
+    printWindow.document.close();
   }, [
     draftFileName,
     includeImagesInPreview,
@@ -1228,9 +1218,39 @@ export function SalesCatalogueSurface() {
   ]);
 
   const handleExportPdf = useCallback(() => {
-    if (!handlePrintCatalogue()) return;
+    handlePrintCatalogue();
     toast.success("Print dialog opened. Use Save as PDF to export.");
   }, [handlePrintCatalogue]);
+
+  const handleCopyForChat = useCallback(async () => {
+    if (!navigator.clipboard?.writeText) {
+      toast.error("Clipboard access is not available in this browser");
+      return;
+    }
+
+    const chatText = buildCatalogueChatText(
+      inventoryRows.map(row => ({
+        name: row.name,
+        quantity: row.quantity,
+        retailPrice: row.retailPrice,
+        brand: row.brand,
+        vendor: row.vendor,
+        category: row.category,
+        subcategory: row.subcategory,
+        batchSku: row.batchSku,
+      }))
+    );
+
+    try {
+      await navigator.clipboard.writeText(chatText);
+      toast.success(
+        `Copied ${inventoryRows.length} line${inventoryRows.length === 1 ? "" : "s"} for chat`
+      );
+    } catch (error) {
+      toast.error("Could not copy this cut for chat");
+      console.error("Failed to copy sales catalogue cut", error);
+    }
+  }, [inventoryRows]);
 
   const handleManageClientPricing = useCallback(() => {
     if (!selectedClientId) return;
@@ -1259,7 +1279,14 @@ export function SalesCatalogueSurface() {
       setSelectedItems(prev =>
         prev.map(item =>
           item.id === selectedPreviewItem.id
-            ? applyCatalogueLineMarkup(item, nextMarkup)
+            ? {
+                ...item,
+                priceMarkup: roundToTenth(nextMarkup),
+                retailPrice: calculateRetailFromMarkup(
+                  item.basePrice,
+                  nextMarkup
+                ),
+              }
             : item
         )
       );
@@ -1276,7 +1303,14 @@ export function SalesCatalogueSurface() {
       setSelectedItems(prev =>
         prev.map(item =>
           item.id === selectedPreviewItem.id
-            ? applyCatalogueLineRetail(item, nextRetail)
+            ? {
+                ...item,
+                retailPrice: roundToCents(nextRetail),
+                priceMarkup: calculateMarkupFromRetail(
+                  item.basePrice,
+                  nextRetail
+                ),
+              }
             : item
         )
       );
@@ -1298,68 +1332,52 @@ export function SalesCatalogueSurface() {
   }, [inventoryQuery.data, selectedPreviewItem]);
 
   const handleOpenSharePreview = useCallback(async () => {
-    if (!draft.lastSavedSheetId || draft.hasUnsavedChanges) {
-      toast.error("Save the catalogue before opening the shared view");
-      return;
-    }
-
-    const shareWindow = window.open("", "_blank");
-    if (!shareWindow) {
-      toast.error("Allow pop-ups to open the shared view");
-      return;
-    }
-
-    try {
-      shareWindow.opener = null;
-    } catch {
-      // Ignore browsers that disallow setting opener on the returned handle.
-    }
-
-    try {
-      const shareUrl = draft.lastShareUrl ?? (await draft.generateShareLink());
-      if (!shareUrl) {
-        shareWindow.close();
-        toast.error("Could not open the shared view");
-        return;
-      }
-
-      shareWindow.location.href = shareUrl;
-    } catch {
-      shareWindow.close();
-      toast.error("Could not open the shared view");
-    }
+    const shareUrl = draft.lastShareUrl ?? (await draft.generateShareLink());
+    if (!shareUrl) return;
+    window.open(shareUrl, "_blank", "noopener,noreferrer");
   }, [draft]);
 
   const navigateToOrder = useCallback(
     async (fromSalesSheet: boolean, mode?: "quote") => {
       if (!draft.canConvert || draft.isConverting) return;
-      if (!draft.lastSavedSheetId) {
-        toast.error(
-          "Save the catalogue before converting it into an order or quote"
-        );
-        return;
-      }
-      const converted = await convertCatalogueToOrder(async () => {
-        setLocation(
-          buildSalesWorkspacePath("create-order", {
-            fromSalesSheet,
-            mode,
-          })
-        );
-      });
+      const converted = await convertCatalogueToOrder();
       if (!converted) return;
+
+      const activeViewName =
+        savedViewsQuery.data?.find(view => view.id === currentViewId)?.name ??
+        null;
+      if (selectedClientId !== null) {
+        writePortableSalesCut({
+          clientId: selectedClientId,
+          filters,
+          viewId: currentViewId,
+          viewName: activeViewName,
+        });
+      } else {
+        clearPortableSalesCut();
+      }
+
       resetCatalogueDraft();
       setSelectedItems([]);
       setSelectedInventoryRowId(null);
       setSelectedPreviewRowId(null);
       setCheckedInventoryIds(new Set());
+      setLocation(
+        buildSalesWorkspacePath("create-order", {
+          fromSalesSheet,
+          mode,
+        })
+      );
     },
     [
       convertCatalogueToOrder,
+      currentViewId,
       draft.canConvert,
       draft.isConverting,
-      draft.lastSavedSheetId,
+      filters,
       resetCatalogueDraft,
+      savedViewsQuery.data,
+      selectedClientId,
       setLocation,
     ]
   );
@@ -1390,16 +1408,6 @@ export function SalesCatalogueSurface() {
   }, [saveCatalogueDraft]);
 
   // ── active filter count badge ─────────────────────────────────────────
-  const activeFilterCount =
-    filters.categories.length +
-    filters.grades.length +
-    filters.strainFamilies.length +
-    filters.vendors.length;
-  const canHandoffToOrder =
-    draft.canConvert && draft.lastSavedSheetId !== null;
-  const needsSavedSheetForHandoff =
-    selectedItems.length > 0 &&
-    (draft.hasUnsavedChanges || draft.lastSavedSheetId === null);
   const draftNameMissingForSave =
     selectedClientId !== null &&
     selectedItems.length > 0 &&
@@ -1408,77 +1416,125 @@ export function SalesCatalogueSurface() {
 
   // ── render ─────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-3">
-      <div className="overflow-hidden rounded-xl border border-border/70 bg-background/95 shadow-sm">
-        <div className="flex flex-wrap items-start gap-2.5 border-b border-border/60 px-3 py-3">
-          <div className="flex min-w-0 flex-1 flex-wrap items-start gap-2.5">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 px-2.5 text-xs"
-              onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
-            >
-              &larr; Orders
-            </Button>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge
-                  variant="secondary"
-                  className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700"
-                >
-                  Sales Catalogue
-                </Badge>
-                {draft.hasUnsavedChanges ? (
-                  <Badge
-                    variant="outline"
-                    className="h-5 border-amber-300 bg-amber-50 text-[10px] text-amber-700"
-                  >
-                    Unsaved
-                  </Badge>
-                ) : null}
-                {draft.lastSaveTime && !draft.hasUnsavedChanges ? (
-                  <Badge
-                    variant="outline"
-                    className="h-5 border-emerald-300 bg-emerald-50 text-[10px] text-emerald-700"
-                  >
-                    Saved
-                  </Badge>
-                ) : null}
-                {draftNameMissingForSave ? (
-                  <Badge
-                    variant="outline"
-                    className="h-5 border-amber-300 bg-amber-50 text-[10px] text-amber-700"
-                  >
-                    Draft name required to save
-                  </Badge>
-                ) : null}
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Build a client-ready sheet from live inventory, customer
-                pricing, and quick exports.
-              </p>
-            </div>
-          </div>
+    <div className="flex flex-col gap-1">
+      {/* ── TOOLBAR ──────────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-1.5 px-2 py-1 border-b border-border/70 bg-background">
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 px-2 text-xs"
+          onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
+        >
+          &larr; Orders
+        </Button>
+        <Badge
+          variant="secondary"
+          className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]"
+        >
+          Sales Catalogue
+        </Badge>
+        <Input
+          value={draft.draftName}
+          onChange={e => draft.setDraftName(e.target.value)}
+          placeholder="Draft name..."
+          className="h-7 max-w-36 text-xs"
+          aria-invalid={draftNameMissingForSave}
+          disabled={!selectedClientId}
+        />
+        {draftNameMissingForSave && (
+          <span className="text-[10px] text-amber-700">
+            Draft name required to save
+          </span>
+        )}
+        <div className="w-48">
+          <ClientCombobox
+            value={selectedClientId}
+            onValueChange={handleClientChange}
+            clients={clientList}
+            isLoading={clientsQuery.isLoading}
+            placeholder="Client..."
+            emptyText="No clients"
+          />
+        </div>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="min-w-[12rem] flex-1 sm:flex-none sm:w-48">
-              <ClientCombobox
-                value={selectedClientId}
-                onValueChange={handleClientChange}
-                clients={clientList}
-                isLoading={clientsQuery.isLoading}
-                placeholder="Client..."
-                emptyText="No clients"
-                selectedLabel={selectedClientName}
-              />
-            </div>
-            <Input
-              value={draft.draftName}
-              onChange={e => draft.setDraftName(e.target.value)}
-              placeholder="Draft name..."
-              className="h-8 min-w-[11rem] flex-1 text-xs sm:max-w-44"
-              aria-invalid={draftNameMissingForSave}
-              disabled={!selectedClientId}
+        <div className="ml-auto flex items-center gap-1.5">
+          {draft.hasUnsavedChanges && (
+            <Badge
+              variant="outline"
+              className="text-amber-600 border-amber-300 bg-amber-50 text-[10px] h-5"
+            >
+              Unsaved
+            </Badge>
+          )}
+          {draft.lastSaveTime && !draft.hasUnsavedChanges && (
+            <Badge
+              variant="outline"
+              className="text-emerald-600 border-emerald-300 bg-emerald-50 text-[10px] h-5"
+            >
+              Saved
+            </Badge>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            disabled={!selectedClientId || draft.isSaving}
+            onClick={draft.saveDraft}
+          >
+            <Save className="mr-1 h-3 w-3" />
+            {draft.isSaving ? "Saving..." : "Save Draft"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            disabled={!selectedClientId}
+            onClick={handleRefresh}
+            aria-label="Refresh inventory"
+          >
+            <ArrowRight className="h-3 w-3 rotate-90" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2"
+                disabled={!selectedClientId}
+              >
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowDraftDialog(true)}>
+                Load Draft
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowSavedSheetsDialog(true)}>
+                Load Saved Sheet
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                disabled={!draft.currentDraftId}
+                onClick={() => setShowDeleteDraftDialog(true)}
+                className="text-destructive"
+              >
+                <Trash2 className="mr-2 h-3 w-3" />
+                Delete Draft
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      {/* ── ACTION BAR ───────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-1.5 px-2 py-0.5 rounded-md border border-border/70 bg-muted/30 mx-1">
+        <span className="text-xs font-medium">View</span>
+
+        {selectedClientId && (
+          <>
+            <QuickViewSelector
+              clientId={selectedClientId}
+              onLoadView={handleLoadView}
+              currentViewId={currentViewId}
             />
             <Button
               size="sm"
@@ -1500,152 +1556,8 @@ export function SalesCatalogueSurface() {
             >
               <ArrowRight className="h-3.5 w-3.5 rotate-90" />
             </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 px-2.5"
-                  disabled={!selectedClientId}
-                >
-                  <MoreHorizontal className="h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setShowDraftDialog(true)}>
-                  Load Draft
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => setShowSavedSheetsDialog(true)}
-                >
-                  Load Saved Sheet
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  disabled={!draft.currentDraftId}
-                  onClick={() => setShowDeleteDraftDialog(true)}
-                  className="text-destructive"
-                >
-                  <Trash2 className="mr-2 h-3 w-3" />
-                  Delete Draft
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-            <Input
-              value={filters.search}
-              onChange={e =>
-                setFilters(prev => ({ ...prev, search: e.target.value }))
-              }
-              placeholder="Search product, vendor, category..."
-              className="h-8 w-full text-xs sm:max-w-xs"
-              disabled={!selectedClientId}
-            />
-            {selectedClientId ? (
-              <>
-                <QuickViewSelector
-                  clientId={selectedClientId}
-                  onLoadView={handleLoadView}
-                  currentViewId={currentViewId}
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 px-2.5 text-[11px]"
-                  onClick={() => setShowSaveViewDialog(true)}
-                >
-                  Save View
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 px-2.5 text-[11px]"
-                  onClick={() => setShowAdvancedFilters(prev => !prev)}
-                >
-                  Filters
-                  {activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-                </Button>
-              </>
-            ) : (
-              <span className="text-xs text-muted-foreground">
-                Choose a client to unlock views, filters, and pricing actions.
-              </span>
-            )}
-          </div>
-
-          <span className="text-[11px] text-muted-foreground">
-            {checkedVisibleRows.length} checked · {inventoryRows.length} visible
-            ·{" "}
-            {selectedItems.length > 0
-              ? `${selectedItems.length} items · ${formatCurrency(totalSheetValue)}`
-              : "No catalogue items"}
-          </span>
-
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Button
-              size="sm"
-              className="h-8 px-2.5 text-[11px]"
-              disabled={!selectedInventoryRowStillVisible || !selectedClientId}
-              onClick={handleAddSelectedItem}
-            >
-              <Plus className="mr-1 h-3.5 w-3.5" />
-              Add Row
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 px-2.5 text-[11px]"
-              disabled={checkedVisibleRows.length === 0}
-              onClick={handleBulkAddVisible}
-            >
-              Bulk Add
-              {checkedVisibleRows.length > 0
-                ? ` (${checkedVisibleRows.length})`
-                : ""}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 px-2.5 text-[11px]"
-              disabled={selectableInventoryRows.length === 0}
-              onClick={handleSelectAllVisible}
-            >
-              Select All
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 px-2.5 text-[11px]"
-              disabled={checkedVisibleRows.length === 0}
-              onClick={handleClearVisibleSelection}
-            >
-              Clear Checks
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 px-2.5 text-[11px]"
-              disabled={!selectedClientId}
-              onClick={handleManageClientPricing}
-            >
-              <Settings2 className="mr-1 h-3.5 w-3.5" />
-              Customer Pricing
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 px-2.5 text-[11px]"
-              disabled={selectedItems.length === 0}
-              onClick={handleReloadClientPricing}
-            >
-              <RotateCcw className="mr-1 h-3.5 w-3.5" />
-              Reload Pricing
-            </Button>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       {/* ── ADVANCED FILTERS ─────────────────────────────────────────── */}
@@ -1666,6 +1578,93 @@ export function SalesCatalogueSurface() {
         <div className="grid gap-1 lg:grid-cols-4 px-1">
           {/* Left: Inventory Browser (3/4) */}
           <div className="lg:col-span-3 flex flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-1 rounded-md border border-border/70 bg-background px-2 py-1">
+              <Input
+                value={filters.search}
+                onChange={e =>
+                  setFilters(prev => ({ ...prev, search: e.target.value }))
+                }
+                placeholder="Search product, vendor, category..."
+                className="h-7 max-w-xs text-xs"
+              />
+              <Button
+                size="sm"
+                className="h-7 px-2 text-[10px]"
+                disabled={
+                  !selectedInventoryRowStillVisible || !selectedClientId
+                }
+                onClick={handleAddSelectedItem}
+              >
+                <Plus className="mr-1 h-3 w-3" />
+                Add Row
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[10px]"
+                disabled={selectableInventoryRows.length === 0}
+                onClick={handleSelectAllVisible}
+              >
+                Select All In View
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[10px]"
+                disabled={checkedVisibleRows.length === 0}
+                onClick={handleClearVisibleSelection}
+              >
+                Clear Checks
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 px-2 text-[10px]"
+                disabled={checkedVisibleRows.length === 0}
+                onClick={handleBulkAddVisible}
+              >
+                Bulk Add{" "}
+                {checkedVisibleRows.length > 0
+                  ? `(${checkedVisibleRows.length})`
+                  : ""}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[10px]"
+                disabled={!selectedClientId}
+                onClick={handleManageClientPricing}
+              >
+                <Settings2 className="mr-1 h-3 w-3" />
+                Customer Pricing
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[10px]"
+                disabled={selectedItems.length === 0}
+                onClick={handleReloadClientPricing}
+              >
+                <RotateCcw className="mr-1 h-3 w-3" />
+                Reload Client Pricing
+              </Button>
+              <Button
+                size="sm"
+                variant={includeUnavailableInventory ? "default" : "outline"}
+                className="h-7 px-2 text-[10px]"
+                onClick={() =>
+                  setIncludeUnavailableInventory(current => !current)
+                }
+              >
+                Include unavailable
+              </Button>
+              <span className="ml-auto text-[10px] text-muted-foreground">
+                {checkedVisibleRows.length} checked · {inventoryRows.length}{" "}
+                visible ·{" "}
+                {selectedItems.length > 0
+                  ? `${selectedItems.length} items · ${formatCurrency(totalSheetValue)}`
+                  : "No catalogue items"}
+              </span>
+            </div>
             <PowersheetGrid
               surfaceId="catalogue-inventory-browser"
               requirementIds={["CAT-001", "CAT-002"]}
@@ -1691,7 +1690,7 @@ export function SalesCatalogueSurface() {
                   {selectedClientName ? ` · ${selectedClientName}` : ""}
                 </span>
               }
-              minHeight={360}
+              minHeight={catalogueInventoryGridHeight}
               headerClassName="px-4 pb-1 pt-3"
               contentClassName="px-4 pb-4 pt-0"
             />
@@ -1852,6 +1851,16 @@ export function SalesCatalogueSurface() {
                   size="sm"
                   variant="outline"
                   className="h-8 text-[11px]"
+                  disabled={inventoryRows.length === 0}
+                  onClick={() => void handleCopyForChat()}
+                >
+                  <Copy className="mr-1 h-3.5 w-3.5" />
+                  Copy for Chat
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-[11px]"
                   disabled={selectedItems.length === 0}
                   onClick={handlePrintCatalogue}
                 >
@@ -1863,72 +1872,6 @@ export function SalesCatalogueSurface() {
                     Shared link ready
                   </span>
                 ) : null}
-              </div>
-
-              <p className="mt-2 text-[10px] text-muted-foreground">
-                Shared view, PDF export, and print open a new browser tab or
-                window.
-              </p>
-
-              <div className="mt-3 rounded-md border border-border/70 bg-background/70 p-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                      Next Step
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Turn this catalogue into a quote, an order, or a live
-                      selling session.
-                    </p>
-                  </div>
-                  {needsSavedSheetForHandoff ? (
-                    <Badge
-                      variant="outline"
-                      className="border-amber-300 bg-amber-50 text-[10px] text-amber-700"
-                    >
-                      Save sheet before handoff
-                    </Badge>
-                  ) : null}
-                </div>
-
-                <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-[11px]"
-                    disabled={!canHandoffToOrder || draft.isConverting}
-                    onClick={() => void navigateToOrder(true)}
-                  >
-                    &rarr; Sales Order
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-[11px]"
-                    disabled={!canHandoffToOrder || draft.isConverting}
-                    onClick={() => void navigateToOrder(true, "quote")}
-                  >
-                    &rarr; Quote
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-[11px] sm:col-span-2"
-                    disabled={!draft.canGoLive || liveSessionMutation.isPending}
-                    onClick={() => {
-                      if (!draft.canGoLive) return;
-                      if (!draft.lastSavedSheetId) {
-                        toast.error("Save the catalogue before going live");
-                        return;
-                      }
-                      liveSessionMutation.mutate({
-                        sheetId: draft.lastSavedSheetId,
-                      });
-                    }}
-                  >
-                    Live
-                  </Button>
-                </div>
               </div>
 
               <div className="mt-3 rounded-md border border-border/70 bg-background/70 p-2.5">
@@ -2006,7 +1949,7 @@ export function SalesCatalogueSurface() {
                 size="sm"
                 variant="outline"
                 className="h-8 text-[11px]"
-                disabled={!canHandoffToOrder || draft.isConverting}
+                disabled={!draft.canConvert || draft.isConverting}
                 onClick={() => void navigateToOrder(true)}
               >
                 &rarr; Sales Order
@@ -2015,7 +1958,7 @@ export function SalesCatalogueSurface() {
                 size="sm"
                 variant="outline"
                 className="h-8 text-[11px]"
-                disabled={!canHandoffToOrder || draft.isConverting}
+                disabled={!draft.canConvert || draft.isConverting}
                 onClick={() => void navigateToOrder(true, "quote")}
               >
                 &rarr; Quote
@@ -2042,6 +1985,63 @@ export function SalesCatalogueSurface() {
           </div>
         </div>
       )}
+
+      {/* ── HANDOFF BAR ──────────────────────────────────────────────── */}
+      <div className="flex items-center gap-1.5 px-2 py-1 mx-1 rounded-md border border-border/70 bg-background">
+        {draft.hasUnsavedChanges && selectedItems.length > 0 && (
+          <Badge
+            variant="outline"
+            className="text-amber-700 border-amber-300 bg-amber-50 text-[10px]"
+          >
+            Save the sheet before sharing or converting
+          </Badge>
+        )}
+        <div className="ml-auto flex gap-1">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            disabled={!draft.canShare}
+            onClick={() => void draft.generateShareLink()}
+          >
+            Share Link
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            disabled={!draft.canConvert || draft.isConverting}
+            onClick={() => void navigateToOrder(true)}
+          >
+            &rarr; Sales Order
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            disabled={!draft.canConvert || draft.isConverting}
+            onClick={() => void navigateToOrder(true, "quote")}
+          >
+            &rarr; Quote
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 px-2 text-xs"
+            disabled={!draft.canGoLive || liveSessionMutation.isPending}
+            onClick={() => {
+              if (!draft.canGoLive) return;
+              if (!draft.lastSavedSheetId) {
+                toast.error("Save the catalogue before going live");
+                return;
+              }
+              liveSessionMutation.mutate({ sheetId: draft.lastSavedSheetId });
+            }}
+          >
+            Live
+          </Button>
+        </div>
+      </div>
 
       {/* ── STATUS BAR ───────────────────────────────────────────────── */}
       <WorkSurfaceStatusBar
@@ -2152,7 +2152,7 @@ export function SalesCatalogueSurface() {
             }
             setSelectedItems(sanitizedItems);
             draft.resetDraft();
-            draft.markSheetAsLoaded(sheetId, sanitizedItems);
+            draft.markSheetAsLoaded(sheetId);
             setShowSavedSheetsDialog(false);
             toast.success("Saved sheet loaded");
           }

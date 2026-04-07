@@ -7,6 +7,7 @@
 ## Problem
 
 The Accounting workspace has 10 tabs with inconsistent surface treatments:
+
 - Invoices and Payments have dual surfaces (classic + sheet-native pilot) behind a SheetModeToggle
 - Bills, GL, CoA, Expenses, Bank Accounts, Bank Transactions, and Fiscal Periods are classic HTML table pages
 - ClientLedgerPilotSurface (1,392 lines) exists but isn't wired into the workspace
@@ -42,10 +43,10 @@ All surfaces share a common layout skeleton:
 
 Surfaces fall into two categories:
 
-| Category | Surfaces | Grid Mode |
-|----------|----------|-----------|
-| **Read-only registries** | Invoices, Bills, Payments, General Ledger | `selectionMode: "cell-range"`, no fill handle, no edit, no undo. Records created/mutated via dialogs and workflow actions. |
-| **Editable registries** | Expenses, Bank Accounts, Bank Transactions, Fiscal Periods, Chart of Accounts | `selectionMode: "cell-range"`, `enableFillHandle: true`, `enableUndoRedo: true`. Inline cell editing with accent borders. New rows added via "+ Add Row" action (appends empty editable row to grid). Auto-save on cell blur with debounce. |
+| Category                 | Surfaces                                                                      | Grid Mode                                                                                                                                                                                                                                   |
+| ------------------------ | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Read-only registries** | Invoices, Bills, Payments, General Ledger                                     | `selectionMode: "cell-range"`, no fill handle, no edit, no undo. Records created/mutated via dialogs and workflow actions.                                                                                                                  |
+| **Editable registries**  | Expenses, Bank Accounts, Bank Transactions, Fiscal Periods, Chart of Accounts | `selectionMode: "cell-range"`, `enableFillHandle: true`, `enableUndoRedo: true`. Inline cell editing with accent borders. New rows added via "+ Add Row" action (appends empty editable row to grid). Auto-save on cell blur with debounce. |
 
 ---
 
@@ -60,6 +61,7 @@ Surfaces fall into two categories:
 #### Layout
 
 **1. Toolbar**
+
 - "Invoices" title
 - KPI badges: `$AR total` (green), `N overdue` (amber), `N total` (blue)
 - AR Aging toggle button (opens/collapses aging panel below grid, state persisted in localStorage)
@@ -67,6 +69,7 @@ Surfaces fall into two categories:
 - Refresh button
 
 **2. Action Bar**
+
 - Status filter tabs: All | Draft | Sent | Viewed | Partial | Paid | Overdue | Void
 - Right-aligned workflow actions: + Create Invoice, Mark Sent, Record Payment, Void, PDF, Print
 - Actions enable/disable based on selected row's status
@@ -86,6 +89,7 @@ Grid columns:
 | Days | 50px | locked | Aging days badge for overdue invoices |
 
 Inspector sections (when row selected):
+
 - **Overview**: Client (clickable link), Date, Due (with overdue indicator), Terms
 - **Amounts**: Total, Paid, Due with payment progress bar (% collected)
 - **GL Status**: Posted/Draft badge with GL entry number
@@ -93,12 +97,14 @@ Inspector sections (when row selected):
 - **Quick Actions**: Record Payment, Mark Sent, PDF (contextual to current status)
 
 **4. AR Aging Panel** (collapsible, toggled from toolbar)
+
 - 5 aging buckets: Current | 1-30 days | 31-60 | 61-90 | 90+
 - Each shows dollar amount + invoice count
 - Data source: `invoices.getARAging`
 - Background: warm amber tone (`#fff8f0`, border `#ffe0b2`)
 
 **5. Client Ledger Sub-View** (collapsible, auto-populates on row selection)
+
 - Header: "Client Ledger: [client name]" + balance badge + action buttons (+ Adjustment, Export CSV, Date range filter)
 - Mini PowersheetGrid showing selected client's transactions:
   | Column | Notes |
@@ -116,6 +122,7 @@ Inspector sections (when row selected):
 - Background: cool blue tone (`#f8fafe`, border `#bbdefb`)
 
 **6. Status Bar**
+
 - Left: "N selected · [status filter] · N total · [client name] ledger"
 - Right: KeyboardHintBar — Click select, Shift+Click range, ⌘C copy, ⌘A all, Esc close inspector
 
@@ -164,12 +171,14 @@ surfaceMode === "sheet-native"
 #### Layout
 
 **1. Toolbar**
+
 - "Bills" title
 - KPI badges: `$AP total` (amber), `N overdue` (red), `N total` (blue)
 - AP Aging toggle button
 - Search + refresh
 
 **2. Action Bar**
+
 - Status filter tabs: All | Draft | Submitted | Approved | Received | Paid | Overdue | Void
 - Right-aligned actions: Pay Vendor, Mark Received, Void
 - Actions enable/disable based on selected row's status
@@ -188,17 +197,20 @@ Grid columns:
 | Status | 55px | Color-coded badge |
 
 Inspector sections:
+
 - **This Bill**: Vendor (clickable), Bill Date, Due (with overdue indicator), Total, Paid, Due, Status, GL status
 - **Line Items**: Compact list of bill line items (product × qty — amount)
 - **Vendor AP Context** (orange card): Total owed to this vendor across all open bills, open bill count, list of other open bills from same vendor (clickable to select that row). Data: filter existing `accounting.bills.list` by vendor ID.
 - **Quick Actions**: "Pay This Bill", "Pay All Open" (batch pay all open from this vendor)
 
 **4. AP Aging Panel** (collapsible)
+
 - Same 5-bucket pattern as AR Aging but for bills
 - Data source: `accounting.bills.getAPAging`
 - Background: warm red tone (`#fef3f0`, border `#ffcdd2`)
 
 **5. Status Bar**
+
 - Left: "N selected · [status filter] · N total · [vendor name]: $X owed"
 
 #### Sidecar Dialogs
@@ -222,11 +234,13 @@ Inspector sections:
 #### Layout
 
 **1. Toolbar**
+
 - "Payments" title
 - KPI badges: `N total` (blue), `$received` (green), `$sent` (amber)
 - Search + refresh
 
 **2. Action Bar**
+
 - Type filter tabs: All | ↓ Received | ↑ Sent
 - Right-aligned actions: Record Payment, Void
 
@@ -244,9 +258,11 @@ Grid columns:
 | Reference | flex | Reference/check number |
 
 Inspector sections:
+
 - **Payment detail**: Type badge, Date, Amount (color-coded), Method, Reference, Invoice (clickable), Notes
 
 **4. Status Bar**
+
 - Left: "N selected · [type filter] · N total"
 
 No aging panel, no support modules — Payments is the simplest registry surface.
@@ -292,12 +308,14 @@ surfaceMode === "sheet-native"
 #### Layout
 
 **1. Toolbar**
+
 - "General Ledger" title
 - Scoping selectors (inline): Account selector dropdown, Fiscal Period selector, Date range picker
 - Trial Balance toggle button
 - Search + refresh
 
 **2. Action Bar**
+
 - Status filter tabs: All | Posted | Draft
 - Right-aligned: running account balance display (`Balance: $42,850.00 DR`)
 - Actions: + Post Journal Entry, Reverse Entry, Export CSV
@@ -316,11 +334,13 @@ Grid columns:
 | Status | 55px | POST / DRAFT badge |
 
 Inspector sections:
+
 - **Entry detail**: Date, Account (code + name), Debit, Credit, Period, Status, Description
 - **Source Reference**: Clickable navigation cards showing the source document (PAYMENT → payments tab, INVOICE → invoices tab, PO → procurement). Uses `referenceType` + `referenceId` from GL entry.
 - **Quick Action**: Reverse (for posted entries only)
 
 **4. Trial Balance** (collapsible support module)
+
 - Mini-grid: Account #, Account Name, Total Debit, Total Credit
 - Totals row at bottom
 - Balanced indicator: "✓ Balanced — Debits = Credits" (green) or "✗ Out of balance by $X" (red)
@@ -330,6 +350,7 @@ Inspector sections:
 - Current account highlighted in the Trial Balance grid
 
 **5. Status Bar**
+
 - Left: "N selected · Account: [code] [name] · [period] · N entries · Balance: $X DR/CR"
 
 #### Sidecar Dialogs
@@ -351,11 +372,13 @@ Inspector sections:
 #### Layout
 
 **1. Toolbar**
+
 - "Chart of Accounts" title
 - KPI badges: `N accounts` (blue), `N active` (green)
 - Search + refresh
 
 **2. Action Bar**
+
 - Type filter tabs: All Types | Asset | Liability | Equity | Revenue | Expense
 - Right-aligned actions: + Add Row (appends editable row), Edit (selected account)
 
@@ -364,6 +387,7 @@ Inspector sections:
 Grid mode: `selectionMode: "cell-range"`, `enableFillHandle: true`, `enableUndoRedo: true`
 
 Row grouping by account type (AG Grid `rowGrouping`). Color-coded group headers:
+
 - Asset: green (`#e8f5e9`)
 - Liability: amber (`#fff3e0`)
 - Equity: purple (`#f3e5f5`)
@@ -380,12 +404,14 @@ Grid columns:
 | Active | 55px | Yes (accent border) | Checkbox toggle |
 
 Inspector sections:
+
 - **Account detail**: All fields + description (editable)
 - **Parent Account**: Link to parent if exists
 
 New row workflow: "+ Add Row" appends an empty row at the bottom of the appropriate type group. User fills in Account #, Name, Type, Normal Balance. Auto-saves on blur. Calls `accounting.accounts.create` for new rows, `accounting.accounts.update` for edits.
 
 **4. Status Bar**
+
 - Left: "N selected · [type filter] · N accounts (N active)"
 
 No support modules — flat reference grid.
@@ -494,16 +520,16 @@ No layout changes. Apply density tokens so the Dashboard doesn't feel jarring al
 
 ### Token Changes
 
-| Property | Current | New |
-|----------|---------|-----|
-| Card border-radius | 12px (rounded-xl) | 6px (rounded-md) |
-| Card padding | 16px (p-4) | 10px (p-2.5) |
-| Card gap | 16px (gap-4) | 8px (gap-2) |
-| Section headers | 14-16px | 12px |
-| KPI values | 18-24px | 16px |
-| Labels/descriptions | 11-14px | 9-11px |
-| Button padding | 8px 16px | 5px 12px |
-| Button border-radius | 8px | 4px |
+| Property             | Current           | New              |
+| -------------------- | ----------------- | ---------------- |
+| Card border-radius   | 12px (rounded-xl) | 6px (rounded-md) |
+| Card padding         | 16px (p-4)        | 10px (p-2.5)     |
+| Card gap             | 16px (gap-4)      | 8px (gap-2)      |
+| Section headers      | 14-16px           | 12px             |
+| KPI values           | 18-24px           | 16px             |
+| Labels/descriptions  | 11-14px           | 9-11px           |
+| Button padding       | 8px 16px          | 5px 12px         |
+| Button border-radius | 8px               | 4px              |
 
 ### What Stays
 
@@ -554,46 +580,46 @@ Layout structure, quick action positions ("Start here" card with Receive Payment
 
 ## Shared Infrastructure (Reuse, Don't Rebuild)
 
-| Component | From | Used By |
-|-----------|------|---------|
-| `PowersheetGrid` | `spreadsheet-native/PowersheetGrid` | All 9 surfaces |
-| `WorkSurfaceStatusBar` | `work-surface/WorkSurfaceStatusBar` | All 9 surfaces |
-| `KeyboardHintBar` | `work-surface/KeyboardHintBar` | All 9 surfaces |
-| `InspectorPanel` / `InspectorSection` / `InspectorField` | `work-surface/InspectorPanel` | All 9 surfaces |
-| `InvoiceToPaymentFlow` | `golden-flows/InvoiceToPaymentFlow` | Invoices, Payments |
-| `PayVendorModal` | `accounting/PayVendorModal` | Bills |
-| `ReceivePaymentModal` | `accounting/ReceivePaymentModal` | Dashboard (unchanged) |
-| `JournalEntryForm` | `accounting/JournalEntryForm` | General Ledger |
-| `AccountSelector` | `accounting/AccountSelector` | General Ledger |
-| `FiscalPeriodSelector` | `accounting/FiscalPeriodSelector` | General Ledger |
-| `ClientCombobox` | `ui/client-combobox` | Invoices (Client Ledger sub-view) |
-| `ConfirmDialog` | `ui/confirm-dialog` | Bills (void), Payments (void), GL (reverse) |
-| `StatusBadge` | `accounting/StatusBadge` | Invoices, Bills |
-| `AgingBadge` | `accounting/AgingBadge` | Invoices, Bills |
-| `GLReversalStatus` / `InvoiceGLStatus` | `accounting/GLReversalStatus` | Invoices, GL |
+| Component                                                | From                                | Used By                                     |
+| -------------------------------------------------------- | ----------------------------------- | ------------------------------------------- |
+| `PowersheetGrid`                                         | `spreadsheet-native/PowersheetGrid` | All 9 surfaces                              |
+| `WorkSurfaceStatusBar`                                   | `work-surface/WorkSurfaceStatusBar` | All 9 surfaces                              |
+| `KeyboardHintBar`                                        | `work-surface/KeyboardHintBar`      | All 9 surfaces                              |
+| `InspectorPanel` / `InspectorSection` / `InspectorField` | `work-surface/InspectorPanel`       | All 9 surfaces                              |
+| `InvoiceToPaymentFlow`                                   | `golden-flows/InvoiceToPaymentFlow` | Invoices, Payments                          |
+| `PayVendorModal`                                         | `accounting/PayVendorModal`         | Bills                                       |
+| `ReceivePaymentModal`                                    | `accounting/ReceivePaymentModal`    | Dashboard (unchanged)                       |
+| `JournalEntryForm`                                       | `accounting/JournalEntryForm`       | General Ledger                              |
+| `AccountSelector`                                        | `accounting/AccountSelector`        | General Ledger                              |
+| `FiscalPeriodSelector`                                   | `accounting/FiscalPeriodSelector`   | General Ledger                              |
+| `ClientCombobox`                                         | `ui/client-combobox`                | Invoices (Client Ledger sub-view)           |
+| `ConfirmDialog`                                          | `ui/confirm-dialog`                 | Bills (void), Payments (void), GL (reverse) |
+| `StatusBadge`                                            | `accounting/StatusBadge`            | Invoices, Bills                             |
+| `AgingBadge`                                             | `accounting/AgingBadge`             | Invoices, Bills                             |
+| `GLReversalStatus` / `InvoiceGLStatus`                   | `accounting/GLReversalStatus`       | Invoices, GL                                |
 
 ---
 
 ## Components Retired
 
-| Component | Lines | Replaced By |
-|-----------|-------|-------------|
-| `InvoicesPilotSurface` | 1,464 | InvoicesSurface |
-| `InvoicesWorkSurface` | 1,308 | InvoicesSurface |
-| `ClientLedgerPilotSurface` | 1,392 | InvoicesSurface (sub-view) |
-| `ClientLedgerWorkSurface` | 1,225 | InvoicesSurface (sub-view) |
-| `PaymentsPilotSurface` | 928 | PaymentsSurface |
-| `PaymentInspector` | 398 | PaymentsSurface (inline inspector) |
-| `InvoiceEditInspector` | 389 | InvoicesSurface (inline inspector) |
-| Classic `Bills.tsx` | 543 | BillsSurface |
-| Classic `Payments.tsx` | 337 | PaymentsSurface |
-| Classic `GeneralLedger.tsx` | 561 | GeneralLedgerSurface |
-| Classic `ChartOfAccounts.tsx` | 714 | ChartOfAccountsSurface |
-| Classic `Expenses.tsx` | 421 | ExpensesSurface |
-| Classic `BankAccounts.tsx` | 199 | BankAccountsSurface |
-| Classic `BankTransactions.tsx` | 377 | BankTransactionsSurface |
-| Classic `FiscalPeriods.tsx` | 678 | FiscalPeriodsSurface |
-| `SheetModeToggle` usage in AccountingWorkspacePage | — | Removed entirely |
+| Component                                          | Lines | Replaced By                        |
+| -------------------------------------------------- | ----- | ---------------------------------- |
+| `InvoicesPilotSurface`                             | 1,464 | InvoicesSurface                    |
+| `InvoicesWorkSurface`                              | 1,308 | InvoicesSurface                    |
+| `ClientLedgerPilotSurface`                         | 1,392 | InvoicesSurface (sub-view)         |
+| `ClientLedgerWorkSurface`                          | 1,225 | InvoicesSurface (sub-view)         |
+| `PaymentsPilotSurface`                             | 928   | PaymentsSurface                    |
+| `PaymentInspector`                                 | 398   | PaymentsSurface (inline inspector) |
+| `InvoiceEditInspector`                             | 389   | InvoicesSurface (inline inspector) |
+| Classic `Bills.tsx`                                | 543   | BillsSurface                       |
+| Classic `Payments.tsx`                             | 337   | PaymentsSurface                    |
+| Classic `GeneralLedger.tsx`                        | 561   | GeneralLedgerSurface               |
+| Classic `ChartOfAccounts.tsx`                      | 714   | ChartOfAccountsSurface             |
+| Classic `Expenses.tsx`                             | 421   | ExpensesSurface                    |
+| Classic `BankAccounts.tsx`                         | 199   | BankAccountsSurface                |
+| Classic `BankTransactions.tsx`                     | 377   | BankTransactionsSurface            |
+| Classic `FiscalPeriods.tsx`                        | 678   | FiscalPeriodsSurface               |
+| `SheetModeToggle` usage in AccountingWorkspacePage | —     | Removed entirely                   |
 
 **Total classic/pilot code retired**: ~10,334 lines
 
@@ -613,13 +639,13 @@ Layout structure, quick action positions ("Start here" card with Receive Payment
 
 ## Risk & Mitigation
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Client Ledger sub-view integration breaks running balance display | High | Preserve CRITICAL CONSTRAINT from ClientLedgerPilotSurface: running balance column must stay visible when inspector open. Flex layout ensures grid never hides. |
-| Editable grids (Phase 3) introduce data integrity issues | Medium | Auto-save with debounce (2s). Undo/redo support. Validation on cell blur before mutation. Toast on save failure. |
-| Retiring 10K+ lines of classic code loses edge-case handling | High | Audit each retired component's feature set against the new surface before deletion. Phase 1 validates the pattern before Phase 2-3 build on it. |
-| Inspector animation feels janky on slower machines | Low | CSS transition on flex-basis. Fallback: instant show/hide if `prefers-reduced-motion`. |
-| Fiscal Periods locking has irreversible consequences | Medium | Lock action requires confirmation dialog with explicit warning. Locked periods make all cells read-only. |
+| Risk                                                              | Impact | Mitigation                                                                                                                                                      |
+| ----------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Client Ledger sub-view integration breaks running balance display | High   | Preserve CRITICAL CONSTRAINT from ClientLedgerPilotSurface: running balance column must stay visible when inspector open. Flex layout ensures grid never hides. |
+| Editable grids (Phase 3) introduce data integrity issues          | Medium | Auto-save with debounce (2s). Undo/redo support. Validation on cell blur before mutation. Toast on save failure.                                                |
+| Retiring 10K+ lines of classic code loses edge-case handling      | High   | Audit each retired component's feature set against the new surface before deletion. Phase 1 validates the pattern before Phase 2-3 build on it.                 |
+| Inspector animation feels janky on slower machines                | Low    | CSS transition on flex-basis. Fallback: instant show/hide if `prefers-reduced-motion`.                                                                          |
+| Fiscal Periods locking has irreversible consequences              | Medium | Lock action requires confirmation dialog with explicit warning. Locked periods make all cells read-only.                                                        |
 
 ---
 

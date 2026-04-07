@@ -373,6 +373,7 @@ However, the repo currently splits these responsibilities across endpoints:
 
 Canonical decision: operational source-of-truth should be `payments.recordPayment` (full payment+invoice+GL behavior).
 Current known defect: UI still calls `accounting.payments.create`.
+
 - Evidence (canonical target): `server/routers/payments.ts:233` (`recordPayment`).
 - Evidence (current UI mismatch): `client/src/components/work-surface/golden-flows/InvoiceToPaymentFlow.tsx:767`.
 
@@ -546,6 +547,7 @@ Current known defect: UI still calls `accounting.payments.create`.
 
 Canonical decision: sample management is user-facing for internal authorized users (not public and not backend-only).
 Current implementation note: fulfillment endpoint exists and is permissioned; UI fulfillment wiring still needs explicit verification.
+
 - Evidence: `client/src/App.tsx:350`, `client/src/config/navigation.ts:174`, `server/routers/samples.ts:166`.
 
 **Expected outcomes (system + data)**

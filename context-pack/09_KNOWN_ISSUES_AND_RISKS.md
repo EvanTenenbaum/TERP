@@ -144,18 +144,18 @@ Host validated: `https://terp-app-b9s35.ondigitalocean.app`
 
 ## Risk Register
 
-| Risk | Impact | Likelihood | Detection | Mitigation |
-| --- | --- | --- | --- | --- |
-| `/orders` list 500s (`orders.getAll`) | High | High | Open `/orders`, inspect network for 500 | Fix input/null handling, add smoke test for list route |
-| `/orders/create` helper 500s (`credit/referrals`) | High | High | Select client in `/orders/create`, inspect network | Add permission-aware fallback UI and harden backend null handling |
-| Payment flow canonical mismatch (`accounting.payments.create` vs `payments.recordPayment`) | High | High | Record payment and verify invoice+payment+GL all update | Rewire UI to canonical backend path; add end-to-end accounting assertions |
-| Inventory movement inconsistency across order paths | High | Medium | Compare quantity deltas finalize/confirm/ship | Implement single movement policy and transactional update |
-| Post-logout fallback browsing in production | High | High | Logout then navigate `/` | Disable fallback in prod, enforce true unauthenticated state |
-| Feature flag audit history 500 | Medium | High | Open `/settings/feature-flags` and check audit requests | Repair query path and add endpoint health check |
-| `/settings/display` 404 | Low | High | Navigate `/settings/display` | Add compatibility redirect to `/settings` |
-| Supplier model drift (`supplierClientId` vs legacy `vendorId`) | High | Medium | Create/update PO and intake supplier flows | Complete migration plan and deprecate legacy paths |
-| Dashboard profitability endpoints 500 | Medium | High | Load dashboard, inspect profitability calls | Fix endpoint failure path and add monitoring |
-| Returns/accounting consistency drift | High | Medium | Process return and compare invoices/ledger/client balance | Enforce single balance source and reconciliation checks |
+| Risk                                                                                       | Impact | Likelihood | Detection                                                 | Mitigation                                                                |
+| ------------------------------------------------------------------------------------------ | ------ | ---------- | --------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `/orders` list 500s (`orders.getAll`)                                                      | High   | High       | Open `/orders`, inspect network for 500                   | Fix input/null handling, add smoke test for list route                    |
+| `/orders/create` helper 500s (`credit/referrals`)                                          | High   | High       | Select client in `/orders/create`, inspect network        | Add permission-aware fallback UI and harden backend null handling         |
+| Payment flow canonical mismatch (`accounting.payments.create` vs `payments.recordPayment`) | High   | High       | Record payment and verify invoice+payment+GL all update   | Rewire UI to canonical backend path; add end-to-end accounting assertions |
+| Inventory movement inconsistency across order paths                                        | High   | Medium     | Compare quantity deltas finalize/confirm/ship             | Implement single movement policy and transactional update                 |
+| Post-logout fallback browsing in production                                                | High   | High       | Logout then navigate `/`                                  | Disable fallback in prod, enforce true unauthenticated state              |
+| Feature flag audit history 500                                                             | Medium | High       | Open `/settings/feature-flags` and check audit requests   | Repair query path and add endpoint health check                           |
+| `/settings/display` 404                                                                    | Low    | High       | Navigate `/settings/display`                              | Add compatibility redirect to `/settings`                                 |
+| Supplier model drift (`supplierClientId` vs legacy `vendorId`)                             | High   | Medium     | Create/update PO and intake supplier flows                | Complete migration plan and deprecate legacy paths                        |
+| Dashboard profitability endpoints 500                                                      | Medium | High       | Load dashboard, inspect profitability calls               | Fix endpoint failure path and add monitoring                              |
+| Returns/accounting consistency drift                                                       | High   | Medium     | Process return and compare invoices/ledger/client balance | Enforce single balance source and reconciliation checks                   |
 
 ## Secrets / Redactions
 

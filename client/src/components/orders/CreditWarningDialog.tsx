@@ -72,10 +72,12 @@ export function CreditWarningDialog({
 
   const isHardBlock = creditCheck.enforcementMode === "HARD_BLOCK";
   const requiresReason =
-    creditCheck.requiresOverride || creditCheck.enforcementMode === "SOFT_BLOCK";
+    creditCheck.requiresOverride ||
+    creditCheck.enforcementMode === "SOFT_BLOCK";
   const supportsOverrideRequest = Boolean(onRequestOverride);
   const showReasonField = requiresReason || supportsOverrideRequest;
-  const canProceed = !isHardBlock && (!requiresReason || overrideReason.length >= 10);
+  const canProceed =
+    !isHardBlock && (!requiresReason || overrideReason.length >= 10);
 
   const handleProceed = () => {
     onProceed(requiresReason ? overrideReason : undefined);
@@ -91,7 +93,7 @@ export function CreditWarningDialog({
     await onRequestOverride?.(overrideReason);
   };
 
-  const formatCurrency = (value: number) => 
+  const formatCurrency = (value: number) =>
     value.toLocaleString(undefined, { style: "currency", currency: "USD" });
 
   return (
@@ -136,11 +138,15 @@ export function CreditWarningDialog({
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="space-y-1">
               <p className="text-muted-foreground">Credit Limit</p>
-              <p className="font-semibold">{formatCurrency(creditCheck.creditLimit)}</p>
+              <p className="font-semibold">
+                {formatCurrency(creditCheck.creditLimit)}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground">Current Exposure</p>
-              <p className="font-semibold">{formatCurrency(creditCheck.currentExposure)}</p>
+              <p className="font-semibold">
+                {formatCurrency(creditCheck.currentExposure)}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground">Order Total</p>
@@ -148,7 +154,9 @@ export function CreditWarningDialog({
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground">New Exposure</p>
-              <p className={`font-semibold ${creditCheck.newExposure > creditCheck.creditLimit ? "text-red-600" : ""}`}>
+              <p
+                className={`font-semibold ${creditCheck.newExposure > creditCheck.creditLimit ? "text-red-600" : ""}`}
+              >
                 {formatCurrency(creditCheck.newExposure)}
               </p>
             </div>
@@ -178,7 +186,8 @@ export function CreditWarningDialog({
             <div className="flex gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
               <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-blue-800 dark:text-blue-200">
-                You can proceed with this order. The warning is for your awareness.
+                You can proceed with this order. The warning is for your
+                awareness.
               </p>
             </div>
           )}
@@ -188,7 +197,9 @@ export function CreditWarningDialog({
             <div className="flex gap-2 p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
               <XCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
               <p className="text-sm text-red-800 dark:text-red-200">
-                Credit enforcement is set to Hard Block. Contact an administrator to adjust the client's credit limit or change enforcement settings.
+                Credit enforcement is set to Hard Block. Contact an
+                administrator to adjust the client's credit limit or change
+                enforcement settings.
               </p>
             </div>
           )}
@@ -212,7 +223,9 @@ export function CreditWarningDialog({
                     onClick={() => {
                       void handleRequestOverride();
                     }}
-                    disabled={requestOverrideBusy || overrideReason.trim().length < 10}
+                    disabled={
+                      requestOverrideBusy || overrideReason.trim().length < 10
+                    }
                   >
                     <ArrowRightCircle className="mr-2 h-4 w-4" />
                     {requestOverrideBusy

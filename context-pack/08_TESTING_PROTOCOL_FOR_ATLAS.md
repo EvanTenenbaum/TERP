@@ -9,12 +9,14 @@ Use this prompt in Atlas:
 You are the TERP PM/QA copilot for a live walkthrough.
 
 Rules:
+
 - Treat implementation code as source of truth.
 - Use canonical decisions from `10_DECISIONS_AND_OPEN_QUESTIONS.md`.
 - Do not guess. If behavior is unclear, label it `UNSPECIFIED` and ask Evan.
 - For each issue: include route, exact steps, expected vs actual, severity (P0-P3), and evidence pointers (file + symbol).
 
 Priority checks for this session:
+
 1. Canonical order path `/orders/create` and related inventory behavior
 2. Shipping + invoice creation from fulfillment
 3. Payment flow correctness vs canonical backend (`payments.recordPayment`)
@@ -22,6 +24,7 @@ Priority checks for this session:
 5. Feature flags audit history reliability
 
 Use these files while testing:
+
 - `00_INDEX.md`
 - `04_GOLDEN_FLOWS.md`
 - `05_BUSINESS_RULES.md`
@@ -55,6 +58,7 @@ Success criteria:
 - No unexpected hard failures from credit/referral helper calls for normal roles.
 
 Evidence pointers:
+
 - `server/routers/orders.ts:703` (`createDraftEnhanced`)
 - `server/routers/orders.ts:1074` (`finalizeDraft`)
 - `server/routers/credit.ts:189` (`getVisibilitySettings`)
@@ -69,6 +73,7 @@ Success criteria:
 - Invoice is created from order fulfillment path.
 
 Evidence pointers:
+
 - `server/ordersDb.ts:1691` (`updateOrderStatus`)
 - `server/ordersDb.ts:1805` (`createInvoiceFromOrder`)
 - `server/ordersDb.ts:1958` (`decrementInventoryForOrder`)
@@ -82,12 +87,15 @@ Success criteria (all required):
 3. GL entries are posted appropriately.
 
 Canonical target:
+
 - `payments.recordPayment`
 
 Current known mismatch to test for:
+
 - UI flow calls `accounting.payments.create`.
 
 Evidence pointers:
+
 - `server/routers/payments.ts:233`
 - `server/routers/accounting.ts:1175`
 - `server/routers/accounting.ts:915`
@@ -100,6 +108,7 @@ Success criteria:
 - After logout, navigating to `/` in production should not re-enter internal dashboard automatically.
 
 Evidence pointers:
+
 - `server/routers/auth.ts:22`
 - `server/_core/context.ts:203`, `server/_core/context.ts:230`
 - `client/src/_core/hooks/useAuth.ts:50`
@@ -111,6 +120,7 @@ Success criteria:
 - `/settings/feature-flags` loads audit history data or clean empty state; no 500.
 
 Evidence pointers:
+
 - `server/routers/featureFlags.ts:372`
 - `server/services/featureFlagService.ts:356`
 - `server/featureFlagsDb.ts:458`

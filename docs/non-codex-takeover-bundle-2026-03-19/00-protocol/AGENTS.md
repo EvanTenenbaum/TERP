@@ -214,19 +214,20 @@ GitHub backup: `docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md`
 
 ## Key Documents
 
-| Document                | Location                                        |
-| ----------------------- | ----------------------------------------------- |
-| Agent protocol (Claude) | `CLAUDE.md`                                     |
-| Known bug patterns      | `.claude/known-bug-patterns.md`                 |
-| Production migrations   | `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` |
-| QA verification skill   | `docs/skills/terp-qa/SKILL.md`                  |
-| TER-795 state           | `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json` |
+| Document                | Location                                                                                                   |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Agent protocol (Claude) | `CLAUDE.md`                                                                                                |
+| Known bug patterns      | `.claude/known-bug-patterns.md`                                                                            |
+| Production migrations   | `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md`                                                            |
+| QA verification skill   | `docs/skills/terp-qa/SKILL.md`                                                                             |
+| TER-795 state           | `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`                               |
 | Orders runtime status   | `docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md` (generated local snapshot) |
-| Orders proof budget     | `docs/specs/spreadsheet-native-foundation/orders-runtime/PROOF_BUDGET.md` (generated advisory snapshot) |
-| Active sessions         | `docs/ACTIVE_SESSIONS.md`                       |
-| Master roadmap          | `docs/roadmaps/MASTER_ROADMAP.md`               |
+| Orders proof budget     | `docs/specs/spreadsheet-native-foundation/orders-runtime/PROOF_BUDGET.md` (generated advisory snapshot)    |
+| Active sessions         | `docs/ACTIVE_SESSIONS.md`                                                                                  |
+| Master roadmap          | `docs/roadmaps/MASTER_ROADMAP.md`                                                                          |
 
 <!-- BEGIN BEADS INTEGRATION -->
+
 ## Issue Tracking with bd (beads)
 
 **IMPORTANT**: This project uses **bd (beads)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
@@ -332,6 +333,7 @@ For more details, see README.md and docs/QUICKSTART.md.
 7. **Hand off** - Provide context for next session
 
 **CRITICAL RULES:**
+
 - Work is NOT complete until `git push` succeeds
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push

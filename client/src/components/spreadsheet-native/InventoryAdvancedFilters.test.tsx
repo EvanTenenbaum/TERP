@@ -12,10 +12,10 @@ import {
 } from "./InventoryAdvancedFilters";
 
 describe("createDefaultInventoryFilters", () => {
-  it("returns empty/default state", () => {
+  it("returns default state with LIVE selected", () => {
     const defaults = createDefaultInventoryFilters();
     expect(defaults.search).toBe("");
-    expect(defaults.statuses).toEqual([]);
+    expect(defaults.statuses).toEqual(["LIVE"]);
     expect(defaults.categories).toEqual([]);
     expect(defaults.subcategories).toEqual([]);
     expect(defaults.stockLevel).toBe("all");
@@ -46,7 +46,7 @@ describe("hasActiveFilters", () => {
   it("returns true when status is selected", () => {
     const filters = {
       ...createDefaultInventoryFilters(),
-      statuses: ["LIVE"],
+      statuses: ["ON_HOLD"],
     };
     expect(hasActiveFilters(filters)).toBe(true);
   });
@@ -56,7 +56,7 @@ describe("filtersToQueryInput", () => {
   it("returns empty object for default filters", () => {
     const input = filtersToQueryInput(createDefaultInventoryFilters());
     expect(input.search).toBeUndefined();
-    expect(input.status).toBeUndefined();
+    expect(input.status).toEqual(["LIVE"]);
     expect(input.stockLevel).toBeUndefined();
   });
 
@@ -143,12 +143,11 @@ describe("InventoryAdvancedFilters component", () => {
         onOpenChange={vi.fn()}
       />
     );
-    // Click the "Live" checkbox
-    const liveCheckbox = screen.getByRole("checkbox", { name: /live/i });
-    fireEvent.click(liveCheckbox);
+    const onHoldCheckbox = screen.getByRole("checkbox", { name: /on hold/i });
+    fireEvent.click(onHoldCheckbox);
     expect(onFiltersChange).toHaveBeenCalledTimes(1);
     const updated = onFiltersChange.mock.calls[0][0];
-    expect(updated.statuses).toContain("LIVE");
+    expect(updated.statuses).toEqual(["LIVE", "ON_HOLD"]);
   });
 
   it("calls onOpenChange when close button is clicked", () => {
@@ -170,7 +169,7 @@ describe("InventoryAdvancedFilters component", () => {
     const onFiltersChange = vi.fn();
     const activeFilters = {
       ...defaultFilters,
-      statuses: ["LIVE"],
+      statuses: ["LIVE", "ON_HOLD"],
       search: "flower",
     };
     render(

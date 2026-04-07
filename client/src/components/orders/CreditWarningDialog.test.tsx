@@ -9,7 +9,9 @@ import { describe, expect, it, vi } from "vitest";
 import { CreditWarningDialog } from "./CreditWarningDialog";
 
 vi.mock("@/components/ui/dialog", () => ({
-  Dialog: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  Dialog: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
   DialogContent: ({ children }: { children: React.ReactNode }) => (
     <div>{children}</div>
   ),
@@ -39,16 +41,15 @@ vi.mock("@/components/ui/button", () => ({
 }));
 
 vi.mock("@/components/ui/textarea", () => ({
-  Textarea: ({
-    ...props
-  }: React.ComponentPropsWithoutRef<"textarea">) => <textarea {...props} />,
+  Textarea: ({ ...props }: React.ComponentPropsWithoutRef<"textarea">) => (
+    <textarea {...props} />
+  ),
 }));
 
 vi.mock("@/components/ui/label", () => ({
-  Label: ({
-    children,
-    ...props
-  }: React.ComponentPropsWithoutRef<"label">) => <label {...props}>{children}</label>,
+  Label: ({ children, ...props }: React.ComponentPropsWithoutRef<"label">) => (
+    <label {...props}>{children}</label>
+  ),
 }));
 
 vi.mock("@/components/ui/badge", () => ({
@@ -112,9 +113,12 @@ describe("CreditWarningDialog", () => {
       />
     );
 
-    fireEvent.change(screen.getByLabelText(/override \/ credit request reason/i), {
-      target: { value: "Manager approved extended terms." },
-    });
+    fireEvent.change(
+      screen.getByLabelText(/override \/ credit request reason/i),
+      {
+        target: { value: "Manager approved extended terms." },
+      }
+    );
     fireEvent.click(
       screen.getByRole("button", { name: /request credit override/i })
     );

@@ -275,6 +275,8 @@ export const accountingRouter = router({
             invoiceNumber: invoices.invoiceNumber,
             customerId: invoices.customerId,
             customerName: clients.name,
+            customerEmail: clients.email,
+            customerPhone: clients.phone,
             invoiceDate: invoices.invoiceDate,
             dueDate: invoices.dueDate,
             totalAmount: invoices.totalAmount,

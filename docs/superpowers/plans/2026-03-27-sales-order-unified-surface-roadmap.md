@@ -18,18 +18,18 @@
 
 ## File Structure
 
-| Action | Path | Responsibility |
-|--------|------|---------------|
-| Create | `client/src/hooks/useOrderDraft.ts` | Order draft lifecycle: state, mutations, auto-save, fingerprinting, credit check, seed import |
-| Create | `client/src/hooks/useOrderDraft.test.ts` | Hook tests |
-| Create | `client/src/components/orders/types.ts` | Shared `LineItem`, `OrderAdjustment`, and related reusable order types extracted before cleanup |
-| Create | `client/src/components/spreadsheet-native/SalesOrderSurface.tsx` | Main unified surface — toolbar, action bar, split grids, invoice bottom, adjustments, status bar |
-| Create | `client/src/components/spreadsheet-native/SalesOrderSurface.test.tsx` | Component tests |
-| Create | `client/src/components/orders/InvoiceBottom.tsx` | Invoice-bottom pattern: subtotal, discount, freight, total, terms, credit info |
-| Create | `client/src/components/orders/OrderAdjustmentsBar.tsx` | Referral, notes, draft status — full-width bar below split |
-| Modify | `client/src/pages/SalesWorkspacePage.tsx` | Replace create-order panel, remove SheetModeToggle for create-order |
-| Modify | `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx` | Document mode renders SalesOrderSurface instead of OrderCreatorPage |
-| Delete | (deferred) | OrderCreatorPage, FloatingOrderPreview, OrderAdjustmentPanel, OrderTotalsPanel, ReferralCreditsPanel, LineItemTable |
+| Action | Path                                                                   | Responsibility                                                                                                      |
+| ------ | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Create | `client/src/hooks/useOrderDraft.ts`                                    | Order draft lifecycle: state, mutations, auto-save, fingerprinting, credit check, seed import                       |
+| Create | `client/src/hooks/useOrderDraft.test.ts`                               | Hook tests                                                                                                          |
+| Create | `client/src/components/orders/types.ts`                                | Shared `LineItem`, `OrderAdjustment`, and related reusable order types extracted before cleanup                     |
+| Create | `client/src/components/spreadsheet-native/SalesOrderSurface.tsx`       | Main unified surface — toolbar, action bar, split grids, invoice bottom, adjustments, status bar                    |
+| Create | `client/src/components/spreadsheet-native/SalesOrderSurface.test.tsx`  | Component tests                                                                                                     |
+| Create | `client/src/components/orders/InvoiceBottom.tsx`                       | Invoice-bottom pattern: subtotal, discount, freight, total, terms, credit info                                      |
+| Create | `client/src/components/orders/OrderAdjustmentsBar.tsx`                 | Referral, notes, draft status — full-width bar below split                                                          |
+| Modify | `client/src/pages/SalesWorkspacePage.tsx`                              | Replace create-order panel, remove SheetModeToggle for create-order                                                 |
+| Modify | `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx` | Document mode renders SalesOrderSurface instead of OrderCreatorPage                                                 |
+| Delete | (deferred)                                                             | OrderCreatorPage, FloatingOrderPreview, OrderAdjustmentPanel, OrderTotalsPanel, ReferralCreditsPanel, LineItemTable |
 
 ### QA Review Notes — Intentional Descopes
 
@@ -70,20 +70,24 @@ Extract the state management core from OrderCreatorPage into a reusable hook. Th
 **Source:** Read `client/src/pages/OrderCreatorPage.tsx` and extract these sections:
 
 **State to extract (lines 444-496):**
+
 - `clientId`, `linkedNeedId`, `items`, `adjustment`, `showAdjustmentOnDocument`, `orderType`
 - `showFinalizeConfirm`, `showCreditWarning`, `creditCheckResult`, `pendingOverrideReason`
 - `referredByClientId`, `activeDraftId`, `activeDraftVersion`
 - Add new: `notes: string` (for order-level notes in OrderAdjustmentsBar)
 
 **Refs to extract (lines 500-580):**
+
 - `isInitialLoad`, `isFinalizingRef`, `hydratedRouteKeyRef`, `seededRouteKeyRef`
 - `persistedFingerprintRef`, `pendingPersistFingerprintRef`, `currentOrderFingerprintRef`, `itemsRef`
 
 **Fingerprinting (lines 258-331):**
+
 - `normalizeFingerprintNumber`, `buildOrderFingerprint`, `EMPTY_ORDER_FINGERPRINT`
 - `currentOrderFingerprint` useMemo + `applyPersistedFingerprint` callback
 
 **Mutations (lines 1103-1218):**
+
 - `createDraftMutation` (orders.createDraftEnhanced)
 - `updateDraftMutation` (orders.updateDraftEnhanced)
 - `finalizeMutation` (orders.finalizeDraft)
@@ -92,23 +96,28 @@ Extract the state management core from OrderCreatorPage into a reusable hook. Th
 - `performAutoSave` + `debouncedAutoSave` + auto-save trigger effect
 
 **Handlers (lines 1240-1400):**
+
 - `validateOrderMetadata`, `handleSaveDraft`, `handlePreviewAndFinalize`
 - `handleCreditProceed`, `handleCreditCancel`, `confirmFinalize`
 - `buildDraftMutationPayload`, `invalidateOrdersSheetQueries`, `resetComposerState`
 
 **Route hydration effects (lines 687-845):**
+
 - Draft/quote loading, sales sheet import, route seeding
 
 **Utility functions to co-locate (lines 192-414):**
+
 - `resolveInventoryPricingContext`, `resolveRouteSeedOrderType`, `shouldSeedComposerFromRoute`
 - `resolveOrderCostVisibility`, `parseRouteEntityId`, `mapDraftLineItemsToEditorState`
 - `shouldBypassWorkSurfaceKeyboardForSpreadsheetTarget`
 
 **Types to co-locate:**
+
 - `CreditCheckResult` (line 105), `InventoryItemForOrder` (line 117)
 - `LineItemMarginSource` (line 139), `DraftLineItemPayload` (line 148), `OrderDraftSnapshot` (line 182)
 
 **Critical behaviors to preserve:**
+
 1. Two-step finalization: save draft → on success → finalize (BUG-093)
 2. `isFinalizingRef` prevents form reset before finalization completes
 3. Fingerprint comparison prevents unnecessary auto-saves
@@ -180,6 +189,7 @@ Extract the state management core from OrderCreatorPage into a reusable hook. Th
 **Zone 6 — Status Bar:** WorkSurfaceStatusBar + KeyboardHintBar
 
 **Key wiring:**
+
 - `useOrderDraft()` → all state + actions
 - Left grid: `salesSheets.getInventory(clientId)` → PowersheetGrid (read-only, SKU/Product/Batch/Avail/Action)
 - Right grid: `OrdersDocumentLineItemsGrid` with items from useOrderDraft
@@ -285,28 +295,28 @@ Extract the state management core from OrderCreatorPage into a reusable hook. Th
 
 ## Summary
 
-| Wave | Tasks | What ships |
-|------|-------|-----------|
-| 1 | 1-2 | `useOrderDraft` hook (state extraction from OrderCreatorPage) |
-| 2 | 3-5 | `InvoiceBottom` + `OrderAdjustmentsBar` components |
-| 3 | 6-7 | `SalesOrderSurface` layout shell with all 6 zones |
-| 4 | 8 | Inventory browser with order-specific columns + filters |
-| 5 | 9-12 | Routing changes (OrdersSheetPilotSurface + SalesWorkspacePage) |
-| 6 | 13-16 | Dead code cleanup + full verification |
-| 7 | 17-18 | Success criteria check + final fixes |
+| Wave | Tasks | What ships                                                     |
+| ---- | ----- | -------------------------------------------------------------- |
+| 1    | 1-2   | `useOrderDraft` hook (state extraction from OrderCreatorPage)  |
+| 2    | 3-5   | `InvoiceBottom` + `OrderAdjustmentsBar` components             |
+| 3    | 6-7   | `SalesOrderSurface` layout shell with all 6 zones              |
+| 4    | 8     | Inventory browser with order-specific columns + filters        |
+| 5    | 9-12  | Routing changes (OrdersSheetPilotSurface + SalesWorkspacePage) |
+| 6    | 13-16 | Dead code cleanup + full verification                          |
+| 7    | 17-18 | Success criteria check + final fixes                           |
 
 **18 atomic tasks across 7 waves.**
 
 ## Appendix: tRPC Schemas for Orders
 
-| Procedure | Input | Return |
-|-----------|-------|--------|
-| `orders.createDraftEnhanced` | `{ orderType, clientId, clientNeedId?, referredByClientId?, lineItems[], orderLevelAdjustment?, showAdjustmentOnDocument }` | `{ orderId: number, version: number }` |
-| `orders.updateDraftEnhanced` | `{ orderId, version, ...same as create }` | `{ orderId: number, version: number }` |
-| `orders.finalizeDraft` | `{ orderId, version }` | `{ orderId: number, orderNumber: string }` |
-| `credit.checkOrderCredit` | `{ clientId, orderTotal, overrideReason? }` | `CreditCheckResult` |
-| `salesSheets.getInventory` | `{ clientId: number }` | `PricedInventoryItem[]` |
-| `organizationSettings.getDisplaySettings` | `{}` | `{ display: { canViewCogsData, showCogsInOrders, showMarginInOrders } }` |
+| Procedure                                 | Input                                                                                                                       | Return                                                                   |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `orders.createDraftEnhanced`              | `{ orderType, clientId, clientNeedId?, referredByClientId?, lineItems[], orderLevelAdjustment?, showAdjustmentOnDocument }` | `{ orderId: number, version: number }`                                   |
+| `orders.updateDraftEnhanced`              | `{ orderId, version, ...same as create }`                                                                                   | `{ orderId: number, version: number }`                                   |
+| `orders.finalizeDraft`                    | `{ orderId, version }`                                                                                                      | `{ orderId: number, orderNumber: string }`                               |
+| `credit.checkOrderCredit`                 | `{ clientId, orderTotal, overrideReason? }`                                                                                 | `CreditCheckResult`                                                      |
+| `salesSheets.getInventory`                | `{ clientId: number }`                                                                                                      | `PricedInventoryItem[]`                                                  |
+| `organizationSettings.getDisplaySettings` | `{}`                                                                                                                        | `{ display: { canViewCogsData, showCogsInOrders, showMarginInOrders } }` |
 
 ## Appendix: Key Types
 

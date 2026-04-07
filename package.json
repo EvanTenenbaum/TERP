@@ -6,6 +6,9 @@
   "scripts": {
     "agent:prepare": "bash scripts/agent/prepare-local-agent-worktree.sh",
     "dev": "tsx testing/run-with-test-db.ts --scenario=light --reset=never -- env NODE_ENV=development tsx watch server/_core/index.ts",
+    "domscribe:dev": "SKIP_LOCAL_DB_BOOTSTRAP=1 PORT=${PORT:-4317} pnpm dev",
+    "domscribe:status": "pnpm exec domscribe status",
+    "domscribe:stop": "pnpm exec domscribe stop",
     "migrate:calendar-id": "tsx scripts/migrate-calendar-id.ts",
     "build": "node scripts/generate-version.cjs && vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && cp -r scripts dist/",
     "build:production": "node scripts/generate-version.cjs && vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist && cp -r scripts dist/",
@@ -167,8 +170,9 @@
     "test:e2e:deep:headed": "playwright test --project=deep --headed",
     "qa:pipeline": "tsx scripts/qa/index.ts",
     "qa:pipeline:local": "pnpm test:e2e && tsx scripts/qa/index.ts test-results.json",
-    "qa:human:flows": "pnpm agent:prepare && tsx scripts/qa/generate-confused-human-flows.ts",
-    "qa:human:flows:check": "pnpm agent:prepare && tsx scripts/qa/check-confused-human-flows.ts",
+    "qa:live-transactions:plan": "tsx scripts/qa/live-transaction-swarm.ts --plan",
+    "qa:live-transactions:quick": "tsx scripts/qa/live-transaction-swarm.ts --bundle=quick",
+    "qa:live-transactions:full": "tsx scripts/qa/live-transaction-swarm.ts --bundle=full",
     "qa:test:core": "ORACLE_RUN_MODE=tier1 playwright test tests-e2e/oracles/oracle-runner.spec.ts --project=runtime-oracle",
     "qa:test:all": "ORACLE_RUN_MODE=all playwright test tests-e2e/oracles/oracle-runner.spec.ts --project=runtime-oracle",
     "qa:test:smoke": "ORACLE_RUN_MODE=tags ORACLE_TAGS=smoke playwright test tests-e2e/oracles/oracle-runner.spec.ts --project=runtime-oracle",
@@ -212,7 +216,9 @@
     "staging:load-test": "tsx scripts/staging-load-test.ts",
     "staging:load-test:quick": "tsx scripts/staging-load-test.ts --quick",
     "staging:chains": "npx playwright test tests-e2e/chains/chain-runner.spec.ts --project=staging-critical",
-    "staging:chains:headed": "npx playwright test tests-e2e/chains/chain-runner.spec.ts --project=staging-critical --headed"
+    "staging:chains:headed": "npx playwright test tests-e2e/chains/chain-runner.spec.ts --project=staging-critical --headed",
+    "context:refresh": "node scripts/agent-context/generate-agent-context.mjs",
+    "context:check": "node scripts/agent-context/generate-agent-context.mjs --check"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
@@ -313,6 +319,7 @@
     "@argos-ci/playwright": "^6.3.1",
     "@axe-core/playwright": "^4.11.0",
     "@builder.io/vite-plugin-jsx-loc": "^0.1.1",
+    "@domscribe/react": "^0.5.0",
     "@eslint/js": "^9.38.0",
     "@jest/globals": "^30.2.0",
     "@playwright/test": "^1.56.1",
@@ -344,6 +351,7 @@
     "chalk": "^5.6.2",
     "cheerio": "^1.1.2",
     "commander": "^14.0.2",
+    "domscribe": "^0.5.0",
     "esbuild": "^0.25.0",
     "eslint": "^9.38.0",
     "eslint-plugin-react": "^7.37.5",

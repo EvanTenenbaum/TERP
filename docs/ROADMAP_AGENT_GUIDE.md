@@ -1,8 +1,6 @@
-# Roadmap Agent Guide (Current)
+# Roadmap Agent Guide (Legacy Redirect)
 
-This repository’s **single source of truth** for execution work is:
-
-- `docs/roadmaps/MASTER_ROADMAP.md`
+> Status note (2026-04-06): This file is no longer the TERP startup contract. Start with `docs/agent-context/START_HERE.md` and use `docs/agent-context/state.json` for machine-readable startup truth and freshness. `docs/roadmaps/MASTER_ROADMAP.md` is historical/backup context, not the default first stop.
 
 ## Operational Protocol (Required)
 

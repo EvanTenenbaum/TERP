@@ -262,6 +262,70 @@ const formatAgeLabel = (value: Date | string | null | undefined): string => {
   }
 };
 
+function isSameCalendarDay(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+}
+
+function isPastExpectedDate(
+  value: Date | string | null | undefined,
+  currentStatus?: string
+) {
+  if (!value || currentStatus === "RECEIVED" || currentStatus === "CANCELLED") {
+    return false;
+  }
+
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dueDate = new Date(parsed);
+  dueDate.setHours(0, 0, 0, 0);
+
+  return dueDate.getTime() < today.getTime();
+}
+
+function getExpectedDeliveryLabel(
+  value: Date | string | null | undefined,
+  currentStatus?: string
+) {
+  if (!value || value === "") return "Not set";
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Not set";
+
+  const base = formatDate(parsed);
+  const today = new Date();
+
+  if (isSameCalendarDay(parsed, today)) {
+    return `${base} · Today`;
+  }
+
+  if (isPastExpectedDate(parsed, currentStatus)) {
+    return `${base} · Late`;
+  }
+
+  return base;
+}
+
+function isExpectedToday(
+  value: Date | string | null | undefined,
+  currentStatus?: string
+) {
+  if (!value || currentStatus === "RECEIVED" || currentStatus === "CANCELLED") {
+    return false;
+  }
+
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return false;
+
+  return isSameCalendarDay(parsed, new Date());
+}
+
 function buildRowKey(entityType: string, id: number): string {
   return `${entityType}:${id}`;
 }
@@ -1286,6 +1350,7 @@ function PurchaseOrderQueueMode({
   // Filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
+  const [showExpectedTodayOnly, setShowExpectedTodayOnly] = useState(false);
 
   // Dialog state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -1384,11 +1449,24 @@ function PurchaseOrderQueueMode({
       } else if (row.status !== statusFilter) {
         return false;
       }
-      if (!searchLower) return true;
-      return (
-        row.poNumber.toLowerCase().includes(searchLower) ||
-        row.supplierName.toLowerCase().includes(searchLower)
-      );
+      if (
+        searchLower &&
+        !(
+          row.poNumber.toLowerCase().includes(searchLower) ||
+          row.supplierName.toLowerCase().includes(searchLower)
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        showExpectedTodayOnly &&
+        !isExpectedToday(row.expectedDeliveryDate, row.status)
+      ) {
+        return false;
+      }
+
+      return true;
     });
   }, [
     rawPos,
@@ -1396,7 +1474,48 @@ function PurchaseOrderQueueMode({
     statusFilter,
     searchLower,
     defaultStatusFilter,
+    showExpectedTodayOnly,
   ]);
+
+  const expectedTodayCount = useMemo(() => {
+    const rows = mapPOsToQueueRows(rawPos, supplierNamesById);
+    return rows.filter(row => {
+      if (statusFilter === "all") {
+        if (
+          defaultStatusFilter &&
+          defaultStatusFilter.length > 0 &&
+          !defaultStatusFilter.includes(row.status)
+        ) {
+          return false;
+        }
+      } else if (row.status !== statusFilter) {
+        return false;
+      }
+
+      if (searchLower) {
+        const matchesSearch =
+          row.poNumber.toLowerCase().includes(searchLower) ||
+          row.supplierName.toLowerCase().includes(searchLower);
+        if (!matchesSearch) {
+          return false;
+        }
+      }
+
+      return isExpectedToday(row.expectedDeliveryDate, row.status);
+    }).length;
+  }, [
+    rawPos,
+    supplierNamesById,
+    statusFilter,
+    defaultStatusFilter,
+    searchLower,
+  ]);
+
+  const showExpectedDeliveryColumn = useMemo(
+    () =>
+      queueRows.some(row => hasExpectedDeliveryDate(row.expectedDeliveryDate)),
+    [queueRows]
+  );
 
   const selectedRow = queueRows.find(row => row.poId === selectedPoId) ?? null;
 
@@ -1507,6 +1626,11 @@ function PurchaseOrderQueueMode({
       formatter: v => formatDate(v as Date | string | null),
     },
     {
+      key: "expectedDeliveryDate",
+      label: "Est. Delivery",
+      formatter: v => formatDate(v as Date | string | null),
+    },
+    {
       key: "total",
       label: "Total",
       formatter: v => String(Number(v ?? 0).toFixed(2)),
@@ -1514,30 +1638,13 @@ function PurchaseOrderQueueMode({
     { key: "paymentTerms", label: "Payment Terms" },
   ];
 
-  const showExpectedDeliveryColumn = useMemo(
-    () =>
-      queueRows.some(row => hasExpectedDeliveryDate(row.expectedDeliveryDate)),
-    [queueRows]
-  );
-
   const handleExport = () => {
     if (queueRows.length === 0) {
       notifyToast("warning", "No rows to export");
       return;
     }
-    const exportColumns = showExpectedDeliveryColumn
-      ? [
-          ...PO_EXPORT_COLUMNS.slice(0, 4),
-          {
-            key: "expectedDeliveryDate",
-            label: "Est. Delivery",
-            formatter: (v: unknown) => formatDate(v as Date | string | null),
-          },
-          ...PO_EXPORT_COLUMNS.slice(4),
-        ]
-      : PO_EXPORT_COLUMNS;
     void exportCSV(queueRows as unknown as Record<string, unknown>[], {
-      columns: exportColumns as unknown as ExportColumn<
+      columns: PO_EXPORT_COLUMNS as unknown as ExportColumn<
         Record<string, unknown>
       >[],
       filename: "purchase-orders",
@@ -1585,57 +1692,69 @@ function PurchaseOrderQueueMode({
   };
 
   const handleStartReceiving = useCallback(
-    async (rowOverride?: POQueueRow) => {
+    async (rowOverride?: POQueueRow | null) => {
       const targetRow = rowOverride ?? selectedRow;
       if (!targetRow) return;
 
       try {
         const detail =
-          rowOverride?.poId === selectedPoId && detailQuery.data
+          targetRow.poId === selectedPoId && detailQuery.data
             ? detailQuery.data
-            : await utils.purchaseOrders.getById.fetch({ id: targetRow.poId });
+            : await utils.purchaseOrders.getById.fetch({
+                id: targetRow.poId,
+              });
 
-        const lines: ProductIntakeDraftLine[] = (
-          (detail?.items ?? []) as POLineItem[]
-        ).map(item => ({
-          id: `line-${item.id}`,
-          poItemId: item.id,
-          productId: item.productId,
-          productName: item.productName ?? `Product #${item.productId}`,
-          category: item.category,
-          subcategory: item.subcategory,
-          quantityOrdered: toNumber(item.quantityOrdered),
-          quantityReceived: toNumber(item.quantityReceived),
-          intakeQty: Math.max(
-            0,
-            toNumber(item.quantityOrdered) - toNumber(item.quantityReceived)
-          ),
-          cogsMode: item.cogsMode ?? "FIXED",
-          unitCost: toNumber(item.unitCost),
-          unitCostMin: toNumber(item.unitCostMin),
-          unitCostMax: toNumber(item.unitCostMax),
-        }));
+        if (detail?.items) {
+          const lines: ProductIntakeDraftLine[] = (
+            detail.items as POLineItem[]
+          ).map(item => ({
+            id: `line-${item.id}`,
+            poItemId: item.id,
+            productId: item.productId,
+            productName: item.productName ?? `Product #${item.productId}`,
+            category: item.category,
+            subcategory: item.subcategory,
+            quantityOrdered: toNumber(item.quantityOrdered),
+            quantityReceived: toNumber(item.quantityReceived),
+            intakeQty: Math.max(
+              0,
+              toNumber(item.quantityOrdered) - toNumber(item.quantityReceived)
+            ),
+            cogsMode: item.cogsMode ?? "FIXED",
+            unitCost: toNumber(item.unitCost),
+            unitCostMin: toNumber(item.unitCostMin),
+            unitCostMax: toNumber(item.unitCostMax),
+          }));
 
-        const supplierData = detail?.supplier as
-          | { id?: number; name?: string }
-          | undefined;
-        const draft = createProductIntakeDraftFromPO({
-          poId: targetRow.poId,
-          poNumber: targetRow.poNumber,
-          vendorId: supplierData?.id ?? null,
-          vendorName: targetRow.supplierName,
-          warehouseId: null,
-          warehouseName: "Default",
-          lines,
-        });
-        const persistedDraft = upsertProductIntakeDraft(draft, userId);
-        notifyToast(
-          "success",
-          `Product Intake draft saved for ${targetRow.poNumber}`
-        );
+          const supplierData = detail.supplier as
+            | { id?: number; name?: string }
+            | undefined;
+          const draft = createProductIntakeDraftFromPO({
+            poId: targetRow.poId,
+            poNumber: targetRow.poNumber,
+            vendorId: supplierData?.id ?? null,
+            vendorName: targetRow.supplierName,
+            warehouseId: null,
+            warehouseName: "Default",
+            lines,
+          });
+          const persistedDraft = upsertProductIntakeDraft(draft, userId);
+          notifyToast(
+            "success",
+            `Product Intake draft saved for ${targetRow.poNumber}`
+          );
+          setLocation(
+            buildOperationsWorkspacePath("receiving", {
+              draftId: persistedDraft.id,
+              poId: targetRow.poId,
+              poNumber: targetRow.poNumber,
+            })
+          );
+          return;
+        }
+
         setLocation(
           buildOperationsWorkspacePath("receiving", {
-            draftId: persistedDraft.id,
             poId: targetRow.poId,
             poNumber: targetRow.poNumber,
           })
@@ -1714,7 +1833,13 @@ function PurchaseOrderQueueMode({
     ];
 
     if (showExpectedDeliveryColumn) {
-      cols.splice(4, 0, {
+      const orderDateColumnIndex = cols.findIndex(
+        column => column.field === "orderDate"
+      );
+      const insertIndex =
+        orderDateColumnIndex >= 0 ? orderDateColumnIndex + 1 : cols.length;
+
+      cols.splice(insertIndex, 0, {
         field: "expectedDeliveryDate",
         headerName: "Est. Delivery",
         minWidth: 120,
@@ -1792,9 +1917,9 @@ function PurchaseOrderQueueMode({
 
   const statusBarLeft = (
     <span>
-      {queueRows.length} visible purchase orders · {draftCount} draft purchase
-      orders · {confirmedCount} confirmed purchase orders · {receivingCount}{" "}
-      receiving purchase orders
+      {queueRows.length} visible POs · {draftCount} draft · {confirmedCount}{" "}
+      confirmed · {receivingCount} receiving
+      {showExpectedTodayOnly ? ` · ${expectedTodayCount} due today` : ""}
       {queueSelectionSummary
         ? ` · ${queueSelectionSummary.selectedCellCount} cells / ${queueSelectionSummary.selectedRowCount} rows`
         : ""}
@@ -1885,6 +2010,13 @@ function PurchaseOrderQueueMode({
             <SelectItem value="CANCELLED">Cancelled</SelectItem>
           </SelectContent>
         </Select>
+        <Button
+          size="sm"
+          variant={showExpectedTodayOnly ? "default" : "outline"}
+          onClick={() => setShowExpectedTodayOnly(current => !current)}
+        >
+          Expected Today ({expectedTodayCount})
+        </Button>
         <span className="ml-auto text-xs text-muted-foreground">
           {selectedRow
             ? `${selectedRow.poNumber} selected`
@@ -1965,6 +2097,12 @@ function PurchaseOrderQueueMode({
             <div className="mt-1 text-sm font-medium">
               {selectedRow.statusLabel} · created{" "}
               {formatAgeLabel(selectedRow.orderDate)}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {getExpectedDeliveryLabel(
+                selectedRow.expectedDeliveryDate,
+                selectedRow.status
+              )}
             </div>
           </div>
 
@@ -2160,11 +2298,12 @@ function PurchaseOrderQueueMode({
                 </p>
               </InspectorField>
               <InspectorField label="Expected Delivery">
-                {selectedRow.expectedDeliveryDate ? (
-                  <p>{formatDate(selectedRow.expectedDeliveryDate)}</p>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Not set</p>
-                )}
+                <p>
+                  {getExpectedDeliveryLabel(
+                    selectedRow.expectedDeliveryDate,
+                    selectedRow.status
+                  )}
+                </p>
               </InspectorField>
               <InspectorField label="Payment Terms">
                 <p>{selectedRow.paymentTerms}</p>

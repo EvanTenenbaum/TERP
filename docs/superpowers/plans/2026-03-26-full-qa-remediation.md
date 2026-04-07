@@ -42,11 +42,13 @@ If the Dockerfile runs `CMD ["pnpm", "dev"]` or `RUN pnpm dev`, that explains wh
 ### Task 1.1 ⚡ PARALLEL — Fix broken 404 routes (TER-859)
 
 **Files:**
+
 - Modify: `client/src/App.tsx`
 
 **Bugs addressed:** B-42 (`/suppliers`), B-49 (`/accounts-receivable`), B-50 (`/payments`), B-70 (`/admin`), B-09 ("View AR" goes to wrong page)
 
 Current state:
+
 - `/suppliers` → no route
 - `/accounts-receivable` → no route
 - `/payments` → no route (but `/accounting/payments` exists at line 437)
@@ -71,30 +73,39 @@ grep -n "RedirectWithTab\|function RedirectWithTab" client/src/App.tsx | head -5
 Find the redirect block in `client/src/App.tsx` (search for `RedirectWithTab` or other `Redirect` usages). Add the following four route entries in the appropriate location (alongside other redirects, before the 404 catch-all):
 
 ```tsx
-{/* B-42: /suppliers redirect */}
+{
+  /* B-42: /suppliers redirect */
+}
 <Route path="/suppliers">
   <RedirectWithTab to="/relationships" tab="suppliers" />
-</Route>
+</Route>;
 
-{/* B-49: /accounts-receivable redirect */}
+{
+  /* B-49: /accounts-receivable redirect */
+}
 <Route path="/accounts-receivable">
   <RedirectWithTab to="/accounting" tab="invoices" />
-</Route>
+</Route>;
 
-{/* B-50: /payments redirect */}
+{
+  /* B-50: /payments redirect */
+}
 <Route path="/payments">
   <RedirectWithTab to="/accounting" tab="payments" />
-</Route>
+</Route>;
 
-{/* B-70: /admin redirect — no tab equivalent, use plain Redirect */}
+{
+  /* B-70: /admin redirect — no tab equivalent, use plain Redirect */
+}
 <Route path="/admin">
   <Redirect to="/settings" />
-</Route>
+</Route>;
 ```
 
 If `RedirectWithTab` doesn't support the exact `tab=` parameter shape used above, check its signature in `App.tsx` and match it. The point is to use the same pattern as the rest of the file — not a raw `<Redirect>` that ignores tab state.
 
 Note: Import `Redirect` from wouter if not already imported:
+
 ```tsx
 import { Route, Switch, Redirect } from "wouter";
 ```
@@ -102,6 +113,7 @@ import { Route, Switch, Redirect } from "wouter";
 - [ ] **Step 3: Fix "View AR" button navigation (B-09)**
 
 Search for the "View AR" button in the dashboard components:
+
 ```bash
 grep -rn "View AR\|viewAR\|view-ar" client/src --include="*.tsx"
 ```
@@ -128,6 +140,7 @@ git commit -m "fix(routing): add redirects for dead routes /suppliers /accounts-
 ### Task 1.2 ⚡ PARALLEL — Strip engineering artifacts from production UI (TER-860)
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx`
 - Modify: `client/src/components/spreadsheet-native/PowersheetGrid.tsx`
 - Modify: `client/src/components/spreadsheet-native/SalesSheetsPilotSurface.tsx` (if contains same patterns)
@@ -139,6 +152,7 @@ git commit -m "fix(routing): add redirects for dead routes /suppliers /accounts-
 **Bugs addressed:** B-13 (release gate notes), B-20 (dev text wall), B-21 (Pilot badge), B-22 (debug metrics bar)
 
 **Key finding from code review:**
+
 - `PowersheetGrid.tsx` lines 100–104: release gates, selection summary, affordances are already `import.meta.env.DEV`-gated
 - `OrdersSheetPilotSurface.tsx` line ~505: `"Queue evaluation active"` text is rendered **unconditionally** (not DEV-gated) — this is the B-20 unconditional text
 - The DEV-gated content appears in staging likely because staging runs a dev build
@@ -151,6 +165,7 @@ grep -n "Queue evaluation\|Workflow target\|Primary actions\|Release gate\|Pilot
 ```
 
 Also run against other surfaces:
+
 ```bash
 grep -rn "Queue evaluation\|Workflow target\|Primary actions\|Release gate\|Pilot: queue" \
   client/src/components/spreadsheet-native/ --include="*.tsx"
@@ -159,6 +174,7 @@ grep -rn "Queue evaluation\|Workflow target\|Primary actions\|Release gate\|Pilo
 - [ ] **Step 2: Remove/replace unconditional dev text in OrdersSheetPilotSurface.tsx**
 
 The `"Queue evaluation active"` text at approximately line 505 appears in a status bar like:
+
 ```tsx
 <span className="text-sm font-medium text-foreground">
   {selectedOrderRow
@@ -168,6 +184,7 @@ The `"Queue evaluation active"` text at approximately line 505 appears in a stat
 ```
 
 Replace "Queue evaluation active" with a user-friendly fallback:
+
 ```tsx
 <span className="text-sm font-medium text-foreground">
   {selectedOrderRow
@@ -186,6 +203,7 @@ grep -n "releaseGateIds" client/src/components/spreadsheet-native/OrdersSheetPil
 ```
 
 Change:
+
 ```tsx
 <PowersheetGrid
   releaseGateIds={["SALE-ORD-019", "SALE-ORD-023", "SALE-ORD-024", "SALE-ORD-026", "SALE-ORD-027"]}
@@ -194,6 +212,7 @@ Change:
 ```
 
 To:
+
 ```tsx
 <PowersheetGrid
   ...
@@ -232,9 +251,11 @@ This ensures `import.meta.env.DEV === false` in the staging build, removing ALL 
 Now that no callers use it, clean up the prop definition in `PowersheetGrid.tsx`:
 
 In `PowersheetGrid.tsx`, remove:
+
 ```tsx
 releaseGateIds?: string[];
 ```
+
 from the `PowersheetGridProps` interface, and remove the `releaseGateIds = []` parameter and all rendering logic that uses it (the `renderedReleaseGates` block).
 
 - [ ] **Step 7: Run tests and type check**
@@ -280,6 +301,7 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 SKIP_E2E_SETUP=1 \
 **Manual browser checks (open staging in browser):**
 
 Navigate to each URL and verify no 404:
+
 - `https://terp-staging-yicld.ondigitalocean.app/suppliers` → should redirect to Relationships/Suppliers tab ✓
 - `https://terp-staging-yicld.ondigitalocean.app/accounts-receivable` → should redirect to Accounting/Invoices ✓
 - `https://terp-staging-yicld.ondigitalocean.app/payments` → should redirect to Accounting/Payments ✓
@@ -287,6 +309,7 @@ Navigate to each URL and verify no 404:
 - Dashboard → click "View AR" → should land on Accounting with invoices tab active ✓
 
 **Manual browser checks — dev artifacts:**
+
 - Open Sales → Orders sheet — should see NO "Queue evaluation active" text, NO release gate notes, NO debug metrics bar (0 selected cells), NO "Pilot: queue + document + handoffs" badge
 - If any DEV-gated content is still visible, the build mode issue was not resolved
 
@@ -306,13 +329,14 @@ Navigate to each URL and verify no 404:
 ### Task 2.1 ⚡ PARALLEL — Fix notification deep links → 404 (TER-851)
 
 **Files:**
+
 - Modify: `server/services/notificationTriggers.ts`
 - Modify: `client/src/components/notifications/NotificationBell.tsx`
 - Test: `server/services/notificationTriggers.test.ts` (create if missing)
 
 **Bugs addressed:** B-04
 
-**Root cause:** `notificationTriggers.ts` generates `link: \`/orders/${order.id}\`` using numeric DB IDs. There is no `/orders/:id` route in `App.tsx` — the app routes orders through the workspace at `/sales?tab=orders`. So every notification deep link hits a 404.
+**Root cause:** `notificationTriggers.ts` generates `link: \`/orders/${order.id}\``using numeric DB IDs. There is no`/orders/:id`route in`App.tsx`— the app routes orders through the workspace at`/sales?tab=orders`. So every notification deep link hits a 404.
 
 - [ ] **Step 1: Audit all link generation in notificationTriggers.ts**
 
@@ -321,6 +345,7 @@ grep -n "link:" server/services/notificationTriggers.ts
 ```
 
 Expected output lists all `link:` assignments. Look for patterns like:
+
 - `link: \`/orders/${order.id}\`` → broken (no such route)
 - `link: \`/invoices/${invoice.id}\`` → check if this route exists
 - `link: \`/orders\`` → these work (they're just the orders list page)
@@ -335,7 +360,7 @@ Note which ID-based routes exist and which don't.
 
 - [ ] **Step 3: Fix order notification links**
 
-In `notificationTriggers.ts`, change every `link: \`/orders/${order.id}\`` to the workspace path with the order pre-selected. Check `client/src/lib/workspaceRoutes.ts` for the correct URL builder:
+In `notificationTriggers.ts`, change every `link: \`/orders/${order.id}\``to the workspace path with the order pre-selected. Check`client/src/lib/workspaceRoutes.ts` for the correct URL builder:
 
 ```bash
 grep -n "buildSalesWorkspacePath\|buildSheetNativeOrdersPath\|orderId\|selected" client/src/lib/workspaceRoutes.ts | head -20
@@ -344,15 +369,19 @@ grep -n "buildSalesWorkspacePath\|buildSheetNativeOrdersPath\|orderId\|selected"
 If a route like `/sales?orderId=X` or `/sales?tab=orders&selected=X` is supported, use it. Otherwise, use the safe fallback:
 
 Change:
+
 ```typescript
 link: `/orders/${order.id}`,
 ```
+
 To:
+
 ```typescript
 link: `/sales?tab=orders`,
 ```
 
 For invoices — check if `/accounting?tab=invoices&invoiceId=${invoice.id}` is a supported route. If not, use:
+
 ```typescript
 link: `/accounting?tab=invoices`,
 ```
@@ -363,7 +392,10 @@ In `server/services/notificationTriggers.test.ts` (create if not exists):
 
 ```typescript
 import { describe, it, expect, vi } from "vitest";
-import { buildOrderNotificationLink, buildInvoiceNotificationLink } from "./notificationTriggers";
+import {
+  buildOrderNotificationLink,
+  buildInvoiceNotificationLink,
+} from "./notificationTriggers";
 // (adjust the import path and export names to match what you actually wrote in Step 3)
 
 describe("notification link generation", () => {
@@ -403,6 +435,7 @@ git commit -m "fix(notifications): fix notification deep links — use workspace
 ### Task 2.2 ⚡ PARALLEL — Fix spreadsheet single-click behavior (TER-853)
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx`
 - Test: `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.test.tsx`
 
@@ -419,6 +452,7 @@ sed -n '720,745p' client/src/components/spreadsheet-native/OrdersSheetPilotSurfa
 ```
 
 Understand:
+
 1. What prop sets `selectedOrderId` (currently `onSelectedRowChange`)
 2. Where the detail panel is rendered (conditional on `selectedOrderId`)
 
@@ -443,6 +477,7 @@ The `onSelectedRowChange` prop should continue setting `selectedOrderId` (for to
 **The prop chain is 3 layers deep** — you must add `onRowDoubleClick` to ALL of them:
 
 **Layer 1: `SpreadsheetPilotGrid.tsx`** — add to `SpreadsheetPilotGridProps<Row>` interface and wire to `AgGridReact`:
+
 ```tsx
 // In SpreadsheetPilotGridProps interface:
 onRowDoubleClick?: (row: Row | null) => void;
@@ -454,6 +489,7 @@ onRowDoubleClicked={event => {
 ```
 
 **Layer 2: `PowersheetGrid.tsx`** — add to its props interface and pass through to `SpreadsheetPilotGrid`:
+
 ```tsx
 // In PowersheetGridProps interface:
 onRowDoubleClick?: (row: Row | null) => void;
@@ -488,6 +524,7 @@ Update the detail panel conditional to use `detailOpenOrderId` instead of (or in
 - [ ] **Step 5: Keep "Open Detail" button working**
 
 The existing "Open" or document mode button at line ~495 should also set `detailOpenOrderId`:
+
 ```tsx
 <Button size="sm" onClick={() => {
   if (selectedOrderId) setDetailOpenOrderId(selectedOrderId);
@@ -532,12 +569,14 @@ git commit -m "fix(spreadsheet): single-click selects row, double-click opens de
 ### Task 2.3 ⚡ PARALLEL — Fix Orders row click hang (TER-852)
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx`
 - Investigate: `server/routers/orders.ts` (getOrderWithLineItems procedure)
 
 **Bugs addressed:** B-12 (row click causes 60s browser hang)
 
 **Root cause:** When `selectedOrderId` is set by a single click, **4 separate queries fire immediately** — not just `getOrderWithLineItems`. From code review, setting `selectedOrderId` triggers:
+
 1. `trpc.orders.getOrderWithLineItems.useQuery` (the main detail query)
 2. `trpc.orders.getOrderDocuments.useQuery` (documents for detail panel)
 3. `trpc.orders.getOrderHistory.useQuery` (activity log)
@@ -554,12 +593,14 @@ grep -n "getOrderWithLineItems" server/routers/orders.ts | head -10
 ```
 
 Then read the full procedure:
+
 ```bash
 grep -n "getOrderWithLineItems" server/routers/orders.ts
 # Note the line number and read ~50 lines around it
 ```
 
 Look for:
+
 - Are there proper `WHERE` clauses? Is `deletedAt` filtering applied?
 - Are there JOINs that could be slow without indexes?
 - Is there an infinite loop or recursive query?
@@ -591,6 +632,7 @@ const detailQuery = trpc.orders.getOrderWithLineItems.useQuery(
 ```
 
 Find ALL 4 queries that use `selectedOrderId` as their `enabled` guard and update them to `detailOpenOrderId`. Use:
+
 ```bash
 grep -n "enabled.*selectedOrderId\|selectedOrderId.*enabled" \
   client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx
@@ -601,17 +643,20 @@ NOTE: `retry: 1, retryDelay: 500` alone does NOT fix a hang — it only limits r
 - [ ] **Step 4: Add missing DB indexes if needed**
 
 If `orderLineItems.orderId` lacks an index, create a migration:
+
 ```bash
 # Only if investigation confirms missing indexes
 # Use Drizzle Kit — never raw SQL
 ```
 
 In `drizzle/schema.ts`, find the `orderLineItems` table and add index if missing:
+
 ```typescript
 orderLineItemsOrderIdIdx: index("order_line_items_order_id_idx").on(table.orderId),
 ```
 
 Then generate and run migration:
+
 ```bash
 pnpm db:generate
 pnpm db:migrate
@@ -637,6 +682,7 @@ git commit -m "fix(orders): resolve row click hang — query retry config + inde
 ### Task 2.4 ⚡ PARALLEL — Fix Intake spreadsheet column headers, warehouse selector, CCOK (TER-854)
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/IntakePilotSurface.tsx`
 - Investigate: `client/src/lib/spreadsheet-native/intakeColumns.ts` (if it exists)
 
@@ -655,12 +701,14 @@ grep -n "headerName\|field:\|colDef\|columnDef\|Y\|T\|IT\|COGI" client/src/compo
 Read the full column definition array in IntakePilotSurface.tsx. Find all `headerName` values that are single letters (Y, T) or abbreviations (IT, COGI) and replace them with human-readable names.
 
 Common intake column meanings in cannabis context:
+
 - `Y` → likely "Yield" or "Quantity"
 - `T` → likely "Total" or "Type"
 - `IT` → likely "Item Type" or "In Transit"
 - `COGI` → likely "Cost of Goods In" or "COGS Item"
 
 Verify against the server router to confirm actual column semantics:
+
 ```bash
 grep -n "columnDefs\|intake\|batch\|yield\|quantity\|total\|cogi" client/src/components/spreadsheet-native/IntakePilotSurface.tsx | head -30
 ```
@@ -670,6 +718,7 @@ Change each `headerName: "Y"` to `headerName: "Yield"` (or the confirmed name), 
 - [ ] **Step 3: Fix warehouse selector rendering (B-37)**
 
 Find the warehouse/location selector:
+
 ```bash
 grep -n "warehouse\|location\|LocationSelector\|selector\|repeat\|concat" client/src/components/spreadsheet-native/IntakePilotSurface.tsx | head -20
 ```
@@ -677,16 +726,24 @@ grep -n "warehouse\|location\|LocationSelector\|selector\|repeat\|concat" client
 The bug: `"Main WarehouseMain WarehouseMain WarehouseMain Warehouse"` — name concatenated 5 times. Likely a `.map()` that joins without a separator or a template string called in a loop.
 
 Look for patterns like:
+
 ```tsx
 // Bug: location names concatenated
-{locations.map(loc => loc.name)}
+{
+  locations.map(loc => loc.name);
+}
 // or
-{`${location.name}${location.name}...`}
+{
+  `${location.name}${location.name}...`;
+}
 ```
 
 Fix to use proper rendering:
+
 ```tsx
-{location.name}
+{
+  location.name;
+}
 ```
 
 - [ ] **Step 4: Fix or label CCOK button (B-38)**
@@ -696,17 +753,24 @@ grep -n "CCOK\|ccok\|CC OK\|cc-ok" client/src/components/spreadsheet-native/Inta
 ```
 
 Add a tooltip explaining what CCOK does, using the shadcn Tooltip component:
+
 ```tsx
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 <Tooltip>
   <TooltipTrigger asChild>
-    <Button size="sm" onClick={handleCCOK}>CCOK</Button>
+    <Button size="sm" onClick={handleCCOK}>
+      CCOK
+    </Button>
   </TooltipTrigger>
   <TooltipContent>
     <p>Confirm Compliance OK — marks batch as compliance-approved</p>
   </TooltipContent>
-</Tooltip>
+</Tooltip>;
 ```
 
 (Verify the actual meaning by searching the handler or router.)
@@ -734,11 +798,13 @@ git commit -m "fix(inventory): fix intake spreadsheet column headers, warehouse 
 - [ ] **Step 2: Browser verification**
 
 **Notifications (B-04):**
+
 1. Log into staging, observe the notification bell
 2. Click any notification in the dropdown
 3. Verify: page navigates somewhere valid (not 404) ✓
 
 **Spreadsheet click (B-14):**
+
 1. Navigate to Sales → Orders (sheet-native)
 2. Single-click any row
 3. Verify: row highlights but NO detail panel opens ✓
@@ -746,6 +812,7 @@ git commit -m "fix(inventory): fix intake spreadsheet column headers, warehouse 
 5. Verify: detail panel opens ✓
 
 **Orders hang (B-12):**
+
 1. Navigate to Sales → Orders (sheet-native)
 2. Single-click a row — verify: page does NOT hang, no spinner after 3 seconds ✓
 3. Verify: single click did NOT open the detail panel (only selected the row) ✓
@@ -753,6 +820,7 @@ git commit -m "fix(inventory): fix intake spreadsheet column headers, warehouse 
 5. Verify: page does not hang when detail panel opens (responds within 5 seconds) ✓
 
 **Intake spreadsheet (B-36, B-37, B-38):**
+
 1. Navigate to Inventory → Intake
 2. Verify: column headers are human-readable (not single letters) ✓
 3. Verify: warehouse selector shows "Main Warehouse" exactly once ✓
@@ -773,6 +841,7 @@ git commit -m "fix(inventory): fix intake spreadsheet column headers, warehouse 
 ### Task 3.1 ⚡ PARALLEL — Fix global search returning zero results (TER-850)
 
 **Files:**
+
 - Modify: `server/routers/search.ts`
 - Modify: `client/src/pages/SearchResultsPage.tsx`
 - Test: `server/routers/search.test.ts`
@@ -784,6 +853,7 @@ git commit -m "fix(inventory): fix intake spreadsheet column headers, warehouse 
 - [ ] **Step 1: Add error surfacing to the search router**
 
 Read the full search router to understand which queries exist:
+
 ```bash
 wc -l server/routers/search.ts
 cat server/routers/search.ts | grep -n "try\|catch\|allResults.push\|logger.warn\|return allResults"
@@ -792,6 +862,7 @@ cat server/routers/search.ts | grep -n "try\|catch\|allResults.push\|logger.warn
 Add a top-level error flag and expose it to the client:
 
 In `search.ts`, change the return to include a `hadErrors` flag:
+
 ```typescript
 const searchErrors: string[] = [];
 
@@ -820,6 +891,7 @@ cat server/routers/search.test.ts | head -60
 ```
 
 Write a minimal test:
+
 ```typescript
 it("searches clients by name and returns results", async () => {
   // Seed a test client named "Test Client Corp"
@@ -830,11 +902,13 @@ it("searches clients by name and returns results", async () => {
 ```
 
 Run:
+
 ```bash
 pnpm test -- search
 ```
 
 If the test fails, the DB query is broken. Check if:
+
 - The `clients` table query column names match the Drizzle schema (e.g., `clients.name` vs `clients.company_name`)
 - The `db` connection is available in the test context
 - The LIKE query is properly formed
@@ -842,6 +916,7 @@ If the test fails, the DB query is broken. Check if:
 - [ ] **Step 3: Fix the failing query (if found)**
 
 Most likely fix — verify column names match schema:
+
 ```bash
 grep -n "name\|email\|phone\|teriCode" drizzle/schema.ts | grep -i "clients" | head -10
 ```
@@ -851,12 +926,15 @@ If the schema uses `companyName` but the search uses `clients.name`, update the 
 - [ ] **Step 4: Update SearchResultsPage to show error state**
 
 In `SearchResultsPage.tsx`, handle the new `hadErrors` field:
+
 ```tsx
-{data?.hadErrors && (
-  <div className="text-sm text-amber-600 mb-2">
-    Some search sources are temporarily unavailable.
-  </div>
-)}
+{
+  data?.hadErrors && (
+    <div className="text-sm text-amber-600 mb-2">
+      Some search sources are temporarily unavailable.
+    </div>
+  );
+}
 ```
 
 - [ ] **Step 5: Run full test suite**
@@ -878,14 +956,17 @@ git commit -m "fix(search): surface search errors to client, fix query column ma
 ### Task 3.2 ⚡ PARALLEL — Fix "New Quote" creating an Order (TER-855)
 
 **Files:**
+
 - Modify: `client/src/components/work-surface/QuotesWorkSurface.tsx`
 
 **Bugs addressed:** B-15 (New Quote creates Order), B-16 (New Order = New Draft)
 
 **Root cause:** `QuotesWorkSurface.tsx` line ~704:
+
 ```tsx
 onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}
 ```
+
 The "New Quote" button navigates to `create-order` — the same as "New Order."
 
 - [ ] **Step 1: Read the full button handler and form options**
@@ -908,6 +989,7 @@ grep -rn "orderType\|QUOTE\|tab=create\|initialOrderType\|defaultOrderType" \
 ```
 
 If the form accepts `orderType` as a query param or prop, use it:
+
 ```tsx
 // Option A: navigate to create-order with orderType=QUOTE
 onClick={() => setLocation(buildSalesWorkspacePath("create-order") + "?orderType=QUOTE")}
@@ -918,6 +1000,7 @@ If the form doesn't support it yet, add a `defaultOrderType` param to the create
 - [ ] **Step 3: Fix the "New Quote" button**
 
 Change `QuotesWorkSurface.tsx`:
+
 ```tsx
 // Before:
 onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}
@@ -936,6 +1019,7 @@ grep -n "New Order\|New Draft\|newOrder\|newDraft" \
 ```
 
 If both navigate to the same URL with no distinction, either:
+
 - Remove the "New Draft" button entirely (if drafts are just the initial state of all orders, which is already clear from the order status)
 - OR add a `?status=DRAFT` param that pre-sets the order to draft status
 
@@ -944,6 +1028,7 @@ The simplest fix: rename "New Draft" to "New Order (Draft)" or remove it if redu
 - [ ] **Step 5: Write test**
 
 In `QuotesWorkSurface.test.tsx` (or create):
+
 ```typescript
 it("New Quote button navigates with orderType=QUOTE", () => {
   render(<QuotesWorkSurface />);
@@ -974,6 +1059,7 @@ git commit -m "fix(quotes): New Quote button creates quote (orderType=QUOTE), cl
 ### Task 3.3 ⚡ PARALLEL — Fix User Roles infinite loading (TER-857)
 
 **Files:**
+
 - Modify: `client/src/components/settings/rbac/UserRoleManagement.tsx`
 - Investigate: `server/routers/rbac-users.ts`
 
@@ -1028,6 +1114,7 @@ if (usersLoading || rolesLoading) {
 - [ ] **Step 4: Investigate why the query fails on staging**
 
 Check if the `listUsersWithRoles` procedure requires permissions that the test user doesn't have:
+
 ```bash
 grep -n "protectedProcedure\|hasPermission\|requireRole\|auth" server/routers/rbac-users.ts | head -10
 ```
@@ -1035,6 +1122,7 @@ grep -n "protectedProcedure\|hasPermission\|requireRole\|auth" server/routers/rb
 If the procedure isn't using `protectedProcedure`, add it. If it requires a specific role, verify the test user has that role.
 
 Also check if the DB query itself is correct — if `userRoles` table is empty, it should return `{ users: [] }`, not hang:
+
 ```bash
 sed -n '40,120p' server/routers/rbac-users.ts
 ```
@@ -1058,6 +1146,7 @@ git commit -m "fix(settings): add error state to User Roles tab, prevent infinit
 ### Task 3.4 ⚡ PARALLEL — Fix customer search combobox unreliable (TER-850 supplementary)
 
 **Files:**
+
 - Investigate: `client/src/components/` (customer search combobox — different from header search bar)
 - Modify: whichever combobox component uses a customer search query
 
@@ -1073,6 +1162,7 @@ grep -rn "customer.*search\|searchCustomer\|clientSearch\|ComboboxCustomer\|Cust
 ```
 
 Also check modal-level search:
+
 ```bash
 grep -rn "search.*client\|client.*combobox\|Combobox.*client" \
   client/src/components/accounting/ client/src/components/orders/ \
@@ -1100,6 +1190,7 @@ Most likely fix — if it shares the same silent-catch pattern as `search.ts`, a
 If it's a minimum-chars threshold: lower it to 1 character minimum.
 
 If it's a column name mismatch: verify against the schema:
+
 ```bash
 grep -n "name\|companyName\|company_name" drizzle/schema.ts | grep -i client | head -10
 ```
@@ -1125,6 +1216,7 @@ git commit -m "fix(search): fix customer search combobox returning no results in
 - [ ] **Merge to main, wait for staging deploy**
 
 - [ ] **Browser verification — search (B-07):**
+
 1. Before testing: log into staging and note an actual client name or product name that exists in staging data (check the Clients list or Products list first)
 2. Use the header search bar, type the first 3 characters of a known client/product name
 3. Verify: results appear (not "No results found") ✓
@@ -1133,17 +1225,20 @@ git commit -m "fix(search): fix customer search combobox returning no results in
 Note: Do NOT hardcode "Blue Dream" or "Mendocino" as test terms — these may not exist in staging. Always use a name confirmed to exist in the live staging DB.
 
 - [ ] **Browser verification — New Quote (B-15):**
+
 1. Navigate to Sales → Quotes tab
 2. Click "New Quote"
 3. Verify: form that opens is a Quote form (not "Create Sales Order") ✓
 4. Verify: "New Order" and "New Draft" have clearly distinct purposes or "New Draft" is removed ✓
 
 - [ ] **Browser verification — User Roles (B-67):**
+
 1. Navigate to Settings → User Roles tab
 2. Verify: page loads (no infinite spinner) ✓
 3. If an error appears, the error message is visible (not a blank spinner) ✓
 
 - [ ] **Browser verification — Customer search combobox (B-17):**
+
 1. Open Create Order (or Receive Payment) → in the customer search combobox, type 3 characters of a known client name
 2. Verify: matching clients appear in the dropdown (not empty) ✓
 3. Select a client — verify it populates correctly ✓
@@ -1163,6 +1258,7 @@ Note: Do NOT hardcode "Blue Dream" or "Mendocino" as test terms — these may no
 ### Task 4.1 ⚡ PARALLEL — Fix Receive Payment modal (TER-856)
 
 **Files:**
+
 - Modify: `client/src/components/accounting/ReceivePaymentModal.tsx`
 - Modify: `server/routers/accounting.ts` (if `getRecentClients` procedure is broken)
 - Test: existing modal test or create new
@@ -1183,14 +1279,18 @@ Check: does it have proper DB connection, proper WHERE clause, does it return `{
 - [ ] **Step 2: Add error handling to the modal**
 
 ```tsx
-const { data: recentClients, isLoading: loadingClients, error: clientsError } =
-  trpc.accounting.quickActions.getRecentClients.useQuery(
-    { limit: 10 },
-    { enabled: open && step === 1, retry: 1 }
-  );
+const {
+  data: recentClients,
+  isLoading: loadingClients,
+  error: clientsError,
+} = trpc.accounting.quickActions.getRecentClients.useQuery(
+  { limit: 10 },
+  { enabled: open && step === 1, retry: 1 }
+);
 ```
 
 In the render, handle the error:
+
 ```tsx
 {clientsError ? (
   <div className="text-sm text-destructive">
@@ -1211,9 +1311,12 @@ In the render, handle the error:
 - [ ] **Step 3: Verify the procedure returns data**
 
 In `accounting.test.ts`, add:
+
 ```typescript
 it("getRecentClients returns an array of clients", async () => {
-  const result = await caller.accounting.quickActions.getRecentClients({ limit: 5 });
+  const result = await caller.accounting.quickActions.getRecentClients({
+    limit: 5,
+  });
   expect(Array.isArray(result)).toBe(true);
 });
 ```
@@ -1244,6 +1347,7 @@ git commit -m "fix(accounting): fix Receive Payment modal — handle loading/err
 ### Task 4.2 ⚡ PARALLEL — Fix Purchase Orders: naming, validation, detail page (TER-861)
 
 **Files:**
+
 - Modify: `client/src/pages/ProcurementWorkspacePage.tsx` — fix "Procurement" vs "Purchase Orders" naming
 - Modify: `client/src/components/work-surface/PurchaseOrdersWorkSurface.tsx` — fix validation error display
 - Create: `client/src/pages/PurchaseOrderDetailPage.tsx` — new PO detail page
@@ -1259,6 +1363,7 @@ grep -rn "Procurement\|procurement" client/src/pages/ProcurementWorkspacePage.ts
 ```
 
 Change the page `<title>` and `<h1>` from "Procurement" to "Purchase Orders":
+
 ```tsx
 // Change:
 <h1 className="...">Procurement</h1>
@@ -1267,6 +1372,7 @@ Change the page `<title>` and `<h1>` from "Procurement" to "Purchase Orders":
 ```
 
 Also update any breadcrumb that says "Procurement":
+
 ```bash
 grep -rn "Procurement" client/src --include="*.tsx" | grep -v "test\|spec"
 ```
@@ -1274,12 +1380,14 @@ grep -rn "Procurement" client/src --include="*.tsx" | grep -v "test\|spec"
 - [ ] **Step 2: Fix silent PO create validation (B-30)**
 
 In `PurchaseOrdersWorkSurface.tsx`, find the PO create form submission:
+
 ```bash
 grep -n "handleSubmit\|onSubmit\|supplier\|required\|toast\|error" \
   client/src/components/work-surface/PurchaseOrdersWorkSurface.tsx | head -20
 ```
 
 Add explicit validation before submission:
+
 ```tsx
 const handleSubmit = () => {
   if (!selectedSupplierId) {
@@ -1296,6 +1404,7 @@ const handleSubmit = () => {
 ```
 
 And add visual error indicator to the supplier field:
+
 ```tsx
 <Select ...>
   ...
@@ -1308,6 +1417,7 @@ And add visual error indicator to the supplier field:
 - [ ] **Step 3: Create PO detail page**
 
 Create `client/src/pages/PurchaseOrderDetailPage.tsx`:
+
 ```tsx
 import { useParams } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -1315,7 +1425,11 @@ import { trpc } from "@/lib/trpc";
 
 export function PurchaseOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { data: po, isLoading, error } = trpc.purchaseOrders.getById.useQuery(
+  const {
+    data: po,
+    isLoading,
+    error,
+  } = trpc.purchaseOrders.getById.useQuery(
     { id: parseInt(id) },
     { enabled: !!id }
   );
@@ -1349,15 +1463,21 @@ export function PurchaseOrderDetailPage() {
               <tr key={item.id} className="border-b">
                 <td className="p-3">{item.productName}</td>
                 <td className="p-3 text-right">{item.quantity}</td>
-                <td className="p-3 text-right">{formatCurrency(item.unitCost)}</td>
+                <td className="p-3 text-right">
+                  {formatCurrency(item.unitCost)}
+                </td>
                 <td className="p-3 text-right">{formatCurrency(item.total)}</td>
               </tr>
             ))}
           </tbody>
           <tfoot>
             <tr>
-              <td colSpan={3} className="p-3 text-right font-medium">Total</td>
-              <td className="p-3 text-right font-bold">{formatCurrency(po.total)}</td>
+              <td colSpan={3} className="p-3 text-right font-medium">
+                Total
+              </td>
+              <td className="p-3 text-right font-bold">
+                {formatCurrency(po.total)}
+              </td>
             </tr>
           </tfoot>
         </table>
@@ -1374,6 +1494,7 @@ grep -n "getById\|findById\|getPO\|getOne" server/routers/purchaseOrders.ts | he
 ```
 
 If it doesn't exist, add it:
+
 ```typescript
 getById: protectedProcedure
   .input(z.object({ id: z.number() }))
@@ -1398,6 +1519,7 @@ getById: protectedProcedure
 ```
 
 Import at the top:
+
 ```tsx
 import { PurchaseOrderDetailPage } from "@/pages/PurchaseOrderDetailPage";
 ```
@@ -1407,12 +1529,14 @@ import { PurchaseOrderDetailPage } from "@/pages/PurchaseOrderDetailPage";
 Use `onRowDoubleClick` (the same prop added in Task 2.2) to navigate to the detail page — **not** `onSelectedRowChange`. Single-click should only select the row; double-click navigates.
 
 In `PurchaseOrdersPilotSurface.tsx` or `PurchaseOrdersWorkSurface.tsx`:
+
 ```bash
 grep -n "onRowDoubleClick\|onSelectedRowChange\|selectedPO\|handleRow" \
   client/src/components/spreadsheet-native/PurchaseOrdersPilotSurface.tsx | head -10
 ```
 
 Add:
+
 ```tsx
 onSelectedRowChange={row => setSelectedPoId(row?.id ?? null)}  // selection only
 onRowDoubleClick={row => {
@@ -1460,6 +1584,7 @@ git commit -m "fix(procurement): add PO detail page, fix validation errors, fix 
 ### Task 4.3 ⚡ PARALLEL — Fix notification system: count, client names, page sync (TER-862)
 
 **Files:**
+
 - Modify: `client/src/components/notifications/NotificationBell.tsx`
 - Modify: `client/src/pages/NotificationsPage.tsx`
 - Modify: `server/services/notificationService.ts`
@@ -1470,22 +1595,29 @@ git commit -m "fix(procurement): add PO detail page, fix validation errors, fix 
 - [ ] **Step 1: Fix notification count display (B-01)**
 
 In `NotificationBell.tsx`, find the badge count rendering:
+
 ```bash
 grep -n "9+\|badge\|count\|unread\|length" client/src/components/notifications/NotificationBell.tsx | head -15
 ```
 
 Change cap from "9+" to "99+":
+
 ```tsx
 // Before:
-{unreadCount > 9 ? "9+" : unreadCount}
+{
+  unreadCount > 9 ? "9+" : unreadCount;
+}
 
 // After:
-{unreadCount > 99 ? "99+" : unreadCount}
+{
+  unreadCount > 99 ? "99+" : unreadCount;
+}
 ```
 
 - [ ] **Step 2: Fix raw client ID in notification messages (B-02)**
 
 In `notificationService.ts`, find where notification messages are created with `Client #${id}`:
+
 ```bash
 grep -n "Client #\|client.*id\|entityId\|clientId" server/services/notificationService.ts | head -20
 ```
@@ -1497,21 +1629,23 @@ The service creates messages like `"created for Client #${clientId}"`. It needs 
 // or look it up from the DB before creating the notification
 
 // Change:
-message: `New order created for Client #${clientId}`
+message: `New order created for Client #${clientId}`;
 // To:
-message: `New order created for ${clientName}`
+message: `New order created for ${clientName}`;
 ```
 
 Update `notificationTriggers.ts` to pass the client name when triggering notifications:
+
 ```bash
 grep -n "clientId\|client.*name\|clientName" server/services/notificationTriggers.ts | head -20
 ```
 
 Orders already have a `clientId` — look up `clients.name` when building the notification:
+
 ```typescript
 const client = await db.query.clients.findFirst({
   where: eq(clients.id, order.clientId),
-  columns: { name: true }
+  columns: { name: true },
 });
 const clientName = client?.name ?? `Client #${order.clientId}`;
 ```
@@ -1519,12 +1653,14 @@ const clientName = client?.name ?? `Client #${order.clientId}`;
 - [ ] **Step 3: Sync NotificationsPage with NotificationBell (B-77)**
 
 Check what data source each uses:
+
 ```bash
 grep -n "trpc\.\|useQuery\|notifications\." client/src/components/notifications/NotificationBell.tsx | head -10
 grep -n "trpc\.\|useQuery\|notifications\." client/src/pages/NotificationsPage.tsx | head -10
 ```
 
 If they call different procedures (e.g., bell uses `getUnread` and page uses `getInbox`), make them both use the same procedure or at least the same data source:
+
 - Both should use `trpc.notifications.list.useQuery({ limit: 50 })` or equivalent
 - Both should invalidate the same cache key when marking as read
 
@@ -1549,6 +1685,7 @@ git commit -m "fix(notifications): show actual count (99+), use client names, sy
 - [ ] **Merge to main, wait for staging deploy**
 
 - [ ] **Browser verification — Receive Payment (B-52):**
+
 1. Log in as a user with `accounting:read` permission (check that your test account has it)
 2. Navigate to Accounting → click "Receive Payment"
 3. Verify: client dropdown loads (if it shows a spinner forever, the `accounting:read` permission is missing for your test user)
@@ -1559,6 +1696,7 @@ git commit -m "fix(notifications): show actual count (99+), use client names, sy
 If step 3 fails (spinner won't stop): check the test user's RBAC roles in Settings → User Roles and confirm `accounting:read` is assigned.
 
 - [ ] **Browser verification — PO detail (B-28, B-29, B-30):**
+
 1. Navigate to Purchase Orders (verify title says "Purchase Orders" not "Procurement") ✓
 2. Click any PO row
 3. Verify: navigates to `/purchase-orders/:id` with PO details visible ✓
@@ -1566,6 +1704,7 @@ If step 3 fails (spinner won't stop): check the test user's RBAC roles in Settin
 5. Verify: error message appears (not silent failure) ✓
 
 - [ ] **Browser verification — Notifications (B-01, B-02, B-77):**
+
 1. Verify bell badge shows a number greater than "9+" (e.g., "119") ✓
 2. Open notification panel — verify messages say client names not "Client #203" ✓
 3. Navigate to `/notifications` — verify inbox matches what bell shows ✓
@@ -1584,6 +1723,7 @@ If step 3 fails (spinner won't stop): check the test user's RBAC roles in Settin
 ### Task 5.1 ⚡ PARALLEL — Fix Relationships/Clients UX (TER-863)
 
 **Files:**
+
 - Modify: `client/src/components/work-surface/ClientsWorkSurface.tsx`
 - Modify: `client/src/components/clients/QuickCreateClient.tsx`
 - Modify: `client/src/pages/RelationshipsWorkspacePage.tsx`
@@ -1614,6 +1754,7 @@ onSelectedRowChange={row => {
 ```
 
 Import `useLocation` from wouter if not present:
+
 ```tsx
 import { useLocation } from "wouter";
 const [, setLocation] = useLocation();
@@ -1627,6 +1768,7 @@ grep -n "selectedClient\|selectedRow\|onClick\|handleRowClick\|setSelected" \
 ```
 
 Check how the selected client ID is tracked. A common off-by-one: row index used instead of row data ID. Fix:
+
 ```tsx
 // Wrong: using array index
 onSelectedRowChange={row => setSelectedClient(clients[rowIndex])}
@@ -1638,12 +1780,14 @@ onSelectedRowChange={row => setSelectedClient(row)}
 - [ ] **Step 2: Fix supplier rows doing nothing (B-46)**
 
 Find the Suppliers tab component:
+
 ```bash
 grep -n "supplier\|Supplier\|onRowClick\|handleRow\|isSeller" \
   client/src/pages/RelationshipsWorkspacePage.tsx | head -20
 ```
 
 Add an `onSelectedRowChange` handler to the suppliers table that opens a supplier detail drawer:
+
 ```tsx
 onSelectedRowChange={row => {
   if (row?.id) setSelectedSupplierId(row.id);
@@ -1653,12 +1797,14 @@ onSelectedRowChange={row => {
 - [ ] **Step 3: Rename "Code Name" to "Client Name" (B-45)**
 
 In `QuickCreateClient.tsx`:
+
 ```bash
 grep -n "Code Name\|codeName\|code name\|description.*code" \
   client/src/components/clients/QuickCreateClient.tsx
 ```
 
 Change `"Code Name"` to `"Client Name"` and update the description text from the spy codename language:
+
 ```tsx
 // Before:
 <Label>Code Name <span className="text-destructive">*</span></Label>
@@ -1677,6 +1823,7 @@ grep -n "breadcrumb\|Breadcrumb\|Archived Accounts\|Clients.*Suppliers" \
 ```
 
 The breadcrumb should not include tab names as hierarchy steps. Fix the breadcrumb to show only the page name:
+
 ```tsx
 // Before:
 <Breadcrumb>
@@ -1712,6 +1859,7 @@ git commit -m "fix(relationships): fix wrong client drawer, supplier rows, Code 
 ### Task 5.2 ⚡ PARALLEL — Fix accounting UI issues (TER-864)
 
 **Files:**
+
 - Modify: `client/src/pages/accounting/` (accounting page tabs)
 - Modify: `client/src/components/accounting/ReceivePaymentModal.tsx` (already touched in Wave 4)
 - Modify: `client/src/components/accounting/PaySupplierModal.tsx` (if exists)
@@ -1726,6 +1874,7 @@ grep -rn "classic\|Classic\|invoice.*click\|handleInvoice\|onRowClick" \
 ```
 
 Add click handler to classic invoice rows:
+
 ```tsx
 <TableRow
   key={invoice.id}
@@ -1754,6 +1903,7 @@ grep -rn "Keep queues in focus\|Open analysis" client/src/pages/accounting/ --in
 ```
 
 Change `role="tab"` to `role="link"` or render as `<Button>` or `<a>` elements, not `<TabsTrigger>`:
+
 ```tsx
 // Before (wrong — makes it a tab):
 <TabsTrigger value="queues-focus">Keep queues in focus</TabsTrigger>
@@ -1772,6 +1922,7 @@ grep -rn "Pay Supplier\|PaySupplier\|paySup" client/src --include="*.tsx" | head
 ```
 
 Add minimum required fields (amount, payment date) to the modal:
+
 ```tsx
 {/* Add after supplier select */}
 <div className="space-y-2">
@@ -1797,10 +1948,17 @@ If the server procedure already accepts `amount` — just add the UI field and w
 If it doesn't accept `amount` — this is a schema change and must be treated as STRICT mode (full verification cycle). Do NOT add the field without also adding server-side validation.
 
 Add line items section to the Create Invoice modal:
+
 ```tsx
 <div className="space-y-2">
   <Label>Amount ($)</Label>
-  <Input type="number" step="0.01" min="0" value={amount} onChange={e => setAmount(e.target.value)} />
+  <Input
+    type="number"
+    step="0.01"
+    min="0"
+    value={amount}
+    onChange={e => setAmount(e.target.value)}
+  />
 </div>
 ```
 
@@ -1812,12 +1970,17 @@ grep -rn "bills\|Bills\|total.*amount\|formatCurrency\|toLocaleString" \
 ```
 
 Find the bills total rendering and ensure `formatCurrency` is used:
+
 ```tsx
 // Wrong — may produce "1,863,464761":
-{total.toFixed(2)}
+{
+  total.toFixed(2);
+}
 
 // Correct:
-{formatCurrency(total)}
+{
+  formatCurrency(total);
+}
 ```
 
 - [ ] **Step 7: Add counts to invoice status filter chips (B-60)**
@@ -1828,6 +1991,7 @@ grep -n "Draft\|Sent\|Viewed\|Partial\|Paid\|Overdue.*chip\|filter.*chip\|Status
 ```
 
 Add counts from the invoice data:
+
 ```tsx
 const draftCount = invoices?.filter(i => i.status === "DRAFT").length ?? 0;
 
@@ -1837,7 +2001,7 @@ const draftCount = invoices?.filter(i => i.status === "DRAFT").length ?? 0;
   onClick={() => setStatusFilter("DRAFT")}
 >
   Draft ({draftCount})
-</Button>
+</Button>;
 ```
 
 - [ ] **Step 8: Run tests**
@@ -1861,6 +2025,7 @@ git commit -m "fix(accounting): fix invoice navigation, tab overflow, ARIA roles
 **⚠️ AUTONOMY MODE: RED — requires Evan approval before any database writes or migrations**
 
 **Files:**
+
 - Investigate: `server/routers/accounting.ts`
 - Investigate: `server/accountingDb.ts`
 - Investigate: `server/accountingHooks.ts`
@@ -1882,6 +2047,7 @@ grep -rn "journalEntries\|journal_entries" drizzle/schema.ts | head -5
 ```
 
 If the schema has a `journalEntries` table, verify the tRPC query is:
+
 1. Looking at the right table
 2. Not filtered too aggressively (e.g., requiring a fiscal period that doesn't exist)
 3. Not returning empty due to a WHERE clause on missing `deletedAt` where entries have no `deletedAt` column
@@ -1897,11 +2063,13 @@ Verify that hooks fire correctly when a payment is received or invoice is create
 - [ ] **Step 4: Document findings**
 
 Write the findings to a short investigation report:
+
 ```
 docs/investigations/2026-03-26-gl-empty-investigation.md
 ```
 
 Include:
+
 - Number of records in `journalEntries` table (from direct query)
 - Whether GL posting hooks fire on payment creation
 - Whether the GL query has any filtering bugs
@@ -1910,6 +2078,7 @@ Include:
 - [ ] **Step 5: ⚠️ STOP — present findings to Evan before writing any fix**
 
 The GL investigation (B-53) is RED mode. Present the findings document to Evan. Do NOT apply fixes involving:
+
 - Schema migrations
 - Backfilling GL entries
 - Changes to accounting logic
@@ -1930,6 +2099,7 @@ git commit -m "docs: GL investigation findings — root cause identified, pendin
 - [ ] **Merge to main, wait for staging deploy**
 
 - [ ] **Browser verification — Relationships (B-44, B-45, B-46):**
+
 1. Navigate to Relationships → Clients
 2. Click on the second client in the list
 3. Verify: drawer that opens is for the SECOND client (not first) ✓
@@ -1937,6 +2107,7 @@ git commit -m "docs: GL investigation findings — root cause identified, pendin
 5. Click a supplier row — verify something happens (drawer or detail) ✓
 
 - [ ] **Browser verification — Accounting UI (B-51, B-56, B-57, B-58, B-61):**
+
 1. Navigate to Accounting → Invoices (classic view) → click an invoice row
 2. Verify: something navigates or opens a detail ✓
 3. Verify: tab bar doesn't overflow, Overdue Invoices tab is reachable ✓
@@ -1961,6 +2132,7 @@ git commit -m "docs: GL investigation findings — root cause identified, pendin
 **Bugs:** B-05, B-08, B-09, B-18, B-19, B-23, B-24, B-25, B-26, B-27, B-71, B-72, B-73, B-76
 
 **Files:**
+
 - Modify: `client/src/config/navigation.consolidation.ts` or equivalent nav config
 - Modify: `client/src/components/layout/AppSidebar.tsx` or equivalent
 - Modify: `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx` (breadcrumb text)
@@ -1988,12 +2160,14 @@ grep -rn "tooltip\|Tooltip\|title=.*Manage\|title=.*workspace" client/src/compon
 ```
 
 Shorten all sidebar tooltips to ≤3 words:
+
 ```tsx
 // Before:
-title="Manage orders, quotes, returns, sales catalogues, and live shopping in a unified sales workspace."
+title =
+  "Manage orders, quotes, returns, sales catalogues, and live shopping in a unified sales workspace.";
 
 // After:
-title="Sales workspace"
+title = "Sales workspace";
 ```
 
 - [ ] **Step 4: Fix internal breadcrumb jargon (B-18)**
@@ -2003,6 +2177,7 @@ grep -rn "Sheet-Native Pilot\|Sheet-native Overflow\|Document mode" client/src -
 ```
 
 Replace with user-friendly language:
+
 ```tsx
 // "Sheet-Native Pilot" → "Sales"
 // "Sheet-native Overflow" → "Orders"
@@ -2019,6 +2194,7 @@ grep -rn "View AR\|viewAR\|view.*AR\|accounts.*receivable.*button" \
 ```
 
 Change the button's click handler:
+
 ```tsx
 // Before (navigates to /accounting without tab):
 onClick={() => setLocation("/accounting")}
@@ -2035,6 +2211,7 @@ grep -n "tooltipValueGetter\|cellTooltip\|tooltip.*order\|orderNumber\|Next.*col
 ```
 
 Add `tooltipValueGetter` to the Order ID and "Next" column definitions:
+
 ```typescript
 {
   headerName: "Order",
@@ -2067,12 +2244,14 @@ git commit -m "fix(nav): align naming, fix section grouping, shorten tooltips, f
 **Bugs:** B-74, B-75
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx`
 - Modify: `client/src/pages/SalesWorkspacePage.tsx`
 
 - [ ] **Step 1: Hide dev text wall on mobile (B-74)**
 
 The "Queue evaluation active" status bar is already being cleaned up in Wave 1. For any remaining full text blocks, add responsive hiding:
+
 ```tsx
 <div className="hidden md:flex flex-wrap items-center gap-2 ...">
   {/* only show this extended status bar on desktop */}
@@ -2125,6 +2304,7 @@ git commit -m "fix(mobile): hide dev text wall and compact toggle on small viewp
 **Bugs:** B-62, B-63, B-64, B-65, B-66, B-68, B-69
 
 **Files:**
+
 - Modify: `client/src/pages/ReturnsManagementPage.tsx` or equivalent
 - Modify: `client/src/components/returns/ProcessReturnModal.tsx` or equivalent
 - Modify: `client/src/pages/DemandSupplyPage.tsx` or equivalent
@@ -2146,6 +2326,7 @@ grep -rn "Order #1\|orderId\|order_id\|orderNumber.*return" client/src --include
 ```
 
 Change the modal to look up the human-readable order number:
+
 ```tsx
 // Before:
 <span>Order #{return.orderId}</span>
@@ -2162,9 +2343,11 @@ grep -rn "Active Needs\|activeNeeds\|matchmaking\|clientNeeds" \
 ```
 
 Find the counter and ensure it uses the same data source as the Client Needs tab:
+
 ```tsx
 // Should be:
-const activeNeedsCount = clientNeeds?.filter(n => n.status === "active").length ?? 0;
+const activeNeedsCount =
+  clientNeeds?.filter(n => n.status === "active").length ?? 0;
 // NOT a separate query that returns 0
 ```
 
@@ -2184,6 +2367,7 @@ grep -rn "Strains\|strains\|MasterData\|master.*data.*tab" \
 ```
 
 If the Strains tab trigger is incorrectly disabled or has a bug, fix it:
+
 ```tsx
 // Check for disabled={true} or onClick returning early
 <TabsTrigger value="strains">Strains</TabsTrigger>
@@ -2198,10 +2382,9 @@ grep -rn "Create.*User\|CreateUser\|newUser\|password.*field" \
 ```
 
 Add helper text below the password field:
+
 ```tsx
-<p className="text-xs text-muted-foreground mt-1">
-  Minimum 8 characters
-</p>
+<p className="text-xs text-muted-foreground mt-1">Minimum 8 characters</p>
 ```
 
 - [ ] **Step 7: Run tests**
@@ -2232,6 +2415,7 @@ grep -n "active\|border.*bell\|bell.*active\|open.*bell" \
 ```
 
 Reset bell visual state when dropdown closes:
+
 ```tsx
 const [isOpen, setIsOpen] = useState(false);
 // Ensure className only applies active styles when isOpen is true
@@ -2255,19 +2439,21 @@ grep -rn "Today.*Orders\|todayOrders\|today.*revenue\|today.*filter" \
 ```
 
 Check if the date filter uses UTC vs local timezone. A common bug: `new Date().toISOString()` produces UTC dates that may not match local "today":
+
 ```tsx
 // Wrong:
-where: gte(orders.createdAt, new Date().toISOString().split("T")[0])
+where: gte(orders.createdAt, new Date().toISOString().split("T")[0]);
 
 // Correct (use start of local day):
 const today = new Date();
 today.setHours(0, 0, 0, 0);
-where: gte(orders.createdAt, today)
+where: gte(orders.createdAt, today);
 ```
 
 - [ ] **Step 4: Fix supplier and shipping queue test data pollution (B-31, B-40)**
 
 **B-31 — supplier search test data:**
+
 ```bash
 grep -rn "ELi Item\|seed.*supplier\|Stage Quick Add" scripts/ --include="*.ts" --include="*.py" | head -5
 ```
@@ -2275,6 +2461,7 @@ grep -rn "ELi Item\|seed.*supplier\|Stage Quick Add" scripts/ --include="*.ts" -
 If test data can't be removed from staging, add a filter in the PO supplier search to exclude entries matching test data patterns (e.g., entries with `name LIKE '%ELi Item%'`).
 
 **B-40 — shipping queue test data:**
+
 ```bash
 grep -rn "shipping.*seed\|seed.*shipping\|TEST.*shipment\|shipment.*test" \
   scripts/ --include="*.ts" --include="*.py" | head -5
@@ -2303,6 +2490,7 @@ grep -rn "Photography\|photography\|approval.*photo\|photo.*approve" \
 ```
 
 Add per-item action buttons:
+
 ```tsx
 <div className="flex gap-2">
   <Button size="sm" variant="outline" onClick={() => handleApprove(item.id)}>
@@ -2328,24 +2516,28 @@ git commit -m "fix(polish): fix bell active state, remove orange dots, fix today
 - [ ] **Merge to main, wait for staging deploy**
 
 - [ ] **Browser verification — navigation (B-71, B-72, B-73):**
+
 1. Open sidebar — verify ADMIN section no longer contains Calendar/Notifications ✓
 2. Verify nav says "Analytics" consistently (or "Reports" — whichever was chosen) ✓
 3. Hover over "Sales" in sidebar — verify tooltip is ≤3 words ✓
 4. Navigate to Sales → Orders — verify breadcrumbs use business language ✓
 
 - [ ] **Browser verification — mobile (B-74, B-75):**
+
 1. In browser DevTools, set viewport to 390px
 2. Navigate to Sales page
 3. Verify: no dev text wall takes 40% of screen ✓
 4. Verify: Sheet-Native/Classic toggle is compact ✓
 
 - [ ] **Browser verification — D&S and Returns (B-65, B-66, B-69):**
+
 1. Navigate to Demand & Supply → Matchmaking
 2. Verify "Active Needs" counter matches count in Client Needs tab ✓
 3. Click "Add Need" — verify a modal or form opens ✓
 4. Navigate to Settings → Master Data → Strains — verify tab responds ✓
 
 - [ ] **Browser verification — notifications cosmetics (B-03, B-06):**
+
 1. Open notification bell, then close it
 2. Verify: bell icon returns to normal state (no red/active border) ✓
 3. Verify: no unexplained orange dots below notification rows ✓
@@ -2376,31 +2568,32 @@ NODE_TLS_REJECT_UNAUTHORIZED=0 SKIP_E2E_SETUP=1 \
 
 ## Self-Review: Spec Coverage Check
 
-| Ticket | Bugs Covered | Task |
-|--------|-------------|------|
-| TER-859 | B-42, B-49, B-50, B-70 | Task 1.1 |
-| TER-860 | B-13, B-20, B-21, B-22 | Task 1.2 |
-| TER-851 | B-04 | Task 2.1 |
-| TER-853 | B-14 | Task 2.2 |
-| TER-852 | B-12 | Task 2.3 |
-| TER-854 | B-36, B-37, B-38 | Task 2.4 |
-| TER-850 | B-07, B-17 | Tasks 3.1, 3.4 |
-| TER-855 | B-15, B-16 | Task 3.2 |
-| TER-857 | B-67 | Task 3.3 |
-| TER-856 | B-52 | Task 4.1 |
-| TER-861 | B-28, B-29, B-30 | Task 4.2 |
-| TER-862 | B-01, B-02, B-77 | Task 4.3 |
-| TER-863 | B-43, B-44, B-45, B-46, B-47 | Task 5.1 |
-| TER-864 | B-51, B-56, B-57, B-58, B-59, B-60, B-61 | Task 5.2 |
-| TER-858 | B-53, B-54, B-55 | Task 5.3 |
-| TER-865 | B-05, B-08, B-09, B-18, B-19, B-23, B-24, B-25, B-26, B-27, B-71, B-72, B-73, B-76 | Task 6.1 |
-| TER-866 | B-74, B-75 | Task 6.2 |
-| TER-867 | B-62, B-63, B-64, B-65, B-66, B-68, B-69 | Task 6.3 |
-| TER-868 | B-03, B-06, B-10, B-11, B-31, B-32, B-33, B-34, B-35, B-39, B-40, B-41, B-48, B-78 | Task 6.4 |
+| Ticket  | Bugs Covered                                                                       | Task           |
+| ------- | ---------------------------------------------------------------------------------- | -------------- |
+| TER-859 | B-42, B-49, B-50, B-70                                                             | Task 1.1       |
+| TER-860 | B-13, B-20, B-21, B-22                                                             | Task 1.2       |
+| TER-851 | B-04                                                                               | Task 2.1       |
+| TER-853 | B-14                                                                               | Task 2.2       |
+| TER-852 | B-12                                                                               | Task 2.3       |
+| TER-854 | B-36, B-37, B-38                                                                   | Task 2.4       |
+| TER-850 | B-07, B-17                                                                         | Tasks 3.1, 3.4 |
+| TER-855 | B-15, B-16                                                                         | Task 3.2       |
+| TER-857 | B-67                                                                               | Task 3.3       |
+| TER-856 | B-52                                                                               | Task 4.1       |
+| TER-861 | B-28, B-29, B-30                                                                   | Task 4.2       |
+| TER-862 | B-01, B-02, B-77                                                                   | Task 4.3       |
+| TER-863 | B-43, B-44, B-45, B-46, B-47                                                       | Task 5.1       |
+| TER-864 | B-51, B-56, B-57, B-58, B-59, B-60, B-61                                           | Task 5.2       |
+| TER-858 | B-53, B-54, B-55                                                                   | Task 5.3       |
+| TER-865 | B-05, B-08, B-09, B-18, B-19, B-23, B-24, B-25, B-26, B-27, B-71, B-72, B-73, B-76 | Task 6.1       |
+| TER-866 | B-74, B-75                                                                         | Task 6.2       |
+| TER-867 | B-62, B-63, B-64, B-65, B-66, B-68, B-69                                           | Task 6.3       |
+| TER-868 | B-03, B-06, B-10, B-11, B-31, B-32, B-33, B-34, B-35, B-39, B-40, B-41, B-48, B-78 | Task 6.4       |
 
 **All 78 bugs covered. 0 gaps.**
 
 Notes:
+
 - B-09 ("View AR" wrong page) is covered solely in TER-865 Task 6.1 — removed from TER-859 to eliminate the double-count
 - B-17 (customer combobox) added to TER-850 via new Task 3.4 — NOT the same component as B-07 (header search)
 - B-43 (client full page) is addressed in Task 5.1 as a wire-up (~10 lines) — `ClientProfilePage` at `/clients/:id` already exists

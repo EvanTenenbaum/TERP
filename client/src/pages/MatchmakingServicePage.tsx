@@ -708,77 +708,82 @@ export default function MatchmakingServicePage({
                       const quantityLabel =
                         item.quantityAvailable ?? item.quantity;
                       const reserveDisabled =
-                        (item.buyerCount ?? 0) === 0 || reservingItemId !== null;
+                        (item.buyerCount ?? 0) === 0 ||
+                        reservingItemId !== null;
 
                       return (
                         <>
-                    <div className="flex items-start justify-between mb-2">
-                      <Badge variant="secondary">✅ Available</Badge>
-                      {(item.buyerCount ?? 0) > 0 && (
-                        <Badge variant="default">
-                          {item.buyerCount} potential buyers
-                        </Badge>
-                      )}
-                    </div>
-                    <h4 className="font-medium">
-                      {getProductDisplayName(item)}
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      {item.category && `${item.category}`}
-                      {item.grade && ` • ${item.grade}`}
-                      {quantityLabel && ` • ${quantityLabel} lbs available`}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Supplier: {supplierName}
-                    </p>
-                    {item.unitPrice && (
-                      <p className="text-xs font-medium text-green-600">
-                        ${parseFloat(String(item.unitPrice)).toFixed(2)}/lb
-                        {quantityLabel ? ` • ${quantityLabel} lbs available` : ""}
-                      </p>
-                    )}
-                    <div className="flex gap-2 mt-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs"
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleViewBuyers(item.id);
-                        }}
-                      >
-                        View Buyers
-                      </Button>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span>
-                              <Button
-                                size="sm"
-                                className="text-xs"
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  handleReserve(item.id);
-                                }}
-                                disabled={reserveDisabled}
-                              >
-                                {reservingItemId === item.id ? (
-                                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          <div className="flex items-start justify-between mb-2">
+                            <Badge variant="secondary">✅ Available</Badge>
+                            {(item.buyerCount ?? 0) > 0 && (
+                              <Badge variant="default">
+                                {item.buyerCount} potential buyers
+                              </Badge>
+                            )}
+                          </div>
+                          <h4 className="font-medium">
+                            {getProductDisplayName(item)}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {item.category && `${item.category}`}
+                            {item.grade && ` • ${item.grade}`}
+                            {quantityLabel &&
+                              ` • ${quantityLabel} lbs available`}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Supplier: {supplierName}
+                          </p>
+                          {item.unitPrice && (
+                            <p className="text-xs font-medium text-green-600">
+                              ${parseFloat(String(item.unitPrice)).toFixed(2)}
+                              /lb
+                              {quantityLabel
+                                ? ` • ${quantityLabel} lbs available`
+                                : ""}
+                            </p>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs"
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleViewBuyers(item.id);
+                              }}
+                            >
+                              View Buyers
+                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Button
+                                      size="sm"
+                                      className="text-xs"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        handleReserve(item.id);
+                                      }}
+                                      disabled={reserveDisabled}
+                                    >
+                                      {reservingItemId === item.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                      ) : null}
+                                      Reserve
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                {reserveDisabled ? (
+                                  <TooltipContent>
+                                    {(item.buyerCount ?? 0) === 0
+                                      ? "Reserve is unavailable until this supply has at least one active buyer need."
+                                      : "A reserve action is already in progress."}
+                                  </TooltipContent>
                                 ) : null}
-                                Reserve
-                              </Button>
-                            </span>
-                          </TooltipTrigger>
-                          {reserveDisabled ? (
-                            <TooltipContent>
-                              {(item.buyerCount ?? 0) === 0
-                                ? "Reserve is unavailable until this supply has at least one active buyer need."
-                                : "A reserve action is already in progress."}
-                            </TooltipContent>
-                          ) : null}
-                        </Tooltip>
-                      </TooltipProvider>
-                    </div>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                         </>
                       );
                     })()}

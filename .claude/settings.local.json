@@ -17,10 +17,7 @@
       "mcp__claude_ai_Linear__get_issue"
     ]
   },
-  "disabledMcpjsonServers": [
-    "digitalocean-full",
-    "thinking"
-  ],
+  "disabledMcpjsonServers": ["digitalocean-full", "thinking"],
   "hooks": {
     "Stop": [
       {

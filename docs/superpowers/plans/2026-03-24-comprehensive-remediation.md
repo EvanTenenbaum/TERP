@@ -27,41 +27,45 @@
 ## File Structure
 
 ### Wave 1 — Frontend/UX Critical (P1 + high-impact P2)
-| File | Action | Issues |
-|------|--------|--------|
-| `client/src/components/spreadsheet-native/InvoicesPilotSurface.tsx` | Modify | INV-P1 (mark-paid → payment flow), INV-P2-CREATE (zero-amount validation), DISC-INV-002 (markSent wiring verify) |
-| `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx` | Modify | ORD-P2 (lineItemCount), ORD-D010 (download invoice), ORD-P3 (sorting) |
-| `server/ordersDb.ts` | Modify | ORD-P2 (add lineItemCount to getAllOrders return) |
-| `client/src/components/spreadsheet-native/PaymentsPilotSurface.tsx` | Modify | PAY-P2-PERM (permission gate on void), PAY-P2-STANDALONE (document as intentional) |
-| `client/src/components/spreadsheet-native/FulfillmentPilotSurface.tsx` | Modify | DISC-FUL-004 (ship button for RESTOCKED), DISC-FUL-010 (SHIPPED badge color), FUL-P3-A (R keyboard guard), DISC-FUL-009 (tracking/carrier/notes in ship dialog) |
-| `client/src/components/spreadsheet-native/SamplesPilotSurface.tsx` | Modify | DISC-SAM-002 (setExpirationDate UI) |
-| `client/src/components/spreadsheet-native/ClientLedgerPilotSurface.tsx` | Modify | CL-P2-FILTER (filter UX), CL-P2-EXPORT (stale cache), CL-P3 (invoice ref navigation) |
+
+| File                                                                    | Action | Issues                                                                                                                                                          |
+| ----------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `client/src/components/spreadsheet-native/InvoicesPilotSurface.tsx`     | Modify | INV-P1 (mark-paid → payment flow), INV-P2-CREATE (zero-amount validation), DISC-INV-002 (markSent wiring verify)                                                |
+| `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx`  | Modify | ORD-P2 (lineItemCount), ORD-D010 (download invoice), ORD-P3 (sorting)                                                                                           |
+| `server/ordersDb.ts`                                                    | Modify | ORD-P2 (add lineItemCount to getAllOrders return)                                                                                                               |
+| `client/src/components/spreadsheet-native/PaymentsPilotSurface.tsx`     | Modify | PAY-P2-PERM (permission gate on void), PAY-P2-STANDALONE (document as intentional)                                                                              |
+| `client/src/components/spreadsheet-native/FulfillmentPilotSurface.tsx`  | Modify | DISC-FUL-004 (ship button for RESTOCKED), DISC-FUL-010 (SHIPPED badge color), FUL-P3-A (R keyboard guard), DISC-FUL-009 (tracking/carrier/notes in ship dialog) |
+| `client/src/components/spreadsheet-native/SamplesPilotSurface.tsx`      | Modify | DISC-SAM-002 (setExpirationDate UI)                                                                                                                             |
+| `client/src/components/spreadsheet-native/ClientLedgerPilotSurface.tsx` | Modify | CL-P2-FILTER (filter UX), CL-P2-EXPORT (stale cache), CL-P3 (invoice ref navigation)                                                                            |
 
 ### Wave 2 — Frontend/UX P2 + P3
-| File | Action | Issues |
-|------|--------|--------|
-| `client/src/components/spreadsheet-native/PurchaseOrdersPilotSurface.tsx` | Modify | PO-P2 (state machine validation) |
-| `client/src/components/spreadsheet-native/ReturnsPilotSurface.tsx` | Modify | DISC-RET-005 (vendor return UI), RET-P3-B (ReceiveCard re-init), DISC-RET-010 (expectedCondition field) |
-| `client/src/components/spreadsheet-native/QuotesPilotSurface.tsx` | Modify | DISC-QUO-003 (reject verify) |
-| `client/src/components/spreadsheet-native/InventorySheetPilot.tsx` | Modify | INV-P2-VERSION (version param wiring), INV-P3-CACHE (dashboard invalidation) |
+
+| File                                                                      | Action | Issues                                                                                                  |
+| ------------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------------- |
+| `client/src/components/spreadsheet-native/PurchaseOrdersPilotSurface.tsx` | Modify | PO-P2 (state machine validation)                                                                        |
+| `client/src/components/spreadsheet-native/ReturnsPilotSurface.tsx`        | Modify | DISC-RET-005 (vendor return UI), RET-P3-B (ReceiveCard re-init), DISC-RET-010 (expectedCondition field) |
+| `client/src/components/spreadsheet-native/QuotesPilotSurface.tsx`         | Modify | DISC-QUO-003 (reject verify)                                                                            |
+| `client/src/components/spreadsheet-native/InventorySheetPilot.tsx`        | Modify | INV-P2-VERSION (version param wiring), INV-P3-CACHE (dashboard invalidation)                            |
 
 ### Wave 3 — Server-Side / Security / Data Integrity
-| File | Action | Issues |
-|------|--------|--------|
-| `server/routers/quotes.ts` | Modify | QUO-P3 (actor attribution on convertToOrder), DISC-QUO-004 (checkExpired scheduling), DISC-QUO-005 (default validUntil) |
-| `server/cron/quoteExpiryCron.ts` | Create | DISC-QUO-004 (cron job for quote expiry) |
-| `server/routers/returns.ts` | Modify | DISC-RET-009 (ctx.user?.id → getAuthenticatedUserId) |
-| `server/routers/pickPack.ts` | Modify | DISC-FUL-003 (audit logging for pack mutations), DISC-FUL-005 (version param) |
-| `server/routers/invoices.ts` | Modify | DISC-INV-007 (version check in accounting namespace verify) |
-| `server/routers/accounting.ts` | Modify | DISC-INV-007 (add version to updateStatus schema) |
+
+| File                             | Action | Issues                                                                                                                  |
+| -------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| `server/routers/quotes.ts`       | Modify | QUO-P3 (actor attribution on convertToOrder), DISC-QUO-004 (checkExpired scheduling), DISC-QUO-005 (default validUntil) |
+| `server/cron/quoteExpiryCron.ts` | Create | DISC-QUO-004 (cron job for quote expiry)                                                                                |
+| `server/routers/returns.ts`      | Modify | DISC-RET-009 (ctx.user?.id → getAuthenticatedUserId)                                                                    |
+| `server/routers/pickPack.ts`     | Modify | DISC-FUL-003 (audit logging for pack mutations), DISC-FUL-005 (version param)                                           |
+| `server/routers/invoices.ts`     | Modify | DISC-INV-007 (version check in accounting namespace verify)                                                             |
+| `server/routers/accounting.ts`   | Modify | DISC-INV-007 (add version to updateStatus schema)                                                                       |
 
 ### Wave 4 — Code Quality / Polish
-| File | Action | Issues |
-|------|--------|--------|
+
+| File                                                                   | Action | Issues                                                                               |
+| ---------------------------------------------------------------------- | ------ | ------------------------------------------------------------------------------------ |
 | `client/src/components/spreadsheet-native/FulfillmentPilotSurface.tsx` | Modify | FUL-P3-B (shared status derivation), DISC-FUL-001 (Shipping→Fulfillment terminology) |
-| `client/src/components/spreadsheet-native/ReturnsPilotSurface.tsx` | Modify | RET-P3-A (use server status), DISC-RET-006 (shared GL parser) |
-| `client/src/components/spreadsheet-native/InvoicesPilotSurface.tsx` | Modify | INV-P2-DEAD (remove deepLink.openRecordPayment dead code) |
-| `server/routers/payments.ts` | Modify | PAY-P3 (cross-namespace invalidation) |
+| `client/src/components/spreadsheet-native/ReturnsPilotSurface.tsx`     | Modify | RET-P3-A (use server status), DISC-RET-006 (shared GL parser)                        |
+| `client/src/components/spreadsheet-native/InvoicesPilotSurface.tsx`    | Modify | INV-P2-DEAD (remove deepLink.openRecordPayment dead code)                            |
+| `server/routers/payments.ts`                                           | Modify | PAY-P3 (cross-namespace invalidation)                                                |
 
 ---
 
@@ -70,6 +74,7 @@
 ### Task 1.1: INV-P1 — Remove "Mark as Paid" quick action (force payment flow)
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/InvoicesPilotSurface.tsx:900-909,970-973,1170-1180,715-721`
 
 The "Mark as Paid" button bypasses GL flow — flips status without creating payment record, GL entries, or updating amountPaid/amountDue. The safest fix: remove the quick "Mark Paid" action entirely and force users through the InvoiceToPaymentFlow which properly records a payment.
@@ -77,6 +82,7 @@ The "Mark as Paid" button bypasses GL flow — flips status without creating pay
 - [ ] **Step 1: Remove markPaidMutation and replace Mark Paid buttons with Record Payment**
 
 In `InvoicesPilotSurface.tsx`:
+
 1. Remove the `markPaidMutation` (lines ~900-909)
 2. Remove `handleMarkPaid` callback (lines ~970-973)
 3. Replace the "Mark Paid" command strip button (lines ~1170-1180) with a second "Record Payment" prompt or remove it
@@ -98,6 +104,7 @@ git commit -m "fix(invoices): remove Mark as Paid bypass — force payment flow 
 ### Task 1.2: ORD-P2 — Fix lineItemCount always 0
 
 **Files:**
+
 - Modify: `server/ordersDb.ts:965-969` (add lineItemCount to transform)
 - Modify: `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx:299` (verify column def)
 
@@ -118,6 +125,7 @@ git commit -m "fix(orders): include lineItemCount in getAllOrders response (ORD-
 ### Task 1.3: ORD-D010 — Remove inert "Download Invoice" from orders pilot
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx`
 
 - [ ] **Step 1: Find and remove the "Download Invoice" button/action in the orders pilot inspector**
@@ -135,6 +143,7 @@ git commit -m "fix(orders): remove inert Download Invoice button from pilot insp
 ### Task 1.4: PAY-P2-PERM — Add permission gate to void button
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/PaymentsPilotSurface.tsx:705-718,813-816`
 
 - [ ] **Step 1: Import usePermissions hook and gate void button**
@@ -152,6 +161,7 @@ git commit -m "fix(payments): gate void button on accounting:delete permission (
 ### Task 1.5: DISC-FUL-004 + DISC-FUL-010 — Ship button for RESTOCKED + SHIPPED badge color
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/FulfillmentPilotSurface.tsx:83,171,184,724`
 
 - [ ] **Step 1: Hide ship button for RESTOCKED orders**
@@ -173,6 +183,7 @@ git commit -m "fix(fulfillment): hide ship button for RESTOCKED, add SHIPPED bad
 ### Task 1.6: DISC-FUL-009 — Add tracking/carrier/notes to ship dialog
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/FulfillmentPilotSurface.tsx`
 
 - [ ] **Step 1: Find the ship confirmation dialog**
@@ -194,6 +205,7 @@ git commit -m "fix(fulfillment): expose tracking number, carrier, and notes in s
 ### Task 1.7: FUL-P3-A — Guard R keyboard shortcut
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/FulfillmentPilotSurface.tsx`
 
 - [ ] **Step 1: Find the R keyboard handler**
@@ -215,6 +227,7 @@ git commit -m "fix(fulfillment): guard R shortcut — require packed items befor
 ### Task 1.8: INV-P2-CREATE — Validate Create Invoice dialog
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/InvoicesPilotSurface.tsx:1480-1486`
 
 - [ ] **Step 1: Add validation preventing zero-balance skeleton invoices**
@@ -232,6 +245,7 @@ git commit -m "fix(invoices): require client and due date for invoice creation (
 ### Task 1.9: DISC-SAM-002 — Add expiration date to SamplesPilotSurface
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/SamplesPilotSurface.tsx`
 
 - [ ] **Step 1: Add expiration date field to inspector**
@@ -249,6 +263,7 @@ git commit -m "fix(samples): expose setExpirationDate in pilot surface inspector
 ### Task 1.10: CL-P2-FILTER — Fix transaction type filter UX
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/ClientLedgerPilotSurface.tsx`
 
 - [ ] **Step 1: Fix filter display**
@@ -266,6 +281,7 @@ git commit -m "fix(client-ledger): align transaction type filter display with si
 ### Task 1.11: CL-P2-EXPORT — Fix stale export data
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/ClientLedgerPilotSurface.tsx`
 
 - [ ] **Step 1: Export from current query data instead of cache**
@@ -283,6 +299,7 @@ git commit -m "fix(client-ledger): export from current query data to prevent sta
 ### Task 1.12: DISC-INV-002 — Verify Mark as Sent wiring
 
 **Files:**
+
 - Verify: `client/src/components/spreadsheet-native/InvoicesPilotSurface.tsx:912-921`
 
 - [ ] **Step 1: Verify markSent is properly wired**
@@ -294,6 +311,7 @@ Check that `handleMarkSent` calls `markSentMutation.mutate` with the correct inv
 ### Task 1.13: ORD-P3 — Add sorting to monetary columns
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx`
 
 - [ ] **Step 1: Add `sortable: true` to total/amount column defs**
@@ -313,6 +331,7 @@ git commit -m "fix(orders): enable sorting on monetary columns (ORD-P3)"
 ### Task 2.1: PO-P2 — Add state machine validation to PO status updates
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/PurchaseOrdersPilotSurface.tsx`
 
 - [ ] **Step 1: Define allowed PO status transitions**
@@ -332,6 +351,7 @@ git commit -m "fix(purchase-orders): add client-side state machine validation fo
 ### Task 2.2: INV-P2-VERSION — Wire version param for inventory status updates
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/InventorySheetPilot.tsx`
 
 - [ ] **Step 1: Pass version from current row data to updateStatus mutation**
@@ -347,6 +367,7 @@ git commit -m "fix(inventory): wire version param to updateStatus for optimistic
 ### Task 2.3: INV-P3-CACHE — Dashboard cache invalidation
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/InventorySheetPilot.tsx`
 
 - [ ] **Step 1: Add dashboard query invalidation to status mutation onSuccess**
@@ -362,6 +383,7 @@ git commit -m "fix(inventory): invalidate dashboard cache after status update (I
 ### Task 2.4: CL-P3 — Invoice reference navigation in client ledger
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/ClientLedgerPilotSurface.tsx`
 
 - [ ] **Step 1: Add click handler for INVOICE reference type**
@@ -379,6 +401,7 @@ git commit -m "fix(client-ledger): add navigation for invoice reference clicks (
 ### Task 2.5: DISC-RET-010 — Add expectedCondition field to returns
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/ReturnsPilotSurface.tsx`
 
 - [ ] **Step 1: Add expected condition dropdown to return composition dialog**
@@ -394,6 +417,7 @@ git commit -m "fix(returns): add expectedCondition field to composition dialog (
 ### Task 2.6: RET-P3-B — ReceiveCard prop re-initialization
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/ReturnsPilotSurface.tsx`
 
 - [ ] **Step 1: Add useEffect to re-sync ReceiveCard from props on change**
@@ -413,6 +437,7 @@ git commit -m "fix(returns): re-init ReceiveCard when async props change (RET-P3
 ### Task 3.1: QUO-P3 — Actor attribution on convertToOrder
 
 **Files:**
+
 - Modify: `server/routers/quotes.ts:604`
 
 - [ ] **Step 1: Add ctx to mutation handler and call getAuthenticatedUserId**
@@ -430,6 +455,7 @@ git commit -m "fix(quotes): add actor attribution to convertToOrder via getAuthe
 ### Task 3.2: DISC-RET-009 — Fix forbidden pattern in returns.create
 
 **Files:**
+
 - Modify: `server/routers/returns.ts`
 
 - [ ] **Step 1: Replace ctx.user?.id with getAuthenticatedUserId(ctx)**
@@ -447,6 +473,7 @@ git commit -m "fix(returns): replace ctx.user?.id with getAuthenticatedUserId in
 ### Task 3.3: DISC-QUO-004 + DISC-QUO-005 — Quote expiry cron + default validUntil
 
 **Files:**
+
 - Create: `server/cron/quoteExpiryCron.ts`
 - Modify: `server/routers/quotes.ts` (or wherever quotes are created)
 - Modify: `server/index.ts` or cron registration file
@@ -470,6 +497,7 @@ git commit -m "fix(quotes): add expiry cron job + default validUntil for new quo
 ### Task 3.4: DISC-FUL-003 — Add audit logging to pack mutations
 
 **Files:**
+
 - Modify: `server/routers/pickPack.ts`
 
 - [ ] **Step 1: Add audit log entries to packItems and markAllPacked**
@@ -487,6 +515,7 @@ git commit -m "fix(fulfillment): add audit logging to packItems and markAllPacke
 ### Task 3.5: DISC-INV-007 — Add version to accounting.ts updateStatus schema
 
 **Files:**
+
 - Modify: `server/routers/accounting.ts`
 
 - [ ] **Step 1: Find updateStatus in accounting router and add version param**
@@ -508,6 +537,7 @@ git commit -m "fix(invoices): add version param to accounting.invoices.updateSta
 ### Task 4.1: DISC-FUL-001 — Shipping → Fulfillment terminology
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/OrdersSheetPilotSurface.tsx:587`
 
 - [ ] **Step 1: Replace "Shipping" label with "Fulfillment" in UI text**
@@ -527,6 +557,7 @@ git commit -m "fix(fulfillment): rename Shipping to Fulfillment in pilot surface
 ### Task 4.2: FUL-P3-B — Extract shared status derivation utility
 
 **Files:**
+
 - Create: `client/src/lib/fulfillment-status.ts`
 - Modify: `client/src/components/spreadsheet-native/FulfillmentPilotSurface.tsx`
 
@@ -545,6 +576,7 @@ git commit -m "refactor(fulfillment): extract shared status derivation utility (
 ### Task 4.3: INV-P2-DEAD — Remove dead deepLink code
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/InvoicesPilotSurface.tsx`
 
 - [ ] **Step 1: Remove deepLink.openRecordPayment dead code path**
@@ -560,6 +592,7 @@ git commit -m "fix(invoices): remove dead deepLink.openRecordPayment code (INV-P
 ### Task 4.4: RET-P3-A — Use server-returned status in returns
 
 **Files:**
+
 - Modify: `client/src/components/spreadsheet-native/ReturnsPilotSurface.tsx`
 
 - [ ] **Step 1: Replace client-side extractWorkflowStatus with server-returned status**

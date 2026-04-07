@@ -175,22 +175,32 @@ describe("generate-confused-human-flows", () => {
   });
 
   it("keeps anchor scenarios stable when count changes", () => {
-    const anchorOnlyPacket = buildGeneratedFlows(rows, chainSummaries, oracleSummaries, {
-      count: 4,
-      seed: 42,
-      anchors: 4,
-      domains: null,
-      format: "json",
-      includePermissionProbes: true,
-    });
-    const mixedPacket = buildGeneratedFlows(rows, chainSummaries, oracleSummaries, {
-      count: 8,
-      seed: 42,
-      anchors: 4,
-      domains: null,
-      format: "json",
-      includePermissionProbes: true,
-    });
+    const anchorOnlyPacket = buildGeneratedFlows(
+      rows,
+      chainSummaries,
+      oracleSummaries,
+      {
+        count: 4,
+        seed: 42,
+        anchors: 4,
+        domains: null,
+        format: "json",
+        includePermissionProbes: true,
+      }
+    );
+    const mixedPacket = buildGeneratedFlows(
+      rows,
+      chainSummaries,
+      oracleSummaries,
+      {
+        count: 8,
+        seed: 42,
+        anchors: 4,
+        domains: null,
+        format: "json",
+        includePermissionProbes: true,
+      }
+    );
 
     const projectAnchors = (packet: typeof anchorOnlyPacket) =>
       packet.flows
@@ -205,7 +215,9 @@ describe("generate-confused-human-flows", () => {
           entryPath: flow.entryPath,
         }));
 
-    expect(projectAnchors(anchorOnlyPacket)).toEqual(projectAnchors(mixedPacket));
+    expect(projectAnchors(anchorOnlyPacket)).toEqual(
+      projectAnchors(mixedPacket)
+    );
   });
 
   it("does not emit permission probes when they are disabled", () => {
@@ -219,8 +231,8 @@ describe("generate-confused-human-flows", () => {
     });
 
     expect(packet.summary.permissionProbes).toBe(0);
-    expect(packet.flows.every(flow => flow.mistakePattern !== "Permission probe")).toBe(
-      true
-    );
+    expect(
+      packet.flows.every(flow => flow.mistakePattern !== "Permission probe")
+    ).toBe(true);
   });
 });

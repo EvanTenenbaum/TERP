@@ -3,7 +3,7 @@
  */
 
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 let mockDisplaySettings = {
@@ -16,6 +16,9 @@ let mockDisplaySettings = {
 
 const mockSetLocation = vi.fn();
 let mockSearch = "?clientId=1";
+const { clearPortableSalesCut } = vi.hoisted(() => ({
+  clearPortableSalesCut: vi.fn(),
+}));
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/sales/create-order", mockSetLocation],
@@ -231,17 +234,24 @@ vi.mock("@/components/ui/select", () => ({
 }));
 
 vi.mock("@/components/ui/client-combobox", () => ({
-  ClientCombobox: () => <div>Client combobox</div>,
+  ClientCombobox: ({
+    onValueChange,
+  }: {
+    onValueChange: (value: number | null) => void;
+  }) => (
+    <div>
+      <button type="button" onClick={() => onValueChange(1)}>
+        Client combobox
+      </button>
+      <button type="button" onClick={() => onValueChange(2)}>
+        Switch to Client 2
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("@/components/clients/QuickCreateClient", () => ({
-  QuickCreateClient: ({
-    open,
-    title,
-  }: {
-    open?: boolean;
-    title?: string;
-  }) => (
+  QuickCreateClient: ({ open, title }: { open?: boolean; title?: string }) => (
     <div data-testid="quick-create-client" data-open={open ? "true" : "false"}>
       {title ?? "Quick Create Client"}
     </div>
@@ -333,6 +343,10 @@ vi.mock("@/components/orders/CreditLimitBanner", () => ({
   CreditLimitBanner: () => <div>Credit limit banner</div>,
 }));
 
+vi.mock("@/components/orders/ClientCommitContextCard", () => ({
+  ClientCommitContextCard: () => <div>Client commit context</div>,
+}));
+
 vi.mock("@/components/orders/CreditWarningDialog", () => ({
   CreditWarningDialog: () => null,
 }));
@@ -377,6 +391,11 @@ vi.mock("@/lib/orders/inventoryBrowserFocus", () => ({
   queueInventoryBrowserSearchFocus: vi.fn(),
 }));
 
+vi.mock("@/components/sales/filtering", () => ({
+  clearPortableSalesCut,
+  readPortableSalesCut: vi.fn(() => null),
+}));
+
 vi.mock("@/lib/workspaceRoutes", () => ({
   buildSalesWorkspacePath: () => "/sales/orders",
   buildSheetNativeOrdersDocumentPath: () => "/sheet-native/orders/document",
@@ -399,6 +418,7 @@ import OrderCreatorPageV2 from "./OrderCreatorPage";
 describe("OrderCreatorPage wave 5 visibility wiring", () => {
   beforeEach(() => {
     mockSearch = "?clientId=1";
+    clearPortableSalesCut.mockReset();
     mockDisplaySettings = {
       display: {
         canViewCogsData: false,
@@ -438,16 +458,40 @@ describe("OrderCreatorPage wave 5 visibility wiring", () => {
     expect(screen.getByText("totals-panel:true:true")).toBeInTheDocument();
   });
 
-  it("keeps quick add on the order page with an inline modal trigger", async () => {
+  it("shows create-order framing when the sheet-native composer is opened from the create-order tab", () => {
+    mockSearch = "?tab=create-order";
+
     render(<OrderCreatorPageV2 surfaceVariant="sheet-native-orders" />);
 
+    expect(screen.getByText("Start a new sales order")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /quick add/i })
+      screen.getByText(
+        "Choose a customer, add line items, and confirm a new order without leaving the workspace."
+      )
     ).toBeInTheDocument();
-    expect(screen.getByTestId("quick-create-client")).toHaveAttribute(
-      "data-open",
-      "false"
-    );
-    expect(screen.getByText("Quick Add Customer")).toBeInTheDocument();
+    expect(
+      screen.getByText("Select a customer to start this order")
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the generic document framing for the orders document route", () => {
+    mockSearch = "?tab=orders&surface=sheet-native&ordersView=document";
+
+    render(<OrderCreatorPageV2 surfaceVariant="sheet-native-orders" />);
+
+    expect(screen.getByText("Orders Document Sheet")).toBeInTheDocument();
+    expect(
+      screen.queryByText("Start a new sales order")
+    ).not.toBeInTheDocument();
+  });
+
+  it("clears any carried portable cut when the customer changes", async () => {
+    render(<OrderCreatorPageV2 surfaceVariant="sheet-native-orders" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Switch to Client 2" }));
+
+    await waitFor(() => {
+      expect(clearPortableSalesCut).toHaveBeenCalled();
+    });
   });
 });

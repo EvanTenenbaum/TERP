@@ -79,7 +79,7 @@ This repo contains **two different sources** for “metrics”:
 2. **Docs that describe KPI cards but also warn about mock/placeholder data**
    - Evidence: `docs/PROJECT_CONTEXT.md` (KPI card list near the “Dashboard & Homepage” section; “Dashboard KPIs use mock data” in the “Known Issues & Limitations” section).
 
-Because the dashboard can be configured and data sources may be mocked in some contexts, the *true* “success metrics” are partially **UNSPECIFIED** and must be validated in the live app.
+Because the dashboard can be configured and data sources may be mocked in some contexts, the _true_ “success metrics” are partially **UNSPECIFIED** and must be validated in the live app.
 
 ## Glossary (UI/Code Terms You’ll See)
 

@@ -123,7 +123,9 @@ describe("useOrderDraft helpers", () => {
       items: [buildLineItem()],
     };
 
-    expect(buildOrderFingerprint(snapshot)).toBe(buildOrderFingerprint(snapshot));
+    expect(buildOrderFingerprint(snapshot)).toBe(
+      buildOrderFingerprint(snapshot)
+    );
     expect(EMPTY_ORDER_FINGERPRINT).not.toBe(buildOrderFingerprint(snapshot));
 
     expect(

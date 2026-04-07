@@ -109,9 +109,7 @@ export interface OrderDraftSnapshot {
   items: LineItem[];
 }
 
-function normalizePaymentTerms(
-  value: string | null | undefined
-): PaymentTerms {
+function normalizePaymentTerms(value: string | null | undefined): PaymentTerms {
   const normalized = (value ?? "").trim().toUpperCase();
   return PAYMENT_TERMS_OPTIONS.includes(normalized as PaymentTerms)
     ? (normalized as PaymentTerms)
@@ -439,7 +437,8 @@ export function useOrderDraft({
 
   const { hasUnsavedChanges, setHasUnsavedChanges, ConfirmNavigationDialog } =
     useUnsavedChangesWarning({
-      message: "You have unsaved order changes. Are you sure you want to leave?",
+      message:
+        "You have unsaved order changes. Are you sure you want to leave?",
     });
   const { saveState, setSaving, setSaved, setError, SaveStateIndicator } =
     useSaveState();
@@ -608,14 +607,17 @@ export function useOrderDraft({
       orderType: routeOrderData.order.orderType,
       referredByClientId: routeOrderData.order.referredByClientId ?? null,
       adjustment: null,
-      showAdjustmentOnDocument: (
-        routeOrderData.order as {
-          showAdjustmentOnDocument?: boolean | null;
-        }
-      ).showAdjustmentOnDocument ?? true,
-      freight: Number(
-        (routeOrderData.order as { shipping?: string | number | null }).shipping
-      ) || 0,
+      showAdjustmentOnDocument:
+        (
+          routeOrderData.order as {
+            showAdjustmentOnDocument?: boolean | null;
+          }
+        ).showAdjustmentOnDocument ?? true,
+      freight:
+        Number(
+          (routeOrderData.order as { shipping?: string | number | null })
+            .shipping
+        ) || 0,
       notes: routeOrderData.order.notes ?? "",
       paymentTerms: normalizePaymentTerms(routeOrderData.order.paymentTerms),
       items: draftItems,
@@ -1095,54 +1097,57 @@ export function useOrderDraft({
     ]
   );
 
-  const confirmFinalize = useCallback((options?: { overrideReason?: string }) => {
-    if (!clientId) {
-      return;
-    }
+  const confirmFinalize = useCallback(
+    (options?: { overrideReason?: string }) => {
+      if (!clientId) {
+        return;
+      }
 
-    if (items.length === 0) {
-      toast.error("Please add at least one item");
-      return;
-    }
+      if (items.length === 0) {
+        toast.error("Please add at least one item");
+        return;
+      }
 
-    if (
-      createDraftMutation.isPending ||
-      updateDraftMutation.isPending ||
-      autoSaveMutation.isPending ||
-      finalizeMutation.isPending ||
-      isFinalizingRef.current
-    ) {
-      toast.error("A save is already in progress. Please wait a moment.");
-      return;
-    }
+      if (
+        createDraftMutation.isPending ||
+        updateDraftMutation.isPending ||
+        autoSaveMutation.isPending ||
+        finalizeMutation.isPending ||
+        isFinalizingRef.current
+      ) {
+        toast.error("A save is already in progress. Please wait a moment.");
+        return;
+      }
 
-    isFinalizingRef.current = true;
-    finalizeOptionsRef.current = options ?? null;
-    pendingPersistFingerprintRef.current = currentOrderFingerprintRef.current;
-    setSaving();
+      isFinalizingRef.current = true;
+      finalizeOptionsRef.current = options ?? null;
+      pendingPersistFingerprintRef.current = currentOrderFingerprintRef.current;
+      setSaving();
 
-    if (activeDraftId !== null && activeDraftVersion !== null) {
-      updateDraftMutation.mutate({
-        orderId: activeDraftId,
-        version: activeDraftVersion,
-        ...buildDraftMutationPayload(),
-      });
-      return;
-    }
+      if (activeDraftId !== null && activeDraftVersion !== null) {
+        updateDraftMutation.mutate({
+          orderId: activeDraftId,
+          version: activeDraftVersion,
+          ...buildDraftMutationPayload(),
+        });
+        return;
+      }
 
-    createDraftMutation.mutate(buildDraftMutationPayload());
-  }, [
-    activeDraftId,
-    activeDraftVersion,
-    buildDraftMutationPayload,
-    clientId,
-    createDraftMutation,
-    autoSaveMutation.isPending,
-    finalizeMutation.isPending,
-    items.length,
-    setSaving,
-    updateDraftMutation,
-  ]);
+      createDraftMutation.mutate(buildDraftMutationPayload());
+    },
+    [
+      activeDraftId,
+      activeDraftVersion,
+      buildDraftMutationPayload,
+      clientId,
+      createDraftMutation,
+      autoSaveMutation.isPending,
+      finalizeMutation.isPending,
+      items.length,
+      setSaving,
+      updateDraftMutation,
+    ]
+  );
 
   const handleAddInventoryItems = useCallback(
     (inventoryItems: InventoryItemForOrder[]) => {
@@ -1165,7 +1170,9 @@ export function useOrderDraft({
       }
 
       setItems(currentItems => {
-        const existingBatchIds = new Set(currentItems.map(item => item.batchId));
+        const existingBatchIds = new Set(
+          currentItems.map(item => item.batchId)
+        );
         const uniqueItems = newLineItems.filter(
           item => !existingBatchIds.has(item.batchId)
         );

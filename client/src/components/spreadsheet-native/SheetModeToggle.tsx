@@ -18,22 +18,22 @@ export function SheetModeToggle({
 
   return (
     <div
-      className="inline-flex items-center gap-2"
-      aria-label="View mode toggle"
+      className="linear-workspace-mode-toggle"
+      role="group"
+      aria-label="Surface mode"
     >
-      <span className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-        View Mode
-      </span>
       <Button
         size="sm"
         variant={surfaceMode === "sheet-native" ? "default" : "outline"}
+        aria-pressed={surfaceMode === "sheet-native"}
         onClick={() => onSurfaceModeChange("sheet-native")}
       >
         Spreadsheet View
       </Button>
       <Button
         size="sm"
-        variant={surfaceMode === "classic" ? "default" : "ghost"}
+        variant={surfaceMode === "classic" ? "default" : "outline"}
+        aria-pressed={surfaceMode === "classic"}
         onClick={() => onSurfaceModeChange("classic")}
       >
         Standard View

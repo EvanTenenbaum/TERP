@@ -34,6 +34,8 @@ const salesSheetItemSchema = z.object({
   name: z.string().max(255),
   category: z.string().optional(),
   subcategory: z.string().optional(),
+  brand: z.string().optional(),
+  batchSku: z.string().optional(),
   strain: z.string().optional(),
   basePrice: z.number().min(0).finite(),
   cogsMode: z.enum(["FIXED", "RANGE"]).optional(),
@@ -66,6 +68,8 @@ const draftItemSchema = z.object({
   name: z.string().max(255),
   category: z.string().optional(),
   subcategory: z.string().optional(),
+  brand: z.string().optional(),
+  batchSku: z.string().optional(),
   strain: z.string().optional(),
   basePrice: z.number().min(0).finite(),
   cogsMode: z.enum(["FIXED", "RANGE"]).optional(),
@@ -410,6 +414,9 @@ export const salesSheetsRouter = router({
             id: number;
             name: string;
             category?: string;
+            subcategory?: string;
+            brand?: string;
+            batchSku?: string;
             quantity: number;
             finalPrice?: number;
             retailPrice: number;
@@ -419,6 +426,9 @@ export const salesSheetsRouter = router({
           id: item.id,
           name: item.name,
           category: item.category,
+          subcategory: item.subcategory,
+          brand: item.brand,
+          batchSku: item.batchSku,
           quantity: item.quantity,
           price: item.finalPrice ?? item.retailPrice,
           imageUrl: item.imageUrl,
@@ -489,6 +499,7 @@ export const salesSheetsRouter = router({
         filters: z.object({
           search: z.string(),
           categories: z.array(z.string()),
+          brands: z.array(z.string()),
           grades: z.array(z.string()),
           priceMin: z.number().nullable(),
           priceMax: z.number().nullable(),

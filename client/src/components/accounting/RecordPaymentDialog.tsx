@@ -18,7 +18,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { format } from "date-fns";
-import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
 
 interface RecordPaymentDialogProps {
   open: boolean;
@@ -96,16 +95,18 @@ export function RecordPaymentDialog({
 
   const recordPaymentMutation = trpc.payments.recordPayment.useMutation({
     onSuccess: data => {
+      const previousBalance = invoice
+        ? parseFloat(invoice.amountDue)
+        : data.amount + data.amountDue;
       toast.success(
         <div className="flex flex-col gap-1">
-          <span className="font-medium">Payment Recorded</span>
-          <span className="text-sm">
-            Payment #{data.paymentNumber} - ${data.amount.toFixed(2)}
+          <span className="font-medium">
+            Payment recorded for invoice {invoice?.invoiceNumber}
           </span>
-          <span className="text-sm text-muted-foreground">
-            Invoice status: {data.invoiceStatus}
-            {data.amountDue > 0 &&
-              ` (${formatCurrency(data.amountDue)} remaining)`}
+          <span className="text-sm">
+            {data.amountDue > 0
+              ? `Remaining balance: ${formatCurrency(data.amountDue)} (was ${formatCurrency(previousBalance)})`
+              : "Balance cleared. $0.00 remaining"}
           </span>
         </div>
       );
@@ -195,8 +196,7 @@ export function RecordPaymentDialog({
             Record Payment
           </h2>
           <p className="text-sm text-muted-foreground">
-            Record a payment for invoice{" "}
-            {formatInvoiceNumberForDisplay(invoice.invoiceNumber)}
+            Record a payment for invoice {invoice.invoiceNumber}
           </p>
         </div>
 

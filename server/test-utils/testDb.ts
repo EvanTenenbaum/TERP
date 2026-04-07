@@ -18,6 +18,40 @@ interface MockCondition {
   args?: MockCondition[];
 }
 
+function normalizeComparableValue(value: unknown) {
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  return value;
+}
+
+function compareValues(
+  operator: "gt" | "gte" | "lte",
+  leftRaw: unknown,
+  rightRaw: unknown
+): boolean {
+  const left = normalizeComparableValue(leftRaw);
+  const right = normalizeComparableValue(rightRaw);
+
+  if (
+    (typeof left !== "number" && typeof left !== "string") ||
+    (typeof right !== "number" && typeof right !== "string")
+  ) {
+    return false;
+  }
+
+  switch (operator) {
+    case "gt":
+      return left > right;
+    case "gte":
+      return left >= right;
+    case "lte":
+      return left <= right;
+    default:
+      return false;
+  }
+}
+
 // Helper to get table name from object
 function getTableName(table: unknown): string {
   if (typeof table === "string") return table;
@@ -44,6 +78,69 @@ function getColValue(
   const row = rowCtx[tableName] as Record<string, unknown> | undefined;
   if (!row) return undefined;
   return row[col.name];
+}
+
+function matchesFlatCondition(row: MockRow, cond: MockCondition): boolean {
+  if (!cond) return true;
+
+  if (cond.op === "and") {
+    return cond.args?.every(arg => matchesFlatCondition(row, arg)) ?? true;
+  }
+
+  if (cond.op === "or") {
+    return cond.args?.some(arg => matchesFlatCondition(row, arg)) ?? false;
+  }
+
+  const val = (row as Record<string, unknown>)[cond.col?.name];
+  switch (cond.op) {
+    case "eq":
+      return val == cond.val;
+    case "isNull":
+      return val === null || val === undefined;
+    case "inArray":
+      return (cond.values as unknown[])?.includes(val) ?? false;
+    case "gt":
+      return compareValues("gt", val, cond.val);
+    case "gte":
+      return compareValues("gte", val, cond.val);
+    case "lte":
+      return compareValues("lte", val, cond.val);
+    default:
+      return false;
+  }
+}
+
+function matchesJoinedCondition(
+  rowCtx: Record<string, unknown>,
+  cond: MockCondition
+): boolean {
+  if (!cond) return true;
+
+  if (cond.op === "and") {
+    return cond.args?.every(arg => matchesJoinedCondition(rowCtx, arg)) ?? true;
+  }
+
+  if (cond.op === "or") {
+    return cond.args?.some(arg => matchesJoinedCondition(rowCtx, arg)) ?? false;
+  }
+
+  const val = getColValue(rowCtx, cond.col);
+  switch (cond.op) {
+    case "eq":
+      return val == cond.val;
+    case "isNull":
+      return val === null || val === undefined;
+    case "inArray":
+      return (cond.values as unknown[])?.includes(val) ?? false;
+    case "gt":
+      return compareValues("gt", val, cond.val);
+    case "gte":
+      return compareValues("gte", val, cond.val);
+    case "lte":
+      return compareValues("lte", val, cond.val);
+    default:
+      return false;
+  }
 }
 
 export function createMockDb() {
@@ -162,28 +259,9 @@ export function createMockDb() {
           return builder;
         }),
         where: vi.fn(condition => {
-          const applyCondition = (cond: MockCondition) => {
-            if (!cond) return;
-            if (cond.op === "eq") {
-              currentRows = currentRows.filter(rowCtx => {
-                const val = getColValue(rowCtx, cond.col);
-                return val == cond.val;
-              });
-            } else if (cond.op === "isNull") {
-              currentRows = currentRows.filter(rowCtx => {
-                const val = getColValue(rowCtx, cond.col);
-                return val === null || val === undefined;
-              });
-            } else if (cond.op === "and") {
-              cond.args?.forEach(applyCondition);
-            } else if (cond.op === "inArray") {
-              currentRows = currentRows.filter(rowCtx => {
-                const val = getColValue(rowCtx, cond.col);
-                return (cond.values as unknown[])?.includes(val);
-              });
-            }
-          };
-          applyCondition(condition as MockCondition);
+          currentRows = currentRows.filter(rowCtx =>
+            matchesJoinedCondition(rowCtx, condition as MockCondition)
+          );
           return builder;
         }),
         for: vi.fn(() => builder),
@@ -389,29 +467,9 @@ export function createMockDb() {
               const rows = getStorage(prop);
               let result = rows;
               if (args?.where) {
-                const applyCondition = (cond: MockCondition) => {
-                  if (!cond) return;
-                  if (cond.op === "eq") {
-                    const colName = cond.col.name;
-                    const initialLen = result.length;
-                    result = result.filter((r: MockRow) => {
-                      const val = (r as Record<string, unknown>)[colName];
-                      const match = val == cond.val;
-                      process.stdout.write(
-                        `[findFirst] Filter ${prop}: ${colName}=${String(val)} vs ${String(cond.val)} -> ${String(match)}\n`
-                      );
-                      return match;
-                    });
-                    void initialLen;
-                  } else if (cond.op === "and") {
-                    cond.args?.forEach(applyCondition);
-                  } else {
-                    process.stdout.write(
-                      `[findFirst] Unknown Op: ${cond.op}\n`
-                    );
-                  }
-                };
-                applyCondition(args.where as MockCondition);
+                result = result.filter((row: MockRow) =>
+                  matchesFlatCondition(row, args.where as MockCondition)
+                );
               } else {
                 process.stdout.write(`[findFirst] No where args\n`);
               }
@@ -420,19 +478,9 @@ export function createMockDb() {
             findMany: vi.fn(args => {
               let result = getStorage(prop);
               if (args?.where) {
-                const applyCondition = (cond: MockCondition) => {
-                  if (!cond) return;
-                  if (cond.op === "eq") {
-                    const colName = cond.col.name;
-                    result = result.filter(
-                      (r: MockRow) =>
-                        (r as Record<string, unknown>)[colName] == cond.val
-                    );
-                  } else if (cond.op === "and") {
-                    cond.args?.forEach(applyCondition);
-                  }
-                };
-                applyCondition(args.where as MockCondition);
+                result = result.filter((row: MockRow) =>
+                  matchesFlatCondition(row, args.where as MockCondition)
+                );
               }
               if (args?.limit) result = result.slice(0, args.limit);
               return Promise.resolve(result);

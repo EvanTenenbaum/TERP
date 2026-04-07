@@ -17,9 +17,7 @@ import type { PowersheetAffordance } from "@/components/spreadsheet-native/Power
  * Format a currency value as USD. Accepts string, number, null, or undefined.
  * Returns "$0.00" for NaN/null/undefined.
  */
-export function fmtCurrency(
-  value: string | number | null | undefined
-): string {
+export function fmtCurrency(value: string | number | null | undefined): string {
   const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
   if (Number.isNaN(num)) return "$0.00";
   return new Intl.NumberFormat("en-US", {

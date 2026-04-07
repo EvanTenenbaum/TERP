@@ -127,9 +127,11 @@ test.describe("Golden Flow: GF-004 Invoice & Payment", () => {
     ).toBe(true);
 
     await page.goto("/accounting/invoices", { waitUntil: "networkidle" });
-    const invoiceSurface = page
-      .locator('[data-testid="invoices-table"]')
-      .or(page.getByRole("heading", { name: /invoice/i }).first());
-    await expect(invoiceSurface.first()).toBeVisible({ timeout: 15000 });
+    await expect(
+      page.locator('[data-powersheet-surface-id="invoices-unified"]').first()
+    ).toBeVisible({ timeout: 15000 });
+    await expect(
+      page.getByRole("button", { name: /record payment/i }).first()
+    ).toBeVisible({ timeout: 15000 });
   });
 });

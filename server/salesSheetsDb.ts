@@ -9,6 +9,7 @@ import {
   clients,
   orders,
   products,
+  brands,
   productImages,
   lots,
   type SalesSheetHistory,
@@ -35,6 +36,8 @@ export interface PricedInventoryItem {
   name: string;
   category?: string;
   subcategory?: string;
+  brand?: string;
+  batchSku?: string;
   basePrice: number;
   cogsMode?: "FIXED" | "RANGE";
   unitCogs?: number;
@@ -139,6 +142,7 @@ export async function getInventoryWithPricing(
       productName: string | null;
       productCategory: string | null;
       productSubcategory: string | null;
+      brandName: string | null;
       supplierName: string | null;
     }>;
 
@@ -164,10 +168,12 @@ export async function getInventoryWithPricing(
           productName: products.nameCanonical,
           productCategory: products.category,
           productSubcategory: products.subcategory,
+          brandName: brands.name,
           supplierName: clients.name,
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
+        .leftJoin(brands, eq(products.brandId, brands.id))
         .leftJoin(lots, eq(batches.lotId, lots.id))
         .leftJoin(
           clients,
@@ -205,9 +211,11 @@ export async function getInventoryWithPricing(
           productName: products.nameCanonical,
           productCategory: products.category,
           productSubcategory: products.subcategory,
+          brandName: brands.name,
         })
         .from(batches)
         .leftJoin(products, eq(batches.productId, products.id))
+        .leftJoin(brands, eq(products.brandId, brands.id))
         .leftJoin(lots, eq(batches.lotId, lots.id))
         .where(
           and(
@@ -319,6 +327,8 @@ export async function getInventoryWithPricing(
           name: row.productName || row.batchSku || `Batch #${row.batchId}`,
           category: row.productCategory || undefined,
           subcategory: row.productSubcategory || undefined,
+          brand: row.brandName || undefined,
+          batchSku: row.batchSku || undefined,
           basePrice: resolvedCogs.unitCogs,
           cogsMode: row.batchCogsMode,
           unitCogs: parseNumber(row.batchUnitCogs, 0),
@@ -1105,6 +1115,7 @@ export interface SavedViewData {
   filters: {
     search: string;
     categories: string[];
+    brands: string[];
     grades: string[];
     priceMin: number | null;
     priceMax: number | null;
@@ -1200,8 +1211,8 @@ export async function saveView(data: SavedViewData): Promise<number> {
  * FIX: Now properly filters by userId - users can only see their own views or universal views
  */
 export async function getViews(
-  clientId?: number,
-  userId?: number
+  clientId: number | undefined,
+  userId: number
 ): Promise<
   Array<{
     id: number;
@@ -1229,7 +1240,7 @@ export async function getViews(
     // Client-specific views owned by user OR universal views
     conditions.push(
       sql`(
-        (${salesSheetTemplates.clientId} = ${clientId} AND ${salesSheetTemplates.createdBy} = ${userId ?? 0})
+        (${salesSheetTemplates.clientId} = ${clientId} AND ${salesSheetTemplates.createdBy} = ${userId})
         OR ${salesSheetTemplates.clientId} IS NULL
       )`
     );
@@ -1248,6 +1259,7 @@ export async function getViews(
     interface FiltersData {
       search?: string;
       categories?: string[];
+      brands?: string[];
       grades?: string[];
       priceMin?: number | null;
       priceMax?: number | null;
@@ -1266,6 +1278,7 @@ export async function getViews(
       filters: {
         search: filtersData?.search ?? "",
         categories: filtersData?.categories ?? [],
+        brands: filtersData?.brands ?? [],
         grades: filtersData?.grades ?? [],
         priceMin: filtersData?.priceMin ?? null,
         priceMax: filtersData?.priceMax ?? null,
@@ -1298,7 +1311,7 @@ export async function getViews(
  */
 export async function loadViewById(
   viewId: number,
-  userId?: number
+  userId: number
 ): Promise<{
   id: number;
   name: string;
@@ -1336,6 +1349,7 @@ export async function loadViewById(
   interface FiltersData {
     search?: string;
     categories?: string[];
+    brands?: string[];
     grades?: string[];
     priceMin?: number | null;
     priceMax?: number | null;
@@ -1361,6 +1375,7 @@ export async function loadViewById(
     filters: {
       search: filtersData?.search ?? "",
       categories: filtersData?.categories ?? [],
+      brands: filtersData?.brands ?? [],
       grades: filtersData?.grades ?? [],
       priceMin: filtersData?.priceMin ?? null,
       priceMax: filtersData?.priceMax ?? null,

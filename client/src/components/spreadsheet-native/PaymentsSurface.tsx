@@ -399,7 +399,7 @@ export function PaymentsSurface() {
       invoiceId: handoffInvoiceId ?? undefined,
     },
     {
-      enabled: routeParams.orderId === null || handoffInvoiceId !== null,
+      enabled: routeParams.orderId === null || !orderInvoiceQuery.isLoading,
     }
   );
 
