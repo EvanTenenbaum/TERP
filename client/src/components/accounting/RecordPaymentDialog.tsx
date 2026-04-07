@@ -3,7 +3,7 @@
  * Allows recording payments against invoices with partial payment support
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,6 +56,8 @@ export function RecordPaymentDialog({
   const [paymentDate, setPaymentDate] = useState(
     format(new Date(), "yyyy-MM-dd")
   );
+
+  const submittingRef = useRef(false);
 
   const utils = trpc.useUtils();
 
@@ -128,10 +130,11 @@ export function RecordPaymentDialog({
     }).format(num);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!invoice) return;
+    if (submittingRef.current) return;
 
     const paymentAmount = parseFloat(amount);
     if (isNaN(paymentAmount) || paymentAmount <= 0) {
@@ -147,21 +150,26 @@ export function RecordPaymentDialog({
       return;
     }
 
-    recordPaymentMutation.mutate({
-      invoiceId: invoice.id,
-      amount: paymentAmount,
-      paymentMethod: paymentMethod as
-        | "CASH"
-        | "CHECK"
-        | "WIRE"
-        | "ACH"
-        | "CREDIT_CARD"
-        | "DEBIT_CARD"
-        | "OTHER",
-      referenceNumber: referenceNumber || undefined,
-      notes: notes || undefined,
-      paymentDate: paymentDate,
-    });
+    submittingRef.current = true;
+    try {
+      await recordPaymentMutation.mutateAsync({
+        invoiceId: invoice.id,
+        amount: paymentAmount,
+        paymentMethod: paymentMethod as
+          | "CASH"
+          | "CHECK"
+          | "WIRE"
+          | "ACH"
+          | "CREDIT_CARD"
+          | "DEBIT_CARD"
+          | "OTHER",
+        referenceNumber: referenceNumber || undefined,
+        notes: notes || undefined,
+        paymentDate: paymentDate,
+      });
+    } finally {
+      submittingRef.current = false;
+    }
   };
 
   if (!open || !invoice) return null;
