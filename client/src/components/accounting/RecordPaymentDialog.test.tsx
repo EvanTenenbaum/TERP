@@ -7,12 +7,14 @@ const {
   mockInvalidateInvoices,
   mockInvalidatePayments,
   mockMutate,
+  mockMutateAsync,
   mockToastSuccess,
   mockToastError,
 } = vi.hoisted(() => ({
   mockInvalidateInvoices: vi.fn(),
   mockInvalidatePayments: vi.fn(),
   mockMutate: vi.fn(),
+  mockMutateAsync: vi.fn(),
   mockToastSuccess: vi.fn(),
   mockToastError: vi.fn(),
 }));
@@ -42,14 +44,9 @@ vi.mock("@/lib/trpc", () => ({
             onError?: (error: Error) => void;
           }) => ({
             mutate: (input: unknown) => {
-              mockMutate(input);
-              config?.onSuccess?.({
-                paymentNumber: "PAY-100",
-                amount: 125.5,
-                invoiceStatus: "PARTIALLY_PAID",
-                amountDue: 10,
-              });
+              void mockMutateAsync(input, config);
             },
+            mutateAsync: (input: unknown) => mockMutateAsync(input, config),
             isPending: false,
           })
         ),
@@ -78,6 +75,28 @@ describe("RecordPaymentDialog", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.body.style.overflow = "";
+    mockMutateAsync.mockImplementation(
+      async (
+        input: unknown,
+        config?: {
+          onSuccess?: (data: {
+            paymentNumber: string;
+            amount: number;
+            invoiceStatus: string;
+            amountDue: number;
+          }) => void;
+          onError?: (error: Error) => void;
+        }
+      ) => {
+        mockMutate(input);
+        config?.onSuccess?.({
+          paymentNumber: "PAY-100",
+          amount: 125.5,
+          invoiceStatus: "PARTIALLY_PAID",
+          amountDue: 10,
+        });
+      }
+    );
   });
 
   it("renders a stable payment overlay and pre-fills the amount due", () => {
@@ -143,5 +162,56 @@ describe("RecordPaymentDialog", () => {
     );
     expect(toastMarkup).toContain("Payment recorded for invoice INV-000034");
     expect(toastMarkup).toContain("Remaining balance: $10.00 (was $125.50)");
+  });
+
+  it("ignores a second submit while the first one is still in flight", async () => {
+    const onOpenChange = vi.fn();
+    let releaseMutation: (() => void) | undefined;
+
+    mockMutateAsync.mockImplementationOnce(
+      (
+        input: unknown,
+        config?: {
+          onSuccess?: (data: {
+            paymentNumber: string;
+            amount: number;
+            invoiceStatus: string;
+            amountDue: number;
+          }) => void;
+        }
+      ) =>
+        new Promise<void>(resolve => {
+          mockMutate(input);
+          releaseMutation = () => {
+            config?.onSuccess?.({
+              paymentNumber: "PAY-100",
+              amount: 125.5,
+              invoiceStatus: "PARTIALLY_PAID",
+              amountDue: 10,
+            });
+            resolve();
+          };
+        })
+    );
+
+    render(
+      <RecordPaymentDialog
+        open={true}
+        onOpenChange={onOpenChange}
+        invoice={invoice}
+      />
+    );
+
+    const submitButton = screen.getByRole("button", { name: /record payment/i });
+    fireEvent.click(submitButton);
+    fireEvent.click(submitButton);
+
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+
+    releaseMutation?.();
+
+    await waitFor(() => {
+      expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
   });
 });

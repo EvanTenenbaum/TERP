@@ -2,6 +2,8 @@ import { beforeEach, describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { InvoicesSurface } from "./InvoicesSurface";
 
+const gridPropsByTitle = new Map<string, Record<string, unknown>>();
+
 const { mockParseInvoiceDeepLink, mockSetSelectedId, invoiceSelectionState } =
   vi.hoisted(() => ({
     mockParseInvoiceDeepLink: vi.fn(() => ({
@@ -27,7 +29,11 @@ const mockInvoicesList = vi.hoisted(() => ({
       amountDue: "5000.00",
       amountPaid: "0",
       status: "OVERDUE",
-      client: { name: "Acme Corp" },
+      client: {
+        name: "Acme Corp",
+        email: "billing@acme.test",
+        phone: "555-0100",
+      },
     },
     {
       id: 2,
@@ -46,11 +52,14 @@ const mockInvoicesList = vi.hoisted(() => ({
 
 /* ── Mock PowersheetGrid ── */
 vi.mock("./PowersheetGrid", () => ({
-  PowersheetGrid: ({ rows, title }: { rows: unknown[]; title: string }) => (
-    <div data-testid={`grid-${title}`}>
-      {title} — {rows.length} rows
-    </div>
-  ),
+  PowersheetGrid: (props: { rows: unknown[]; title: string }) => {
+    gridPropsByTitle.set(props.title, props as Record<string, unknown>);
+    return (
+      <div data-testid={`grid-${props.title}`}>
+        {props.title} — {props.rows.length} rows
+      </div>
+    );
+  },
 }));
 
 /* ── Mock tRPC ── */
@@ -301,6 +310,7 @@ describe("InvoicesSurface", () => {
   beforeEach(() => {
     invoiceSelectionState.selectedId = null;
     mockSetSelectedId.mockReset();
+    gridPropsByTitle.clear();
     mockParseInvoiceDeepLink.mockReturnValue({
       invoiceId: null,
       openRecordPayment: false,
@@ -344,6 +354,44 @@ describe("InvoicesSurface", () => {
   it("renders grid with 2 rows", () => {
     render(<InvoicesSurface />);
     expect(screen.getByText(/2 rows/)).toBeInTheDocument();
+  });
+
+  it("renders overdue contact details through the client column renderer", () => {
+    render(<InvoicesSurface />);
+
+    const [gridProps] = Array.from(gridPropsByTitle.values()) as Array<{
+      rows: Array<{
+        clientName: string;
+        customerEmail: string | null;
+        customerPhone: string | null;
+        status: string;
+      }>;
+      columnDefs: Array<{
+        field?: string;
+        cellRenderer?: (params: { data?: unknown; value: string }) => string;
+      }>;
+    }>;
+
+    const clientColumn = gridProps.columnDefs.find(
+      column => column.field === "clientName"
+    );
+    expect(clientColumn?.cellRenderer).toBeDefined();
+
+    const overdueMarkup = clientColumn?.cellRenderer?.({
+      data: gridProps.rows[0],
+      value: gridProps.rows[0]?.clientName,
+    });
+
+    expect(overdueMarkup).toContain("Acme Corp");
+    expect(overdueMarkup).toContain("555-0100");
+    expect(overdueMarkup).toContain("billing@acme.test");
+
+    const paidMarkup = clientColumn?.cellRenderer?.({
+      data: gridProps.rows[1],
+      value: gridProps.rows[1]?.clientName,
+    });
+
+    expect(paidMarkup).toBe("Beta LLC");
   });
 
   it("renders AR Aging toggle", () => {

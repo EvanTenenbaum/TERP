@@ -484,9 +484,11 @@ describe("SalesCatalogueSurface", () => {
     revokeObjectURL.mockRestore();
   });
 
-  it("copies the current filtered cut for chat", async () => {
+  it("copies the selected catalogue cut for chat", async () => {
     render(<SalesCatalogueSurface />);
     fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Copy for Chat" }));
 
@@ -504,6 +506,8 @@ describe("SalesCatalogueSurface", () => {
 
     render(<SalesCatalogueSurface />);
     fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy for Chat" }));
 
     await waitFor(() => {
