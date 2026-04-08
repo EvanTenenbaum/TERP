@@ -4,7 +4,7 @@
 
 import type { ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PurchaseOrderSurface } from "./PurchaseOrderSurface";
 
 const mockSetLocation = vi.fn();
@@ -77,13 +77,15 @@ vi.mock("./PowersheetGrid", () => ({
     selectionMode,
   }: {
     title: string;
-    rows?: Array<{ identity?: { rowKey: string } }>;
+    rows?: Array<{ identity?: { rowKey: string }; poNumber?: string }>;
     columnDefs?: Array<{ field?: string }>;
     onSelectedRowChange?: (
-      row: { identity?: { rowKey: string } } | null
+      row: { identity?: { rowKey: string }; poNumber?: string } | null
     ) => void;
     onRowClicked?: (event: {
-      data: { identity?: { rowKey: string } } | undefined;
+      data:
+        | { identity?: { rowKey: string }; poNumber?: string }
+        | undefined;
     }) => void;
     headerActions?: ReactNode;
     selectionMode?: string;
@@ -94,6 +96,11 @@ vi.mock("./PowersheetGrid", () => ({
         <div data-testid={`grid-${title}`}>
           <div>{title}</div>
           {headerActions}
+          <div>
+            {rows.map(row => (
+              <div key={row.identity?.rowKey ?? row.poNumber}>{row.poNumber}</div>
+            ))}
+          </div>
           {rows.length > 0 && onSelectedRowChange ? (
             <button onClick={() => onSelectedRowChange(rows[0])}>
               Select first purchase order
@@ -392,6 +399,10 @@ describe("PurchaseOrderSurface", () => {
     getAllQueryInput = null;
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('renders "Purchase Orders" title in queue mode', () => {
     render(<PurchaseOrderSurface />);
     expect(screen.getByText("Purchase Orders")).toBeInTheDocument();
@@ -477,6 +488,7 @@ describe("PurchaseOrderSurface", () => {
         expect.objectContaining({
           poId: 33,
           poNumber: "PO-033",
+          expectedDeliveryDate: "2026-04-03",
         })
       );
       expect(mockUpsertProductIntakeDraft).toHaveBeenCalledWith(
@@ -485,6 +497,106 @@ describe("PurchaseOrderSurface", () => {
       );
       expect(mockSetLocation).toHaveBeenCalledWith(
         expect.stringContaining("draftId=draft-123")
+      );
+    });
+  });
+
+  it("filters the receiving queue to expected-today purchase orders", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-08T12:00:00.000Z"));
+
+    queueData = [
+      {
+        id: 201,
+        poNumber: "PO-201",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-04-07",
+        expectedDeliveryDate: "2026-04-08T15:00:00.000Z",
+        total: "125.00",
+        paymentTerms: "NET_15",
+      },
+      {
+        id: 202,
+        poNumber: "PO-202",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-04-07",
+        expectedDeliveryDate: "2026-04-09T15:00:00.000Z",
+        total: "225.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+
+    render(<PurchaseOrderSurface defaultStatusFilter={["CONFIRMED"]} />);
+
+    expect(
+      screen.getByRole("button", { name: /Expected Today \(1\)/i })
+    ).toBeInTheDocument();
+
+    const findQueueRows = () =>
+      mockPowersheetGrid.mock.calls
+        .map(([payload]) => payload)
+        .filter(call => call.title === "Purchase Orders Queue")
+        .at(-1)?.rows;
+
+    expect(findQueueRows()).toHaveLength(2);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Expected Today \(1\)/i })
+    );
+
+    expect(findQueueRows()).toHaveLength(1);
+    expect(findQueueRows()?.[0]?.poNumber).toBe("PO-201");
+    expect(screen.getByText("PO-201")).toBeInTheDocument();
+    expect(screen.queryByText("PO-202")).not.toBeInTheDocument();
+  });
+
+  it("drops invalid expected-delivery dates before persisting receiving drafts", () => {
+    queueData = [
+      {
+        id: 35,
+        poNumber: "PO-035",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: "not-a-date",
+        total: "250.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+    poDetailData = {
+      poNumber: "PO-035",
+      supplier: { email: "ops@northfarm.test", phone: "555-0100" },
+      items: [
+        {
+          id: 503,
+          productId: 91,
+          productName: "Wedding Cake",
+          category: "Flower",
+          subcategory: "Top Shelf",
+          quantityOrdered: "20",
+          quantityReceived: "5",
+          cogsMode: "FIXED",
+          unitCost: "2.40",
+        },
+      ],
+    };
+    mockSelectedPoId = 35;
+
+    render(<PurchaseOrderSurface defaultStatusFilter={["CONFIRMED"]} />);
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /open product intake/i })[0]
+    );
+
+    return waitFor(() => {
+      expect(mockCreateProductIntakeDraftFromPO).toHaveBeenCalledWith(
+        expect.objectContaining({
+          poId: 35,
+          poNumber: "PO-035",
+          expectedDeliveryDate: null,
+        })
       );
     });
   });

@@ -2,7 +2,7 @@
 
 ## Active Milestone
 
-TER-1069 tranche 2 closeout, merge prep, and tracker writeback.
+TER-1070 tranche 3 closeout, merge prep, and tracker writeback.
 
 ## Current Decisions
 
@@ -13,6 +13,7 @@ TER-1069 tranche 2 closeout, merge prep, and tracker writeback.
 - Keep `docs/specs/spreadsheet-native-foundation/p2-remaining-initiative/` as the canonical initiative home.
 - Keep sellable-only inventory as the default order-side posture; unavailable inventory must remain an explicit broadened filter.
 - Persist `includeUnavailable` through the shared sales filter model instead of surface-local UI state.
+- When local proof data is missing a tranche seam entirely, use the smallest reversible local fixture that proves the seam and record it as a harness action instead of pretending seeded coverage exists.
 
 ## Evidence To Collect Per Tranche
 
@@ -48,3 +49,7 @@ Each tranche should end with 3 to 7 concrete things Evan can now do or observe i
 - 2026-04-08: tightened TER-1069 so unresolved batch lookups cannot silently bypass the blocked-draft finalize guard, unified the blocked-draft operator copy, and added targeted tests for the unresolved path, outbound vendor identity, and credit-warning next-step routing
 - 2026-04-08: captured the missing blocked-draft runtime proof under `output/playwright/ter-1069-retrieval-continuity-2026-04-08/blocked-draft-confirm-disabled.png` using a real local draft backed by an `AWAITING_INTAKE` batch
 - 2026-04-08: recorded the final TER-1069 hostile pass in `reviews/2026-04-08-ter-1069-adversarial-review.md`, fixing the screenshot and shared-page grammar defects before accepting the remaining follow-ups as non-blocking
+- 2026-04-08: implemented TER-1070 tranche 3 by preserving PO expected-delivery context in local receiving drafts, adding a visible `PO Reference` column to the receiving draft grid, and restoring a direct `Show Purchase Order` return action from the receiving draft back to the queue
+- 2026-04-08: verified TER-1070 with targeted Vitest, targeted eslint, `pnpm check`, `pnpm build`, and a five-check local browser bundle under `output/playwright/ter-1070-ops-continuity-2026-04-08/`
+- 2026-04-08: created a minimal local proof fixture for TER-1070 after confirming the seeded proof DB contained zero `purchaseOrders` and zero `vendor_payables`; recorded it as a harness action instead of claiming seeded runtime coverage
+- 2026-04-08: accepted the final TER-1070 hostile pass after fixing UTC-stable expected-delivery date handling, strengthening the queue-filter and invalid-date tests, and guarding `Show Purchase Order` for legacy drafts with invalid `poId`

@@ -1,3 +1,5 @@
+import { normalizeCalendarDate } from "@/lib/calendarDates";
+
 export type ProductIntakeDraftStatus = "DRAFT" | "RECEIVED" | "VOIDED";
 
 export interface ProductIntakeDraftLine {
@@ -35,6 +37,7 @@ export interface ProductIntakeDraft {
   id: string;
   poId: number;
   poNumber: string;
+  expectedDeliveryDate?: string | null;
   vendorId?: number | null;
   vendorName: string;
   warehouseId?: number | null;
@@ -128,6 +131,7 @@ export function upsertProductIntakeDraft(
 export function createProductIntakeDraftFromPO(input: {
   poId: number;
   poNumber: string;
+  expectedDeliveryDate?: string | null;
   vendorId?: number | null;
   vendorName: string;
   warehouseId?: number | null;
@@ -142,6 +146,7 @@ export function createProductIntakeDraftFromPO(input: {
     id: draftId,
     poId: input.poId,
     poNumber: input.poNumber,
+    expectedDeliveryDate: normalizeCalendarDate(input.expectedDeliveryDate),
     vendorId: input.vendorId ?? null,
     vendorName: input.vendorName,
     warehouseId: input.warehouseId ?? null,

@@ -71,6 +71,12 @@ import {
   type ProductIntakeLabActivity,
   type ProductIntakeDraftLine,
 } from "@/lib/productIntakeDrafts";
+import {
+  formatCalendarDate,
+  isCalendarDatePast,
+  isCalendarDateToday,
+  normalizeCalendarDate,
+} from "@/lib/calendarDates";
 import { recordFrictionEvent } from "@/lib/navigation/frictionTelemetry";
 import { usePowersheetSelection } from "../../hooks/work-surface";
 // Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
@@ -93,6 +99,25 @@ const formatCurrency = (value: number): string =>
     value
   );
 
+function formatExpectedDeliveryLabel(
+  value: string | null | undefined
+): string | null {
+  const normalized = normalizeCalendarDate(value);
+  if (!normalized) return null;
+
+  const base = formatCalendarDate(normalized);
+
+  if (isCalendarDateToday(normalized)) {
+    return `${base} · Today`;
+  }
+
+  if (isCalendarDatePast(normalized)) {
+    return `${base} · Late`;
+  }
+
+  return base;
+}
+
 function hasMissingCostData(line: ProductIntakeDraftLine): boolean {
   if (line.cogsMode === "RANGE") {
     return (
@@ -110,6 +135,7 @@ function formatLineCostDisplay(line: ProductIntakeDraftLine): string {
 }
 
 const defaultColumns: GridColumnOption[] = [
+  { id: "poRef", label: "PO Reference", visible: true },
   { id: "brand", label: "Brand/Farmer", visible: true },
   { id: "strain", label: "Strain", visible: true },
   { id: "category", label: "Category", visible: true },
@@ -276,6 +302,18 @@ export function ProductIntakeSlicePage() {
     () => resolveSelectedDraft(drafts, selectedDraftId),
     [drafts, selectedDraftId]
   );
+
+  const openPurchaseOrderContext = useCallback(() => {
+    if (!selectedDraft || !Number.isInteger(selectedDraft.poId) || selectedDraft.poId <= 0) {
+      return;
+    }
+    navigate(
+      buildOperationsWorkspacePath("receiving", {
+        poId: selectedDraft.poId,
+        poNumber: selectedDraft.poNumber,
+      })
+    );
+  }, [navigate, selectedDraft]);
 
   // Shared powersheet selection for draft lines (TER-284)
   const visibleLineIds = useMemo(
@@ -548,6 +586,16 @@ export function ProductIntakeSlicePage() {
     );
     return { lines, units, cost };
   }, [selectedDraft]);
+
+  const expectedDeliveryLabel = useMemo(
+    () => formatExpectedDeliveryLabel(selectedDraft?.expectedDeliveryDate),
+    [selectedDraft?.expectedDeliveryDate]
+  );
+  const canShowPurchaseOrder = Boolean(
+    selectedDraft &&
+      Number.isInteger(selectedDraft.poId) &&
+      selectedDraft.poId > 0
+  );
 
   const canEdit =
     selectedDraft?.status === "DRAFT" && receivingDraftId !== selectedDraft.id;
@@ -1099,7 +1147,7 @@ export function ProductIntakeSlicePage() {
         : "text-sm h-16";
 
   const intakeContext = selectedDraft
-    ? `${selectedDraft.id} · ${selectedDraft.vendorName} · ${selectedDraft.warehouseName} · PO ${selectedDraft.poNumber} · ${summary.lines} lines · ${summary.units.toFixed(2)} units · $${summary.cost.toFixed(2)} · ${selectedDraft.status}`
+    ? `${selectedDraft.id} · ${selectedDraft.vendorName} · ${selectedDraft.warehouseName} · PO ${selectedDraft.poNumber}${expectedDeliveryLabel ? ` · Expected ${expectedDeliveryLabel}` : ""} · ${summary.lines} lines · ${summary.units.toFixed(2)} units · $${summary.cost.toFixed(2)} · ${selectedDraft.status}`
     : "No active receiving draft. Start from the Receiving queue and open a purchase order that is waiting to be received.";
 
   const galleryImages = isLabRoute
@@ -1176,6 +1224,11 @@ export function ProductIntakeSlicePage() {
         {!selectedDraft && (
           <Button variant="outline" size="sm" onClick={goToReceivingQueue}>
             Back to Receiving Queue
+          </Button>
+        )}
+        {canShowPurchaseOrder && (
+          <Button variant="outline" size="sm" onClick={openPurchaseOrderContext}>
+            Show Purchase Order
           </Button>
         )}
       </div>
@@ -1353,6 +1406,9 @@ export function ProductIntakeSlicePage() {
                 />
               </th>
               <th className="text-left p-2 w-10"></th>
+              {visibleColumnIds.has("poRef") && (
+                <th className="text-left p-2">PO Reference</th>
+              )}
               {visibleColumnIds.has("brand") && (
                 <th className="text-left p-2">
                   {getMixedBrandLabel(
@@ -1426,6 +1482,20 @@ export function ProductIntakeSlicePage() {
                       </span>
                     )}
                   </td>
+                  {visibleColumnIds.has("poRef") && (
+                    <td className="p-2 align-top">
+                      <div className="space-y-0.5">
+                        <div className="text-sm font-medium">
+                          {selectedDraft?.poNumber ?? "-"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {expectedDeliveryLabel
+                            ? `Expected ${expectedDeliveryLabel}`
+                            : "Expected date not set"}
+                        </div>
+                      </div>
+                    </td>
+                  )}
                   {visibleColumnIds.has("brand") && (
                     <td className="p-2">
                       <Input
