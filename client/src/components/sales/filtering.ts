@@ -60,6 +60,8 @@ export function buildSalesIdentityDescriptor(item: {
   subcategory?: string | null;
   batchSku?: string | null;
 }) {
+  // Shared/public catalogue output prefers the branded label but must fall
+  // back to vendor identity when only supplier metadata is available.
   return [
     item.brand || item.vendor,
     item.subcategory || item.category,

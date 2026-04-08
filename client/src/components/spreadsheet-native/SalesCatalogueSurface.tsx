@@ -65,7 +65,6 @@ import {
   type ColumnVisibility,
 } from "@/components/sales/types";
 import {
-  buildSalesIdentityDescriptor,
   clearPortableSalesCut,
   countActiveSalesFilters,
   getPlainLanguageSalesStatus,
@@ -75,6 +74,10 @@ import {
   normalizeSalesFilters,
   writePortableSalesCut,
 } from "@/components/sales/filtering";
+import {
+  buildCatalogueOutboundDescriptor,
+  buildCatalogueOutboundNotes,
+} from "@/components/sales/outbound";
 import { useCatalogueDraft } from "@/hooks/useCatalogueDraft";
 
 // ── types ────────────────────────────────────────────────────────────────────
@@ -189,12 +192,16 @@ export function buildCatalogueChatText(
     return "No inventory matches this cut right now.";
   }
 
+  const noteLines = buildCatalogueOutboundNotes(cleanedItems);
+
   return [
     `Available Now (${cleanedItems.length})`,
     ...cleanedItems.map(item => {
-      const descriptor = buildSalesIdentityDescriptor(item);
+      const descriptor = buildCatalogueOutboundDescriptor(item);
       return `• ${item.name}${descriptor ? ` — ${descriptor}` : ""} — ${item.quantity} @ ${formatCurrency(item.retailPrice)}`;
     }),
+    "",
+    ...noteLines,
   ].join("\n");
 }
 
@@ -221,9 +228,10 @@ function buildPrintableCatalogueHtml({
   includeImages: boolean;
   totalValue: number;
 }) {
+  const noteLines = buildCatalogueOutboundNotes(items);
   const itemMarkup = items
     .map(item => {
-      const descriptor = buildSalesIdentityDescriptor(item);
+      const descriptor = buildCatalogueOutboundDescriptor(item);
       return `
         <article class="catalogue-row">
           ${
@@ -295,7 +303,9 @@ function buildPrintableCatalogueHtml({
             <div class="catalogue-total">${formatCurrency(totalValue)}</div>
           </header>
           <section class="catalogue-list">${itemMarkup}</section>
-          <p class="catalogue-note">Pricing and availability are subject to final confirmation.</p>
+          ${noteLines
+            .map(note => `<p class="catalogue-note">${escapeHtml(note)}</p>`)
+            .join("")}
         </div>
         <script>
           window.onload = function () { window.print(); };
@@ -824,7 +834,7 @@ export function SalesCatalogueSurface() {
             return "";
           }
 
-          const identityMeta = buildSalesIdentityDescriptor({
+          const identityMeta = buildCatalogueOutboundDescriptor({
             brand: row.brand,
             subcategory: row.subcategory,
             category: row.category,

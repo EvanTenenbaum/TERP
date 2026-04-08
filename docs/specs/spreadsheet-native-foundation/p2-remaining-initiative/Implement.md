@@ -2,7 +2,7 @@
 
 ## Active Milestone
 
-TER-1068 tranche 1 closeout, merge prep, and tracker writeback.
+TER-1069 tranche 2 closeout, merge prep, and tracker writeback.
 
 ## Current Decisions
 
@@ -45,3 +45,6 @@ Each tranche should end with 3 to 7 concrete things Evan can now do or observe i
 - 2026-04-08: recorded the repo-wide `pnpm test` reset/seed failure as a limitation packet because the failure occurred in untouched harness files outside the TER-1068 diff
 - 2026-04-08: accepted the in-scope Claude review findings for the dead catalogue Filters entry point, catalogue plain-language unavailable copy, and imported-cut badge drift; deferred commit/finalize guard concerns into TER-1069
 - 2026-04-08: rebuilt the local proof database with `pnpm test:db:fresh` after the broken `pnpm test` reset/seed lane left `terp-test` without the `users` table, then refreshed the browser artifacts for the post-review tranche candidate
+- 2026-04-08: tightened TER-1069 so unresolved batch lookups cannot silently bypass the blocked-draft finalize guard, unified the blocked-draft operator copy, and added targeted tests for the unresolved path, outbound vendor identity, and credit-warning next-step routing
+- 2026-04-08: captured the missing blocked-draft runtime proof under `output/playwright/ter-1069-retrieval-continuity-2026-04-08/blocked-draft-confirm-disabled.png` using a real local draft backed by an `AWAITING_INTAKE` batch
+- 2026-04-08: recorded the final TER-1069 hostile pass in `reviews/2026-04-08-ter-1069-adversarial-review.md`, fixing the screenshot and shared-page grammar defects before accepting the remaining follow-ups as non-blocking

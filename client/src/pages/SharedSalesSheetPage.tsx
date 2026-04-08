@@ -24,17 +24,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { FileText, Clock, Package } from "lucide-react";
-
-function buildSharedDescriptor(item: {
-  brand?: string | null;
-  subcategory?: string | null;
-  category?: string | null;
-  batchSku?: string | null;
-}) {
-  return [item.brand, item.subcategory || item.category, item.batchSku]
-    .filter(Boolean)
-    .join(" • ");
-}
+import {
+  buildCatalogueOutboundDescriptor,
+  buildCatalogueOutboundNotes,
+} from "@/components/sales/outbound";
 
 export default function SharedSalesSheetPage() {
   const [, params] = useRoute("/shared/sales-sheet/:token");
@@ -95,6 +88,8 @@ export default function SharedSalesSheetPage() {
   };
 
   const hasImages = sheet.items.some(item => Boolean(item.imageUrl));
+  const outboundNotes = buildCatalogueOutboundNotes(sheet.items);
+  const itemCountLabel = `${sheet.itemCount} ${sheet.itemCount === 1 ? "item" : "items"}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -135,7 +130,7 @@ export default function SharedSalesSheetPage() {
                   )}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {sheet.itemCount} items
+                  {itemCountLabel}
                 </p>
               </div>
             </div>
@@ -200,9 +195,9 @@ export default function SharedSalesSheetPage() {
                     <TableCell>
                       <div className="space-y-0.5">
                         <p className="font-medium">{item.name}</p>
-                        {buildSharedDescriptor(item) ? (
+                        {buildCatalogueOutboundDescriptor(item) ? (
                           <p className="text-xs text-muted-foreground">
-                            {buildSharedDescriptor(item)}
+                            {buildCatalogueOutboundDescriptor(item)}
                           </p>
                         ) : null}
                       </div>
@@ -251,12 +246,12 @@ export default function SharedSalesSheetPage() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>
-            Interested in placing an order? Contact your sales representative.
-          </p>
-          <p className="mt-2">
-            Pricing and availability are subject to final confirmation.
-          </p>
+          <p>Interested in placing an order? Contact your sales representative.</p>
+          {outboundNotes.map(note => (
+            <p key={note} className="mt-2">
+              {note}
+            </p>
+          ))}
           <p className="mt-2">Powered by TERP</p>
         </div>
       </div>
