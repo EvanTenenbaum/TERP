@@ -1,13 +1,17 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-06T21:36:20.025Z",
+  "generatedAt": "2026-04-08T03:11:06.963Z",
   "generator": {
     "script": "scripts/agent-context/generate-agent-context.mjs",
     "maxAgeHours": 72,
     "linearLookbackDays": 21
   },
   "startupContract": {
-    "readFirst": ["AGENTS.md", "CLAUDE.md", "docs/agent-context/START_HERE.md"],
+    "readFirst": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "docs/agent-context/START_HERE.md"
+    ],
     "entrypoint": "docs/agent-context/START_HERE.md",
     "machineState": "docs/agent-context/state.json",
     "refreshCommand": "pnpm context:refresh",
@@ -25,147 +29,146 @@
     "maxAgeHours": 72,
     "snapshotAgeHours": 0,
     "notes": [
-      "Tracker data was refreshed live from Linear.",
-      "Working tree contains local edits. This bundle captures committed truth at HEAD and reports that local diffs exist."
+      "Tracker data was refreshed live from Linear."
     ]
   },
   "git": {
-    "branch": "codex/push-po-surfaces-to-95",
-    "head": "2d340c136bce64ce1a0b3de480a02dd733796520",
-    "shortHead": "2d340c13",
-    "workingTreeDirty": true,
+    "branch": "codex/p2-context-refresh-20260408",
+    "head": "e760614b08f2e642a13c18e63b3e8b749820e4b3",
+    "shortHead": "e760614b",
+    "workingTreeDirty": false,
     "recentCommits": [
       {
-        "date": "2026-03-28",
-        "sha": "2d340c13",
-        "subject": "fix(po): restore default payment terms on create"
+        "date": "2026-04-08",
+        "sha": "e760614b",
+        "subject": "docs(p2): close TER-1071 deferred pass (#574)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "20f92f37",
-        "subject": "fix(po): persist edit-mode line items and harden PO QA"
+        "date": "2026-04-08",
+        "sha": "1b7e493a",
+        "subject": "feat(po): close TER-1070 tranche 3 continuity (#573)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "23043bab",
-        "subject": "test(surfaces): deepen behavioral coverage and polish inventory/po UX"
+        "date": "2026-04-08",
+        "sha": "db289932",
+        "subject": "feat(sales): close TER-1069 retrieval continuity (#572)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "eb49635a",
-        "subject": "feat(accounting): unified sheet-native surfaces for all 9 tabs"
+        "date": "2026-04-08",
+        "sha": "8e019eb8",
+        "subject": "feat(ux): close TER-1068 tranche 1 (#571)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "39843216",
-        "subject": "feat: unified sheet-native surfaces for Inventory + Purchase Orders (#531)"
+        "date": "2026-04-08",
+        "sha": "7586564e",
+        "subject": "fix(ux): land TER-1067 recovery and canonical P2 packet (#570)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "666157b4",
-        "subject": "chore(accounting): retire classic and pilot surfaces — ~10K lines removed"
+        "date": "2026-04-07",
+        "sha": "994bbee4",
+        "subject": "test(surfaces): deepen behavioral coverage and polish inventory/po UX (#568)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "3b032245",
-        "subject": "style(accounting): Dashboard density pass — match unified surfaces"
+        "date": "2026-04-07",
+        "sha": "3d68f93c",
+        "subject": "feat: land spreadsheet-native continuity and QA hardening (#567)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "5481d18d",
-        "subject": "fix(surfaces): address QA review — edit button, undo, submit flow, dead code"
+        "date": "2026-04-06",
+        "sha": "730d1223",
+        "subject": "fix(ux): Waves 0-5 — 46 UX improvements across all surfaces (#566)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "035bba43",
-        "subject": "feat(accounting): wire Phase 3 — all 9 tabs now unified sheet-native"
+        "date": "2026-04-02",
+        "sha": "d92fc165",
+        "subject": "chore(ci): remove temporary runner key recovery workflow (#565)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "4a6a92f6",
-        "subject": "feat(bank-transactions): add BankTransactionsSurface editable grid with reconciliation"
+        "date": "2026-04-02",
+        "sha": "72868eae",
+        "subject": "chore(ci): add temporary runner key recovery workflow (#564)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "5de5542b",
-        "subject": "feat(accounting): add ExpensesSurface — editable expense registry grid"
+        "date": "2026-04-02",
+        "sha": "e8445515",
+        "subject": "[codex] Harden sales catalogue adversarial follow-ups (#563)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "06abbc9e",
-        "subject": "feat(bank-accounts): add BankAccountsSurface editable grid"
+        "date": "2026-04-02",
+        "sha": "5019156f",
+        "subject": "build(ci): harden ops ssh and nightly e2e output (#562)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "0e760173",
-        "subject": "feat(accounting): wire Phase 2 — GL and CoA surfaces"
+        "date": "2026-04-01",
+        "sha": "19011c09",
+        "subject": "build(ci): upgrade active actions to node 24 (#559)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "f7108b90",
-        "subject": "feat(po): wire PurchaseOrderSurface, kill SheetModeToggle for PO tab"
+        "date": "2026-04-01",
+        "sha": "2e7bbab7",
+        "subject": "fix(sales-catalogue): keep shared links working without clipboard (#561)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "dd93df43",
-        "subject": "feat(accounting): add GeneralLedgerSurface — GL entry browser with Trial Balance"
+        "date": "2026-04-01",
+        "sha": "0bc2475d",
+        "subject": "fix(sales-catalogue): preserve shared view popup gesture (#558)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "ba43046b",
-        "subject": "feat(chart-of-accounts): add ChartOfAccountsSurface — first editable grid surface"
+        "date": "2026-04-01",
+        "sha": "79bff4a2",
+        "subject": "fix(sales-catalogue): harden catalogue handoff flows (#557)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "e9761660",
-        "subject": "feat(po): add creation/edit mode with split surface and invoice bottom"
+        "date": "2026-04-01",
+        "sha": "871ca702",
+        "subject": "fix(health): reduce noisy disk degradation warnings (#556)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "03d731f9",
-        "subject": "feat(accounting): wire Phase 1 surfaces, kill SheetModeToggle"
+        "date": "2026-04-01",
+        "sha": "b90edd4b",
+        "subject": "fix: persist create-order client selection in the URL (#555)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "5c036a92",
-        "subject": "feat(bills-surface): add BillsSurface — unified AP sheet-native surface"
+        "date": "2026-04-01",
+        "sha": "a93d440f",
+        "subject": "fix: keep create-order client picker on the create-order route (#554)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "17ff9420",
-        "subject": "feat(payments): add PaymentsSurface unified sheet-native component"
+        "date": "2026-04-01",
+        "sha": "235fbe88",
+        "subject": "fix(orders): dedupe sheet-native order actions (#553)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "b6ba0046",
-        "subject": "feat(po): add PurchaseOrderSurface queue mode with lifecycle actions"
+        "date": "2026-04-01",
+        "sha": "b4fed659",
+        "subject": "feat(shell): standardize nav chrome and worktree QA prep (#552)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "b66eebd1",
-        "subject": "feat(invoices): add unified InvoicesSurface with embedded Client Ledger"
+        "date": "2026-04-01",
+        "sha": "57e66d65",
+        "subject": "fix(sales): clarify new-order entry and document redirects (#551)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "36e2f984",
-        "subject": "feat(po): add ProductBrowserGrid with multi-source tabs"
+        "date": "2026-04-01",
+        "sha": "804448de",
+        "subject": "Fix unavailable sales-order client routes and harden inline-controls coverage (#550)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "58379195",
-        "subject": "feat(po): add usePoDocument state helpers and validation"
+        "date": "2026-04-01",
+        "sha": "02c28b90",
+        "subject": "fix(orders): hydrate sheet-native client labels (#549)"
       },
       {
-        "date": "2026-03-27",
-        "sha": "1dbc0b01",
-        "subject": "chore(sales-catalogue): retire SalesSheetCreatorPage, SalesSheetsPilotSurface, and 4 replaced components"
+        "date": "2026-04-01",
+        "sha": "42ff1636",
+        "subject": "feat(orders): add inline row controls to po and so (#548)"
       }
     ]
   },
   "linear": {
     "mode": "live",
-    "fetchedAt": "2026-04-06T21:36:20.025Z",
-    "latestIssueUpdatedAt": "2026-04-06T18:46:29.126Z",
+    "fetchedAt": "2026-04-08T03:11:06.962Z",
+    "latestIssueUpdatedAt": "2026-04-08T03:10:07.816Z",
     "activeProjects": [
       {
         "name": "Spreadsheet-Native Full Rollout",
@@ -215,107 +218,107 @@
         "identifier": "TER-1065",
         "title": "[P2-19] Contact activity/communication log for payments follow-up tracking",
         "priority": "normal",
-        "updatedAt": "2026-04-06T18:46:29.126Z",
+        "updatedAt": "2026-04-08T03:10:07.816Z",
         "url": "https://linear.app/terpcorp/issue/TER-1065/p2-19-contact-activitycommunication-log-for-payments-follow-up",
-        "state": "Todo",
-        "project": null
-      },
-      {
-        "identifier": "TER-1064",
-        "title": "[P2-18] Human-readable status labels across all grids - replace AWAITING_INTAKE, LIVE, CONSIGNMENT with plain English",
-        "priority": "normal",
-        "updatedAt": "2026-04-06T18:46:28.320Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1064/p2-18-human-readable-status-labels-across-all-grids-replace-awaiting",
-        "state": "Todo",
+        "state": "In Review",
         "project": null
       },
       {
         "identifier": "TER-1063",
         "title": "[P2-17] Shipping/fulfillment: generate pick list from confirmed orders with batch locations",
         "priority": "normal",
-        "updatedAt": "2026-04-06T18:46:26.885Z",
+        "updatedAt": "2026-04-08T03:10:07.814Z",
         "url": "https://linear.app/terpcorp/issue/TER-1063/p2-17-shippingfulfillment-generate-pick-list-from-confirmed-orders",
-        "state": "Todo",
-        "project": null
-      },
-      {
-        "identifier": "TER-1062",
-        "title": "[P2-16] Order status: searchable by client name from Cmd+K and orders queue",
-        "priority": "normal",
-        "updatedAt": "2026-04-06T18:46:25.523Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1062/p2-16-order-status-searchable-by-client-name-from-cmdk-and-orders",
-        "state": "Todo",
-        "project": null
-      },
-      {
-        "identifier": "TER-1061",
-        "title": "[P2-15] Unified contact view: show buyer history + seller history + AR + AP for dual-role contacts",
-        "priority": "high",
-        "updatedAt": "2026-04-06T18:46:24.630Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1061/p2-15-unified-contact-view-show-buyer-history-seller-history-ar-ap-for",
-        "state": "Todo",
-        "project": null
-      },
-      {
-        "identifier": "TER-1060",
-        "title": "[P2-14] Intake: expected deliveries today view for warehouse shift start",
-        "priority": "normal",
-        "updatedAt": "2026-04-06T18:46:23.811Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1060/p2-14-intake-expected-deliveries-today-view-for-warehouse-shift-start",
-        "state": "Todo",
-        "project": null
-      },
-      {
-        "identifier": "TER-1059",
-        "title": "[P2-13] Intake: add PO reference column linking intake rows to originating purchase order",
-        "priority": "high",
-        "updatedAt": "2026-04-06T18:46:22.565Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1059/p2-13-intake-add-po-reference-column-linking-intake-rows-to",
-        "state": "Todo",
-        "project": null
-      },
-      {
-        "identifier": "TER-1058",
-        "title": "[P2-12] Accounting: show balance update confirmation after recording a payment",
-        "priority": "normal",
-        "updatedAt": "2026-04-06T18:46:21.734Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1058/p2-12-accounting-show-balance-update-confirmation-after-recording-a",
-        "state": "Todo",
-        "project": null
-      },
-      {
-        "identifier": "TER-1057",
-        "title": "[P2-11] Accounting: add client phone/email columns to overdue invoices table",
-        "priority": "high",
-        "updatedAt": "2026-04-06T18:46:17.353Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1057/p2-11-accounting-add-client-phoneemail-columns-to-overdue-invoices",
-        "state": "Todo",
+        "state": "In Review",
         "project": null
       },
       {
         "identifier": "TER-1056",
         "title": "[P2-10] Dashboard: activity feed showing recent orders, payments, intake since last session",
         "priority": "normal",
-        "updatedAt": "2026-04-06T18:46:16.307Z",
+        "updatedAt": "2026-04-08T03:10:07.812Z",
         "url": "https://linear.app/terpcorp/issue/TER-1056/p2-10-dashboard-activity-feed-showing-recent-orders-payments-intake",
-        "state": "Todo",
+        "state": "In Review",
         "project": null
       },
       {
         "identifier": "TER-1055",
         "title": "[P2-09] Dashboard: add operational KPIs - expected deliveries, pending fulfillment, appointments today",
         "priority": "normal",
-        "updatedAt": "2026-04-06T18:46:15.422Z",
+        "updatedAt": "2026-04-08T03:10:07.810Z",
         "url": "https://linear.app/terpcorp/issue/TER-1055/p2-09-dashboard-add-operational-kpis-expected-deliveries-pending",
+        "state": "In Review",
+        "project": null
+      },
+      {
+        "identifier": "TER-1066",
+        "title": "[P2-20] Remaining initiative: spec-driven seam execution framework",
+        "priority": "high",
+        "updatedAt": "2026-04-08T03:10:07.796Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1066/p2-20-remaining-initiative-spec-driven-seam-execution-framework",
+        "state": "In Review",
+        "project": "Spreadsheet-Native Full Rollout"
+      },
+      {
+        "identifier": "TER-1048",
+        "title": "[P2-02] Inventory: default filter to LIVE status, human-readable status labels across all grids",
+        "priority": "high",
+        "updatedAt": "2026-04-08T00:07:55.035Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1048/p2-02-inventory-default-filter-to-live-status-human-readable-status",
         "state": "Todo",
         "project": null
       },
       {
-        "identifier": "TER-1054",
-        "title": "[P2-08] Quick copy: clipboard-friendly formatted inventory list for pasting into chat apps",
+        "identifier": "TER-1053",
+        "title": "[P2-07] Inventory row action: Add to Order button to start order from inventory context",
         "priority": "normal",
-        "updatedAt": "2026-04-06T18:45:58.296Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1054/p2-08-quick-copy-clipboard-friendly-formatted-inventory-list-for",
+        "updatedAt": "2026-04-06T18:45:57.391Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1053/p2-07-inventory-row-action-add-to-order-button-to-start-order-from",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1052",
+        "title": "[P2-06] Order creator: show client credit, balance, and recent order history before adding items",
+        "priority": "high",
+        "updatedAt": "2026-04-06T18:45:56.069Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1052/p2-06-order-creator-show-client-credit-balance-and-recent-order",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1051",
+        "title": "[P2-05] Product name display: show strain/product name prominently, supplier as secondary text",
+        "priority": "normal",
+        "updatedAt": "2026-04-06T18:45:54.986Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1051/p2-05-product-name-display-show-strainproduct-name-prominently",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1050",
+        "title": "[P2-04] Sales Catalogue: fast access + shareable link generation for chat-based client communication",
+        "priority": "high",
+        "updatedAt": "2026-04-06T18:45:54.044Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1050/p2-04-sales-catalogue-fast-access-shareable-link-generation-for-chat",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1049",
+        "title": "[P2-03] Cmd+K search: include products and inventory batches in global search",
+        "priority": "high",
+        "updatedAt": "2026-04-06T18:45:52.818Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1049/p2-03-cmdk-search-include-products-and-inventory-batches-in-global",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1047",
+        "title": "[P2-01] Inventory grid: add Price, COGS, Margin columns to default view",
+        "priority": "high",
+        "updatedAt": "2026-04-06T18:45:50.284Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1047/p2-01-inventory-grid-add-price-cogs-margin-columns-to-default-view",
         "state": "Todo",
         "project": null
       }
@@ -324,36 +327,36 @@
   },
   "direction": {
     "focusAreas": [
-      "accounting, payments, and ledger work",
-      "unified operational surfaces",
+      "orders and order workflow",
       "inventory, intake, and purchase operations",
+      "QA, parity proof, and rollout hardening",
       "spreadsheet-native rollout"
     ],
-    "summary": "Current TERP direction centers on accounting, payments, and ledger work and unified operational surfaces; recent git activity is anchored at 2d340c13 and is dominated by `fix(po): restore default payment terms on create`, `fix(po): persist edit-mode line items and harden PO QA`, `test(surfaces): deepen behavioral coverage and polish inventory/po UX`, `feat(accounting): unified sheet-native surfaces for all 9 tabs`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "summary": "Current TERP direction centers on orders and order workflow and inventory, intake, and purchase operations; recent git activity is anchored at e760614b and is dominated by `docs(p2): close TER-1071 deferred pass (#574)`, `feat(po): close TER-1070 tranche 3 continuity (#573)`, `feat(sales): close TER-1069 retrieval continuity (#572)`, `feat(ux): close TER-1068 tranche 1 (#571)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
     "themeEvidence": [
       {
-        "label": "accounting, payments, and ledger work",
-        "count": 18
-      },
-      {
-        "label": "unified operational surfaces",
-        "count": 15
+        "label": "orders and order workflow",
+        "count": 12
       },
       {
         "label": "inventory, intake, and purchase operations",
-        "count": 15
+        "count": 10
+      },
+      {
+        "label": "QA, parity proof, and rollout hardening",
+        "count": 5
       },
       {
         "label": "spreadsheet-native rollout",
-        "count": 6
-      },
-      {
-        "label": "orders and order workflow",
-        "count": 6
+        "count": 4
       },
       {
         "label": "operator workflow polish",
-        "count": 6
+        "count": 4
+      },
+      {
+        "label": "unified operational surfaces",
+        "count": 2
       }
     ]
   },
