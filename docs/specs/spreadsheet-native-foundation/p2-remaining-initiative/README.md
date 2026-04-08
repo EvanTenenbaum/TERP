@@ -1,7 +1,7 @@
 # P2 Remaining Initiative
 
-**Date:** 2026-04-07  
-**Status:** Recovery checkpoint normalized on branch  
+**Date:** 2026-04-08
+**Status:** Completed on `main` after TER-1071 deferred-pass normalization
 **Module:** Spreadsheet-native sales, operations, relationships, and accounting continuity  
 **Scope:** Complete the remaining P2 initiative without a redesign or broad refactor
 
@@ -34,14 +34,14 @@ Recovery work on 2026-04-07 separated the remaining initiative into 3 truth buck
 
 Use the reconciliation packet in this folder as the authority for what was actually proven. Do not treat old session narration or the unmerged `docs/initiatives/...` proposal as canonical on `main`.
 
-## Remaining Initiative
+## Completion Snapshot
 
-The remaining initiative now reduces to four tranches:
+The remaining initiative closed as four completed workstreams:
 
-1. operator retrieval defaults, portable cuts, and product identity
-2. retrieval-to-commit continuity in the sales flow
-3. operations and settlement continuity
-4. deferred backlog decision pass
+1. TER-1068 operator retrieval defaults, portable cuts, and product identity
+2. TER-1069 retrieval-to-commit continuity in the sales flow
+3. TER-1070 operations and settlement continuity
+4. TER-1071 deferred backlog decision pass
 
 ## Document Map
 
@@ -69,6 +69,12 @@ The remaining initiative now reduces to four tranches:
   Combined closeout scorecard for recovery completeness.
 - [analysis/p2-dependency-graph.md](/Users/evan/spec-erp-docker/TERP/TERP/docs/specs/spreadsheet-native-foundation/p2-remaining-initiative/analysis/p2-dependency-graph.md)
   Rebuilt dependency map for TER-1068 through TER-1071.
+- [analysis/2026-04-08-ter-1071-deferred-decision-pass.md](/Users/evan/spec-erp-docker/TERP/TERP-TER-1070-20260408/docs/specs/spreadsheet-native-foundation/p2-remaining-initiative/analysis/2026-04-08-ter-1071-deferred-decision-pass.md)
+  Explicit parking decisions for the deferred backlog items.
+- [evidence/ter-1071/README.md](/Users/evan/spec-erp-docker/TERP/TERP-TER-1070-20260408/docs/specs/spreadsheet-native-foundation/p2-remaining-initiative/evidence/ter-1071/README.md)
+  Index of the TER-1071 decision-pass evidence and tracker writeback.
+- [reviews/2026-04-08-ter-1071-adversarial-review.md](/Users/evan/spec-erp-docker/TERP/TERP-TER-1070-20260408/docs/specs/spreadsheet-native-foundation/p2-remaining-initiative/reviews/2026-04-08-ter-1071-adversarial-review.md)
+  Bounded hostile pass for the deferred decision packet.
 
 ## Guardrails
 
@@ -89,3 +95,5 @@ The remaining initiative is complete when:
 - the remaining high-frequency seams are closed without redesigning TERP
 - each tranche closes with code proof, browser proof, and Claude adversarial review
 - deferred items are explicitly promoted or parked instead of silently lingering
+
+That completion condition is now met on `main` through PRs `#570`, `#571`, `#572`, and `#573`, plus the TER-1071 decision pass and tracker normalization recorded in this packet.
