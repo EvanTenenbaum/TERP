@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-04-08T02:47:38.366Z",
+  "baseUrl": "http://127.0.0.1:3016",
+  "fixtureClientId": 10700,
+  "checks": [
+    {
+      "name": "receiving queue shows expected-today purchase order",
+      "passed": true,
+      "detail": "Receiving workspace shows Expected Today (1) and PO-TER1070 in the queue.",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-TER-1070-20260408/output/playwright/ter-1070-ops-continuity-2026-04-08/receiving-queue-expected-today.png"
+    },
+    {
+      "name": "receiving draft preserves purchase-order context",
+      "passed": true,
+      "detail": "Draft view shows the PO Reference column, normalized expected-delivery label, and return action.",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-TER-1070-20260408/output/playwright/ter-1070-ops-continuity-2026-04-08/receiving-draft-po-reference.png"
+    },
+    {
+      "name": "receiving draft links back to purchase-order queue",
+      "passed": true,
+      "detail": "Show Purchase Order returns to the receiving queue with the proof PO visible.",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-TER-1070-20260408/output/playwright/ter-1070-ops-continuity-2026-04-08/receiving-return-to-po.png"
+    },
+    {
+      "name": "hybrid relationship money summary reflects supplier payables",
+      "passed": true,
+      "detail": "Money section shows hybrid net position, payable due, and ledger continuity from the confirmed PO.",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-TER-1070-20260408/output/playwright/ter-1070-ops-continuity-2026-04-08/relationship-money-hybrid.png"
+    },
+    {
+      "name": "supplier settlement context shows below-range reporting and purchase-order continuity",
+      "passed": true,
+      "detail": "Supply & Inventory shows payable totals, below-range metrics, latest settlement exception, live batch, and purchase order history.",
+      "screenshot": "/Users/evan/spec-erp-docker/TERP/TERP-TER-1070-20260408/output/playwright/ter-1070-ops-continuity-2026-04-08/relationship-supply-settlement.png"
+    }
+  ]
+}

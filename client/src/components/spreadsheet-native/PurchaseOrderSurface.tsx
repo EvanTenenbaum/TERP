@@ -36,6 +36,12 @@ import {
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
+import {
+  formatCalendarDate,
+  isCalendarDatePast,
+  isCalendarDateToday,
+  normalizeCalendarDate,
+} from "@/lib/calendarDates";
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
 import { useAuth } from "@/hooks/useAuth";
@@ -238,14 +244,13 @@ const formatCurrency = (value: number) =>
   }).format(value);
 
 const formatDate = (value: Date | string | null | undefined): string => {
-  if (!value) return "-";
-  try {
-    const d = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(d.getTime())) return "-";
-    return d.toLocaleDateString();
-  } catch {
-    return "-";
-  }
+  return formatCalendarDate(value);
+};
+
+const normalizeDraftDate = (
+  value: Date | string | null | undefined
+): string | null => {
+  return normalizeCalendarDate(value);
 };
 
 const formatAgeLabel = (value: Date | string | null | undefined): string => {
@@ -262,14 +267,6 @@ const formatAgeLabel = (value: Date | string | null | undefined): string => {
   }
 };
 
-function isSameCalendarDay(left: Date, right: Date) {
-  return (
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth() &&
-    left.getDate() === right.getDate()
-  );
-}
-
 function isPastExpectedDate(
   value: Date | string | null | undefined,
   currentStatus?: string
@@ -278,16 +275,7 @@ function isPastExpectedDate(
     return false;
   }
 
-  const parsed = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(parsed.getTime())) return false;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const dueDate = new Date(parsed);
-  dueDate.setHours(0, 0, 0, 0);
-
-  return dueDate.getTime() < today.getTime();
+  return isCalendarDatePast(value);
 }
 
 function getExpectedDeliveryLabel(
@@ -295,17 +283,14 @@ function getExpectedDeliveryLabel(
   currentStatus?: string
 ) {
   if (!value || value === "") return "Not set";
-  const parsed = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(parsed.getTime())) return "Not set";
 
-  const base = formatDate(parsed);
-  const today = new Date();
+  const base = formatDate(value);
 
-  if (isSameCalendarDay(parsed, today)) {
+  if (isCalendarDateToday(value)) {
     return `${base} · Today`;
   }
 
-  if (isPastExpectedDate(parsed, currentStatus)) {
+  if (isPastExpectedDate(value, currentStatus)) {
     return `${base} · Late`;
   }
 
@@ -320,10 +305,7 @@ function isExpectedToday(
     return false;
   }
 
-  const parsed = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(parsed.getTime())) return false;
-
-  return isSameCalendarDay(parsed, new Date());
+  return isCalendarDateToday(value);
 }
 
 function buildRowKey(entityType: string, id: number): string {
@@ -333,9 +315,7 @@ function buildRowKey(entityType: string, id: number): string {
 function hasExpectedDeliveryDate(
   value: Date | string | null | undefined
 ): boolean {
-  if (!value) return false;
-  const date = value instanceof Date ? value : new Date(value);
-  return !Number.isNaN(date.getTime());
+  return normalizeCalendarDate(value) !== null;
 }
 
 function mapPOsToQueueRows(
@@ -1732,6 +1712,9 @@ function PurchaseOrderQueueMode({
           const draft = createProductIntakeDraftFromPO({
             poId: targetRow.poId,
             poNumber: targetRow.poNumber,
+            expectedDeliveryDate: normalizeDraftDate(
+              targetRow.expectedDeliveryDate
+            ),
             vendorId: supplierData?.id ?? null,
             vendorName: targetRow.supplierName,
             warehouseId: null,
