@@ -28,9 +28,16 @@ For TER-1067 specifically, the authoritative evidence index is:
 - `evidence/ter-1067/README.md`
 - `output/playwright/ter-1067-recovery-2026-04-07/summary.md`
 
+For TER-1068 tranche 1, the authoritative evidence index is:
+
+- `evidence/ter-1068/README.md`
+- `output/playwright/ter-1068-tranche1-2026-04-08/summary.md`
+- `reviews/2026-04-08-ter-1068-adversarial-review.md`
+
 ## Known Limitations
 
-- `TER-1054` and `TER-1057` now have proof-backed recovery-branch fixes, but they are still not merged to `main`.
+- The full `pnpm test` lane is currently blocked by the reset/seed harness; see `evidence/ter-1068/2026-04-08-full-test-limitation.md`.
+- The post-review browser proof required a fresh rebuild of the local `terp-test` database after `pnpm test` left the proof environment without the `users` table; that rebuild is recorded as a harness action, not a product fix.
 - PR 569's `docs/initiatives/...` files are not on `main`; keeping them and this packet side by side as co-equal systems would create drift, so the canonical repo home stays here unless explicitly changed later.
 
 ## Follow-Ups

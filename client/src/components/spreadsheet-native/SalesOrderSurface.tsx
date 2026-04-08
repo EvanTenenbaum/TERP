@@ -21,6 +21,7 @@ import {
   useOrderDraft,
 } from "@/hooks/useOrderDraft";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -53,6 +54,19 @@ import {
   type PricedInventoryItem,
 } from "@/components/sales/types";
 import {
+  buildSalesIdentityDescriptor,
+  clearPortableSalesCut,
+  countActiveSalesFilters,
+  getPlainLanguageSalesStatus,
+  isSalesInventorySellable,
+  matchesSalesInventoryFilters,
+  NON_SELLABLE_STATUS_NOTES,
+  normalizeSalesFilters,
+  readPortableSalesCut,
+  summarizeSalesFilters,
+  type PortableSalesCut,
+} from "@/components/sales/filtering";
+import {
   KeyboardHintBar,
   type KeyboardHint,
 } from "@/components/work-surface/KeyboardHintBar";
@@ -68,6 +82,8 @@ interface InventoryBrowserRow {
   name: string;
   batchLabel: string;
   category: string;
+  subcategory: string;
+  brand: string;
   vendor: string;
   retailPrice: number;
   quantity: number;
@@ -265,6 +281,8 @@ function mapInventoryToRows(
     name: item.name,
     batchLabel: getInventoryBatchLabel(item),
     category: item.category ?? "-",
+    subcategory: item.subcategory ?? "-",
+    brand: item.brand ?? "-",
     vendor: item.vendor ?? "-",
     retailPrice: item.retailPrice,
     quantity: item.quantity,
@@ -316,8 +334,12 @@ export function SalesOrderSurface() {
   const [pendingCreditOverrideReason, setPendingCreditOverrideReason] =
     useState<string | undefined>();
   const [isCheckingCredit, setIsCheckingCredit] = useState(false);
+  const [portableCut, setPortableCut] = useState<PortableSalesCut | null>(
+    null
+  );
   const defaultViewAppliedClientRef = useRef<number | null>(null);
   const skipNextDefaultViewApplyRef = useRef(false);
+  const portableCutAppliedKeyRef = useRef<string | null>(null);
   const isQuoteCreateEntry =
     isCreateOrderEntry &&
     (routeMode === "quote" || draft.orderType === "QUOTE");
@@ -360,6 +382,11 @@ export function SalesOrderSurface() {
     () => new Set(draft.items.map(item => item.batchId)),
     [draft.items]
   );
+  const portableCutSummary = useMemo(
+    () =>
+      portableCut ? summarizeSalesFilters(portableCut.filters).slice(0, 4) : [],
+    [portableCut]
+  );
 
   const filteredInventory = useMemo(() => {
     let items = inventoryQuery.data ?? [];
@@ -371,41 +398,27 @@ export function SalesOrderSurface() {
         return (
           item.name.toLowerCase().includes(lower) ||
           (item.category ?? "").toLowerCase().includes(lower) ||
+          (item.subcategory ?? "").toLowerCase().includes(lower) ||
+          (item.brand ?? "").toLowerCase().includes(lower) ||
           (item.vendor ?? "").toLowerCase().includes(lower) ||
           getInventorySku(item).toLowerCase().includes(lower) ||
-          batchLabel.includes(lower)
+          batchLabel.includes(lower) ||
+          getPlainLanguageSalesStatus(item.status).toLowerCase().includes(lower)
         );
       });
     }
 
-    if (filters.search) {
-      const filterSearch = filters.search.toLowerCase();
-      items = items.filter(item =>
-        item.name.toLowerCase().includes(filterSearch)
-      );
-    }
-    if (filters.categories.length > 0) {
-      items = items.filter(item =>
-        filters.categories.includes(item.category ?? "")
-      );
-    }
-    if (filters.grades.length > 0) {
-      items = items.filter(item => filters.grades.includes(item.grade ?? ""));
-    }
-    if (filters.vendors.length > 0) {
-      items = items.filter(item => filters.vendors.includes(item.vendor ?? ""));
-    }
-    if (filters.priceMin !== null) {
-      const priceMin = filters.priceMin;
-      items = items.filter(item => item.retailPrice >= priceMin);
-    }
-    if (filters.priceMax !== null) {
-      const priceMax = filters.priceMax;
-      items = items.filter(item => item.retailPrice <= priceMax);
-    }
-    if (filters.inStockOnly) {
-      items = items.filter(item => item.quantity > 0);
-    }
+    items = items.filter(item => {
+      if (!matchesSalesInventoryFilters(item, filters)) {
+        return false;
+      }
+
+      if (!filters.includeUnavailable && !isSalesInventorySellable(item)) {
+        return false;
+      }
+
+      return true;
+    });
 
     return sortInventory(items, sort);
   }, [filters, inventoryQuery.data, searchTerm, sort]);
@@ -645,24 +658,6 @@ export function SalesOrderSurface() {
         cellClass: "powersheet-cell--locked",
       },
       {
-        field: "status",
-        headerName: "",
-        maxWidth: 28,
-        cellRenderer: (params: { value: string }) =>
-          NON_SELLABLE_STATUSES.includes(
-            params.value as (typeof NON_SELLABLE_STATUSES)[number]
-          )
-            ? "\u26a0"
-            : "",
-        cellStyle: (params: { value: string }) =>
-          NON_SELLABLE_STATUSES.includes(
-            params.value as (typeof NON_SELLABLE_STATUSES)[number]
-          )
-            ? { color: "var(--color-amber-500)", fontWeight: "bold" }
-            : null,
-        cellClass: "powersheet-cell--locked",
-      },
-      {
         field: "sku",
         headerName: "SKU",
         minWidth: 90,
@@ -673,7 +668,54 @@ export function SalesOrderSurface() {
         field: "name",
         headerName: "Product",
         flex: 1.3,
-        minWidth: 180,
+        minWidth: 220,
+        cellRenderer: (params: { data?: InventoryBrowserRow }) => {
+          const row = params.data;
+          if (!row) {
+            return "";
+          }
+
+          const identityMeta = buildSalesIdentityDescriptor({
+            brand: row.brand,
+            vendor: row.vendor,
+            subcategory: row.subcategory,
+            category: row.category,
+            batchSku: row.sku,
+          });
+          const isNonSellable = NON_SELLABLE_STATUSES.includes(
+            row.status as (typeof NON_SELLABLE_STATUSES)[number]
+          );
+          const statusLabel = getPlainLanguageSalesStatus(row.status);
+          const statusNote = isNonSellable
+            ? NON_SELLABLE_STATUS_NOTES[row.status] ?? null
+            : null;
+
+          return (
+            <div className="flex min-w-0 flex-col py-0.5">
+              <div className="flex items-center gap-2">
+                <span className="truncate font-medium">{row.name}</span>
+                {isNonSellable ? (
+                  <Badge
+                    variant="outline"
+                    className="h-5 rounded-full px-1.5 text-[10px] text-amber-700"
+                  >
+                    {statusLabel}
+                  </Badge>
+                ) : null}
+              </div>
+              {identityMeta ? (
+                <span className="truncate text-[10px] text-muted-foreground">
+                  {identityMeta}
+                </span>
+              ) : null}
+              {statusNote ? (
+                <span className="truncate text-[10px] text-amber-700">
+                  {statusNote}
+                </span>
+              ) : null}
+            </div>
+          );
+        },
         cellClass: "powersheet-cell--locked",
       },
       {
@@ -779,6 +821,9 @@ export function SalesOrderSurface() {
       setSort(DEFAULT_SORT);
       setColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
       setCurrentViewId(null);
+      setPortableCut(null);
+      clearPortableSalesCut();
+      portableCutAppliedKeyRef.current = null;
       defaultViewAppliedClientRef.current = null;
       skipNextDefaultViewApplyRef.current = false;
       setPendingCreditOverrideReason(undefined);
@@ -800,13 +845,101 @@ export function SalesOrderSurface() {
       columnVisibility: ColumnVisibility;
     }) => {
       skipNextDefaultViewApplyRef.current = true;
-      setFilters(view.filters);
+      setFilters(normalizeSalesFilters(view.filters));
       setSort(view.sort);
       setColumnVisibility(view.columnVisibility);
       setCurrentViewId(view.id ?? null);
+      setPortableCut(null);
+      clearPortableSalesCut();
+      portableCutAppliedKeyRef.current = null;
     },
     []
   );
+
+  const handleClearPortableCut = useCallback(() => {
+    setPortableCut(null);
+    clearPortableSalesCut();
+    portableCutAppliedKeyRef.current = null;
+    setSearchTerm("");
+
+    const defaultView = savedViewsQuery.data?.find(view => view.isDefault);
+    skipNextDefaultViewApplyRef.current = true;
+
+    if (defaultView) {
+      setFilters(normalizeSalesFilters(defaultView.filters));
+      setSort(defaultView.sort as InventorySortConfig);
+      setColumnVisibility(defaultView.columnVisibility);
+      setCurrentViewId(defaultView.id);
+      defaultViewAppliedClientRef.current = draft.clientId;
+      return;
+    }
+
+    setFilters(DEFAULT_FILTERS);
+    setSort(DEFAULT_SORT);
+    setColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
+    setCurrentViewId(null);
+    defaultViewAppliedClientRef.current = draft.clientId;
+  }, [draft.clientId, savedViewsQuery.data]);
+
+  useEffect(() => {
+    if (!draft.clientId) {
+      setPortableCut(null);
+      portableCutAppliedKeyRef.current = null;
+      return;
+    }
+
+    const nextPortableCut = readPortableSalesCut();
+    if (!nextPortableCut || nextPortableCut.clientId !== draft.clientId) {
+      setPortableCut(null);
+      portableCutAppliedKeyRef.current = null;
+      return;
+    }
+
+    setPortableCut(nextPortableCut);
+  }, [draft.clientId]);
+
+  useEffect(() => {
+    if (!portableCut || portableCut.clientId !== draft.clientId) {
+      return;
+    }
+
+    if (portableCut.viewId && !savedViewsQuery.data) {
+      return;
+    }
+
+    const applyKey = JSON.stringify({
+      clientId: portableCut.clientId,
+      filters: portableCut.filters,
+      viewId: portableCut.viewId ?? null,
+    });
+    if (portableCutAppliedKeyRef.current === applyKey) {
+      return;
+    }
+
+    const matchingView =
+      portableCut.viewId !== null && portableCut.viewId !== undefined
+        ? (savedViewsQuery.data?.find(view => view.id === portableCut.viewId) ??
+          null)
+        : null;
+
+    skipNextDefaultViewApplyRef.current = true;
+    setFilters(normalizeSalesFilters(portableCut.filters));
+    if (matchingView) {
+      setSort(matchingView.sort as InventorySortConfig);
+      setColumnVisibility(matchingView.columnVisibility);
+      setCurrentViewId(matchingView.id);
+    } else {
+      setCurrentViewId(null);
+    }
+    defaultViewAppliedClientRef.current = draft.clientId;
+    portableCutAppliedKeyRef.current = applyKey;
+    clearPortableSalesCut();
+    toast.info(
+      portableCut.viewName
+        ? `Imported cut: ${portableCut.viewName}`
+        : "Imported the last catalogue cut"
+    );
+  }, [draft.clientId, portableCut, savedViewsQuery.data]);
 
   useEffect(() => {
     if (!draft.clientId || !savedViewsQuery.data) return;
@@ -817,7 +950,7 @@ export function SalesOrderSurface() {
     if (defaultViewAppliedClientRef.current === draft.clientId) return;
     const defaultView = savedViewsQuery.data.find(view => view.isDefault);
     if (!defaultView) return;
-    setFilters(defaultView.filters);
+    setFilters(normalizeSalesFilters(defaultView.filters));
     setSort(defaultView.sort as InventorySortConfig);
     setColumnVisibility(defaultView.columnVisibility);
     setCurrentViewId(defaultView.id);
@@ -941,11 +1074,7 @@ export function SalesOrderSurface() {
     [keyboard.keyboardProps]
   );
 
-  const activeFilterCount =
-    filters.categories.length +
-    filters.grades.length +
-    filters.vendors.length +
-    (filters.inStockOnly ? 1 : 0);
+  const activeFilterCount = countActiveSalesFilters(filters);
   const documentContextLabel = draft.activeDraftId
     ? `Draft #${draft.activeDraftId}`
     : draft.isSalesSheetImport
@@ -1132,6 +1261,20 @@ export function SalesOrderSurface() {
               size="sm"
               variant="outline"
               className="h-6 px-2 text-[10px]"
+              onClick={() =>
+                setFilters(current => ({
+                  ...current,
+                  includeUnavailable: !current.includeUnavailable,
+                }))
+              }
+            >
+              {filters.includeUnavailable ? "Including unavailable" : "Available now"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-[10px]"
               onClick={() => setShowAdvancedFilters(prev => !prev)}
             >
               Filters{activeFilterCount > 0 ? " \u25cf" : ""}
@@ -1146,6 +1289,34 @@ export function SalesOrderSurface() {
               : "No line items"}
         </span>
       </div>
+
+      {portableCut && draft.clientId && !isUnavailableClientRoute ? (
+        <div className="mx-2 flex flex-wrap items-center gap-1.5 rounded-md border border-border/70 bg-muted/30 px-2 py-1">
+          <Badge variant="secondary" className="text-[10px]">
+            {portableCut.viewName
+              ? `Saved cut: ${portableCut.viewName}`
+              : "Catalogue cut applied"}
+          </Badge>
+          {portableCutSummary.map(summary => (
+            <Badge
+              key={summary}
+              variant="outline"
+              className="text-[10px] text-muted-foreground"
+            >
+              {summary}
+            </Badge>
+          ))}
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="ml-auto h-6 px-2 text-[10px]"
+            onClick={handleClearPortableCut}
+          >
+            Clear cut
+          </Button>
+        </div>
+      ) : null}
 
       {showAdvancedFilters && draft.clientId && !isUnavailableClientRoute && (
         <AdvancedFilters
@@ -1212,6 +1383,7 @@ export function SalesOrderSurface() {
             {draft.items.length} lines
             {draft.hasUnsavedChanges ? " \u00b7 unsaved" : " \u00b7 synced"}
             {currentViewId ? " \u00b7 saved view" : ""}
+            {portableCut ? " \u00b7 imported cut" : ""}
             {selectedClientLabel ? ` \u00b7 ${selectedClientLabel}` : ""}
             {isUnavailableClientRoute ? " \u00b7 action blocked" : ""}
           </span>

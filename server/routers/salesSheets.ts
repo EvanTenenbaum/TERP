@@ -506,6 +506,7 @@ export const salesSheetsRouter = router({
           strainFamilies: z.array(z.string()),
           vendors: z.array(z.string()),
           inStockOnly: z.boolean(),
+          includeUnavailable: z.boolean(),
         }),
         sort: z.object({
           field: z.enum([

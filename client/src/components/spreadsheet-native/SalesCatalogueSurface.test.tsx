@@ -350,6 +350,64 @@ describe("SalesCatalogueSurface", () => {
     ).toContain("Sunset Shake");
   });
 
+  it("opens advanced filters from the catalogue toolbar", async () => {
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+
+    await waitFor(() => {
+      expect(gridPropsByTitle.get("Inventory")).toBeDefined();
+    });
+
+    expect(screen.queryByText("Advanced Filters")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+
+    expect(screen.getByText("Advanced Filters")).toBeInTheDocument();
+  });
+
+  it("renders plain-language unavailable status copy in the catalogue grid", async () => {
+    render(<SalesCatalogueSurface />);
+
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Include unavailable" })
+    );
+
+    await waitFor(() => {
+      expect(
+        (gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }>)
+          ?.length
+      ).toBe(2);
+    });
+
+    const inventoryGrid = gridPropsByTitle.get("Inventory") as {
+      columnDefs?: Array<{
+        field?: string;
+        cellRenderer?: (params: {
+          data?: Record<string, unknown>;
+          value?: unknown;
+        }) => ReactNode;
+      }>;
+      rows?: Array<Record<string, unknown>>;
+    };
+    const productColumn = inventoryGrid.columnDefs?.find(
+      column => column.field === "name"
+    );
+    const unavailableRow = inventoryGrid.rows?.find(
+      row => row.status === "AWAITING_INTAKE"
+    );
+    const renderedCell = productColumn?.cellRenderer?.({
+      data: unavailableRow,
+      value: unavailableRow?.name,
+    });
+
+    const statusCell = render(<>{renderedCell}</>);
+    expect(statusCell.getByText("Incoming")).toBeInTheDocument();
+    expect(
+      statusCell.getByText("Still incoming and not ready to sell")
+    ).toBeInTheDocument();
+  });
+
   it("shows a draft-name validation hint when work is unsaved", () => {
     draftState.hasUnsavedChanges = true;
 
