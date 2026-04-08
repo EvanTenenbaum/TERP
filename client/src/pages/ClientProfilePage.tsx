@@ -13,6 +13,7 @@ import {
 import { AddCommunicationModal } from "@/components/clients/AddCommunicationModal";
 import { ClientCalendarTab } from "@/components/clients/ClientCalendarTab";
 import { CommunicationTimeline } from "@/components/clients/CommunicationTimeline";
+import { PaymentFollowUpPanel } from "@/components/clients/PaymentFollowUpPanel";
 import { SupplierProfileSection } from "@/components/clients/SupplierProfileSection";
 import { VIPPortalSettings } from "@/components/clients/VIPPortalSettings";
 import { CommentWidget } from "@/components/comments/CommentWidget";
@@ -63,6 +64,18 @@ import {
 import { trpc } from "@/lib/trpc";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import type { RelationshipProfileMoneyData } from "@/types/relationshipProfile";
+import {
+  buildPaymentFollowUpNotes,
+  buildPaymentFollowUpSubject,
+  type PaymentCommunicationType,
+} from "@/components/clients/paymentFollowUp";
+
+type CommunicationDraft = {
+  type: PaymentCommunicationType;
+  subject: string;
+  notes?: string;
+  title?: string;
+};
 
 const PROFILE_TABS: Array<{
   value: RelationshipProfileSection;
@@ -150,6 +163,8 @@ export default function ClientProfilePage() {
     );
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
+  const [communicationDraft, setCommunicationDraft] =
+    useState<CommunicationDraft | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<
     RelationshipProfileMoneyData["transactionHistory"][number] | null
   >(null);
@@ -358,6 +373,32 @@ export default function ClientProfilePage() {
     supplyQuery.data?.supplier?.context?.settlementSummary ?? null;
   const isCustomer = shell?.roles.includes("Customer") ?? false;
   const isSupplier = shell?.roles.includes("Supplier") ?? false;
+
+  const handleOpenPaymentFollowUp = (type: PaymentCommunicationType) => {
+    if (!moneySummary) {
+      setCommunicationDraft({
+        type,
+        subject: buildPaymentFollowUpSubject(type),
+        title: "Log Payment Follow-up",
+      });
+      setCommunicationModalOpen(true);
+      return;
+    }
+
+    setCommunicationDraft({
+      type,
+      subject: buildPaymentFollowUpSubject(type),
+      notes: buildPaymentFollowUpNotes({
+        mode: moneySummary.mode,
+        receivableAmount: moneySummary.receivable.computedBalance,
+        payableAmount: moneySummary.payable.amountDue,
+        openPayableCount: moneySummary.payable.openPayableCount,
+        netPosition: moneySummary.netPosition,
+      }),
+      title: "Log Payment Follow-up",
+    });
+    setCommunicationModalOpen(true);
+  };
 
   const commandStrip = (
     <div className="flex flex-wrap items-center gap-2">
@@ -816,6 +857,20 @@ export default function ClientProfilePage() {
               represent different accounting views and may differ.
             </p>
 
+            {moneySummary ? (
+              <PaymentFollowUpPanel
+                clientId={clientId}
+                context={{
+                  mode: moneySummary.mode,
+                  receivableAmount: moneySummary.receivable.computedBalance,
+                  payableAmount: moneySummary.payable.amountDue,
+                  openPayableCount: moneySummary.payable.openPayableCount,
+                  netPosition: moneySummary.netPosition,
+                }}
+                onLogFollowUp={handleOpenPaymentFollowUp}
+              />
+            ) : null}
+
             {shouldShowCreditWidgetInProfile && isCustomer ? (
               <CreditStatusCard clientId={clientId} clientName={shell.name} />
             ) : null}
@@ -1241,7 +1296,10 @@ export default function ClientProfilePage() {
             <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
               <CommunicationTimeline
                 clientId={clientId}
-                onAddClick={() => setCommunicationModalOpen(true)}
+                onAddClick={() => {
+                  setCommunicationDraft(null);
+                  setCommunicationModalOpen(true);
+                }}
               />
 
               <Card>
@@ -1469,14 +1527,21 @@ export default function ClientProfilePage() {
       <AddCommunicationModal
         clientId={clientId}
         open={communicationModalOpen}
-        onOpenChange={setCommunicationModalOpen}
+        onOpenChange={open => {
+          setCommunicationModalOpen(open);
+          if (!open) {
+            setCommunicationDraft(null);
+          }
+        }}
         onSuccess={() => {
           void Promise.all([
             activityQuery.refetch(),
+            utils.clients.communications.list.invalidate(),
             utils.relationshipProfile.getActivity.invalidate({ clientId }),
             utils.relationshipProfile.getShell.invalidate({ clientId }),
           ]);
         }}
+        draft={communicationDraft}
       />
 
       <InspectorPanel

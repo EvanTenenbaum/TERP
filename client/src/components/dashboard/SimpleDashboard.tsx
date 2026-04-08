@@ -6,12 +6,13 @@
  *        Calendar Today, Quick Stats
  */
 
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
+import { formatDistanceToNow } from "date-fns";
 import {
   ShoppingCart,
   FileText,
@@ -20,9 +21,22 @@ import {
   Calendar,
   TrendingUp,
   ArrowRight,
+  Clock3,
+  DollarSign,
+  Truck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  buildDashboardActivityFeed,
+  buildDashboardOperationalKpis,
+  DASHBOARD_ACTIVITY_STORAGE_KEY,
+  type DashboardActivityItem,
+  type DashboardAppointmentSummary,
+  type DashboardOrderSummary,
+  type DashboardPaymentSummary,
+  type DashboardPurchaseOrderSummary,
+} from "./dashboardActivity";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -198,16 +212,16 @@ const InventoryAlertsCard = memo(function InventoryAlertsCard() {
 });
 
 // --- Pending Intake Card ---
-const PendingIntakeCard = memo(function PendingIntakeCard() {
+const PendingIntakeCard = memo(function PendingIntakeCard({
+  purchaseOrders,
+  isLoading,
+}: {
+  purchaseOrders: DashboardPurchaseOrderSummary[];
+  isLoading: boolean;
+}) {
   const [, setLocation] = useLocation();
-  const { data, isLoading } = trpc.purchaseOrders.getAll.useQuery(
-    { limit: 100, offset: 0 },
-    { refetchInterval: 60000 }
-  );
-
-  const items = Array.isArray(data) ? data : (data?.items ?? []);
-  const pendingCount = items.filter(
-    (po: { purchaseOrderStatus?: string }) =>
+  const pendingCount = purchaseOrders.filter(
+    po =>
       po.purchaseOrderStatus === "SENT" ||
       po.purchaseOrderStatus === "CONFIRMED" ||
       po.purchaseOrderStatus === "RECEIVING"
@@ -249,23 +263,24 @@ const PendingIntakeCard = memo(function PendingIntakeCard() {
 });
 
 // --- Calendar Today Card ---
-const CalendarTodayCard = memo(function CalendarTodayCard() {
+const CalendarTodayCard = memo(function CalendarTodayCard({
+  appointments,
+  isLoading,
+}: {
+  appointments: DashboardAppointmentSummary[];
+  isLoading: boolean;
+}) {
   const [, setLocation] = useLocation();
-  const { data, isLoading } = trpc.appointmentRequests.list.useQuery(
-    { limit: 20, offset: 0 },
-    { refetchInterval: 60000 }
-  );
-
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
-  const todayAppts =
-    data?.requests.filter(req => {
+  const todayAppts = appointments.filter(req => {
       if (req.status === "rejected" || req.status === "cancelled") return false;
+      if (!req.requestedSlot) return false;
       const slot = new Date(req.requestedSlot);
       return slot >= todayStart && slot < todayEnd;
-    }) ?? [];
+    });
 
   const nextAppt = todayAppts[0];
 
@@ -288,7 +303,7 @@ const CalendarTodayCard = memo(function CalendarTodayCard() {
             <div className="text-2xl font-bold">{todayAppts.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {nextAppt
-                ? `Next: ${nextAppt.clientName ?? "Appointment"} at ${new Date(nextAppt.requestedSlot).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+                ? `Next: ${nextAppt.clientName ?? "Appointment"} at ${new Date(nextAppt.requestedSlot ?? Date.now()).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
                 : "No appointments today"}
             </p>
             <Button
@@ -306,18 +321,29 @@ const CalendarTodayCard = memo(function CalendarTodayCard() {
   );
 });
 
-// --- Quick Stats Card ---
-const QuickStatsCard = memo(function QuickStatsCard() {
-  const { data: snapshot, isLoading } =
-    trpc.dashboard.getTransactionSnapshot.useQuery(undefined, {
-      refetchInterval: 60000,
-    });
+// --- Operational KPIs Card ---
+const OperationalKpisCard = memo(function OperationalKpisCard({
+  orders,
+  purchaseOrders,
+  appointments,
+  isLoading,
+}: {
+  orders: DashboardOrderSummary[];
+  purchaseOrders: DashboardPurchaseOrderSummary[];
+  appointments: DashboardAppointmentSummary[];
+  isLoading: boolean;
+}) {
+  const metrics = buildDashboardOperationalKpis({
+    orders,
+    purchaseOrders,
+    appointments,
+  });
 
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
-          Quick Stats
+          Operational KPIs
         </CardTitle>
         <TrendingUp className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
@@ -329,25 +355,38 @@ const QuickStatsCard = memo(function QuickStatsCard() {
             <Skeleton className="h-4 w-full" />
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">
-                Cash collected today
-              </span>
+              <div>
+                <p className="text-muted-foreground">Expected deliveries</p>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.nextExpectedDeliveryLabel}
+                </p>
+              </div>
               <span className="font-medium tabular-nums">
-                {formatCurrency(snapshot?.today.cashCollected ?? 0)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">This week</span>
-              <span className="font-medium tabular-nums">
-                {formatCurrency(snapshot?.thisWeek.sales ?? 0)}
+                {metrics.expectedDeliveries}
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Units sold today</span>
+              <div>
+                <p className="text-muted-foreground">Pending fulfillment</p>
+                <p className="text-xs text-muted-foreground">
+                  Ready to pick, pack, or ship
+                </p>
+              </div>
               <span className="font-medium tabular-nums">
-                {snapshot?.today.unitsSold ?? 0}
+                {metrics.pendingFulfillment}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <div>
+                <p className="text-muted-foreground">Appointments today</p>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.nextAppointmentLabel}
+                </p>
+              </div>
+              <span className="font-medium tabular-nums">
+                {metrics.appointmentsToday}
               </span>
             </div>
           </div>
@@ -357,8 +396,141 @@ const QuickStatsCard = memo(function QuickStatsCard() {
   );
 });
 
+function getActivityIcon(item: DashboardActivityItem) {
+  switch (item.kind) {
+    case "payment":
+      return DollarSign;
+    case "intake":
+      return Truck;
+    case "order":
+    default:
+      return ShoppingCart;
+  }
+}
+
+const RecentActivityCard = memo(function RecentActivityCard({
+  orders,
+  payments,
+  purchaseOrders,
+  lastVisitedAt,
+  isLoading,
+}: {
+  orders: DashboardOrderSummary[];
+  payments: DashboardPaymentSummary[];
+  purchaseOrders: DashboardPurchaseOrderSummary[];
+  lastVisitedAt: string | null;
+  isLoading: boolean;
+}) {
+  const activityItems = buildDashboardActivityFeed({
+    orders,
+    payments,
+    purchaseOrders,
+    lastVisitedAt,
+  });
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
+        <div>
+          <CardTitle className="text-sm font-medium text-muted-foreground">
+            Recent Activity
+          </CardTitle>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {lastVisitedAt
+              ? "Since last dashboard visit"
+              : "Last 24 hours of orders, payments, and intake"}
+          </p>
+        </div>
+        <Clock3 className="h-4 w-4 text-muted-foreground" />
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+            <Skeleton className="h-12 w-full" />
+          </div>
+        ) : activityItems.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No new orders, payments, or intake activity since your last
+            dashboard visit.
+          </p>
+        ) : (
+          <ol className="space-y-2">
+            {activityItems.map(item => {
+              const Icon = getActivityIcon(item);
+
+              return (
+                <li
+                  key={item.id}
+                  className="rounded border bg-muted/30 px-3 py-3"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-full border bg-background p-2">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-medium">{item.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(item.timestamp), {
+                            addSuffix: true,
+                          })}
+                        </p>
+                      </div>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {item.detail}
+                      </p>
+                    </div>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </CardContent>
+    </Card>
+  );
+});
+
 // --- Main SimpleDashboard ---
 export const SimpleDashboard = memo(function SimpleDashboard() {
+  const purchaseOrdersQuery = trpc.purchaseOrders.getAll.useQuery(
+    { limit: 100, offset: 0 },
+    { refetchInterval: 60000 }
+  );
+  const appointmentsQuery = trpc.appointmentRequests.list.useQuery(
+    { limit: 20, offset: 0 },
+    { refetchInterval: 60000 }
+  );
+  const ordersQuery = trpc.orders.getAll.useQuery(
+    { orderType: "SALE", isDraft: false, limit: 100, offset: 0 },
+    { refetchInterval: 60000 }
+  );
+  const paymentsQuery = trpc.accounting.payments.list.useQuery(
+    { limit: 25, offset: 0 },
+    { refetchInterval: 60000 }
+  );
+  const [lastVisitedAt, setLastVisitedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    const previousValue = window.localStorage.getItem(
+      DASHBOARD_ACTIVITY_STORAGE_KEY
+    );
+    setLastVisitedAt(previousValue);
+    window.localStorage.setItem(
+      DASHBOARD_ACTIVITY_STORAGE_KEY,
+      new Date().toISOString()
+    );
+  }, []);
+
+  const purchaseOrders = Array.isArray(purchaseOrdersQuery.data)
+    ? purchaseOrdersQuery.data
+    : (purchaseOrdersQuery.data?.items ?? []);
+  const appointments = appointmentsQuery.data?.requests ?? [];
+  const orders = (ordersQuery.data?.items ?? []) as DashboardOrderSummary[];
+  const payments = (paymentsQuery.data?.items ?? []) as DashboardPaymentSummary[];
+
   return (
     <div className="space-y-6">
       {/* TER-617: Simple header — title + current date only */}
@@ -374,10 +546,37 @@ export const SimpleDashboard = memo(function SimpleDashboard() {
         <TodaysOrdersCard />
         <OpenInvoicesCard />
         <InventoryAlertsCard />
-        <PendingIntakeCard />
-        <CalendarTodayCard />
-        <QuickStatsCard />
+        <PendingIntakeCard
+          purchaseOrders={purchaseOrders}
+          isLoading={purchaseOrdersQuery.isLoading}
+        />
+        <CalendarTodayCard
+          appointments={appointments}
+          isLoading={appointmentsQuery.isLoading}
+        />
+        <OperationalKpisCard
+          orders={orders}
+          purchaseOrders={purchaseOrders}
+          appointments={appointments}
+          isLoading={
+            purchaseOrdersQuery.isLoading ||
+            appointmentsQuery.isLoading ||
+            ordersQuery.isLoading
+          }
+        />
       </div>
+
+      <RecentActivityCard
+        orders={orders}
+        payments={payments}
+        purchaseOrders={purchaseOrders}
+        lastVisitedAt={lastVisitedAt}
+        isLoading={
+          purchaseOrdersQuery.isLoading ||
+          ordersQuery.isLoading ||
+          paymentsQuery.isLoading
+        }
+      />
     </div>
   );
 });
