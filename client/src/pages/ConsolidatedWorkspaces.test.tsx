@@ -276,11 +276,13 @@ describe("Consolidated workspace pages", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders Sales workspace with live shopping tab content", () => {
+  it("renders Sales workspace with live shopping tab content", async () => {
     mockActiveTab = "live-shopping";
     render(<SalesWorkspacePage />);
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
-    expect(screen.getByText("Live Shopping Surface")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Live Shopping Surface")
+    ).toBeInTheDocument();
   });
 
   it("redirects pick-pack to the shipping workspace while preserving search params", () => {

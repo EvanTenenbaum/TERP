@@ -71,8 +71,8 @@ export function ClientCommitContextCard({
     return (recentOrdersQuery.data.orders ?? []).slice(0, 3);
   }, [recentOrdersQuery.data]);
 
-  const creditLimit = shell?.financials.creditLimit ?? 0;
-  const currentBalance = shell?.financials.balance?.computedBalance ?? 0;
+  const creditLimit = shell?.financials?.creditLimit ?? 0;
+  const currentBalance = shell?.financials?.balance?.computedBalance ?? 0;
   const availableCredit =
     creditLimit > 0 ? Math.max(creditLimit - currentBalance, 0) : null;
 
