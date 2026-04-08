@@ -18,6 +18,187 @@ interface MockCondition {
   args?: MockCondition[];
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isMockCondition(value: unknown): value is MockCondition {
+  return (
+    isRecord(value) &&
+    typeof value.op === "string" &&
+    isColumnLike(value.col)
+  );
+}
+
+function isSqlLike(value: unknown): value is { queryChunks: unknown[] } {
+  return isRecord(value) && Array.isArray(value.queryChunks);
+}
+
+function isColumnLike(value: unknown): value is { table?: unknown; name: string } {
+  return isRecord(value) && typeof value.name === "string";
+}
+
+function getStringChunkValue(chunk: unknown): string | null {
+  if (!isRecord(chunk) || !Array.isArray(chunk.value)) {
+    return null;
+  }
+
+  const values = chunk.value;
+  return values.every(value => typeof value === "string")
+    ? values.join("")
+    : null;
+}
+
+function unwrapSqlValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(entry => unwrapSqlValue(entry));
+  }
+
+  if (isColumnLike(value)) {
+    return value;
+  }
+
+  if (isRecord(value) && "value" in value) {
+    return unwrapSqlValue(value.value);
+  }
+
+  return value;
+}
+
+function splitSqlChunks(
+  chunks: unknown[],
+  separator: " and " | " or "
+): unknown[][] | null {
+  const groups: unknown[][] = [];
+  let current: unknown[] = [];
+
+  for (const chunk of chunks) {
+    if (getStringChunkValue(chunk) === separator) {
+      groups.push(current);
+      current = [];
+      continue;
+    }
+    current.push(chunk);
+  }
+
+  if (groups.length === 0) {
+    return null;
+  }
+
+  groups.push(current);
+  return groups;
+}
+
+function normalizeCondition(condition: unknown): MockCondition | null {
+  if (!condition) return null;
+
+  if (isMockCondition(condition)) {
+    return condition;
+  }
+
+  if (!isSqlLike(condition)) {
+    return null;
+  }
+
+  const compactChunks = condition.queryChunks.filter(chunk => {
+    const value = getStringChunkValue(chunk);
+    return value === null || value.length > 0;
+  });
+
+  if (compactChunks.length === 1 && isSqlLike(compactChunks[0])) {
+    return normalizeCondition(compactChunks[0]);
+  }
+
+  if (
+    getStringChunkValue(compactChunks[0]) === "(" &&
+    getStringChunkValue(compactChunks[compactChunks.length - 1]) === ")"
+  ) {
+    return normalizeCondition({
+      queryChunks: compactChunks.slice(1, -1),
+    });
+  }
+
+  const andGroups = splitSqlChunks(compactChunks, " and ");
+  if (andGroups) {
+    return {
+      op: "and",
+      col: { name: "__group__" },
+      args: andGroups
+        .map(group => normalizeCondition({ queryChunks: group }))
+        .filter((group): group is MockCondition => group !== null),
+    };
+  }
+
+  const orGroups = splitSqlChunks(compactChunks, " or ");
+  if (orGroups) {
+    return {
+      op: "or",
+      col: { name: "__group__" },
+      args: orGroups
+        .map(group => normalizeCondition({ queryChunks: group }))
+        .filter((group): group is MockCondition => group !== null),
+    };
+  }
+
+  if (compactChunks.length < 2 || !isColumnLike(compactChunks[0])) {
+    return null;
+  }
+
+  const operator = getStringChunkValue(compactChunks[1]);
+  if (!operator) {
+    return null;
+  }
+
+  if (operator === " is null") {
+    return {
+      op: "isNull",
+      col: compactChunks[0],
+    };
+  }
+
+  const right = compactChunks[2];
+  if (right === undefined) {
+    return null;
+  }
+
+  switch (operator) {
+    case " = ":
+      return {
+        op: "eq",
+        col: compactChunks[0],
+        val: unwrapSqlValue(right),
+      };
+    case " in ":
+      return {
+        op: "inArray",
+        col: compactChunks[0],
+        values: Array.isArray(right)
+          ? right.map(entry => unwrapSqlValue(entry))
+          : [],
+      };
+    case " > ":
+      return {
+        op: "gt",
+        col: compactChunks[0],
+        val: unwrapSqlValue(right),
+      };
+    case " >= ":
+      return {
+        op: "gte",
+        col: compactChunks[0],
+        val: unwrapSqlValue(right),
+      };
+    case " <= ":
+      return {
+        op: "lte",
+        col: compactChunks[0],
+        val: unwrapSqlValue(right),
+      };
+    default:
+      return null;
+  }
+}
+
 function normalizeComparableValue(value: unknown) {
   if (value instanceof Date) {
     return value.getTime();
@@ -72,8 +253,9 @@ function getTableName(table: unknown): string {
 
 function getColValue(
   rowCtx: Record<string, unknown>,
-  col: { table?: unknown; name: string }
+  col: { table?: unknown; name: string } | undefined
 ): unknown {
+  if (!col) return undefined;
   const tableName = getTableName(col.table);
   const row = rowCtx[tableName] as Record<string, unknown> | undefined;
   if (!row) return undefined;
@@ -81,6 +263,10 @@ function getColValue(
 }
 
 function matchesFlatCondition(row: MockRow, cond: MockCondition): boolean {
+  const normalized = normalizeCondition(cond);
+  if (!normalized) return true;
+  cond = normalized;
+
   if (!cond) return true;
 
   if (cond.op === "and") {
@@ -114,6 +300,10 @@ function matchesJoinedCondition(
   rowCtx: Record<string, unknown>,
   cond: MockCondition
 ): boolean {
+  const normalized = normalizeCondition(cond);
+  if (!normalized) return true;
+  cond = normalized;
+
   if (!cond) return true;
 
   if (cond.op === "and") {

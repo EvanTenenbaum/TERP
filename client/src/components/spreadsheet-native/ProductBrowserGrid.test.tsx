@@ -28,24 +28,35 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     rows = [],
+    columnDefs = [],
     onSelectedRowChange,
-    headerActions,
+    selectedRowId,
   }: {
     title: string;
     rows?: Array<{ identity: { rowKey: string } }>;
+    columnDefs?: Array<{
+      cellRenderer?: (params: {
+        data?: { identity: { rowKey: string } } | null;
+      }) => ReactNode;
+    }>;
     onSelectedRowChange?: (
       row: { identity: { rowKey: string } } | null
     ) => void;
-    headerActions?: ReactNode;
+    selectedRowId?: string | null;
   }) => (
     <div data-testid={`grid-${title}`}>
       <div>{title}</div>
-      {headerActions}
       {rows.length > 0 && onSelectedRowChange ? (
         <button onClick={() => onSelectedRowChange(rows[0])}>
           Select first row
         </button>
       ) : null}
+      {rows.length > 0 && columnDefs[0]?.cellRenderer
+        ? columnDefs[0].cellRenderer({
+            data:
+              rows.find(row => row.identity.rowKey === selectedRowId) ?? null,
+          })
+        : null}
     </div>
   ),
 }));
@@ -143,7 +154,7 @@ describe("ProductBrowserGrid", () => {
     );
 
     fireEvent.click(screen.getByText("Select first row"));
-    fireEvent.click(screen.getByRole("button", { name: /\+ add selected/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^\+ add$/i }));
 
     expect(onAddProduct).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -208,7 +219,7 @@ describe("ProductBrowserGrid", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /catalog/i }));
     fireEvent.click(screen.getByText("Select first row"));
-    fireEvent.click(screen.getByRole("button", { name: /\+ add selected/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^\+ add$/i }));
 
     expect(onAddProduct).toHaveBeenCalledWith(
       expect.objectContaining({

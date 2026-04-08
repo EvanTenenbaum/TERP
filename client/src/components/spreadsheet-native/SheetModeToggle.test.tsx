@@ -39,10 +39,10 @@ describe("SheetModeToggle", () => {
       screen.getByRole("button", { name: "Spreadsheet View" })
     ).toHaveAttribute("aria-pressed", "true");
     expect(
-      screen.getByRole("button", { name: "Classic Surface" })
+      screen.getByRole("button", { name: "Standard View" })
     ).toHaveAttribute("data-variant", "outline");
     expect(
-      screen.getByRole("button", { name: "Classic Surface" })
+      screen.getByRole("button", { name: "Standard View" })
     ).toHaveAttribute("aria-pressed", "false");
   });
 
@@ -58,7 +58,7 @@ describe("SheetModeToggle", () => {
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Spreadsheet View" }));
-    fireEvent.click(screen.getByRole("button", { name: "Classic Surface" }));
+    fireEvent.click(screen.getByRole("button", { name: "Standard View" }));
 
     expect(onSurfaceModeChange).toHaveBeenNthCalledWith(1, "sheet-native");
     expect(onSurfaceModeChange).toHaveBeenNthCalledWith(2, "classic");

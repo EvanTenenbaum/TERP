@@ -1,31 +1,40 @@
-import React, { useState } from 'react';
-import { trpc } from '@/lib/trpc';
+import React, { useEffect, useState } from "react";
+import { trpc } from "@/lib/trpc";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { toast } from 'sonner';
-import { Phone, Mail, Calendar, FileText } from 'lucide-react';
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import { Phone, Mail, Calendar, FileText } from "lucide-react";
+import type { PaymentCommunicationType } from "./paymentFollowUp";
+
+type CommunicationDraft = {
+  type: PaymentCommunicationType;
+  subject: string;
+  notes?: string;
+  title?: string;
+};
 
 interface AddCommunicationModalProps {
   clientId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  draft?: CommunicationDraft | null;
 }
 
 export function AddCommunicationModal({
@@ -33,21 +42,31 @@ export function AddCommunicationModal({
   open,
   onOpenChange,
   onSuccess,
+  draft,
 }: AddCommunicationModalProps) {
-  const [type, setType] = useState<'CALL' | 'EMAIL' | 'MEETING' | 'NOTE'>('NOTE');
-  const [subject, setSubject] = useState('');
-  const [notes, setNotes] = useState('');
+  const [type, setType] = useState<PaymentCommunicationType>("NOTE");
+  const [subject, setSubject] = useState("");
+  const [notes, setNotes] = useState("");
   const [communicatedAt, setCommunicatedAt] = useState(
     new Date().toISOString().slice(0, 16)
   );
 
   const addCommunication = trpc.clients.communications.add.useMutation();
 
+  useEffect(() => {
+    if (!open) return;
+
+    setType(draft?.type ?? "NOTE");
+    setSubject(draft?.subject ?? "");
+    setNotes(draft?.notes ?? "");
+    setCommunicatedAt(new Date().toISOString().slice(0, 16));
+  }, [draft, open]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!subject.trim()) {
-      toast.error('Subject is required');
+      toast.error("Subject is required");
       return;
     }
 
@@ -60,18 +79,20 @@ export function AddCommunicationModal({
         communicatedAt,
       });
 
-      toast.success('Communication logged successfully');
-      
-      // Reset form
-      setType('NOTE');
-      setSubject('');
-      setNotes('');
+      toast.success("Communication logged successfully");
+
+      setType("NOTE");
+      setSubject("");
+      setNotes("");
       setCommunicatedAt(new Date().toISOString().slice(0, 16));
-      
+
       onSuccess();
       onOpenChange(false);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to log communication';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to log communication";
       toast.error(errorMessage);
       console.error(error);
     }
@@ -81,13 +102,16 @@ export function AddCommunicationModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Log Communication</DialogTitle>
+          <DialogTitle>{draft?.title ?? "Log Communication"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="type">Communication Type</Label>
-            <Select value={type} onValueChange={(value: 'CALL' | 'EMAIL' | 'MEETING' | 'NOTE') => setType(value)}>
+            <Select
+              value={type}
+              onValueChange={(value: PaymentCommunicationType) => setType(value)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -171,4 +195,3 @@ export function AddCommunicationModal({
     </Dialog>
   );
 }
-

@@ -864,6 +864,11 @@ export function SalesCatalogueSurface() {
                   {identityMeta}
                 </span>
               ) : null}
+              {row.vendor && row.vendor !== "-" ? (
+                <span className="truncate text-[10px] text-muted-foreground">
+                  Supplier: {row.vendor}
+                </span>
+              ) : null}
               {statusNote ? (
                 <span className="truncate text-[10px] text-amber-700">
                   {statusNote}

@@ -3,6 +3,7 @@ import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
+import { Button } from "@/components/ui/button";
 
 const OrdersSheetPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/OrdersSheetPilotSurface")
@@ -40,6 +41,7 @@ import {
   type LinearWorkspaceTab,
 } from "@/components/layout/LinearWorkspaceShell";
 import { Redirect, useLocation, useSearch } from "wouter";
+import { Layers } from "lucide-react";
 
 type BaseSalesTab = (typeof SALES_WORKSPACE.tabs)[number]["value"];
 type SalesTab = BaseSalesTab | "create-order";
@@ -292,6 +294,29 @@ export default function SalesWorkspacePage() {
     );
   }
 
+  const commandStripToggle =
+    activeTab === "orders" ? (
+      <SheetModeToggle
+        enabled={sheetPilotEnabled}
+        surfaceMode={surfaceMode}
+        onSurfaceModeChange={setSurfaceMode}
+      />
+    ) : activeTab === "quotes" ? (
+      <SheetModeToggle
+        enabled={quotesPilotEnabled}
+        surfaceMode={quotesSurfaceMode}
+        onSurfaceModeChange={setQuotesSurfaceMode}
+      />
+    ) : activeTab === "returns" ? (
+      <SheetModeToggle
+        enabled={returnsPilotEnabled}
+        surfaceMode={returnsSurfaceMode}
+        onSurfaceModeChange={setReturnsSurfaceMode}
+      />
+    ) : null;
+  const shouldShowCommandStrip =
+    commandStripToggle !== null || activeTab !== "sales-sheets";
+
   return (
     <LinearWorkspaceShell
       title={SALES_WORKSPACE.title}
@@ -302,24 +327,21 @@ export default function SalesWorkspacePage() {
       tabs={SALES_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
       commandStrip={
-        activeTab === "orders" ? (
-          <SheetModeToggle
-            enabled={sheetPilotEnabled}
-            surfaceMode={surfaceMode}
-            onSurfaceModeChange={setSurfaceMode}
-          />
-        ) : activeTab === "quotes" ? (
-          <SheetModeToggle
-            enabled={quotesPilotEnabled}
-            surfaceMode={quotesSurfaceMode}
-            onSurfaceModeChange={setQuotesSurfaceMode}
-          />
-        ) : activeTab === "returns" ? (
-          <SheetModeToggle
-            enabled={returnsPilotEnabled}
-            surfaceMode={returnsSurfaceMode}
-            onSurfaceModeChange={setReturnsSurfaceMode}
-          />
+        shouldShowCommandStrip ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {commandStripToggle}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={() => setActiveTab("sales-sheets")}
+              disabled={activeTab === "sales-sheets"}
+              aria-label="Open sales catalogue"
+            >
+              <Layers className="mr-1 h-3 w-3" />
+              Sales Catalogue
+            </Button>
+          </div>
         ) : null
       }
     >

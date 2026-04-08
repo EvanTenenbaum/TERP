@@ -12,7 +12,7 @@
  *   - PowersheetGrid queue of fulfillment-eligible orders
  *   - Selected-order detail panel: item list, bag display, pack actions
  *   - Explicit sidecar CTAs: Pack Selected, Pack All, Unpack, Mark Ready, Ship
- *   - Manifest CSV export
+ *   - Pick-list CSV export with batch locations
  *   - InspectorPanel for order/item deep context
  *   - Status filter exit notifications (FUL-023)
  *   - Permission tiers: canAccessPickPack (view) vs canManagePickPack (mutations)
@@ -77,6 +77,10 @@ import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
 import { PICK_PACK_STATUS_TOKENS, STATUS_NEUTRAL } from "@/lib/statusTokens";
+import {
+  buildPickListExportOptions,
+  type PickListRow,
+} from "./fulfillmentPickList";
 
 // ============================================================================
 // Types
@@ -114,17 +118,6 @@ interface FulfillmentQueueRow {
   createdAt: string | null;
 }
 
-interface ManifestRow extends Record<string, unknown> {
-  orderNumber: string;
-  clientName: string;
-  productName: string;
-  quantity: number;
-  location: string;
-  bagIdentifier: string;
-  packed: string;
-  packedAt: string;
-}
-
 // ============================================================================
 // Constants
 // ============================================================================
@@ -155,7 +148,7 @@ const queueAffordances: PowersheetAffordance[] = [
   { label: "Fill", available: false },
   { label: "Edit", available: false },
   { label: "Workflow actions", available: true },
-  { label: "Export manifest", available: true },
+  { label: "Generate pick list", available: true },
 ];
 
 // ============================================================================
@@ -661,7 +654,7 @@ export function FulfillmentPilotSurface({
     { enabled: selectedOrderId !== null }
   );
 
-  const { exportCSV, state: exportState } = useExport<ManifestRow>();
+  const { exportCSV, state: exportState } = useExport<PickListRow>();
 
   // ── Derived data ───────────────────────────────────────────────────────────
 
@@ -758,14 +751,14 @@ export function FulfillmentPilotSurface({
     [statsQuery.data]
   );
 
-  const manifestRows = useMemo<ManifestRow[]>(() => {
+  const pickListRows = useMemo<PickListRow[]>(() => {
     if (!orderDetails) return [];
     return orderDetails.items.map(item => ({
       orderNumber: orderDetails.order.orderNumber,
       clientName: orderDetails.order.clientName,
       productName: item.productName,
       quantity: item.quantity,
-      location: item.location,
+      batchLocation: item.location,
       bagIdentifier: item.bagIdentifier ?? "UNASSIGNED",
       packed: item.isPacked ? "Yes" : "No",
       packedAt: item.packedAt ? new Date(item.packedAt).toLocaleString() : "",
@@ -983,27 +976,19 @@ export function FulfillmentPilotSurface({
     shipNotes,
   ]);
 
-  const handleExportManifest = useCallback(() => {
-    if (!orderDetails || manifestRows.length === 0) {
-      notifyToast("error", "Select an order with items to export a manifest");
+  const handleGeneratePickList = useCallback(() => {
+    if (!orderDetails || pickListRows.length === 0) {
+      notifyToast(
+        "error",
+        "Select a fulfillment order with items to generate a pick list"
+      );
       return;
     }
-    const safeNum = orderDetails.order.orderNumber.replace(/\s+/g, "_");
-    void exportCSV(manifestRows, {
-      filename: `fulfillment_manifest_${safeNum}`,
-      addTimestamp: true,
-      columns: [
-        { key: "orderNumber", label: "Order Number" },
-        { key: "clientName", label: "Client" },
-        { key: "productName", label: "Product" },
-        { key: "quantity", label: "Quantity" },
-        { key: "location", label: "Location" },
-        { key: "bagIdentifier", label: "Bag" },
-        { key: "packed", label: "Packed" },
-        { key: "packedAt", label: "Packed At" },
-      ],
-    });
-  }, [exportCSV, orderDetails, manifestRows, notifyToast]);
+    void exportCSV(
+      pickListRows,
+      buildPickListExportOptions(orderDetails.order.orderNumber)
+    );
+  }, [exportCSV, orderDetails, pickListRows, notifyToast]);
 
   const resetQueueView = useCallback(() => {
     setStatusFilter("ALL");
@@ -1496,17 +1481,19 @@ export function FulfillmentPilotSurface({
                 Unpack Selected
               </Button>
 
-              {/* FUL-019: export manifest */}
+              {/* FUL-019: generate pick list */}
               <Button
                 variant="outline"
                 size="sm"
                 className="min-h-[44px]"
-                onClick={handleExportManifest}
-                disabled={exportState.isExporting || manifestRows.length === 0}
-                title="Export fulfillment manifest to CSV"
+                onClick={handleGeneratePickList}
+                disabled={exportState.isExporting || pickListRows.length === 0}
+                title="Generate pick list with batch locations"
               >
                 <Download className="w-4 h-4 mr-2" />
-                {exportState.isExporting ? "Exporting..." : "Export Manifest"}
+                {exportState.isExporting
+                  ? "Generating..."
+                  : "Generate Pick List"}
               </Button>
 
               <div className="flex-1" />

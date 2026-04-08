@@ -47,37 +47,17 @@ import {
 import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
+import {
+  STATUS_OPTIONS,
+  STATUS_LABELS,
+  type InventoryBatchStatus,
+  mod,
+} from "./inventoryConstants";
 
 // ============================================================================
 // Constants
 // ============================================================================
-
-const STATUS_OPTIONS = [
-  "AWAITING_INTAKE",
-  "LIVE",
-  "ON_HOLD",
-  "QUARANTINED",
-  "SOLD_OUT",
-  "CLOSED",
-] as const;
-
-type InventoryBatchStatus = (typeof STATUS_OPTIONS)[number];
-
-const STATUS_LABELS: Record<InventoryBatchStatus, string> = {
-  AWAITING_INTAKE: "Awaiting Intake",
-  LIVE: "Live",
-  ON_HOLD: "On Hold",
-  QUARANTINED: "Quarantined",
-  SOLD_OUT: "Sold Out",
-  CLOSED: "Closed",
-};
-
 const PAGE_SIZE = 100;
-
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const mod = isMac ? "\u2318" : "Ctrl";
 
 const queueKeyboardHints: KeyboardHint[] = [
   { key: "Click", label: "select row" },
@@ -189,7 +169,7 @@ export function InventorySheetPilotSurface({
     useSpreadsheetSelectionParam("batchId");
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("LIVE");
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [loadedWindowCount, setLoadedWindowCount] = useState(1);
   const [queueSelectionSummary, setQueueSelectionSummary] =
@@ -869,7 +849,9 @@ export function InventorySheetPilotSurface({
                 selectedRow.status === "QUARANTINED" && "border-amber-300"
               )}
             >
-              {selectedRow.status}
+              {STATUS_LABELS[
+                selectedRow.status as InventoryBatchStatus
+              ] ?? selectedRow.status}
             </Badge>
           ) : null
         }

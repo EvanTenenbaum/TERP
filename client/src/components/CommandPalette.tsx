@@ -14,6 +14,7 @@ import {
   HelpCircle,
   LayoutDashboard,
   Loader2,
+  Layers,
   Package,
   Plus,
   History,
@@ -131,6 +132,15 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       shortcut: "R",
       action: () => {
         setLocation(buildOperationsWorkspacePath("receiving"));
+        onOpenChange(false);
+      },
+    },
+    {
+      id: "sales-catalogue",
+      label: "Sales Catalogue",
+      icon: Layers,
+      action: () => {
+        setLocation(buildSalesWorkspacePath("sales-sheets"));
         onOpenChange(false);
       },
     },
