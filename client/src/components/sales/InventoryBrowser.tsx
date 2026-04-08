@@ -586,7 +586,8 @@ export function InventoryBrowser({
                   });
                   const addDisabled = alreadyInSheet || !readyToSell;
                   const detailLine = [
-                    item.brand || item.vendor,
+                    item.vendor,
+                    item.brand && item.brand !== item.vendor ? item.brand : null,
                     item.subcategory,
                     item.grade ? `Grade ${item.grade}` : null,
                     item.batchSku,

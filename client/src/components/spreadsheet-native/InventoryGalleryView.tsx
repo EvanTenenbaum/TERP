@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { InventoryPilotRow } from "@/lib/spreadsheet-native";
+import { STATUS_LABELS } from "./inventoryConstants";
 
 const STATUS_COLORS: Record<string, string> = {
   LIVE: "bg-green-100 text-green-800",
@@ -96,7 +97,8 @@ export function InventoryGalleryView({
                   STATUS_COLORS[row.status] ?? "bg-gray-100 text-gray-800"
                 )}
               >
-                {row.status}
+                {STATUS_LABELS[row.status as keyof typeof STATUS_LABELS] ??
+                  row.status}
               </Badge>
               <span
                 className={cn(

@@ -20,6 +20,7 @@ import {
   SquareArrowOutUpRight,
   Trash2,
 } from "lucide-react";
+import { useLocation } from "wouter";
 import {
   Dialog,
   DialogContent,
@@ -68,6 +69,7 @@ import {
   KeyboardHintBar,
   type KeyboardHint,
 } from "@/components/work-surface/KeyboardHintBar";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import { AdjustmentContextDrawer } from "./AdjustmentContextDrawer";
@@ -149,8 +151,18 @@ const EXPORT_COLUMNS: ExportColumn<InventoryPilotRow>[] = [
     formatter: v => String(v ?? 0),
   },
   {
+    key: "unitPrice",
+    label: "Unit Price",
+    formatter: v => (v === null || v === undefined ? "" : String(v)),
+  },
+  {
     key: "unitCogs",
     label: "Unit COGS",
+    formatter: v => (v === null || v === undefined ? "" : String(v)),
+  },
+  {
+    key: "marginPercent",
+    label: "Margin %",
     formatter: v => (v === null || v === undefined ? "" : String(v)),
   },
   { key: "ageLabel", label: "Age" },
@@ -172,6 +184,9 @@ const formatCurrency = (value: number | null) =>
         style: "currency",
         currency: "USD",
       }).format(value);
+
+const formatPercent = (value: number | null) =>
+  value === null || Number.isNaN(value) ? "-" : `${value.toFixed(1)}%`;
 
 const formatQuantity = (value: number) =>
   value.toLocaleString(undefined, {
@@ -205,6 +220,7 @@ interface InventoryLocationRow {
 // ============================================================================
 
 export function InventoryManagementSurface() {
+  const [, setLocation] = useLocation();
   const { hasPermission } = usePermissions();
   const { selectedId: selectedBatchId, setSelectedId: setSelectedBatchId } =
     useSpreadsheetSelectionParam("batchId");
@@ -537,6 +553,27 @@ export function InventoryManagementSurface() {
         headerName: "Product",
         flex: 1.3,
         minWidth: 280,
+        cellRenderer: (params: { data?: InventoryPilotRow }) => {
+          const row = params.data;
+          if (!row) return "";
+          const subDetails = [row.vendorName, row.brandName, row.grade]
+            .map(value => value?.trim())
+            .filter(
+              (value): value is string =>
+                Boolean(value) && value !== "-" && value !== "Unknown"
+            )
+            .join(" · ");
+          return (
+            <div className="flex min-w-0 flex-col">
+              <span className="truncate font-medium">{row.productName}</span>
+              {subDetails ? (
+                <span className="truncate text-[11px] text-muted-foreground">
+                  {subDetails}
+                </span>
+              ) : null}
+            </div>
+          );
+        },
         cellClass: "powersheet-cell--locked",
       },
       {
@@ -573,6 +610,10 @@ export function InventoryManagementSurface() {
         cellEditorParams: {
           values: [...STATUS_OPTIONS],
         },
+        valueFormatter: params =>
+          STATUS_LABELS[
+            (params.value as InventoryBatchStatus) ?? "LIVE"
+          ] ?? String(params.value ?? ""),
         cellClass: canUpdateInventory
           ? "powersheet-cell--editable"
           : "powersheet-cell--locked",
@@ -605,6 +646,14 @@ export function InventoryManagementSurface() {
         cellClass: "powersheet-cell--locked",
       },
       {
+        field: "unitPrice",
+        headerName: "Price",
+        minWidth: 110,
+        maxWidth: 120,
+        valueFormatter: params => formatCurrency(params.value ?? null),
+        cellClass: "powersheet-cell--locked",
+      },
+      {
         field: "unitCogs",
         headerName: "COGS",
         minWidth: 100,
@@ -614,6 +663,14 @@ export function InventoryManagementSurface() {
         cellClass: canUpdateInventory
           ? "powersheet-cell--editable"
           : "powersheet-cell--locked",
+      },
+      {
+        field: "marginPercent",
+        headerName: "Margin",
+        minWidth: 100,
+        maxWidth: 110,
+        valueFormatter: params => formatPercent(params.value ?? null),
+        cellClass: "powersheet-cell--locked",
       },
       {
         field: "ageLabel",
@@ -1225,7 +1282,8 @@ export function InventoryManagementSurface() {
                   selectedRow.status === "QUARANTINED" && "border-amber-300"
                 )}
               >
-                {selectedRow.status}
+                {STATUS_LABELS[selectedRow.status as InventoryBatchStatus] ??
+                  selectedRow.status}
               </Badge>
             ) : null
           }
@@ -1284,8 +1342,14 @@ export function InventoryManagementSurface() {
               </InspectorSection>
 
               <InspectorSection title="Valuation">
+                <InspectorField label="Unit Price">
+                  <p>{formatCurrency(selectedRow?.unitPrice ?? null)}</p>
+                </InspectorField>
                 <InspectorField label="Unit COGS">
                   <p>{formatCurrency(selectedRow?.unitCogs ?? null)}</p>
+                </InspectorField>
+                <InspectorField label="Margin">
+                  <p>{formatPercent(selectedRow?.marginPercent ?? null)}</p>
                 </InspectorField>
                 <InspectorField label="Total Value">
                   <p>
@@ -1328,6 +1392,24 @@ export function InventoryManagementSurface() {
 
               {canUpdateInventory && (
                 <InspectorSection title="Actions">
+                  <InspectorField label="Add to Order">
+                    <Button
+                      className="w-full"
+                      variant="outline"
+                      onClick={() => {
+                        if (!selectedRow?.batchId) return;
+                        setLocation(
+                          buildSalesWorkspacePath("create-order", {
+                            batchId: selectedRow.batchId,
+                          })
+                        );
+                      }}
+                      disabled={!selectedRow?.batchId}
+                    >
+                      <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
+                      Start Order
+                    </Button>
+                  </InspectorField>
                   <InspectorField label="Adjust Quantity">
                     <div className="space-y-2">
                       <Input

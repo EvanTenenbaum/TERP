@@ -71,6 +71,11 @@ export function ClientCommitContextCard({
     return (recentOrdersQuery.data.orders ?? []).slice(0, 3);
   }, [recentOrdersQuery.data]);
 
+  const creditLimit = shell?.financials.creditLimit ?? 0;
+  const currentBalance = shell?.financials.balance?.computedBalance ?? 0;
+  const availableCredit =
+    creditLimit > 0 ? Math.max(creditLimit - currentBalance, 0) : null;
+
   if (shellQuery.isLoading) {
     return (
       <Card>
@@ -129,6 +134,33 @@ export function ClientCommitContextCard({
               Referred by {shell.referrer.name}
             </p>
           ) : null}
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <div className="rounded-xl border border-border/70 bg-muted/35 p-3">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              Credit Limit
+            </p>
+            <p className="mt-1 text-sm font-semibold">
+              {creditLimit > 0 ? formatMoney(creditLimit) : "—"}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-muted/35 p-3">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              Balance
+            </p>
+            <p className="mt-1 text-sm font-semibold">
+              {formatMoney(currentBalance)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-muted/35 p-3">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+              Available
+            </p>
+            <p className="mt-1 text-sm font-semibold">
+              {availableCredit !== null ? formatMoney(availableCredit) : "—"}
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-3 gap-2">

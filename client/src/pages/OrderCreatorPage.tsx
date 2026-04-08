@@ -437,6 +437,7 @@ export default function OrderCreatorPageV2({
   const quoteIdFromRoute = parseRouteEntityId(searchParams.get("quoteId"));
   const clientIdFromRoute = parseRouteEntityId(searchParams.get("clientId"));
   const needIdFromRoute = parseRouteEntityId(searchParams.get("needId"));
+  const batchIdFromRoute = parseRouteEntityId(searchParams.get("batchId"));
   const routeMode = searchParams.get("mode");
   const isDuplicateRoute =
     routeMode === "duplicate" && quoteIdFromRoute !== null;
@@ -466,6 +467,9 @@ export default function OrderCreatorPageV2({
     useState<CustomerDrawerSection>("money");
   const customerDrawerOriginRef = useRef<HTMLElement | null>(null);
   const [portableCut, setPortableCut] = useState<PortableSalesCut | null>(null);
+  const [pendingBatchId, setPendingBatchId] = useState<number | null>(
+    batchIdFromRoute
+  );
 
   // CHAOS-007: Unsaved changes warning
   const { setHasUnsavedChanges, ConfirmNavigationDialog } =
@@ -517,6 +521,10 @@ export default function OrderCreatorPageV2({
       ? "Choose a customer from the dropdown above to begin a new quote."
       : "Choose a customer from the dropdown above to begin a new order draft."
     : "Choose a customer from the dropdown above";
+
+  useEffect(() => {
+    setPendingBatchId(batchIdFromRoute);
+  }, [batchIdFromRoute]);
 
   // Referral tracking state (WS-004)
   const [referredByClientId, setReferredByClientId] = useState<number | null>(
@@ -1488,109 +1496,125 @@ export default function OrderCreatorPageV2({
   };
 
   // Convert inventory items to LineItem format
-  const convertInventoryToLineItems = (
-    inventoryItems: InventoryItemForOrder[]
-  ): LineItem[] => {
-    // Filter out items with invalid or missing IDs to prevent race condition errors
-    const validItems = inventoryItems.filter(item => {
-      if (!item || item.id === undefined || item.id === null) {
-        console.warn("Skipping item with missing id:", item);
-        return false;
+  const convertInventoryToLineItems = useCallback(
+    (inventoryItems: InventoryItemForOrder[]): LineItem[] => {
+      // Filter out items with invalid or missing IDs to prevent race condition errors
+      const validItems = inventoryItems.filter(item => {
+        if (!item || item.id === undefined || item.id === null) {
+          console.warn("Skipping item with missing id:", item);
+          return false;
+        }
+        return true;
+      });
+
+      return validItems.map(item => {
+        // Calculate margin percent from basePrice and retailPrice
+        const cogsPerUnit =
+          item.effectiveCogs ?? item.basePrice ?? item.unitCogs ?? 0;
+        const retailPrice = item.retailPrice || item.basePrice || 0;
+
+        const availableUnits = Math.max(1, Math.floor(item.quantity ?? 1));
+        const quantity =
+          normalizePositiveIntegerWithin(
+            item.orderQuantity ?? item.quantity ?? 1,
+            availableUnits
+          ) ?? 1;
+
+        // Preserve exact retail-price cents when profile pricing drives the row.
+        const calculated = calculateLineItemFromRetailPrice(
+          item.id, // batchId - guaranteed to be defined after filter
+          quantity,
+          cogsPerUnit,
+          retailPrice
+        );
+        const pricingContext = resolveInventoryPricingContext(item);
+
+        return {
+          ...calculated,
+          productId: item.productId, // WSQA-002: Include productId for flexible lot selection
+          cogsMode: item.cogsMode,
+          unitCogsMin: item.unitCogsMin ?? null,
+          unitCogsMax: item.unitCogsMax ?? null,
+          effectiveCogsBasis:
+            item.effectiveCogsBasis ??
+            (item.cogsMode === "RANGE" ? "MID" : "MANUAL"),
+          originalRangeMin: item.unitCogsMin ?? null,
+          originalRangeMax: item.unitCogsMax ?? null,
+          isBelowVendorRange:
+            typeof item.unitCogsMin === "number"
+              ? cogsPerUnit < item.unitCogsMin
+              : false,
+          marginPercent: calculated.marginPercent || 0, // Ensure marginPercent is always a number
+          marginDollar: calculated.marginDollar || 0, // Ensure marginDollar is always a number
+          unitPrice: calculated.unitPrice || 0, // Ensure unitPrice is always a number
+          lineTotal: calculated.lineTotal || 0, // Ensure lineTotal is always a number
+          productDisplayName: item.name || "Unknown Product",
+          originalCogsPerUnit: cogsPerUnit,
+          belowRangeReason: undefined,
+          isCogsOverridden: false,
+          isMarginOverridden: false,
+          marginSource: pricingContext.marginSource,
+          profilePriceAdjustmentPercent:
+            pricingContext.profilePriceAdjustmentPercent,
+          appliedRules: item.appliedRules ?? [],
+          isSample: false,
+        };
+      });
+    },
+    []
+  );
+
+  const handleAddItem = useCallback(
+    (inventoryItems: InventoryItemForOrder[]) => {
+      if (!inventoryItems || inventoryItems.length === 0) {
+        toast.error("No items selected");
+        return;
       }
-      return true;
-    });
 
-    return validItems.map(item => {
-      // Calculate margin percent from basePrice and retailPrice
-      const cogsPerUnit =
-        item.effectiveCogs ?? item.basePrice ?? item.unitCogs ?? 0;
-      const retailPrice = item.retailPrice || item.basePrice || 0;
+      // Convert inventory items to LineItem format (filters out invalid items)
+      const newLineItems = convertInventoryToLineItems(inventoryItems);
 
-      const availableUnits = Math.max(1, Math.floor(item.quantity ?? 1));
-      const quantity =
-        normalizePositiveIntegerWithin(
-          item.orderQuantity ?? item.quantity ?? 1,
-          availableUnits
-        ) ?? 1;
+      // Check if any items were skipped due to missing data
+      if (newLineItems.length === 0) {
+        toast.error("Selected items are not available. Please try again.");
+        return;
+      }
 
-      // Preserve exact retail-price cents when profile pricing drives the row.
-      const calculated = calculateLineItemFromRetailPrice(
-        item.id, // batchId - guaranteed to be defined after filter
-        quantity,
-        cogsPerUnit,
-        retailPrice
+      if (newLineItems.length < inventoryItems.length) {
+        toast.warning(
+          `${inventoryItems.length - newLineItems.length} item(s) were skipped due to incomplete data`
+        );
+      }
+
+      // Filter out items that are already in the order (by batchId)
+      const existingBatchIds = new Set(items.map(item => item.batchId));
+      const uniqueItems = newLineItems.filter(
+        item => !existingBatchIds.has(item.batchId)
       );
-      const pricingContext = resolveInventoryPricingContext(item);
 
-      return {
-        ...calculated,
-        productId: item.productId, // WSQA-002: Include productId for flexible lot selection
-        cogsMode: item.cogsMode,
-        unitCogsMin: item.unitCogsMin ?? null,
-        unitCogsMax: item.unitCogsMax ?? null,
-        effectiveCogsBasis:
-          item.effectiveCogsBasis ??
-          (item.cogsMode === "RANGE" ? "MID" : "MANUAL"),
-        originalRangeMin: item.unitCogsMin ?? null,
-        originalRangeMax: item.unitCogsMax ?? null,
-        isBelowVendorRange:
-          typeof item.unitCogsMin === "number"
-            ? cogsPerUnit < item.unitCogsMin
-            : false,
-        marginPercent: calculated.marginPercent || 0, // Ensure marginPercent is always a number
-        marginDollar: calculated.marginDollar || 0, // Ensure marginDollar is always a number
-        unitPrice: calculated.unitPrice || 0, // Ensure unitPrice is always a number
-        lineTotal: calculated.lineTotal || 0, // Ensure lineTotal is always a number
-        productDisplayName: item.name || "Unknown Product",
-        originalCogsPerUnit: cogsPerUnit,
-        belowRangeReason: undefined,
-        isCogsOverridden: false,
-        isMarginOverridden: false,
-        marginSource: pricingContext.marginSource,
-        profilePriceAdjustmentPercent:
-          pricingContext.profilePriceAdjustmentPercent,
-        appliedRules: item.appliedRules ?? [],
-        isSample: false,
-      };
-    });
-  };
+      if (uniqueItems.length === 0) {
+        toast.warning("Selected items are already in the order");
+        return;
+      }
 
-  const handleAddItem = (inventoryItems: InventoryItemForOrder[]) => {
-    if (!inventoryItems || inventoryItems.length === 0) {
-      toast.error("No items selected");
+      // Add new items to the order
+      setItems([...items, ...uniqueItems]);
+      toast.success(`Added ${uniqueItems.length} item(s) to order`);
+    },
+    [convertInventoryToLineItems, items, setItems]
+  );
+
+  useEffect(() => {
+    if (!pendingBatchId || !clientId || !inventory) return;
+    if (items.some(item => item.batchId === pendingBatchId)) {
+      setPendingBatchId(null);
       return;
     }
-
-    // Convert inventory items to LineItem format (filters out invalid items)
-    const newLineItems = convertInventoryToLineItems(inventoryItems);
-
-    // Check if any items were skipped due to missing data
-    if (newLineItems.length === 0) {
-      toast.error("Selected items are not available. Please try again.");
-      return;
-    }
-
-    if (newLineItems.length < inventoryItems.length) {
-      toast.warning(
-        `${inventoryItems.length - newLineItems.length} item(s) were skipped due to incomplete data`
-      );
-    }
-
-    // Filter out items that are already in the order (by batchId)
-    const existingBatchIds = new Set(items.map(item => item.batchId));
-    const uniqueItems = newLineItems.filter(
-      item => !existingBatchIds.has(item.batchId)
-    );
-
-    if (uniqueItems.length === 0) {
-      toast.warning("Selected items are already in the order");
-      return;
-    }
-
-    // Add new items to the order
-    setItems([...items, ...uniqueItems]);
-    toast.success(`Added ${uniqueItems.length} item(s) to order`);
-  };
+    const target = inventory.find(item => item.id === pendingBatchId);
+    if (!target) return;
+    handleAddItem([target]);
+    setPendingBatchId(null);
+  }, [pendingBatchId, clientId, inventory, items, handleAddItem]);
 
   const keyboard = useWorkSurfaceKeyboard({
     gridMode: false,
@@ -1724,6 +1748,12 @@ export default function OrderCreatorPageV2({
     <div className="min-w-0 space-y-4">
       <Card id="inventory-browser-section">
         <CardContent className="pt-4">
+          {pendingBatchId && !clientId && (
+            <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+              This order was started from inventory. Select a customer to add the
+              batch to the order.
+            </div>
+          )}
           {inventoryError ? (
             <div className="text-center py-8">
               <AlertCircle className="h-8 w-8 text-destructive mx-auto mb-2" />

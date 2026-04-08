@@ -4,9 +4,10 @@
  * TER-642: Fix strain management at /products so chain test can create strains
  */
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -189,6 +190,7 @@ function CreateStrainDialog({
 }
 
 export default function ProductsPage() {
+  const routeSearch = useSearch();
   const [search, setSearch] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const utils = trpc.useUtils();
@@ -200,6 +202,14 @@ export default function ProductsPage() {
     error,
     refetch,
   } = trpc.strains.list.useQuery({ limit: 500 });
+
+  useEffect(() => {
+    const params = new URLSearchParams(routeSearch);
+    const routeQuery = params.get("search");
+    if (routeQuery) {
+      setSearch(routeQuery);
+    }
+  }, [routeSearch]);
 
   const createMutation = trpc.strains.create.useMutation({
     onSuccess: () => {
