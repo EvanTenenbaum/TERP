@@ -2,7 +2,7 @@
 
 ## Active Milestone
 
-TER-1070 tranche 3 closeout, merge prep, and tracker writeback.
+Initiative closeout and TER-1071 deferred-pass normalization.
 
 ## Current Decisions
 
@@ -53,3 +53,6 @@ Each tranche should end with 3 to 7 concrete things Evan can now do or observe i
 - 2026-04-08: verified TER-1070 with targeted Vitest, targeted eslint, `pnpm check`, `pnpm build`, and a five-check local browser bundle under `output/playwright/ter-1070-ops-continuity-2026-04-08/`
 - 2026-04-08: created a minimal local proof fixture for TER-1070 after confirming the seeded proof DB contained zero `purchaseOrders` and zero `vendor_payables`; recorded it as a harness action instead of claiming seeded runtime coverage
 - 2026-04-08: accepted the final TER-1070 hostile pass after fixing UTC-stable expected-delivery date handling, strengthening the queue-filter and invalid-date tests, and guarding `Show Purchase Order` for legacy drafts with invalid `poId`
+- 2026-04-08: merged TER-1070 via PR `#573` to `main` and normalized the tranche-3 child + scope-anchor tickets with evidence-specific Linear writeback
+- 2026-04-08: completed TER-1071 by parking `TER-1055`, `TER-1056`, `TER-1063`, and `TER-1065` with explicit reasons instead of leaving them as ambiguous initiative leftovers
+- 2026-04-08: updated the canonical packet to mark the remaining initiative complete on `main`

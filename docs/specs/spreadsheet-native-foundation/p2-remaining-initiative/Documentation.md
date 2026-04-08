@@ -46,11 +46,18 @@ For TER-1070 tranche 3, the authoritative evidence index is:
 - `output/playwright/ter-1070-ops-continuity-2026-04-08/summary.md`
 - `reviews/2026-04-08-ter-1070-adversarial-review.md`
 
+For TER-1071 deferred-pass normalization, the authoritative evidence index is:
+
+- `analysis/2026-04-08-ter-1071-deferred-decision-pass.md`
+- `evidence/ter-1071/README.md`
+- `reviews/2026-04-08-ter-1071-adversarial-review.md`
+
 ## Known Limitations
 
 - The full `pnpm test` lane is currently blocked by the reset/seed harness; see `evidence/ter-1068/2026-04-08-full-test-limitation.md`.
 - The post-review browser proof required a fresh rebuild of the local `terp-test` database after `pnpm test` left the proof environment without the `users` table; that rebuild is recorded as a harness action, not a product fix.
 - The TER-1070 runtime proof required a small local fixture because the seeded proof DB had zero `purchaseOrders` and zero `vendor_payables`; that fixture is documented in `output/playwright/ter-1070-ops-continuity-2026-04-08/summary.md` and does not represent merged product seed coverage.
+- TER-1071 is a docs-and-tracker closeout slice, so it intentionally has no runtime/browser packet and no rerun of untouched code tests.
 - PR 569's `docs/initiatives/...` files are not on `main`; keeping them and this packet side by side as co-equal systems would create drift, so the canonical repo home stays here unless explicitly changed later.
 
 ## Follow-Ups
