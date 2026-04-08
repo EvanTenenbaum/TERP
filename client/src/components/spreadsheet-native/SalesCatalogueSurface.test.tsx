@@ -489,6 +489,9 @@ describe("SalesCatalogueSurface", () => {
     expect(chatText).toContain("Blue Dream");
     expect(chatText).toContain("Andy Rhan · Indoor · BT-42");
     expect(chatText).toContain("$1,200.00");
+    expect(chatText).toContain(
+      "Pricing, availability, and payment terms are subject to final confirmation."
+    );
   });
 
   it("omits placeholder descriptors from the chat summary", () => {
@@ -504,6 +507,9 @@ describe("SalesCatalogueSurface", () => {
 
     expect(chatText).toContain("Blue Dream");
     expect(chatText).not.toContain("- · -");
+    expect(chatText).toContain(
+      "1 line is missing grower or batch identity. Confirm the exact lot before sending."
+    );
   });
 
   it("disables both save affordances while a save is in flight", async () => {

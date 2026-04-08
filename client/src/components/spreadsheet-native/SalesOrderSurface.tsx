@@ -13,7 +13,9 @@ import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
 import { normalizePositiveIntegerWithin } from "@/lib/quantity";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { useOrderCalculations } from "@/hooks/orders/useOrderCalculations";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   type CreditCheckResult,
   resolveOrderCostVisibility,
@@ -39,6 +41,7 @@ import {
   OrderAdjustmentsBar,
   CreditWarningDialog,
 } from "@/components/orders";
+import { ClientCommitContextCard } from "@/components/orders/ClientCommitContextCard";
 import type { OrderAdjustment } from "@/components/orders/types";
 import { QuickViewSelector } from "@/components/sales/QuickViewSelector";
 import { SaveViewDialog } from "@/components/sales/SaveViewDialog";
@@ -135,6 +138,9 @@ const sanitizeDecimalInput = (value: string) => {
   const [whole, ...fraction] = cleaned.split(".");
   return fraction.length > 0 ? `${whole}.${fraction.join("")}` : whole;
 };
+
+const DRAFT_AVAILABILITY_REPAIR_MESSAGE =
+  "This draft only contains unavailable, blocked, or unresolved lines. Replace, recheck, or remove them before confirming the order.";
 
 const parseNonNegativeNumber = (value: string): number | null => {
   const trimmed = value.trim();
@@ -372,6 +378,15 @@ export function SalesOrderSurface() {
   const displaySettingsQuery =
     trpc.organizationSettings.getDisplaySettings.useQuery();
   const creditCheckMutation = trpc.credit.checkOrderCredit.useMutation();
+  const { hasAnyPermission } = usePermissions();
+  const canViewPricingContext = hasAnyPermission([
+    "orders:view_pricing",
+    "pricing:read",
+    "pricing:access",
+    "pricing:rules:read",
+    "pricing:profiles:read",
+    "pricing:defaults:view",
+  ]);
 
   const { showCogs, showMargin } = useMemo(
     () => resolveOrderCostVisibility(displaySettingsQuery.data),
@@ -427,6 +442,42 @@ export function SalesOrderSurface() {
     () => mapInventoryToRows(filteredInventory, selectedBatchIds),
     [filteredInventory, selectedBatchIds]
   );
+  const inventoryAvailabilityByBatchId = useMemo(
+    () => new Map((inventoryQuery.data ?? []).map(item => [item.id, item])),
+    [inventoryQuery.data]
+  );
+  const draftAvailabilityRows = useMemo(
+    () =>
+      draft.items.map(item => ({
+        item,
+        inventory: inventoryAvailabilityByBatchId.get(item.batchId) ?? null,
+      })),
+    [draft.items, inventoryAvailabilityByBatchId]
+  );
+  const nonSellableDraftItems = useMemo(
+    () =>
+      draftAvailabilityRows.filter(
+        row => row.inventory && !isSalesInventorySellable(row.inventory)
+      ),
+    [draftAvailabilityRows]
+  );
+  const sellableDraftItemCount = useMemo(
+    () =>
+      draftAvailabilityRows.filter(
+        row => row.inventory && isSalesInventorySellable(row.inventory)
+      ).length,
+    [draftAvailabilityRows]
+  );
+  const unknownAvailabilityDraftItemCount = useMemo(
+    () => draftAvailabilityRows.filter(row => !row.inventory).length,
+    [draftAvailabilityRows]
+  );
+  const draftItemsNeedingAvailabilityRepairCount =
+    nonSellableDraftItems.length + unknownAvailabilityDraftItemCount;
+  const allTrackedDraftItemsNeedAvailabilityRepair =
+    draft.items.length > 0 &&
+    sellableDraftItemCount === 0 &&
+    draftItemsNeedingAvailabilityRepairCount > 0;
 
   useEffect(() => {
     setInventoryRowControls({});
@@ -966,6 +1017,40 @@ export function SalesOrderSurface() {
     draft.handleSaveDraft();
   }, [draft, isUnavailableClientRoute]);
 
+  const handleOpenRelationshipOverview = useCallback(() => {
+    if (!draft.clientId) {
+      return;
+    }
+
+    setLocation(buildRelationshipProfilePath(draft.clientId, "overview"));
+  }, [draft.clientId, setLocation]);
+
+  const handleOpenRelationshipMoney = useCallback(() => {
+    if (!draft.clientId) {
+      return;
+    }
+
+    setLocation(buildRelationshipProfilePath(draft.clientId, "money"));
+  }, [draft.clientId, setLocation]);
+
+  const handleOpenRelationshipPricing = useCallback(() => {
+    if (!draft.clientId) {
+      return;
+    }
+
+    setLocation(buildRelationshipProfilePath(draft.clientId, "sales-pricing"));
+  }, [draft.clientId, setLocation]);
+
+  const handleViewPaymentHistory = useCallback(() => {
+    setShowCreditWarning(false);
+    setLocation("/accounting?tab=invoices");
+  }, [setLocation]);
+
+  const handleRecordPayment = useCallback(() => {
+    setShowCreditWarning(false);
+    setLocation("/accounting?tab=payments");
+  }, [setLocation]);
+
   const handleFinalizeRequest = useCallback(async () => {
     if (isCheckingCredit || creditCheckMutation.isPending) {
       return;
@@ -983,6 +1068,11 @@ export function SalesOrderSurface() {
 
     if (!calculationState.isValid) {
       toast.error("Please add at least one valid line item before finalizing");
+      return;
+    }
+
+    if (allTrackedDraftItemsNeedAvailabilityRepair) {
+      toast.error(DRAFT_AVAILABILITY_REPAIR_MESSAGE);
       return;
     }
 
@@ -1009,6 +1099,7 @@ export function SalesOrderSurface() {
 
     setShowFinalizeConfirm(true);
   }, [
+    allTrackedDraftItemsNeedAvailabilityRepair,
     calculationState.isValid,
     creditCheckMutation,
     draft.clientId,
@@ -1146,6 +1237,62 @@ export function SalesOrderSurface() {
   );
   const documentControlsBand = (
     <div className="space-y-1">
+      <div className="grid gap-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
+        {draft.clientId && !isUnavailableClientRoute ? (
+          <ClientCommitContextCard
+            clientId={draft.clientId}
+            canViewPricingContext={canViewPricingContext}
+            onOpenOverview={handleOpenRelationshipOverview}
+            onOpenMoney={handleOpenRelationshipMoney}
+            onOpenPricing={handleOpenRelationshipPricing}
+          />
+        ) : (
+          <div />
+        )}
+        <section className="rounded-lg border border-border/70 bg-background p-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Commit Continuity
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <Badge variant={portableCut ? "secondary" : "outline"}>
+              {portableCut ? "Imported cut active" : "Direct order flow"}
+            </Badge>
+            {nonSellableDraftItems.length > 0 ? (
+              <Badge variant="outline" className="text-amber-700">
+                {nonSellableDraftItems.length} blocked line
+                {nonSellableDraftItems.length === 1 ? "" : "s"}
+              </Badge>
+            ) : null}
+            {unknownAvailabilityDraftItemCount > 0 ? (
+              <Badge variant="outline" className="text-amber-700">
+                {unknownAvailabilityDraftItemCount} unresolved line
+                {unknownAvailabilityDraftItemCount === 1 ? "" : "s"}
+              </Badge>
+            ) : null}
+            {draft.items.length > 0 &&
+            draftItemsNeedingAvailabilityRepairCount === 0 ? (
+              <Badge variant="outline">Sellable draft lines ready</Badge>
+            ) : null}
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {allTrackedDraftItemsNeedAvailabilityRepair
+              ? DRAFT_AVAILABILITY_REPAIR_MESSAGE
+              : draftItemsNeedingAvailabilityRepairCount > 0
+                ? `${draftItemsNeedingAvailabilityRepairCount} draft line${draftItemsNeedingAvailabilityRepairCount === 1 ? " still needs" : "s still need"} live availability confirmation before final confirmation.`
+                : draft.items.length > 0
+                  ? "The current draft stays aligned with the live sellable view while credit and relationship context remain visible."
+                  : "Customer context, recent sales, and credit posture stay visible while you build the order."}
+          </p>
+          {unknownAvailabilityDraftItemCount > 0 ? (
+            <p className="mt-2 text-xs text-muted-foreground">
+              {unknownAvailabilityDraftItemCount} line
+              {unknownAvailabilityDraftItemCount === 1 ? "" : "s"} cannot be
+              rechecked against the live inventory list yet.
+            </p>
+          ) : null}
+        </section>
+      </div>
+
       <div className="overflow-hidden rounded-lg border border-border/70 bg-background">
         <InvoiceBottom
           subtotal={orderTotals.subtotal}
@@ -1161,6 +1308,7 @@ export function SalesOrderSurface() {
           creditAvailable={creditSummary.creditAvailable}
           creditUtilizationPercent={creditSummary.utilizationPercent}
           creditWarning={creditSummary.warning}
+          onOpenCredit={handleOpenRelationshipMoney}
           totalCogs={orderTotals.totalCogs}
           totalMargin={orderTotals.totalMargin}
           marginPercent={orderTotals.avgMarginPercent}
@@ -1188,7 +1336,8 @@ export function SalesOrderSurface() {
         finalizeDisabled={
           !calculationState.isValid ||
           isFinalizeBusy ||
-          isUnavailableClientRoute
+          isUnavailableClientRoute ||
+          allTrackedDraftItemsNeedAvailabilityRepair
         }
         isFinalizePending={isFinalizeBusy}
         isSeededFromCatalogue={draft.isSalesSheetImport}
@@ -1417,6 +1566,8 @@ export function SalesOrderSurface() {
         orderTotal={grandTotal}
         clientName={selectedClientLabel ?? "Selected customer"}
         onProceed={handleCreditProceed}
+        onViewPaymentHistory={handleViewPaymentHistory}
+        onRecordPayment={handleRecordPayment}
         onCancel={handleCreditCancel}
       />
 
