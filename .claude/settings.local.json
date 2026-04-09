@@ -25,7 +25,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/env python3 /Users/evantenenbaum/spec-erp-docker/TERP/TERP/.claude/hooks/closeout-guard.py",
+            "command": "/usr/bin/env python3 /home/user/TERP/.claude/hooks/closeout-guard.py",
             "timeout": 10000
           }
         ]
@@ -37,7 +37,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/usr/bin/env python3 /Users/evantenenbaum/spec-erp-docker/TERP/TERP/.claude/hooks/closeout-guard.py",
+            "command": "/usr/bin/env python3 /home/user/TERP/.claude/hooks/closeout-guard.py",
             "timeout": 10000
           }
         ]
