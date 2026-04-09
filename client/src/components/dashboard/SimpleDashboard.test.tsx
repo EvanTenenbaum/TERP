@@ -180,7 +180,7 @@ describe("SimpleDashboard", () => {
     expect(screen.getByText(/operational kpis/i)).toBeInTheDocument();
     expect(screen.getByText(/expected deliveries/i)).toBeInTheDocument();
     expect(screen.getByText(/pending fulfillment/i)).toBeInTheDocument();
-    expect(screen.getByText(/appointments today/i)).toBeInTheDocument();
+    expect(screen.getByText(/^appointments today$/i)).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText(/recent activity/i)).toBeInTheDocument();
