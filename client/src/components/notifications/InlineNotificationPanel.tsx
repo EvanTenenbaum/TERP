@@ -71,6 +71,8 @@ interface Notification {
   createdAt: Date | string;
 }
 
+type NotificationCategory = "all" | "fyi" | "action";
+
 const getNotificationIcon = (type: string) => {
   switch (type) {
     case "success":
@@ -82,6 +84,43 @@ const getNotificationIcon = (type: string) => {
     default:
       return <Info className="h-4 w-4 text-primary" />;
   }
+};
+
+const getNotificationCategory = (type: string): NotificationCategory => {
+  switch (type) {
+    case "error":
+    case "warning":
+      return "action";
+    default:
+      return "fyi";
+  }
+};
+
+const getEmptyStateCopy = (
+  filter: InlineNotificationPanelProps["filterType"],
+  category: NotificationCategory
+) => {
+  if (filter === "unread") {
+    return category === "action"
+      ? "No unread action-needed notifications"
+      : category === "fyi"
+        ? "No unread notifications - you're caught up"
+        : "No unread notifications - you're caught up";
+  }
+
+  if (filter === "read") {
+    return category === "action"
+      ? "No previously read action-needed notifications"
+      : category === "fyi"
+        ? "No previously read FYI notifications"
+        : "No read notifications yet";
+  }
+
+  return category === "action"
+    ? "No active alerts"
+    : category === "fyi"
+      ? "Nothing informational to review right now"
+      : "No notifications yet";
 };
 
 export const InlineNotificationPanel = React.memo(
@@ -97,6 +136,8 @@ export const InlineNotificationPanel = React.memo(
   }: InlineNotificationPanelProps) {
     const [isExpanded, setIsExpanded] = useState(defaultExpanded);
     const [currentFilter, setCurrentFilter] = useState(filterType);
+    const [currentCategory, setCurrentCategory] =
+      useState<NotificationCategory>("all");
     const utils = trpc.useContext();
 
     // Fetch notifications
@@ -140,9 +181,17 @@ export const InlineNotificationPanel = React.memo(
 
     // Apply filter
     const notifications = allNotifications.filter(n => {
-      if (currentFilter === "unread") return !n.read;
-      if (currentFilter === "read") return n.read;
-      return true;
+      const matchesReadState =
+        currentFilter === "unread"
+          ? !n.read
+          : currentFilter === "read"
+            ? n.read
+            : true;
+      const matchesCategory =
+        currentCategory === "all" ||
+        getNotificationCategory(n.type) === currentCategory;
+
+      return matchesReadState && matchesCategory;
     });
 
     const handleNotificationClick = useCallback(
@@ -167,14 +216,25 @@ export const InlineNotificationPanel = React.memo(
       [deleteNotification]
     );
 
+    const handleMarkReadOnly = useCallback(
+      (e: React.MouseEvent, notificationId: number) => {
+        e.stopPropagation();
+        markRead.mutate({ notificationId });
+      },
+      [markRead]
+    );
+
     const renderNotificationItem = (notification: Notification) => (
       <div
         key={notification.id}
         onClick={() => handleNotificationClick(notification)}
         className={cn(
-          "flex items-start gap-3 p-3 border-b last:border-b-0 cursor-pointer transition-colors",
+          "group flex items-start gap-3 border-b p-3 last:border-b-0 cursor-pointer transition-colors",
           "hover:bg-muted/50",
-          !notification.read && "bg-primary/5"
+          !notification.read &&
+            "border-l-2 border-l-primary bg-primary/10 pl-[10px]",
+          notification.type === "error" && "bg-destructive/5",
+          notification.type === "warning" && "bg-amber-500/5"
         )}
       >
         <div className="flex-shrink-0 mt-0.5">
@@ -185,14 +245,26 @@ export const InlineNotificationPanel = React.memo(
             <p
               className={cn(
                 "text-sm truncate",
-                !notification.read && "font-medium"
+                !notification.read && "font-semibold"
               )}
             >
               {notification.title}
             </p>
-            {!notification.read && (
-              <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
-            )}
+            <div className="flex items-center gap-1">
+              {!notification.read && (
+                <div className="h-3 w-3 rounded-full bg-primary flex-shrink-0" />
+              )}
+              {!notification.read && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2 text-[11px] opacity-0 transition-opacity group-hover:opacity-100"
+                  onClick={e => handleMarkReadOnly(e, notification.id)}
+                >
+                  Mark read
+                </Button>
+              )}
+            </div>
           </div>
           {notification.message && (
             <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
@@ -298,6 +370,34 @@ export const InlineNotificationPanel = React.memo(
               )}
             </CardDescription>
           )}
+          {isExpanded && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button
+                variant={currentCategory === "all" ? "secondary" : "outline"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setCurrentCategory("all")}
+              >
+                All
+              </Button>
+              <Button
+                variant={currentCategory === "fyi" ? "secondary" : "outline"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setCurrentCategory("fyi")}
+              >
+                FYI
+              </Button>
+              <Button
+                variant={currentCategory === "action" ? "secondary" : "outline"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setCurrentCategory("action")}
+              >
+                Needs Action
+              </Button>
+            </div>
+          )}
         </CardHeader>
 
         {isExpanded && (
@@ -310,11 +410,7 @@ export const InlineNotificationPanel = React.memo(
               <div className="py-8 text-center text-muted-foreground">
                 <Inbox className="h-10 w-10 mx-auto mb-3 opacity-50" />
                 <p className="text-sm">
-                  {currentFilter === "unread"
-                    ? "No unread notifications"
-                    : currentFilter === "read"
-                      ? "No read notifications"
-                      : "No notifications yet"}
+                  {getEmptyStateCopy(currentFilter, currentCategory)}
                 </p>
               </div>
             ) : (
