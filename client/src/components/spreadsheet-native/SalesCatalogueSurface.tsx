@@ -13,11 +13,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CellClickedEvent, ColDef } from "ag-grid-community";
 import {
   Copy,
-  ArrowRight,
   ExternalLink,
   FileText,
   Image as ImageIcon,
-  Link2,
   MoreHorizontal,
   Plus,
   Printer,
@@ -66,6 +64,7 @@ import {
 } from "@/components/sales/types";
 import {
   clearPortableSalesCut,
+  countActiveSalesFilters,
   matchesSalesInventoryFilters,
   normalizeSalesFilters,
   writePortableSalesCut,
@@ -335,6 +334,8 @@ const keyboardHints: KeyboardHint[] = [
 ];
 
 const catalogueInventoryGridHeight = "clamp(30rem, calc(100vh - 14rem), 52rem)";
+const surfacePanelClass =
+  "rounded-xl border border-border/70 bg-card/80 shadow-sm";
 
 function mapInventoryToRows(
   items: PricedInventoryItem[],
@@ -1154,10 +1155,6 @@ export function SalesCatalogueSurface() {
     setCheckedInventoryIds(new Set());
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    void inventoryQuery.refetch();
-  }, [inventoryQuery]);
-
   const handleLoadView = useCallback(
     (view: {
       id: number;
@@ -1420,118 +1417,125 @@ export function SalesCatalogueSurface() {
   return (
     <div className="flex flex-col gap-1">
       {/* ── TOOLBAR ──────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-1.5 px-2 py-1 border-b border-border/70 bg-background">
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
-          onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
-        >
-          &larr; Orders
-        </Button>
-        <Badge
-          variant="secondary"
-          className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]"
-        >
-          Sales Catalogue
-        </Badge>
-        <Input
-          value={draft.draftName}
-          onChange={e => draft.setDraftName(e.target.value)}
-          placeholder="Draft name..."
-          className="h-7 max-w-36 text-xs"
-          aria-invalid={draftNameMissingForSave}
-          disabled={!selectedClientId}
-        />
-        {draftNameMissingForSave && (
-          <span className="text-[10px] text-amber-700">
-            Draft name required to save
-          </span>
-        )}
-        <div className="w-48">
-          <ClientCombobox
-            value={selectedClientId}
-            onValueChange={handleClientChange}
-            clients={clientList}
-            isLoading={clientsQuery.isLoading}
-            placeholder="Client..."
-            emptyText="No clients"
-          />
-        </div>
-
-        <div className="ml-auto flex items-center gap-1.5">
-          {draft.hasUnsavedChanges && (
-            <Badge
-              variant="outline"
-              className="text-amber-600 border-amber-300 bg-amber-50 text-[10px] h-5"
-            >
-              Unsaved
-            </Badge>
-          )}
-          {draft.lastSaveTime && !draft.hasUnsavedChanges && (
-            <Badge
-              variant="outline"
-              className="text-emerald-600 border-emerald-300 bg-emerald-50 text-[10px] h-5"
-            >
-              Saved
-            </Badge>
-          )}
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={!selectedClientId || draft.isSaving}
-            onClick={draft.saveDraft}
-          >
-            <Save className="mr-1 h-3 w-3" />
-            {draft.isSaving ? "Saving..." : "Save Draft"}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={!selectedClientId}
-            onClick={handleRefresh}
-            aria-label="Refresh inventory"
-          >
-            <ArrowRight className="h-3 w-3 rotate-90" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+      <div className={`${surfacePanelClass} px-3 py-2`}>
+        <div className="flex flex-wrap items-start gap-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 px-2"
-                disabled={!selectedClientId}
+                className="h-7 px-2 text-xs"
+                onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
               >
-                <MoreHorizontal className="h-3 w-3" />
+                &larr; Orders
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setShowDraftDialog(true)}>
-                Load Draft
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowSavedSheetsDialog(true)}>
-                Load Saved Sheet
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!draft.currentDraftId}
-                onClick={() => setShowDeleteDraftDialog(true)}
-                className="text-destructive"
+              <Badge
+                variant="secondary"
+                className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700"
               >
-                <Trash2 className="mr-2 h-3 w-3" />
-                Delete Draft
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                Sales Catalogue
+              </Badge>
+              <Badge
+                variant="outline"
+                className="text-[10px] text-muted-foreground"
+              >
+                {draft.hasUnsavedChanges
+                  ? "Unsaved edits"
+                  : draft.lastSaveTime
+                    ? "Saved draft"
+                    : "Draft ready"}
+              </Badge>
+              {selectedItems.length > 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] text-muted-foreground"
+                >
+                  {selectedItems.length} line
+                  {selectedItems.length === 1 ? "" : "s"}
+                </Badge>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                value={draft.draftName}
+                onChange={e => draft.setDraftName(e.target.value)}
+                placeholder="Draft name..."
+                className="h-7 max-w-44 text-xs"
+                aria-invalid={draftNameMissingForSave}
+                disabled={!selectedClientId}
+              />
+              <div className="w-56">
+                <ClientCombobox
+                  value={selectedClientId}
+                  onValueChange={handleClientChange}
+                  clients={clientList}
+                  isLoading={clientsQuery.isLoading}
+                  placeholder="Client..."
+                  emptyText="No clients"
+                />
+              </div>
+            </div>
+            {draftNameMissingForSave && (
+              <span className="text-[10px] text-amber-700">
+                Draft name required to save
+              </span>
+            )}
+          </div>
+
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              disabled={!selectedClientId || draft.isSaving}
+              onClick={draft.saveDraft}
+            >
+              <Save className="mr-1 h-3 w-3" />
+              {draft.isSaving ? "Saving..." : "Save Draft"}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2"
+                  disabled={!selectedClientId}
+                >
+                  <MoreHorizontal className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowDraftDialog(true)}>
+                  Load Draft
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setShowSavedSheetsDialog(true)}
+                >
+                  Load Saved Sheet
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={!draft.currentDraftId}
+                  onClick={() => setShowDeleteDraftDialog(true)}
+                  className="text-destructive"
+                >
+                  <Trash2 className="mr-2 h-3 w-3" />
+                  Delete Draft
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
       {/* ── ACTION BAR ───────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-1.5 px-2 py-0.5 rounded-md border border-border/70 bg-muted/30 mx-1">
-        <span className="text-xs font-medium">View</span>
+      <div
+        className={`${surfacePanelClass} mx-0.5 flex flex-wrap items-center gap-2 px-3 py-2`}
+      >
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          View
+        </span>
 
-        {selectedClientId && (
+        {selectedClientId ? (
           <>
             <QuickViewSelector
               clientId={selectedClientId}
@@ -1542,23 +1546,31 @@ export function SalesCatalogueSurface() {
               size="sm"
               variant="outline"
               className="h-8 px-2.5 text-xs"
-              disabled={!selectedClientId || draft.isSaving}
-              onClick={draft.saveDraft}
+              onClick={() => setShowSaveViewDialog(true)}
+              disabled={countActiveSalesFilters(filters) === 0}
             >
-              <Save className="mr-1 h-3.5 w-3.5" />
-              {draft.isSaving ? "Saving..." : "Save Draft"}
+              Save View
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="h-8 px-2.5 text-xs"
-              disabled={!selectedClientId}
-              onClick={handleRefresh}
-              aria-label="Refresh inventory"
+              onClick={() => setShowAdvancedFilters(current => !current)}
             >
-              <ArrowRight className="h-3.5 w-3.5 rotate-90" />
+              Filters
             </Button>
+            <span className="ml-auto text-[10px] text-muted-foreground">
+              {checkedVisibleRows.length} checked · {inventoryRows.length}{" "}
+              visible
+              {selectedItems.length > 0
+                ? ` · ${selectedItems.length} items · ${formatCurrency(totalSheetValue)}`
+                : ""}
+            </span>
           </>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            Select a client to unlock view and inventory actions.
+          </span>
         )}
       </div>
 
@@ -1580,7 +1592,7 @@ export function SalesCatalogueSurface() {
         <div className="grid gap-1 lg:grid-cols-4 px-1">
           {/* Left: Inventory Browser (3/4) */}
           <div className="lg:col-span-3 flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-1 rounded-md border border-border/70 bg-background px-2 py-1">
+            <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/70 bg-background px-2 py-1">
               <Input
                 value={filters.search}
                 onChange={e =>
@@ -1751,7 +1763,7 @@ export function SalesCatalogueSurface() {
               contentClassName="px-4 pb-4 pt-0"
             />
 
-            <div className="rounded-md border border-border/70 bg-card/80 p-3">
+            <div className={`${surfacePanelClass} p-3`}>
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -1780,7 +1792,7 @@ export function SalesCatalogueSurface() {
                   {selectedItems.map(item => (
                     <div
                       key={item.id}
-                      className="flex min-w-[88px] flex-col gap-1 rounded-md border border-border/70 bg-background/80 p-1.5"
+                      className="flex min-w-[88px] flex-col gap-1 rounded-xl border border-border/70 bg-background/80 p-1.5"
                     >
                       <div className="h-16 w-full overflow-hidden rounded bg-muted/40">
                         {item.imageUrl ? (
@@ -1816,16 +1828,6 @@ export function SalesCatalogueSurface() {
                 >
                   <Save className="mr-1 h-3.5 w-3.5" />
                   {draft.isFinalizing ? "Saving..." : "Save Sheet"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-[11px]"
-                  disabled={!draft.canShare}
-                  onClick={() => void draft.generateShareLink()}
-                >
-                  <Link2 className="mr-1 h-3.5 w-3.5" />
-                  Share Link
                 </Button>
                 <Button
                   size="sm"
@@ -1881,7 +1883,7 @@ export function SalesCatalogueSurface() {
                 ) : null}
               </div>
 
-              <div className="mt-3 rounded-md border border-border/70 bg-background/70 p-2.5">
+              <div className="mt-3 rounded-xl border border-border/70 bg-background/70 p-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -1940,7 +1942,7 @@ export function SalesCatalogueSurface() {
               Select a client to start building a catalogue
             </p>
           </div>
-          <div className="rounded-md border border-border/70 bg-card/80 p-3">
+          <div className="rounded-xl border border-border/70 bg-card/80 p-3 shadow-sm">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 Next Step
@@ -1994,16 +1996,27 @@ export function SalesCatalogueSurface() {
       )}
 
       {/* ── HANDOFF BAR ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-1.5 px-2 py-1 mx-1 rounded-md border border-border/70 bg-background">
-        {draft.hasUnsavedChanges && selectedItems.length > 0 && (
-          <Badge
-            variant="outline"
-            className="text-amber-700 border-amber-300 bg-amber-50 text-[10px]"
-          >
-            Save the sheet before sharing or converting
-          </Badge>
-        )}
-        <div className="ml-auto flex gap-1">
+      <div
+        className={`${surfacePanelClass} mx-0.5 flex flex-wrap items-center gap-2 px-3 py-2`}
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Handoff
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Save first, then share the catalogue or convert it into another
+            sales workflow.
+          </p>
+          {draft.hasUnsavedChanges && selectedItems.length > 0 && (
+            <Badge
+              variant="outline"
+              className="w-fit border-amber-300 bg-amber-50 text-[10px] text-amber-700"
+            >
+              Save the sheet before sharing or converting
+            </Badge>
+          )}
+        </div>
+        <div className="ml-auto flex flex-wrap gap-1">
           <Button
             size="sm"
             variant="outline"

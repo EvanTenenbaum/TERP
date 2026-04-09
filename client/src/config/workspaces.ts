@@ -14,7 +14,7 @@ export const SALES_WORKSPACE = {
   title: "Sales",
   homePath: "/sales",
   description:
-    "Manage orders, quotes, returns, sales catalogues, and live shopping in a unified sales workspace.",
+    "Manage orders, quotes, returns, sales catalogues, and live shopping in one workspace.",
   tabs: [
     { value: "orders", label: "Orders" },
     { value: "quotes", label: "Quotes" },
@@ -30,7 +30,7 @@ export const DEMAND_SUPPLY_WORKSPACE = {
   title: "Demand & Supply",
   homePath: "/demand-supply",
   description:
-    "Manage needs, interests, matchmaking, and supplier availability in one workspace.",
+    "Manage needs, interests, matchmaking, and supplier availability from one workspace.",
   tabs: [
     { value: "matchmaking", label: "Matchmaking" },
     { value: "needs", label: "Client Needs" },
@@ -45,7 +45,7 @@ export const RELATIONSHIPS_WORKSPACE = {
   title: "Relationships",
   homePath: "/relationships",
   description:
-    "Manage buyers and suppliers from one lighter workspace without the full setup wizard.",
+    "Manage buyers and suppliers from one focused workspace without the full setup wizard.",
   tabs: [
     { value: "clients", label: "Clients" },
     { value: "suppliers", label: "Suppliers" },
@@ -56,7 +56,7 @@ export const INVENTORY_WORKSPACE = {
   title: "Inventory",
   homePath: "/inventory",
   description:
-    "Manage inventory, product intake, shipping, photography, and samples from one primary operational workspace.",
+    "Manage inventory, intake, shipping, photography, and samples from one primary operations workspace.",
   tabs: [
     { value: "inventory", label: "Inventory" },
     { value: "intake", label: "Direct Intake" },
@@ -85,7 +85,7 @@ export const ACCOUNTING_WORKSPACE = {
   title: "Accounting",
   homePath: "/accounting",
   description:
-    "Manage invoices, bills, payments, banking, and the ledger in one workspace.",
+    "Manage invoices, bills, payments, banking, and the ledger in one finance workspace.",
   tabs: [
     { value: "dashboard", label: "Dashboard" },
     { value: "invoices", label: "Invoices" },

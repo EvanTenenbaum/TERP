@@ -295,12 +295,16 @@ export default function SalesWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={SALES_WORKSPACE.title}
-      description=""
+      description="Keep queue, catalogue, quote, and order work in one place with fewer context switches."
       section="Sell"
       density="compact"
       activeTab={activeTab}
       tabs={SALES_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
+      meta={[
+        { label: "Primary", value: "Orders and quotes" },
+        { label: "Sheet-native", value: "Catalogue and order draft" },
+      ]}
       commandStrip={
         activeTab === "orders" ? (
           <SheetModeToggle

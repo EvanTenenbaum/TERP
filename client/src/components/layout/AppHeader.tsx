@@ -88,8 +88,8 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   };
 
   return (
-    <header className="border-b border-border/80 bg-background/95 backdrop-blur-sm">
-      <div className="flex min-h-[52px] items-center gap-2 px-2.5 py-2 md:px-4">
+    <header className="border-b border-border/70 bg-background/90 shadow-[0_1px_0_rgba(0,0,0,0.03)] backdrop-blur-md">
+      <div className="mx-auto flex min-h-[56px] w-full max-w-[1800px] items-center gap-2 px-3 py-2 md:px-4">
         <Button
           variant="ghost"
           size="icon"
@@ -112,12 +112,12 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           onSubmit={handleSearch}
           className="flex min-w-0 flex-1 items-center xl:max-w-4xl"
         >
-          <div className="relative flex w-full items-center">
+          <div className="relative flex w-full items-center rounded-2xl border border-border/70 bg-card/90 shadow-sm">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search, jump, or run a command..."
-              className="h-10 w-full rounded-full border-border/70 bg-background pl-10 pr-[5.5rem] text-sm shadow-sm"
+              className="h-10 w-full rounded-2xl border-0 bg-transparent pl-10 pr-[5.5rem] text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -134,13 +134,13 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           </div>
         </form>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-card/90 p-1 shadow-sm">
           <NotificationBell className="relative hidden sm:flex" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex h-10 items-center gap-2 rounded-full border border-border/70 bg-background px-2.5 shadow-sm"
+                className="flex h-9 items-center gap-2 rounded-full border-0 bg-transparent px-2.5 shadow-none"
               >
                 <User className="h-4 w-4 shrink-0" />
                 <span className="hidden max-w-[132px] truncate text-sm font-medium md:inline">

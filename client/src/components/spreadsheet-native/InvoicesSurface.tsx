@@ -1078,11 +1078,11 @@ export function InvoicesSurface() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-2">
       {/* ── 1. Toolbar ── */}
       <div
         className={cn(
-          "flex items-center gap-2 px-2 py-1 bg-muted/30 border-b transition-[padding] duration-200",
+          "mx-2 mt-2 flex items-center gap-2 rounded-xl border border-border/70 bg-card/90 px-3 py-2 shadow-sm transition-[padding] duration-200",
           inspectorDesktopOffsetClass
         )}
         data-testid="invoices-toolbar"
@@ -1149,7 +1149,7 @@ export function InvoicesSurface() {
       {/* ── 2. Action Bar ── */}
       <div
         className={cn(
-          "flex items-center gap-1 px-2 py-0.5 bg-muted/10 border-b flex-wrap transition-[padding] duration-200",
+          "mx-2 flex items-center gap-1 rounded-xl border border-border/60 bg-muted/40 px-3 py-2 flex-wrap shadow-sm transition-[padding] duration-200",
           inspectorDesktopOffsetClass
         )}
         data-testid="invoices-action-bar"

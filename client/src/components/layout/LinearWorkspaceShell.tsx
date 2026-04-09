@@ -43,17 +43,20 @@ function LinearWorkspaceTransitionSkeleton() {
   return (
     <div
       data-testid="workspace-transition-skeleton"
-      className="space-y-3 rounded-xl border border-border/60 bg-card/80 p-4"
+      className="space-y-4 rounded-2xl border border-border/60 bg-card/90 p-4 shadow-sm"
       aria-live="polite"
       aria-label="Loading workspace content"
     >
-      <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-      <div className="grid gap-3 md:grid-cols-3">
-        <div className="h-20 animate-pulse rounded-lg bg-muted/80" />
-        <div className="h-20 animate-pulse rounded-lg bg-muted/80" />
-        <div className="h-20 animate-pulse rounded-lg bg-muted/80" />
+      <div className="flex items-center justify-between gap-3">
+        <div className="h-4 w-36 animate-pulse rounded-full bg-muted" />
+        <div className="h-8 w-28 animate-pulse rounded-full bg-muted/80" />
       </div>
-      <div className="h-72 animate-pulse rounded-lg bg-muted/70" />
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="h-16 animate-pulse rounded-xl bg-muted/80" />
+        <div className="h-16 animate-pulse rounded-xl bg-muted/80" />
+        <div className="h-16 animate-pulse rounded-xl bg-muted/80" />
+      </div>
+      <div className="h-72 animate-pulse rounded-2xl bg-muted/70" />
     </div>
   );
 }
@@ -151,18 +154,24 @@ export function LinearWorkspaceShell<T extends string>({
               ) : null}
             </div>
           </div>
-        </header>
-      )}
-
-      {showMeta && (
-        <div className="linear-workspace-meta" aria-label="Workspace metadata">
-          {meta.map(item => (
-            <div key={item.label} className="linear-workspace-meta-item">
-              <span className="linear-workspace-meta-label">{item.label}</span>
-              <span className="linear-workspace-meta-value">{item.value}</span>
+          {showMeta && (
+            <div
+              className="linear-workspace-meta"
+              aria-label="Workspace metadata"
+            >
+              {meta.map(item => (
+                <div key={item.label} className="linear-workspace-meta-item">
+                  <span className="linear-workspace-meta-label">
+                    {item.label}
+                  </span>
+                  <span className="linear-workspace-meta-value">
+                    {item.value}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          )}
+        </header>
       )}
 
       <LinearWorkspaceTransitionContext.Provider

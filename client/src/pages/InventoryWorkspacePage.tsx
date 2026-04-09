@@ -119,11 +119,15 @@ export default function InventoryWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={INVENTORY_WORKSPACE.title}
-      description={INVENTORY_WORKSPACE.description}
+      description="Inventory, intake, receiving, shipping, photography, and samples share one operational frame."
       section="Operations"
       activeTab={activeTab}
       tabs={INVENTORY_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
+      meta={[
+        { label: "Primary", value: "Inventory and intake" },
+        { label: "Handoffs", value: "Receiving and shipping" },
+      ]}
       data-testid="inventory-header"
       commandStrip={
         activeTab === "intake" ? (

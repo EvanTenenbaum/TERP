@@ -94,6 +94,8 @@ const keyboardHints: KeyboardHint[] = [
   { key: `${mod}+Enter`, label: "finalize" },
   { key: `${mod}+Z`, label: "undo in grid" },
 ];
+const surfacePanelClass =
+  "rounded-xl border border-border/70 bg-card/80 shadow-sm";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", {
@@ -1005,7 +1007,7 @@ export function SalesOrderSurface() {
     </div>
   );
   const documentPanel = (
-    <div className="rounded-lg border border-border/70 bg-background">
+    <div className="rounded-xl border border-border/70 bg-background shadow-sm">
       <OrdersDocumentLineItemsGrid
         items={draft.items}
         clientId={draft.clientId}
@@ -1017,7 +1019,7 @@ export function SalesOrderSurface() {
   );
   const documentControlsBand = (
     <div className="space-y-1">
-      <div className="overflow-hidden rounded-lg border border-border/70 bg-background">
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-background shadow-sm">
         <InvoiceBottom
           subtotal={orderTotals.subtotal}
           adjustment={draft.adjustment as OrderAdjustment | null}
@@ -1070,47 +1072,62 @@ export function SalesOrderSurface() {
 
   return (
     <div {...keyboardProps} className="flex h-full flex-col gap-1">
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-border/70 bg-background px-2 py-1">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
-          onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
-        >
-          <ArrowLeft className="mr-1 h-3 w-3" />
-          Queue
-        </Button>
-        <span className="text-sm font-medium text-foreground">
-          {documentContextLabel}
-        </span>
-        <div className="w-48">
-          <ClientCombobox
-            value={draft.clientId}
-            onValueChange={handleClientChange}
-            clients={clientList}
-            isLoading={clientsQuery.isLoading}
-            placeholder="Customer..."
-            emptyText="No customers"
-            selectedLabel={selectedClientLabel}
-          />
+      <div
+        className={`${surfacePanelClass} flex flex-wrap items-start gap-3 px-3 py-2`}
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
+            >
+              <ArrowLeft className="mr-1 h-3 w-3" />
+              Queue
+            </Button>
+            <span className="text-sm font-medium text-foreground">
+              {documentContextLabel}
+            </span>
+            {draft.SaveStateIndicator}
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+            Keep the customer, document type, and totals in one working frame
+          </p>
         </div>
-        <Select
-          value={draft.orderType}
-          onValueChange={value => draft.setOrderType(value as "QUOTE" | "SALE")}
-        >
-          <SelectTrigger className="h-7 w-28 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="SALE">Sales Order</SelectItem>
-            <SelectItem value="QUOTE">Quote</SelectItem>
-          </SelectContent>
-        </Select>
-        {draft.SaveStateIndicator}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="w-48">
+            <ClientCombobox
+              value={draft.clientId}
+              onValueChange={handleClientChange}
+              clients={clientList}
+              isLoading={clientsQuery.isLoading}
+              placeholder="Customer..."
+              emptyText="No customers"
+              selectedLabel={selectedClientLabel}
+            />
+          </div>
+          <Select
+            value={draft.orderType}
+            onValueChange={value =>
+              draft.setOrderType(value as "QUOTE" | "SALE")
+            }
+          >
+            <SelectTrigger className="h-7 w-28 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="SALE">Sales Order</SelectItem>
+              <SelectItem value="QUOTE">Quote</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 px-2 py-1">
+      <div
+        className={`${surfacePanelClass} flex flex-wrap items-center gap-1.5 px-3 py-2`}
+      >
         {draft.clientId && !isUnavailableClientRoute && (
           <>
             <QuickViewSelector

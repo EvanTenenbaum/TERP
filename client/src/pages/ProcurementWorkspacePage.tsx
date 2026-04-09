@@ -58,11 +58,15 @@ export default function ProcurementWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title="Procurement"
-      description="Create purchase orders here, then continue product intake and inventory work from Operations."
+      description="Create purchase orders here, then hand them cleanly into receiving and inventory."
       section="Operations"
       activeTab={activeTab}
       tabs={PROCUREMENT_TABS}
       onTabChange={setActiveTab}
+      meta={[
+        { label: "Primary", value: "Purchase orders" },
+        { label: "Next handoff", value: "Receiving" },
+      ]}
     >
       <LinearWorkspacePanel value="purchase-orders">
         <PurchaseOrderSurface />

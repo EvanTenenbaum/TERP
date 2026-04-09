@@ -188,6 +188,9 @@ const queueKeyboardHints: KeyboardHint[] = [
   { key: "Esc", label: "clear dialogs" },
 ];
 
+const surfacePanelClass =
+  "rounded-xl border border-border/70 bg-card/80 shadow-sm";
+
 const queueAffordances: PowersheetAffordance[] = [
   { label: "Select", available: true },
   { label: "Multi-select", available: false },
@@ -1947,29 +1950,38 @@ function PurchaseOrderQueueMode({
   return (
     <div className="flex flex-col gap-2">
       {/* 1. Toolbar */}
-      <div className="flex items-center gap-2 py-1">
-        <h2 className="text-lg font-semibold">Purchase Orders</h2>
-        {draftCount > 0 && (
-          <Badge variant="outline" className="text-xs">
-            {draftCount} draft purchase orders
-          </Badge>
-        )}
-        {confirmedCount > 0 && (
-          <Badge variant="outline" className="text-xs">
-            {confirmedCount} confirmed purchase orders
-          </Badge>
-        )}
-        {receivingCount > 0 && (
-          <Badge variant="outline" className="text-xs">
-            {receivingCount} receiving purchase orders
-          </Badge>
-        )}
-        {supplierFilterName ? (
-          <Badge variant="secondary" className="text-xs">
-            Supplier: {supplierFilterName}
-          </Badge>
-        ) : null}
-        <div className="ml-auto flex items-center gap-2">
+      <div
+        className={`${surfacePanelClass} flex flex-wrap items-start gap-3 px-3 py-2`}
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold">Purchase Orders</h2>
+            {draftCount > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {draftCount} draft purchase orders
+              </Badge>
+            )}
+            {confirmedCount > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {confirmedCount} confirmed purchase orders
+              </Badge>
+            )}
+            {receivingCount > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {receivingCount} receiving purchase orders
+              </Badge>
+            )}
+            {supplierFilterName ? (
+              <Badge variant="secondary" className="text-xs">
+                Supplier: {supplierFilterName}
+              </Badge>
+            ) : null}
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+            Queue first, then receiving handoff
+          </p>
+        </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button size="sm" onClick={handleNewPO}>
             <Plus className="mr-1 h-4 w-4" />
             New Purchase Order
@@ -1988,7 +2000,9 @@ function PurchaseOrderQueueMode({
       </div>
 
       {/* 2. Action Bar */}
-      <div className="flex items-center gap-2 py-0.5">
+      <div
+        className={`${surfacePanelClass} flex flex-wrap items-center gap-2 px-3 py-2`}
+      >
         <Input
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
@@ -2067,8 +2081,26 @@ function PurchaseOrderQueueMode({
       {/* 4. Selected PO KPI Cards */}
       {selectedRow ? (
         <div className="grid gap-3 md:grid-cols-4">
+          {/* Status + age card */}
+          <div className="rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-3 shadow-sm">
+            <div className="flex items-center gap-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              <Package className="h-3 w-3" />
+              Queue status
+            </div>
+            <div className="mt-1 text-sm font-medium">
+              {selectedRow.statusLabel} · created{" "}
+              {formatAgeLabel(selectedRow.orderDate)}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {getExpectedDeliveryLabel(
+                selectedRow.expectedDeliveryDate,
+                selectedRow.status
+              )}
+            </div>
+          </div>
+
           {/* Supplier card */}
-          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+          <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
             <div className="flex items-center gap-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
               <Building className="h-3 w-3" />
               Supplier
@@ -2088,26 +2120,8 @@ function PurchaseOrderQueueMode({
             ) : null}
           </div>
 
-          {/* Status + age card */}
-          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
-            <div className="flex items-center gap-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
-              <Package className="h-3 w-3" />
-              Status
-            </div>
-            <div className="mt-1 text-sm font-medium">
-              {selectedRow.statusLabel} · created{" "}
-              {formatAgeLabel(selectedRow.orderDate)}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {getExpectedDeliveryLabel(
-                selectedRow.expectedDeliveryDate,
-                selectedRow.status
-              )}
-            </div>
-          </div>
-
           {/* Total + line count card */}
-          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+          <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
             <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
               Total
             </div>
@@ -2118,9 +2132,9 @@ function PurchaseOrderQueueMode({
           </div>
 
           {/* Actions card */}
-          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+          <div className="rounded-xl border border-border/70 bg-muted/30 px-3 py-3 shadow-sm">
             <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-              Actions
+              Next step
             </div>
             <div className="mt-1 flex flex-wrap gap-1">
               {/* Draft actions */}

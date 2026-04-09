@@ -473,9 +473,9 @@ export function GeneralLedgerSurface() {
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col gap-2">
       {/* ── 1. Toolbar ── */}
-      <div className="flex items-center gap-2 px-2 py-1 bg-muted/30 border-b flex-wrap">
+      <div className="mx-2 mt-2 flex items-center gap-2 rounded-xl border border-border/70 bg-card/90 px-3 py-2 flex-wrap shadow-sm">
         <span className="font-bold text-xs">General Ledger</span>
 
         <div className="w-40">
@@ -543,7 +543,7 @@ export function GeneralLedgerSurface() {
       </div>
 
       {/* ── 2. Action Bar ── */}
-      <div className="flex items-center gap-1 px-2 py-0.5 bg-muted/10 border-b flex-wrap">
+      <div className="mx-2 flex items-center gap-1 rounded-xl border border-border/60 bg-muted/40 px-3 py-2 flex-wrap shadow-sm">
         {/* Status filter tabs */}
         {STATUS_TABS.map(tab => (
           <Button

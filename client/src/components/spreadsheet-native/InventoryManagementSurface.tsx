@@ -102,6 +102,9 @@ const keyboardHints: KeyboardHint[] = [
   { key: `${mod}+K`, label: "search" },
 ];
 
+const surfacePanelClass =
+  "rounded-xl border border-border/70 bg-card/80 shadow-sm";
+
 const inventoryAffordances: PowersheetAffordance[] = [
   { label: "Select", available: true },
   { label: "Multi-select", available: true },
@@ -859,28 +862,38 @@ export function InventoryManagementSurface() {
       {/* Main content column */}
       <div className="flex flex-1 flex-col gap-1.5">
         {/* ── 1. Toolbar ── */}
-        <div className="flex items-center gap-3 px-3 py-1">
-          <span className="text-sm font-semibold">Inventory</span>
-          {dashStats && (
-            <>
-              <Badge variant="outline" className="text-xs">
-                {dashStats.statusCounts
-                  ? Object.values(dashStats.statusCounts).reduce(
-                      (sum, v) => sum + v,
-                      0
-                    )
-                  : 0}{" "}
-                batches
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {formatQuantity(dashStats.totalUnits ?? 0)} units
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {formatCurrency(dashStats.totalInventoryValue ?? null)} value
-              </Badge>
-            </>
-          )}
-          <div className="ml-auto flex items-center gap-1.5">
+        <div
+          className={`${surfacePanelClass} flex flex-wrap items-start gap-3 px-3 py-2`}
+        >
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold">Inventory</span>
+              {dashStats && (
+                <>
+                  <Badge variant="outline" className="text-xs">
+                    {dashStats.statusCounts
+                      ? Object.values(dashStats.statusCounts).reduce(
+                          (sum, v) => sum + v,
+                          0
+                        )
+                      : 0}{" "}
+                    batches
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {formatQuantity(dashStats.totalUnits ?? 0)} units
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {formatCurrency(dashStats.totalInventoryValue ?? null)}{" "}
+                    value
+                  </Badge>
+                </>
+              )}
+            </div>
+            <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              Inventory operations
+            </p>
+          </div>
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <Button
               size="sm"
               variant={viewMode === "grid" ? "default" : "outline"}
@@ -914,7 +927,9 @@ export function InventoryManagementSurface() {
         </div>
 
         {/* ── 2. Action Bar ── */}
-        <div className="flex items-center gap-2 px-3 py-0.5">
+        <div
+          className={`${surfacePanelClass} mx-0.5 flex flex-wrap items-center gap-2 px-3 py-2`}
+        >
           <Input
             value={filters.search}
             onChange={e =>
@@ -1006,6 +1021,68 @@ export function InventoryManagementSurface() {
           >
             Save View
           </Button>
+          <div className="ml-auto flex items-center gap-2">
+            {bulkActionsActive && (
+              <span className="text-xs font-medium text-muted-foreground">
+                {bulkSelectedIds.length > 0
+                  ? `${bulkSelectedIds.length} selected`
+                  : `${queueSelectionSummary?.selectedRowCount ?? 0} rows`}
+              </span>
+            )}
+            {bulkSelectedIds.length > 0 && (
+              <>
+                <Select
+                  value=""
+                  onValueChange={value => {
+                    if (!value) return;
+                    setPendingBulkStatus(value as InventoryBatchStatus);
+                    setBulkStatusDialogOpen(true);
+                  }}
+                >
+                  <SelectTrigger
+                    className="h-7 w-[140px] text-xs"
+                    aria-label="Bulk set status"
+                  >
+                    <SelectValue placeholder="Set status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(status => (
+                      <SelectItem key={status} value={status}>
+                        {STATUS_LABELS[status]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {canDeleteInventory && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-7 text-xs"
+                    onClick={() => setBulkDeleteDialogOpen(true)}
+                    disabled={bulkDeleteMutation.isPending}
+                  >
+                    <Trash2 className="mr-1 h-3.5 w-3.5" />
+                    Delete
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs"
+                  onClick={() => setBulkSelectedIds([])}
+                >
+                  Clear
+                </Button>
+              </>
+            )}
+          </div>
+          {!bulkActionsActive && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {filtersActive
+                ? "Filters active"
+                : "Search, filter, or switch views"}
+            </span>
+          )}
           {currentViewId !== null && (
             <Button
               size="sm"
@@ -1018,63 +1095,6 @@ export function InventoryManagementSurface() {
             >
               Delete View
             </Button>
-          )}
-
-          {/* Bulk actions (right side) */}
-          {bulkActionsActive && (
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                {bulkSelectedIds.length > 0
-                  ? `${bulkSelectedIds.length} selected`
-                  : `${queueSelectionSummary?.selectedRowCount ?? 0} rows`}
-              </span>
-              {bulkSelectedIds.length > 0 && (
-                <>
-                  <Select
-                    value=""
-                    onValueChange={value => {
-                      if (!value) return;
-                      setPendingBulkStatus(value as InventoryBatchStatus);
-                      setBulkStatusDialogOpen(true);
-                    }}
-                  >
-                    <SelectTrigger
-                      className="h-7 w-[140px] text-xs"
-                      aria-label="Bulk set status"
-                    >
-                      <SelectValue placeholder="Set status..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map(status => (
-                        <SelectItem key={status} value={status}>
-                          {STATUS_LABELS[status]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {canDeleteInventory && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="h-7 text-xs"
-                      onClick={() => setBulkDeleteDialogOpen(true)}
-                      disabled={bulkDeleteMutation.isPending}
-                    >
-                      <Trash2 className="mr-1 h-3.5 w-3.5" />
-                      Delete
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
-                    onClick={() => setBulkSelectedIds([])}
-                  >
-                    Clear
-                  </Button>
-                </>
-              )}
-            </div>
           )}
         </div>
 
@@ -1153,7 +1173,7 @@ export function InventoryManagementSurface() {
         {/* ── 5. Selected Batch Summary Cards ── */}
         {selectedRow && (
           <div className="grid gap-3 px-3 md:grid-cols-4">
-            <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
               <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                 Product
               </div>
@@ -1161,7 +1181,7 @@ export function InventoryManagementSurface() {
                 {selectedRow.productSummary}
               </div>
             </div>
-            <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
               <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                 Stock
               </div>
@@ -1171,7 +1191,7 @@ export function InventoryManagementSurface() {
                 {formatQuantity(selectedRow.availableQty)} available
               </div>
             </div>
-            <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
               <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                 Valuation
               </div>
@@ -1183,7 +1203,7 @@ export function InventoryManagementSurface() {
                   : "—"}
               </div>
             </div>
-            <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
               <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                 Locations
               </div>

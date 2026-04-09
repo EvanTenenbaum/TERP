@@ -201,20 +201,92 @@ export default function AccountingDashboard({
   };
 
   return (
-    <div className="flex flex-col gap-3 p-3" data-testid="accounting-dashboard">
+    <div className="flex flex-col gap-4 p-3" data-testid="accounting-dashboard">
       {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
-      <div className="space-y-1">
-        <h1 className="text-xl font-bold tracking-tight">
-          Accounting Dashboard
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Start with the two finance actions that move cash today, then work
-          through invoices, bills, and ledger detail.
-        </p>
-      </div>
+      <Card className="overflow-hidden border-slate-200 bg-gradient-to-br from-slate-50 via-background to-amber-50/35 shadow-sm">
+        <CardContent className="space-y-4 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1.5">
+              <Badge
+                variant="outline"
+                className="w-fit border-slate-300 bg-white/80 text-slate-700"
+              >
+                Finance control center
+              </Badge>
+              <div className="space-y-1">
+                <h1 className="text-xl font-semibold tracking-tight">
+                  Accounting Dashboard
+                </h1>
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  Start with the cash-moving work, then drop into invoices,
+                  bills, and ledger analysis only when you need it.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  markReceivePaymentUsed();
+                  setReceivePaymentOpen(true);
+                }}
+              >
+                {hasUsedReceivePayment ? "Quick Pay" : "Record Payment"}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => setPayVendorOpen(true)}
+              >
+                Pay Supplier
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-green-200 bg-white/90 p-3 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                Receivables
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-green-700">
+                {formatCurrency(arSummary?.totalAR)}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {overdueInvoiceCount} overdue invoice
+                {overdueInvoiceCount === 1 ? "" : "s"} ready for follow-up
+              </p>
+            </div>
+            <div className="rounded-xl border border-amber-200 bg-white/90 p-3 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                Payables
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-amber-700">
+                {formatCurrency(apSummary?.totalAP)}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {overdueBillCount} overdue bill
+                {overdueBillCount === 1 ? "" : "s"} need attention
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                Queue pressure
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900">
+                {recentInvoicesList.length +
+                  recentBillsList.length +
+                  recentPaymentsList.length}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Recent invoices, bills, and payments currently visible in the
+                dashboard.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {overdueInvoiceCount > OVERDUE_ALERT_THRESHOLD && (
-        <Card className="border-red-200 bg-red-50/70">
+        <Card className="border-red-200 bg-red-50/70 shadow-sm">
           <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 text-red-600" />
@@ -241,9 +313,9 @@ export default function AccountingDashboard({
         </Card>
       )}
 
-      <div className="grid gap-2 xl:grid-cols-[1.5fr_1fr]">
-        <Card className="border-green-200 bg-green-50/60">
-          <CardHeader className="space-y-1">
+      <div className="grid gap-3 xl:grid-cols-[1.5fr_1fr]">
+        <Card className="border-green-200 bg-green-50/60 shadow-sm">
+          <CardHeader className="space-y-2">
             <Badge
               variant="outline"
               className="w-fit border-green-300 bg-white/80 text-green-700"
@@ -270,16 +342,13 @@ export default function AccountingDashboard({
                     {overdueInvoiceCount === 1 ? "" : "s"} ready for follow-up
                   </p>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Button
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={() => {
-                      markReceivePaymentUsed();
-                      setReceivePaymentOpen(true);
-                    }}
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className="border-green-200 bg-green-50 text-green-700"
                   >
-                    {hasUsedReceivePayment ? "Quick Pay" : "Record Payment"}
-                  </Button>
+                    Primary action lives above
+                  </Badge>
                   <Button
                     variant="outline"
                     onClick={() => navigateTo("/accounting?tab=invoices")}
@@ -309,13 +378,13 @@ export default function AccountingDashboard({
                     {overdueBillCount === 1 ? "" : "s"} need attention
                   </p>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Button
-                    variant="destructive"
-                    onClick={() => setPayVendorOpen(true)}
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className="border-amber-200 bg-amber-50 text-amber-700"
                   >
-                    Pay Supplier
-                  </Button>
+                    Primary action lives above
+                  </Badge>
                   <Button
                     variant="outline"
                     onClick={() => navigateTo("/accounting?tab=bills")}
@@ -328,8 +397,8 @@ export default function AccountingDashboard({
           </CardHeader>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="shadow-sm">
+          <CardHeader className="space-y-2">
             <CardTitle>More finance tasks</CardTitle>
             <CardDescription>
               Use these after the payment queues are under control.
@@ -600,7 +669,7 @@ export default function AccountingDashboard({
           </Button>
         </div>
         <TabsContent value="overdue-invoices">
-          <Card>
+          <Card className="shadow-sm">
             <CardContent className="pt-6">
               {overdueInvoices?.items && overdueInvoices.items.length > 0 ? (
                 <Table>
@@ -702,7 +771,7 @@ export default function AccountingDashboard({
           </Card>
         </TabsContent>
         <TabsContent value="overdue-bills">
-          <Card>
+          <Card className="shadow-sm">
             <CardContent className="pt-6">
               {overdueBills?.items && overdueBills.items.length > 0 ? (
                 <Table>
@@ -787,7 +856,7 @@ export default function AccountingDashboard({
         </div>
 
         <TabsContent value="queue-focus">
-          <Card className="border-dashed">
+          <Card className="border-dashed shadow-sm">
             <CardHeader>
               <CardTitle>Queue-first landing</CardTitle>
               <CardDescription>
@@ -805,7 +874,7 @@ export default function AccountingDashboard({
           {expenseBreakdown &&
             Array.isArray(expenseBreakdown) &&
             expenseBreakdown.length > 0 && (
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Expense Breakdown by Category</CardTitle>
                   <Button
@@ -855,7 +924,7 @@ export default function AccountingDashboard({
       {/* Recent Activity */}
       <div className="grid gap-2 md:grid-cols-3">
         {/* Recent Invoices */}
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Invoices</CardTitle>
             <Button
@@ -901,7 +970,7 @@ export default function AccountingDashboard({
         </Card>
 
         {/* Recent Bills */}
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Bills</CardTitle>
             <Button
@@ -943,7 +1012,7 @@ export default function AccountingDashboard({
         </Card>
 
         {/* Recent Payments */}
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Payments</CardTitle>
             <Button
