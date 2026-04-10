@@ -17,7 +17,7 @@ interface PilotSurfaceBoundaryState {
 /**
  * Combined Suspense + ErrorBoundary for sheet-native pilot surfaces.
  *
- * - While loading: shows a minimal loading state
+ * - While loading: shows the provided operational fallback
  * - On error: falls back to the classic surface (passed as `fallback`)
  * - Logs errors to console for monitoring
  *
@@ -56,15 +56,7 @@ export class PilotSurfaceBoundary extends Component<
     }
 
     return (
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
-            Loading sheet-native surface...
-          </div>
-        }
-      >
-        {this.props.children}
-      </Suspense>
+      <Suspense fallback={this.props.fallback}>{this.props.children}</Suspense>
     );
   }
 }

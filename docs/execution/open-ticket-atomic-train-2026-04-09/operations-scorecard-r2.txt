@@ -1,0 +1,20 @@
+TER-1109|95|meets_bar|Code + test proof for semantic payment badges in OrdersWorkSurface|none
+TER-1110|95|meets_bar|Code + test proof for overdue/partial-payment row warning styling|none
+TER-1111|95|meets_bar|Code + test proof for primary vs overflow quick action split|none
+TER-1112|95|meets_bar|Code + test proof for Due Date column in orders table|none
+TER-1113|95|meets_bar|Code + test proof for actionable default sort logic|none
+TER-1114|95|meets_bar|Code + test proof for reactive exception indicators in inventory toolbar|none
+TER-1115|88|below_bar|Code proof for filtered counts but no test coverage|Add test assertion in InventoryManagementSurface.test.tsx that status bar counts change when active tab/filter changes
+TER-1116|95|meets_bar|Code + test proof for direct vs PO-linked intake distinction|none
+TER-1117|95|meets_bar|Code + test proof that classic and sheet-native modes don't render together|none
+TER-1118|95|meets_bar|Code + test + runtime proof for ETA column visibility in PO table|none
+TER-1119|95|meets_bar|Code + test + runtime proof for receiving status column in PO table|none
+TER-1120|92|below_bar|Test proof for overdue PO styling but code evidence lacks specific line refs|Add explicit line references in PurchaseOrderSurface.tsx showing overdue PO row styling logic in packet
+TER-1121|95|meets_bar|Code + test proof for redirect tab handoff empty state in Procurement|none
+TER-1122|88|below_bar|Code proof for semantic token routing but no test coverage|Add test assertion verifying role badges render with RELATIONSHIP_ROLE_TOKENS semantic classes
+TER-1123|92|below_bar|Code + runtime proof for Last Activity column but no unit test|Add test assertion in ClientsWorkSurface.test.tsx verifying Last Activity column renders with formatted timestamp
+TER-1124|92|below_bar|Code + runtime proof for Status column but no unit test|Add test assertion in ClientsWorkSurface.test.tsx verifying Status column renders with semantic badge
+TER-1125|92|below_bar|Code + runtime proof for scroll restoration but no unit test|Add test assertion in ClientsWorkSurface.test.tsx verifying scroll position restoration after profile navigation
+TER-1126|95|meets_bar|Code + test proof for Financial period in accounting workspace metadata|none
+TER-1127|95|meets_bar|Code + test proof for WorkspacePanelSkeleton replacing plain-text loading|none
+TER-1128|88|below_bar|Code shows cards stay global but ticket says "reflect filters" - ambiguous + no test|Add test assertion for dashboard card behavior + clarify if global-only matches ticket intent or title is misleading

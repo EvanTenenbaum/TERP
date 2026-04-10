@@ -1,0 +1,11 @@
+TER-1098|98|meets_bar|Implementation + direct test assertions for bordered zones + all verification passed|none
+TER-1099|98|meets_bar|Implementation + direct test assertions for h1 hierarchy + all verification passed|none
+TER-1100|96|meets_bar|Implementation + direct test assertions for sales description + all verification passed|none
+TER-1101|96|meets_bar|Implementation + direct test assertions for sales meta labels/values + all verification passed|none
+TER-1102|96|meets_bar|Implementation + direct test assertions for inventory meta cluster values + all verification passed|none
+TER-1103|96|meets_bar|Implementation + direct test assertions for procurement description + all verification passed|none
+TER-1104|96|meets_bar|Implementation + direct test assertions for procurement command strip actions + all verification passed|none
+TER-1105|96|meets_bar|Implementation + direct test assertions for relationships command strip presence + all verification passed|none
+TER-1106|96|meets_bar|Implementation + direct test assertions for accounting operational metadata + all verification passed|none
+TER-1107|96|meets_bar|Implementation + direct test assertions for accounting command strip actions + all verification passed|none
+TER-1108|97|meets_bar|Implementation + multiple test scenarios for tab context preservation via query params + all verification passed|none

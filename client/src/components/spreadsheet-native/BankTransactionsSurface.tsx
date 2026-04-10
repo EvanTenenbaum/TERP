@@ -35,6 +35,7 @@ import {
   EDITABLE_AFFORDANCES,
   EDITABLE_KEYBOARD_HINTS,
 } from "@/lib/powersheet/surface-helpers";
+import { formatDate } from "@/lib/utils";
 
 // ============================================================================
 // TYPES
@@ -90,6 +91,8 @@ function buildColumnDefs(): ColDef<BankTransactionGridRow>[] {
       field: "transactionDate",
       width: 120,
       editable: true,
+      valueFormatter: params =>
+        formatDate(params.value as string | Date | null | undefined),
       cellClass: "powersheet-cell--editable",
       singleClickEdit: true,
     },

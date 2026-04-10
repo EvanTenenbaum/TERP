@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { OperationalEmptyState } from "@/components/ui/operational-states";
 import {
   Search,
   FileText,
@@ -397,17 +398,13 @@ export default function SearchResultsPage() {
                 (results.orders?.length ?? 0) === 0 &&
                 results.customers.length === 0 &&
                 results.products.length === 0 && (
-                  <div
-                    className="text-center py-12 text-muted-foreground"
+                  <OperationalEmptyState
                     data-testid="search-empty-state"
-                  >
-                    <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">No results found</p>
-                    <p className="text-sm mt-2">
-                      No results found for &quot;{searchQuery}&quot;. Try a
-                      different search term.
-                    </p>
-                  </div>
+                    variant="search"
+                    title="No matching records"
+                    description={`No results matched "${searchQuery}". Try a different client, order, or product term.`}
+                    searchActive={searchQuery.trim().length > 0}
+                  />
                 )}
             </div>
           )}

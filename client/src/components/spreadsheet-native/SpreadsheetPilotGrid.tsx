@@ -8,6 +8,8 @@ import type {
   CellFocusedEvent,
   ProcessCellForExportParams,
   ProcessDataFromClipboardParams,
+  RowClassParams,
+  RowClassRules,
   CellSelectionChangedEvent,
   CellValueChangedEvent,
   CellRange,
@@ -315,6 +317,8 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
   ) => void;
   onRowClicked?: (event: RowClickedEvent<Row>) => void;
   onCellClicked?: (event: CellClickedEvent<Row>) => void;
+  rowClassRules?: RowClassRules<Row>;
+  getRowClass?: (params: RowClassParams<Row>) => string | string[] | undefined;
   rowHeight?: number;
   cardClassName?: string;
   headerClassName?: string;
@@ -364,6 +368,8 @@ export function SpreadsheetPilotGrid<Row extends object>({
   onSelectionSummaryChange,
   onRowClicked,
   onCellClicked,
+  rowClassRules,
+  getRowClass,
   rowHeight: rowHeightProp,
   cardClassName,
   headerClassName,
@@ -627,6 +633,8 @@ export function SpreadsheetPilotGrid<Row extends object>({
               onCellSelectionDeleteEnd={onCellSelectionDeleteEnd}
               onRowClicked={onRowClicked}
               onCellClicked={onCellClicked}
+              rowClassRules={rowClassRules}
+              getRowClass={getRowClass}
               getRowId={params => getRowId(params.data)}
             />
           </div>

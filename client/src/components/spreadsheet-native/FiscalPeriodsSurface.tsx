@@ -34,6 +34,7 @@ import {
   EDITABLE_AFFORDANCES,
   EDITABLE_KEYBOARD_HINTS,
 } from "@/lib/powersheet/surface-helpers";
+import { formatDate as formatDisplayDate } from "@/lib/utils";
 
 // ============================================================================
 // TYPES
@@ -72,13 +73,7 @@ const STATUS_TABS: Array<{ value: StatusTab; label: string }> = [
 // ============================================================================
 
 function formatDate(value: string | Date | null | undefined): string {
-  if (!value) return "";
-  const d = typeof value === "string" ? new Date(value) : value;
-  return d.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  return value ? formatDisplayDate(value) : "";
 }
 
 // ============================================================================

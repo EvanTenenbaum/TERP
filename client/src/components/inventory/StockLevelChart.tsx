@@ -46,7 +46,9 @@ export function StockLevelChart({ title, data, maxItems = 5 }: StockLevelChartPr
     return (
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">{title}</h3>
-        <p className="text-sm text-muted-foreground">No data available</p>
+        <p className="text-sm text-muted-foreground">
+          No inventory levels match this view yet.
+        </p>
       </Card>
     );
   }
@@ -89,4 +91,3 @@ export function StockLevelChart({ title, data, maxItems = 5 }: StockLevelChartPr
     </Card>
   );
 }
-

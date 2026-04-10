@@ -877,17 +877,23 @@ export function InventoryManagementSurface() {
 
   const dashStats = dashboardQuery.data;
   const filtersActive = hasActiveFilters(filters);
+  const visibleBatchCount = rows.length;
+  const visibleUnits = rows.reduce((sum, row) => sum + row.onHandQty, 0);
+  const visibleInventoryValue = rows.reduce(
+    (sum, row) => sum + (row.unitCogs ?? 0) * row.onHandQty,
+    0
+  );
+  const lowStockCount = rows.filter(
+    row => String(row.stockStatus ?? "") === "LOW"
+  ).length;
+  const quarantinedCount = rows.filter(
+    row => String(row.status ?? "") === "QUARANTINED"
+  ).length;
 
   const statusBarLeft = (
     <span>
-      {dashStats?.totalUnits ?? 0} units across{" "}
-      {dashStats?.statusCounts
-        ? Object.values(dashStats.statusCounts).reduce(
-            (sum, value) => sum + value,
-            0
-          )
-        : rows.length}{" "}
-      batches
+      {formatQuantity(visibleUnits)} units across {visibleBatchCount} visible
+      {" "}batches
       {queueSelectionSummary
         ? ` · ${queueSelectionSummary.selectedCellCount} cells / ${queueSelectionSummary.selectedRowCount} rows selected`
         : ""}
@@ -900,7 +906,7 @@ export function InventoryManagementSurface() {
         ? isDeepLinkedOutsideLoadedGrid
           ? "Loaded via batchId outside the current loaded rows"
           : `Selected ${selectedRow.sku}`
-        : `${rows.length} loaded rows of ${totalItems} · ${views.length} saved view${views.length === 1 ? "" : "s"}`}
+        : `${viewMode === "grid" ? "Grid" : "Gallery"} view · ${visibleBatchCount} visible rows of ${totalItems} filtered rows · ${views.length} saved view${views.length === 1 ? "" : "s"}`}
       {queueSelectionSummary?.hasDiscontiguousSelection
         ? " · discontiguous selection"
         : ""}
@@ -921,22 +927,56 @@ export function InventoryManagementSurface() {
           {dashStats && (
             <>
               <Badge variant="outline" className="text-xs">
-                {dashStats.statusCounts
-                  ? Object.values(dashStats.statusCounts).reduce(
-                      (sum, v) => sum + v,
-                      0
-                    )
-                  : 0}{" "}
-                batches
+                {visibleBatchCount} visible batch
+                {visibleBatchCount === 1 ? "" : "es"}
               </Badge>
               <Badge variant="outline" className="text-xs">
-                {formatQuantity(dashStats.totalUnits ?? 0)} units
+                {formatQuantity(visibleUnits)} visible units
               </Badge>
               <Badge variant="outline" className="text-xs">
-                {formatCurrency(dashStats.totalInventoryValue ?? null)} value
+                {formatCurrency(visibleInventoryValue)} visible value
               </Badge>
             </>
           )}
+          {lowStockCount > 0 ? (
+            <Button
+              size="sm"
+              variant={filters.stockStatus === "LOW" ? "default" : "outline"}
+              className="h-7 text-xs"
+              onClick={() =>
+                setFilters(prev => ({
+                  ...prev,
+                  stockStatus: prev.stockStatus === "LOW" ? "ALL" : "LOW",
+                }))
+              }
+            >
+              Low stock ({lowStockCount})
+            </Button>
+          ) : null}
+          {quarantinedCount > 0 ? (
+            <Button
+              size="sm"
+              variant={
+                filters.statuses.length === 1 &&
+                filters.statuses[0] === "QUARANTINED"
+                  ? "default"
+                  : "outline"
+              }
+              className="h-7 text-xs"
+              onClick={() =>
+                setFilters(prev => ({
+                  ...prev,
+                  statuses:
+                    prev.statuses.length === 1 &&
+                    prev.statuses[0] === "QUARANTINED"
+                      ? []
+                      : ["QUARANTINED"],
+                }))
+              }
+            >
+              Quarantine ({quarantinedCount})
+            </Button>
+          ) : null}
           <div className="ml-auto flex items-center gap-1.5">
             <Button
               size="sm"

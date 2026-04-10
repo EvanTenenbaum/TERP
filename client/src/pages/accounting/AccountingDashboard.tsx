@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -42,6 +43,50 @@ import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
 const RECEIVE_PAYMENT_LABEL_STORAGE_KEY =
   "accounting-dashboard-receive-payment-used";
 const OVERDUE_ALERT_THRESHOLD = 25;
+const INVOICE_FILTER_STATUSES = [
+  "DRAFT",
+  "SENT",
+  "VIEWED",
+  "PARTIAL",
+  "PAID",
+  "OVERDUE",
+  "VOID",
+] as const;
+const BILL_FILTER_STATUSES = [
+  "DRAFT",
+  "PENDING",
+  "APPROVED",
+  "PARTIAL",
+  "PAID",
+  "OVERDUE",
+  "VOID",
+] as const;
+
+function parseNumberParam(routeParams: URLSearchParams, key: string) {
+  const rawValue = routeParams.get(key);
+  if (!rawValue) return undefined;
+  const parsed = Number(rawValue);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function parseDateParam(routeParams: URLSearchParams, key: string) {
+  const rawValue = routeParams.get(key);
+  if (!rawValue) return undefined;
+  const parsed = new Date(rawValue);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+function parseEnumParam<TValue extends readonly string[]>(
+  routeParams: URLSearchParams,
+  key: string,
+  validValues: TValue
+): TValue[number] | undefined {
+  const rawValue = routeParams.get(key);
+  if (!rawValue) return undefined;
+  return validValues.includes(rawValue as TValue[number])
+    ? (rawValue as TValue[number])
+    : undefined;
+}
 
 interface OverdueInvoice {
   id: number;
@@ -74,16 +119,20 @@ interface ExpenseBreakdownItem {
 interface RecentInvoice {
   id: number;
   invoiceNumber: string;
+  customerId?: number | null;
   invoiceDate?: string | Date | null;
   totalAmount: string | number;
+  amountDue?: string | number;
   status: string;
 }
 
 interface RecentBill {
   id: number;
   billNumber: string;
+  vendorId?: number | null;
   billDate?: string | Date | null;
   totalAmount: string | number;
+  amountDue?: string | number;
   status: string;
 }
 
@@ -98,6 +147,8 @@ interface RecentPayment {
 export default function AccountingDashboard({
   embedded,
 }: { embedded?: boolean } = {}) {
+  const routeSearch = useSearch();
+  const routeParams = useMemo(() => new URLSearchParams(routeSearch), [routeSearch]);
   // WS-001 & WS-002: Quick Action Modal State
   const [receivePaymentOpen, setReceivePaymentOpen] = useState(false);
   const [payVendorOpen, setPayVendorOpen] = useState(false);
@@ -109,6 +160,46 @@ export default function AccountingDashboard({
     }
   });
   const utils = trpc.useUtils();
+
+  const invoiceListInput = useMemo(
+    () => ({
+      customerId: parseNumberParam(routeParams, "clientId"),
+      status: parseEnumParam(routeParams, "status", INVOICE_FILTER_STATUSES),
+      startDate: parseDateParam(routeParams, "from"),
+      endDate: parseDateParam(routeParams, "to"),
+      searchTerm: routeParams.get("search") || undefined,
+      limit: 100,
+      offset: 0,
+    }),
+    [routeParams]
+  );
+
+  const billListInput = useMemo(
+    () => ({
+      vendorId: parseNumberParam(routeParams, "vendorId"),
+      status: parseEnumParam(routeParams, "status", BILL_FILTER_STATUSES),
+      startDate: parseDateParam(routeParams, "from"),
+      endDate: parseDateParam(routeParams, "to"),
+      searchTerm: routeParams.get("search") || undefined,
+      limit: 100,
+      offset: 0,
+    }),
+    [routeParams]
+  );
+
+  const paymentListInput = useMemo(
+    () => ({
+      customerId: parseNumberParam(routeParams, "clientId"),
+      vendorId: parseNumberParam(routeParams, "vendorId"),
+      invoiceId: parseNumberParam(routeParams, "invoiceId"),
+      billId: parseNumberParam(routeParams, "billId"),
+      startDate: parseDateParam(routeParams, "from"),
+      endDate: parseDateParam(routeParams, "to"),
+      limit: 100,
+      offset: 0,
+    }),
+    [routeParams]
+  );
 
   // Fetch dashboard data
   // BUG-092 fix: Add error handling to prevent widgets stuck on "Loading..."
@@ -128,9 +219,11 @@ export default function AccountingDashboard({
     retry: 2,
     retryDelay: 1000,
   });
-  const { data: recentInvoices } = trpc.accounting.invoices.list.useQuery({});
-  const { data: recentBills } = trpc.accounting.bills.list.useQuery({});
-  const { data: recentPayments } = trpc.accounting.payments.list.useQuery({});
+  const { data: recentInvoices } =
+    trpc.accounting.invoices.list.useQuery(invoiceListInput);
+  const { data: recentBills } = trpc.accounting.bills.list.useQuery(billListInput);
+  const { data: recentPayments } =
+    trpc.accounting.payments.list.useQuery(paymentListInput);
   const { data: expenseBreakdown } =
     trpc.accounting.expenses.getBreakdownByCategory.useQuery({});
 
@@ -177,15 +270,82 @@ export default function AccountingDashboard({
     }).format(num);
   };
 
+  const parseAmount = (amount: string | number | undefined) => {
+    if (amount === undefined) return 0;
+    const value = typeof amount === "string" ? Number.parseFloat(amount) : amount;
+    return Number.isFinite(value) ? value : 0;
+  };
+
   // Calculate totals - extract from paginated response objects { items: [], pagination: { total } }
-  const invoiceList = recentInvoices?.items ?? [];
-  const billList = recentBills?.items ?? [];
+  const invoiceList = useMemo(() => recentInvoices?.items ?? [], [recentInvoices]);
+  const billList = useMemo(() => recentBills?.items ?? [], [recentBills]);
   // Get recent items (last 5)
   const recentInvoicesList = invoiceList.slice(0, 5);
   const recentBillsList = billList.slice(0, 5);
   const recentPaymentsList = (recentPayments?.items ?? []).slice(0, 5);
   const overdueInvoiceCount = overdueInvoices?.pagination?.total || 0;
   const overdueBillCount = overdueBills?.pagination?.total || 0;
+  const activeDashboardFilters = useMemo(() => {
+    return [
+      "status",
+      "clientId",
+      "vendorId",
+      "orderId",
+      "invoiceId",
+      "billId",
+      "from",
+      "to",
+      "periodId",
+    ].filter(key => routeParams.has(key));
+  }, [routeParams]);
+  const hasArScopedFilters = useMemo(
+    () =>
+      Boolean(
+        invoiceListInput.customerId ??
+          invoiceListInput.status ??
+          invoiceListInput.startDate ??
+          invoiceListInput.endDate ??
+          invoiceListInput.searchTerm
+      ),
+    [invoiceListInput]
+  );
+  const hasApScopedFilters = useMemo(
+    () =>
+      Boolean(
+        billListInput.vendorId ??
+          billListInput.status ??
+          billListInput.startDate ??
+          billListInput.endDate ??
+          billListInput.searchTerm
+      ),
+    [billListInput]
+  );
+  const filteredArTotal = useMemo(
+    () =>
+      invoiceList.reduce(
+        (sum, invoice) =>
+          sum + parseAmount(invoice.amountDue ?? invoice.totalAmount),
+        0
+      ),
+    [invoiceList]
+  );
+  const filteredApTotal = useMemo(
+    () =>
+      billList.reduce(
+        (sum, bill) => sum + parseAmount(bill.amountDue ?? bill.totalAmount),
+        0
+      ),
+    [billList]
+  );
+  const displayArTotal = hasArScopedFilters ? filteredArTotal : arSummary?.totalAR;
+  const displayApTotal = hasApScopedFilters ? filteredApTotal : apSummary?.totalAP;
+  const displayOverdueInvoiceCount = hasArScopedFilters
+    ? invoiceList.filter(invoice => invoice.status === "OVERDUE").length
+    : overdueInvoiceCount;
+  const displayOverdueBillCount = hasApScopedFilters
+    ? billList.filter(bill => bill.status === "OVERDUE").length
+    : overdueBillCount;
+  const summaryCardsReflectFilters = hasArScopedFilters || hasApScopedFilters;
 
   const navigateTo = (path: string) => {
     window.location.href = path;
@@ -204,6 +364,11 @@ export default function AccountingDashboard({
     <div className="flex flex-col gap-3 p-3" data-testid="accounting-dashboard">
       {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
       <div className="space-y-1">
+        <Badge variant="outline" className="w-fit text-[10px] uppercase tracking-[0.16em]">
+          {summaryCardsReflectFilters
+            ? "Filtered accounting activity"
+            : "All accounting activity"}
+        </Badge>
         <h1 className="text-xl font-bold tracking-tight">
           Accounting Dashboard
         </h1>
@@ -211,6 +376,17 @@ export default function AccountingDashboard({
           Start with the two finance actions that move cash today, then work
           through invoices, bills, and ledger detail.
         </p>
+        {activeDashboardFilters.length > 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Summary cards now reflect {activeDashboardFilters.join(", ")} so the
+            dashboard matches the active accounting filters.
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Summary cards show all accounting activity until a route filter narrows
+            the working set.
+          </p>
+        )}
       </div>
 
       {overdueInvoiceCount > OVERDUE_ALERT_THRESHOLD && (
@@ -263,11 +439,11 @@ export default function AccountingDashboard({
                 </div>
                 <div className="mt-2 space-y-1">
                   <p className="text-lg font-semibold text-green-700">
-                    {formatCurrency(arSummary?.totalAR)}
+                    {formatCurrency(displayArTotal)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {overdueInvoiceCount} overdue invoice
-                    {overdueInvoiceCount === 1 ? "" : "s"} ready for follow-up
+                    {displayOverdueInvoiceCount} overdue invoice
+                    {displayOverdueInvoiceCount === 1 ? "" : "s"} ready for follow-up
                   </p>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -302,11 +478,11 @@ export default function AccountingDashboard({
                 </div>
                 <div className="mt-2 space-y-1">
                   <p className="text-lg font-semibold text-amber-700">
-                    {formatCurrency(apSummary?.totalAP)}
+                    {formatCurrency(displayApTotal)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {overdueBillCount} overdue bill
-                    {overdueBillCount === 1 ? "" : "s"} need attention
+                    {displayOverdueBillCount} overdue bill
+                    {displayOverdueBillCount === 1 ? "" : "s"} need attention
                   </p>
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">

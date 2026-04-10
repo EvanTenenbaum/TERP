@@ -2239,6 +2239,7 @@ export function DirectIntakeWorkSurface() {
   return (
     <section
       {...keyboardProps}
+      data-testid="direct-intake-surface"
       className="h-full min-h-[calc(100vh-8rem)] flex flex-col overflow-hidden bg-background"
     >
       <div className="flex flex-col gap-3 border-b border-border/70 bg-background px-3 py-3 md:flex-row md:items-center md:justify-between md:px-4">
