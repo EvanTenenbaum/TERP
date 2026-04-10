@@ -10,6 +10,7 @@ const mockCanViewCogs = vi.hoisted(() => ({ value: false }));
 const mockOpenInspector = vi.hoisted(() => vi.fn());
 const mockCloseInspector = vi.hoisted(() => vi.fn());
 const mockHasAnyPermission = vi.hoisted(() => vi.fn(() => false));
+const mockSetLocation = vi.hoisted(() => vi.fn());
 const mockOrdersResponse = vi.hoisted(() => ({
   confirmed: { items: [] as unknown[], pagination: { total: 0 } },
   draft: { items: [] as unknown[], pagination: { total: 0 } },
@@ -22,10 +23,11 @@ const confirmedOrder = {
   isDraft: false,
   orderType: "SALE",
   fulfillmentStatus: "READY_FOR_PACKING" as const,
-  saleStatus: "UNPAID",
+  saleStatus: "OVERDUE",
   total: "125.00",
   createdAt: "2026-03-01T00:00:00.000Z",
   confirmedAt: "2026-03-01T00:00:00.000Z",
+  dueDate: "2026-02-15T00:00:00.000Z",
   invoiceId: null,
 };
 
@@ -52,7 +54,7 @@ const orderDetailPayload = {
 const emptyListResponse = { items: [], pagination: { total: 0 } };
 
 vi.mock("wouter", () => ({
-  useLocation: () => ["/sales?tab=orders", vi.fn()],
+  useLocation: () => ["/sales?tab=orders", mockSetLocation],
   useSearch: () => "?tab=orders",
 }));
 
@@ -135,14 +137,14 @@ vi.mock("./InspectorPanel", () => ({
   ),
   InspectorField: ({
     label,
-    value,
+    children,
   }: {
     label: string;
-    value: React.ReactNode;
+    children: React.ReactNode;
   }) => (
     <div>
       <span>{label}</span>
-      <span>{value}</span>
+      <span>{children}</span>
     </div>
   ),
   useInspectorPanel: () => ({
@@ -253,6 +255,7 @@ describe("OrdersWorkSurface wave 5 visibility wiring", () => {
     mockCanViewCogs.value = false;
     mockOpenInspector.mockClear();
     mockCloseInspector.mockClear();
+    mockSetLocation.mockReset();
     mockHasAnyPermission.mockReset();
     mockHasAnyPermission.mockReturnValue(false);
     mockOrdersResponse.confirmed = {
@@ -260,6 +263,10 @@ describe("OrdersWorkSurface wave 5 visibility wiring", () => {
       pagination: { total: 1 },
     };
     mockOrdersResponse.draft = emptyListResponse;
+    orderDetailPayload.order = {
+      ...confirmedOrder,
+      version: 3,
+    };
   });
 
   it("keeps the inspector COGS section hidden when display settings deny cost access", () => {
@@ -293,5 +300,104 @@ describe("OrdersWorkSurface wave 5 visibility wiring", () => {
     expect(
       screen.getByRole("button", { name: "View Draft Orders" })
     ).toBeInTheDocument();
+  });
+
+  it("shows due date and semantic payment badge for confirmed orders", () => {
+    render(<OrdersWorkSurface />);
+
+    expect(screen.getByText("Due Date")).toBeInTheDocument();
+    expect(screen.getAllByText("Overdue").length).toBeGreaterThan(0);
+    expect(screen.getByText("Feb 15, 2026")).toBeInTheDocument();
+  });
+
+  it("applies row-level danger and warning styling to actionable payment states", () => {
+    mockOrdersResponse.confirmed = {
+      items: [
+        {
+          ...confirmedOrder,
+          id: 102,
+          orderNumber: "S-1002",
+          saleStatus: "PARTIAL",
+          dueDate: "2026-12-15T00:00:00.000Z",
+        },
+        confirmedOrder,
+      ],
+      pagination: { total: 2 },
+    };
+
+    render(<OrdersWorkSurface />);
+
+    expect(screen.getByTestId("order-row-101").className).toContain("bg-red-50");
+    expect(screen.getByTestId("order-row-102").className).toContain(
+      "bg-yellow-50"
+    );
+  });
+
+  it("keeps at most two primary quick actions and moves the rest into overflow", () => {
+    mockHasAnyPermission.mockReturnValue(true);
+    mockOrdersResponse.confirmed = {
+      items: [
+        {
+          ...confirmedOrder,
+          invoiceId: 55,
+          confirmedAt: null,
+        },
+      ],
+      pagination: { total: 1 },
+    };
+    orderDetailPayload.order = {
+      ...orderDetailPayload.order,
+      invoiceId: 55,
+      confirmedAt: null,
+    };
+
+    render(<OrdersWorkSurface />);
+
+    fireEvent.click(screen.getByTestId("order-row-101"));
+
+    expect(
+      screen.getByRole("button", { name: /make payment/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /confirm for fulfillment/i })
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("order-more-actions-btn")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /download invoice/i })
+    ).not.toBeInTheDocument();
+  });
+
+  it("defaults confirmed orders to the most actionable sort order", () => {
+    mockOrdersResponse.confirmed = {
+      items: [
+        {
+          ...confirmedOrder,
+          id: 102,
+          orderNumber: "S-1002",
+          saleStatus: "PENDING",
+          dueDate: "2026-04-20T00:00:00.000Z",
+          createdAt: "2026-04-01T00:00:00.000Z",
+        },
+        confirmedOrder,
+      ],
+      pagination: { total: 2 },
+    };
+
+    render(<OrdersWorkSurface />);
+
+    const renderedRows = screen.getAllByTestId(/order-row-/);
+    expect(renderedRows[0]).toHaveAttribute("data-orderid", "101");
+    expect(renderedRows[1]).toHaveAttribute("data-orderid", "102");
+  });
+
+  it("opens the linked client profile from the order inspector", () => {
+    render(<OrdersWorkSurface />);
+
+    fireEvent.click(screen.getByTestId("order-row-101"));
+    fireEvent.click(screen.getByRole("button", { name: /open client profile/i }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/clients/1?section=overview"
+    );
   });
 });

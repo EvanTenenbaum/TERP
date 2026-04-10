@@ -8,6 +8,15 @@
  * Each token is a string of Tailwind classes for bg, text, and border.
  */
 
+export type OperationalStatusTone =
+  | "neutral"
+  | "info"
+  | "success"
+  | "warning"
+  | "caution"
+  | "danger"
+  | "complete";
+
 // ─── Semantic Status Tokens ────────────────────────────────────────
 
 /** Positive/success states: paid, complete, live, approved */
@@ -45,6 +54,29 @@ export const STATUS_NEUTRAL = "bg-slate-100 text-slate-800 border-slate-200";
 /** Complete/applied states: fully used, applied */
 export const STATUS_COMPLETE =
   "bg-emerald-100 text-emerald-700 border-emerald-200";
+
+export const OPERATIONAL_STATUS_TOKENS: Record<OperationalStatusTone, string> = {
+  neutral: STATUS_NEUTRAL,
+  info: STATUS_INFO,
+  success: STATUS_SUCCESS,
+  warning: STATUS_WARNING,
+  caution: STATUS_CAUTION,
+  danger: STATUS_DANGER,
+  complete: STATUS_COMPLETE,
+};
+
+const buildStatusTokenMap = <
+  TStatus extends string,
+  TTone extends Record<TStatus, OperationalStatusTone>,
+>(
+  toneMap: TTone
+) =>
+  Object.fromEntries(
+    Object.entries(toneMap).map(([status, tone]) => [
+      status,
+      OPERATIONAL_STATUS_TOKENS[tone as OperationalStatusTone],
+    ])
+  ) as Record<TStatus, string>;
 
 // ─── Domain-Specific Status Maps ───────────────────────────────────
 
@@ -91,3 +123,48 @@ export const LEDGER_TYPE_TOKENS: Record<string, string> = {
   CREDIT: STATUS_COMPLETE,
   REFUND: STATUS_DANGER,
 };
+
+export const ORDER_FULFILLMENT_STATUS_TOKENS = buildStatusTokenMap({
+  DRAFT: "neutral",
+  CONFIRMED: "info",
+  PENDING: "warning",
+  READY: "success",
+  SHIPPED: "info",
+  DELIVERED: "success",
+  RETURNED: "caution",
+  RESTOCKED: "complete",
+  RETURNED_TO_VENDOR: "caution",
+  CANCELLED: "danger",
+});
+
+export const ORDER_PAYMENT_STATUS_TOKENS = buildStatusTokenMap({
+  PENDING: "warning",
+  PARTIAL: "caution",
+  PAID: "success",
+  OVERDUE: "danger",
+  CANCELLED: "neutral",
+});
+
+export const PURCHASE_ORDER_STATUS_TOKENS = buildStatusTokenMap({
+  DRAFT: "neutral",
+  SENT: "info",
+  CONFIRMED: "success",
+  RECEIVING: "warning",
+  RECEIVED: "complete",
+  CANCELLED: "danger",
+});
+
+export const RELATIONSHIP_ROLE_TOKENS = buildStatusTokenMap({
+  Customer: "info",
+  Supplier: "success",
+  Brand: "complete",
+  Referee: "warning",
+  Contractor: "neutral",
+});
+
+export const RELATIONSHIP_STATUS_TOKENS = buildStatusTokenMap({
+  ACTIVE: "success",
+  WATCH: "warning",
+  DORMANT: "neutral",
+  "NEEDS-ATTENTION": "danger",
+});

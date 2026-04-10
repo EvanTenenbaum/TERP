@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { getStatusBadgeVariant } from "@/lib/statusBadge";
 
 interface CatalogInterestItem {
   id: number;
@@ -200,14 +201,16 @@ export function LiveCatalogConfig({ clientId }: LiveCatalogConfigProps) {
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      NEW: { variant: "default" as const, label: "New" },
-      REVIEWED: { variant: "secondary" as const, label: "Reviewed" },
-      CONVERTED: { variant: "default" as const, label: "Converted" },
-      ARCHIVED: { variant: "outline" as const, label: "Archived" },
+      NEW: { label: "New" },
+      REVIEWED: { label: "Reviewed" },
+      CONVERTED: { label: "Converted" },
+      ARCHIVED: { label: "Archived" },
     };
     const config =
       statusConfig[status as keyof typeof statusConfig] || statusConfig.NEW;
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    return (
+      <Badge variant={getStatusBadgeVariant(status)}>{config.label}</Badge>
+    );
   };
 
   if (configLoading) {
@@ -781,7 +784,9 @@ function InterestListDetailModal({
                       ) : item.priceChanged || item.quantityChanged ? (
                         <Badge variant="secondary">Changed</Badge>
                       ) : (
-                        <Badge variant="default">Available</Badge>
+                        <Badge variant={getStatusBadgeVariant("available")}>
+                          Available
+                        </Badge>
                       )}
                     </TableCell>
                   </TableRow>
@@ -992,12 +997,15 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
                 <TableCell>
                   {alert.isActive ? (
                     priceDropped ? (
-                      <Badge variant="default" className="bg-green-600">
+                      <Badge
+                        variant={getStatusBadgeVariant("triggered")}
+                        className="bg-green-600"
+                      >
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Triggered
                       </Badge>
                     ) : (
-                      <Badge variant="default">
+                      <Badge variant={getStatusBadgeVariant("active")}>
                         <Eye className="h-3 w-3 mr-1" />
                         Active
                       </Badge>

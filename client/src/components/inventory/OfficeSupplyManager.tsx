@@ -563,7 +563,7 @@ export function OfficeSupplyManager() {
                           </div>
                         ) : (
                           <p className="text-sm text-muted-foreground">
-                            No data
+                            No reorder activity has been recorded yet.
                           </p>
                         )}
                       </CardContent>

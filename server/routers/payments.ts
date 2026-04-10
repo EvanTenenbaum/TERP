@@ -19,6 +19,7 @@ import { getDb } from "../db";
 import {
   payments,
   invoices,
+  orders,
   clients,
   users,
   ledgerEntries,
@@ -114,6 +115,42 @@ function formatCurrency(amount: number): string {
     style: "currency",
     currency: "USD",
   }).format(amount);
+}
+
+type PaymentStatusSyncDb = NonNullable<Awaited<ReturnType<typeof getDb>>>;
+
+function mapInvoiceStatusToOrderSaleStatus(status: string) {
+  switch (status) {
+    case "PARTIAL":
+      return "PARTIAL" as const;
+    case "PAID":
+      return "PAID" as const;
+    case "OVERDUE":
+      return "OVERDUE" as const;
+    default:
+      return "PENDING" as const;
+  }
+}
+
+async function syncLinkedOrderSaleStatus(
+  tx: Pick<PaymentStatusSyncDb, "update">,
+  invoice: {
+    referenceType?: string | null;
+    referenceId?: number | null;
+  },
+  invoiceStatus: string
+) {
+  if (
+    !["ORDER", "SALE"].includes(String(invoice.referenceType ?? "")) ||
+    typeof invoice.referenceId !== "number"
+  ) {
+    return;
+  }
+
+  await tx
+    .update(orders)
+    .set({ saleStatus: mapInvoiceStatusToOrderSaleStatus(invoiceStatus) })
+    .where(eq(orders.id, invoice.referenceId));
 }
 
 /**
@@ -394,6 +431,7 @@ export const paymentsRouter = router({
               status: newStatus,
             })
             .where(eq(invoices.id, input.invoiceId));
+          await syncLinkedOrderSaleStatus(tx, invoice, newStatus);
 
           // Create GL entries (Cash debit, AR credit)
           const entryNumber = `PMT-${paymentId}`;
@@ -907,6 +945,7 @@ export const paymentsRouter = router({
                 status: newStatus as "PAID" | "PARTIAL",
               })
               .where(eq(invoices.id, allocation.invoiceId));
+            await syncLinkedOrderSaleStatus(tx, invoice, newStatus);
 
             invoiceAllocations.push({
               invoiceId: allocation.invoiceId,
@@ -1383,6 +1422,7 @@ export const paymentsRouter = router({
                     status: newStatus,
                   })
                   .where(eq(invoices.id, allocation.invoiceId));
+                await syncLinkedOrderSaleStatus(tx, invoice, newStatus);
               }
             }
 
@@ -1426,6 +1466,7 @@ export const paymentsRouter = router({
                   status: newStatus,
                 })
                 .where(eq(invoices.id, payment.invoiceId));
+              await syncLinkedOrderSaleStatus(tx, invoice, newStatus);
             }
           }
 

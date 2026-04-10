@@ -1,0 +1,72 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "global_findings",
+    "ticket_scores"
+  ],
+  "properties": {
+    "global_findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "title",
+          "severity",
+          "summary"
+        ],
+        "properties": {
+          "title": { "type": "string" },
+          "severity": {
+            "type": "string",
+            "enum": ["high", "medium", "low"]
+          },
+          "summary": { "type": "string" }
+        }
+      }
+    },
+    "ticket_scores": {
+      "type": "array",
+      "minItems": 48,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ticket",
+          "score",
+          "verdict",
+          "rationale",
+          "evidence_refs",
+          "upgrade_actions"
+        ],
+        "properties": {
+          "ticket": {
+            "type": "string",
+            "pattern": "^TER-(109[2-9]|11[0-3][0-9])$"
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "verdict": {
+            "type": "string",
+            "enum": ["meets_bar", "below_95", "blocked"]
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "upgrade_actions": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}

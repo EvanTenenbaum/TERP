@@ -1,0 +1,6 @@
+TER-1092|96|meets_bar|Canonical helper with comprehensive test coverage for active/passive/completed/risk/unknown states|statusBadge.ts,statusBadge.test.ts|none
+TER-1093|96|meets_bar|Operational empty state component with search/filter context support and action handling tests|operational-states.tsx,operational-states.test.tsx|none
+TER-1094|95|meets_bar|Structured workspace skeleton with semantic loading shell and role status accessibility|operational-states.tsx,operational-states.test.tsx|none
+TER-1095|95|meets_bar|Comprehensive audit with operational call sites routed through helper and semantic variant tests|foundation-audit.md,LiveCatalogConfig.test.tsx|none
+TER-1096|96|meets_bar|ResponsiveTable uses operational empty state with testid and audit classifies intentional exceptions|responsive-table.tsx,responsive-table.test.tsx|none
+TER-1097|95|meets_bar|Display formatters applied to grids with tests and audit classifies non-display toISOString usage|dateFormat.test.ts,foundation-audit.md|none

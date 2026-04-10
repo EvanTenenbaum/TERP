@@ -47,6 +47,8 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { BackButton } from "@/components/common/BackButton";
 import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
+import { getStatusBadgeVariant } from "@/lib/statusBadge";
+import { STATUS_SUCCESS, STATUS_WARNING } from "@/lib/statusTokens";
 
 export default function TimeClockPage() {
   const [selectedWeek, setSelectedWeek] = useState(new Date());
@@ -171,14 +173,20 @@ export default function TimeClockPage() {
 
     if (status.isOnBreak) {
       return (
-        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+        <Badge
+          variant={getStatusBadgeVariant("on_break")}
+          className={STATUS_WARNING}
+        >
           On Break
         </Badge>
       );
     }
 
     return (
-      <Badge variant="default" className="bg-green-500">
+      <Badge
+        variant={getStatusBadgeVariant("working")}
+        className={STATUS_SUCCESS}
+      >
         Working
       </Badge>
     );

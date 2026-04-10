@@ -21,7 +21,11 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useExport } from "@/hooks/work-surface/useExport";
 import type { ExportColumn } from "@/hooks/work-surface/useExport";
-import type { CellValueChangedEvent, ColDef } from "ag-grid-community";
+import type {
+  CellValueChangedEvent,
+  ColDef,
+  ICellRendererParams,
+} from "ag-grid-community";
 import {
   ArrowLeft,
   Building,
@@ -42,6 +46,7 @@ import {
   isCalendarDateToday,
   normalizeCalendarDate,
 } from "@/lib/calendarDates";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
 import { useAuth } from "@/hooks/useAuth";
@@ -140,9 +145,13 @@ interface POQueueRow {
   identity: { rowKey: string; entityId: number | string; entityType: string };
   poId: number;
   poNumber: string;
+  supplierClientId: number | null;
   supplierName: string;
   status: string;
   statusLabel: string;
+  receivingStatus: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETE";
+  receivingStatusLabel: string;
+  receivingStatusClassName: string;
   orderDate: Date | string;
   expectedDeliveryDate: Date | string;
   total: number;
@@ -318,6 +327,37 @@ function hasExpectedDeliveryDate(
   return normalizeCalendarDate(value) !== null;
 }
 
+function getReceivingStatusMeta(status: string): {
+  value: POQueueRow["receivingStatus"];
+  label: string;
+  className: string;
+} {
+  switch (status) {
+    case "RECEIVED":
+      return {
+        value: "COMPLETE",
+        label: "Complete",
+        className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      };
+    case "RECEIVING":
+      return {
+        value: "IN_PROGRESS",
+        label: "In Progress",
+        className: "bg-amber-50 text-amber-700 border-amber-200",
+      };
+    default:
+      return {
+        value: "NOT_STARTED",
+        label: "Not Started",
+        className: "bg-slate-100 text-slate-700 border-slate-200",
+      };
+  }
+}
+
+function isQueueRowOverdue(row: Pick<POQueueRow, "expectedDeliveryDate" | "status">) {
+  return isPastExpectedDate(row.expectedDeliveryDate, row.status);
+}
+
 function mapPOsToQueueRows(
   pos: POQueueRecord[],
   supplierNamesById: Map<number, string>
@@ -330,6 +370,7 @@ function mapPOsToQueueRows(
         : "Unknown Supplier";
     const status = po.purchaseOrderStatus;
     const total = toNumber(po.total);
+    const receivingStatus = getReceivingStatusMeta(status);
     return {
       identity: {
         rowKey: buildRowKey("po", po.id),
@@ -338,9 +379,13 @@ function mapPOsToQueueRows(
       },
       poId: po.id,
       poNumber: po.poNumber,
+      supplierClientId: supplierId,
       supplierName,
       status,
       statusLabel: PO_STATUS_LABELS[status] ?? status,
+      receivingStatus: receivingStatus.value,
+      receivingStatusLabel: receivingStatus.label,
+      receivingStatusClassName: receivingStatus.className,
       orderDate: po.orderDate ?? "",
       expectedDeliveryDate: po.expectedDeliveryDate ?? "",
       total,
@@ -1491,13 +1536,8 @@ function PurchaseOrderQueueMode({
     searchLower,
   ]);
 
-  const showExpectedDeliveryColumn = useMemo(
-    () =>
-      queueRows.some(row => hasExpectedDeliveryDate(row.expectedDeliveryDate)),
-    [queueRows]
-  );
-
   const selectedRow = queueRows.find(row => row.poId === selectedPoId) ?? null;
+  const selectedSupplierClientId = selectedRow?.supplierClientId ?? null;
 
   const lineItemRows = useMemo(() => {
     const items = detailQuery.data?.items ?? [];
@@ -1767,7 +1807,7 @@ function PurchaseOrderQueueMode({
   // ---------------------------------------------------------------------------
 
   const queueColumnDefs = useMemo<ColDef<POQueueRow>[]>(() => {
-    const cols: ColDef<POQueueRow>[] = [
+    return [
       {
         field: "poNumber",
         headerName: "PO Number",
@@ -1781,6 +1821,14 @@ function PurchaseOrderQueueMode({
         flex: 1.5,
         minWidth: 180,
         cellClass: "powersheet-cell--locked",
+        cellRenderer: (params: ICellRendererParams<POQueueRow>) => (
+          <div className="flex flex-col">
+            <span>{params.data?.supplierName ?? "Unknown Supplier"}</span>
+            <span className="text-xs text-muted-foreground">
+              PO-linked receiving
+            </span>
+          </div>
+        ),
       },
       {
         field: "statusLabel",
@@ -1790,6 +1838,24 @@ function PurchaseOrderQueueMode({
         cellClass: "powersheet-cell--locked",
       },
       {
+        field: "receivingStatusLabel",
+        headerName: "Receiving",
+        minWidth: 130,
+        maxWidth: 150,
+        cellClass: "powersheet-cell--locked",
+        cellRenderer: (params: ICellRendererParams<POQueueRow>) => {
+          const row = params.data;
+          if (!row) return "Not Started";
+          return (
+            <span
+              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${row.receivingStatusClassName}`}
+            >
+              {row.receivingStatusLabel}
+            </span>
+          );
+        },
+      },
+      {
         field: "orderDate",
         headerName: "Order Date",
         minWidth: 120,
@@ -1797,6 +1863,17 @@ function PurchaseOrderQueueMode({
         cellClass: "powersheet-cell--locked",
         valueFormatter: params =>
           formatDate(params.value as Date | string | null | undefined),
+      },
+      {
+        field: "expectedDeliveryDate",
+        headerName: "Est. Delivery",
+        minWidth: 132,
+        maxWidth: 156,
+        cellClass: "powersheet-cell--locked",
+        valueFormatter: params => {
+          const value = params.value as Date | string | null | undefined;
+          return hasExpectedDeliveryDate(value) ? formatDate(value) : "Not set";
+        },
       },
       {
         field: "total",
@@ -1814,29 +1891,7 @@ function PurchaseOrderQueueMode({
         cellClass: "powersheet-cell--locked",
       },
     ];
-
-    if (showExpectedDeliveryColumn) {
-      const orderDateColumnIndex = cols.findIndex(
-        column => column.field === "orderDate"
-      );
-      const insertIndex =
-        orderDateColumnIndex >= 0 ? orderDateColumnIndex + 1 : cols.length;
-
-      cols.splice(insertIndex, 0, {
-        field: "expectedDeliveryDate",
-        headerName: "Est. Delivery",
-        minWidth: 120,
-        maxWidth: 140,
-        cellClass: "powersheet-cell--locked",
-        valueFormatter: params => {
-          const value = params.value as Date | string | null | undefined;
-          return hasExpectedDeliveryDate(value) ? formatDate(value) : "Not set";
-        },
-      });
-    }
-
-    return cols;
-  }, [showExpectedDeliveryColumn]);
+  }, []);
 
   const lineItemColumnDefs = useMemo<ColDef<POLineRow>[]>(
     () => [
@@ -2035,6 +2090,11 @@ function PurchaseOrderQueueMode({
         onSelectionSummaryChange={setQueueSelectionSummary}
         isLoading={posQuery.isLoading}
         errorMessage={posQuery.error?.message ?? null}
+        getRowClass={params =>
+          params.data && isQueueRowOverdue(params.data)
+            ? "bg-red-50/60 border-l-2 border-red-300"
+            : undefined
+        }
         emptyTitle="No purchase orders match"
         emptyDescription="Adjust the search or status filter, or create a new PO."
         summary={
@@ -2259,7 +2319,23 @@ function PurchaseOrderQueueMode({
                 <p className="font-semibold">{selectedRow.poNumber}</p>
               </InspectorField>
               <InspectorField label="Supplier">
-                <p>{selectedRow.supplierName}</p>
+                <div className="space-y-2">
+                  <p>{selectedRow.supplierName}</p>
+                  {typeof selectedSupplierClientId === "number" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setLocation(
+                          buildRelationshipProfilePath(selectedSupplierClientId)
+                        )
+                      }
+                    >
+                      Open supplier profile
+                    </Button>
+                  ) : null}
+                </div>
                 {detailQuery.data?.supplier?.email ? (
                   <p className="text-xs text-muted-foreground">
                     {(detailQuery.data.supplier as { email?: string }).email}

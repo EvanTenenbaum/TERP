@@ -1,5 +1,6 @@
+import type { ReactNode } from "react";
 import { beforeEach, describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { PaymentsSurface } from "./PaymentsSurface";
 
 const PAYMENT_ITEMS = [
@@ -84,9 +85,22 @@ const {
 
 /* ── Mock PowersheetGrid ── */
 vi.mock("./PowersheetGrid", () => ({
-  PowersheetGrid: ({ rows, title }: { rows: unknown[]; title: string }) => (
+  PowersheetGrid: ({
+    rows,
+    title,
+    onSelectedRowChange,
+  }: {
+    rows: Array<{ rowKey: string }>;
+    title: string;
+    onSelectedRowChange?: (row: { rowKey: string } | null) => void;
+  }) => (
     <div data-testid={`grid-${title}`}>
       {title} — {rows.length} rows
+      {rows.length > 0 && onSelectedRowChange ? (
+        <button onClick={() => onSelectedRowChange(rows[0])}>
+          Select first payment
+        </button>
+      ) : null}
     </div>
   ),
 }));
@@ -122,14 +136,14 @@ vi.mock("@/lib/trpc", () => ({
 
 /* ── Mock external components ── */
 vi.mock("@/components/work-surface/InspectorPanel", () => ({
-  InspectorPanel: ({ children }: { children: unknown }) => (
-    <div data-testid="inspector-panel">{children as string}</div>
+  InspectorPanel: ({ children }: { children: ReactNode }) => (
+    <div data-testid="inspector-panel">{children}</div>
   ),
-  InspectorSection: ({ children }: { children: unknown }) => (
-    <div>{children as string}</div>
+  InspectorSection: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
   ),
-  InspectorField: ({ children }: { children: unknown }) => (
-    <div>{children as string}</div>
+  InspectorField: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
   ),
 }));
 
@@ -303,5 +317,13 @@ describe("PaymentsSurface", () => {
       screen.getByTestId("payments-order-handoff-banner")
     ).toHaveTextContent("does not have a linked invoice yet");
     expect(screen.getByText(/0 rows/)).toBeInTheDocument();
+  });
+
+  it("shows the formatted payment date in the inspector after a row is selected", () => {
+    render(<PaymentsSurface />);
+
+    fireEvent.click(screen.getByRole("button", { name: /select first payment/i }));
+
+    expect(screen.getByText("Jan 15, 2026")).toBeInTheDocument();
   });
 });

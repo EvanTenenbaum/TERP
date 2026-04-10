@@ -124,6 +124,38 @@ export default function InventoryWorkspacePage() {
       activeTab={activeTab}
       tabs={INVENTORY_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
+      meta={[
+        {
+          label: "Active lane",
+          value:
+            activeTab === "inventory"
+              ? "Sellable inventory"
+              : activeTab === "intake"
+                ? "Direct intake"
+                : activeTab === "receiving"
+                  ? "PO-linked receiving"
+                  : activeTab === "shipping"
+                    ? "Fulfillment queue"
+                    : activeTab === "samples"
+                      ? "Sample requests"
+                      : "Support operations",
+        },
+        {
+          label: "Mode",
+          value:
+            activeTab === "intake"
+              ? intakeSurfaceMode
+              : activeTab === "shipping"
+                ? fulfillmentSurfaceMode
+                : activeTab === "samples"
+                  ? samplesSurfaceMode
+                  : "workspace",
+        },
+        {
+          label: "Receiving split",
+          value: "Direct intake vs PO-linked queue",
+        },
+      ]}
       data-testid="inventory-header"
       commandStrip={
         activeTab === "intake" ? (

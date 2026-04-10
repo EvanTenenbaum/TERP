@@ -1,0 +1,20 @@
+TER-1109|97|meets_bar|Code + test proof for semantic payment badges in orders table|none
+TER-1110|90|below_bar|Code shows row tinting, but test only checks badge visibility not row-level styling|Add test assertion verifying overdue/partial-payment rows render with destructive/warning className
+TER-1111|88|below_bar|Code shows action consolidation but no test coverage|Add test verifying inspector renders ≤2 primary actions and remaining in overflow menu
+TER-1112|96|meets_bar|Code + test proof for Due Date column visibility|none
+TER-1113|89|below_bar|Code shows actionable sort logic but no test verification of default state|Add test asserting initial sortKey is 'actionable' and overdue orders appear first
+TER-1114|97|meets_bar|Code + test proof for reactive exception indicators in toolbar|none
+TER-1115|91|below_bar|Code shows filtered counts but test doesn't verify coupling to tab transitions|Add test asserting status bar counts update when switching between low-stock/quarantine/all tabs
+TER-1116|91|below_bar|Test proves mutual exclusion but not that distinction is visibly rendered|Add test or runtime proof that direct vs PO-linked receiving split appears in workspace metadata
+TER-1117|97|meets_bar|Code + test proof that classic/sheet-native modes are mutually exclusive|none
+TER-1118|99|meets_bar|Code + test + runtime proof for ETA column always visible|none
+TER-1119|99|meets_bar|Code + test + runtime proof for receiving status column|none
+TER-1120|93|below_bar|Test proves overdue styling but packet doesn't cite the styling code reference in PurchaseOrderSurface|Add code line reference showing where overdue PO rows get warning className applied
+TER-1121|97|meets_bar|Code + test proof for visible redirect handoff state in Procurement tabs|none
+TER-1122|89|below_bar|Code shows semantic token routing but no test or runtime verification|Add test verifying role badges render with semantic className or capture runtime proof
+TER-1123|96|meets_bar|Code + runtime proof for Last Activity column visibility|none
+TER-1124|96|meets_bar|Code + runtime proof for Status column visibility|none
+TER-1125|89|below_bar|Code shows scroll storage/restoration but no test proving it survives navigation cycle|Add test storing scroll position, navigating to profile, returning, and asserting scroll restored
+TER-1126|97|meets_bar|Code + test proof for financial period in workspace metadata|none
+TER-1127|89|below_bar|Code shows skeleton components but no test or runtime verification|Add test verifying loading state renders WorkspacePanelSkeleton not plain text
+TER-1128|72|below_bar|Code says cards STAY GLOBAL while requirement says reflect filters - direct contradiction|Clarify requirement or change implementation to make cards filter-reactive

@@ -1686,6 +1686,21 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
         },
       },
       {
+        headerName: "Source",
+        colId: "sourceLabel",
+        width: 130,
+        editable: false,
+        cellClass: "powersheet-cell--locked",
+        headerTooltip:
+          "Read-only: distinguishes direct-intake rows from PO-linked receiving handled in the receiving workspace",
+        valueGetter: () => "Direct intake",
+        cellRenderer: () => (
+          <Badge variant="outline" className="text-xs bg-sky-50 text-sky-700">
+            Direct intake
+          </Badge>
+        ),
+      },
+      {
         headerName: "Status",
         field: "status",
         width: 110,
@@ -2353,7 +2368,10 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
 
   // ---- Render ----
   return (
-    <section className="h-full min-h-[calc(100vh-8rem)] flex flex-col overflow-hidden bg-background">
+    <section
+      data-testid="intake-pilot-surface"
+      className="h-full min-h-[calc(100vh-8rem)] flex flex-col overflow-hidden bg-background"
+    >
       {/* Zone 1: Session KPI badges + save state */}
       <div className="flex flex-col gap-3 border-b border-border/70 bg-background px-3 py-3 md:flex-row md:items-center md:justify-between md:px-4">
         <div className="flex flex-wrap items-center gap-2">

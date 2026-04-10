@@ -59,4 +59,27 @@ describe("LinearWorkspaceShell", () => {
 
     vi.useRealTimers();
   });
+
+  it("renders the workspace title as the dominant heading and keeps the section cue separate", () => {
+    render(
+      <LinearWorkspaceShell
+        title="Accounting"
+        description="Manage invoices and payments."
+        section="Finance"
+        activeTab="dashboard"
+        tabs={[{ value: "dashboard", label: "Dashboard" }]}
+        onTabChange={() => {}}
+      >
+        <LinearWorkspacePanel value="dashboard">
+          <div>Dashboard content</div>
+        </LinearWorkspacePanel>
+      </LinearWorkspaceShell>
+    );
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Accounting" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Finance")).toBeInTheDocument();
+    expect(screen.getByText("Workspace")).toBeInTheDocument();
+  });
 });

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { trpc, staleTimePresets } from "@/lib/trpc";
+import { formatDate } from "@/lib/utils";
 import { useUiDensity } from "@/hooks/useUiDensity";
 import { toast } from "sonner";
 import type { PickPackGridRow, PickPackStats } from "@/types/spreadsheet";
@@ -170,6 +171,8 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
         headerName: "Date",
         field: "orderDate",
         width: 120,
+        valueFormatter: params =>
+          formatDate(params.value as string | Date | null | undefined),
       },
       {
         headerName: "Items",

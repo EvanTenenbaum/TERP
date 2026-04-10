@@ -29,6 +29,7 @@ import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
 import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
 import { Badge } from "@/components/ui/badge";
+import { RelationshipRoleBadge } from "@/components/relationships/RelationshipRoleBadge";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -537,9 +538,7 @@ export default function ClientProfilePage() {
                       </div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {shell.roles.map(role => (
-                          <Badge key={role} variant="secondary">
-                            {role}
-                          </Badge>
+                          <RelationshipRoleBadge key={role} role={role} />
                         ))}
                       </div>
                     </div>

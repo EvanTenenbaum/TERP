@@ -566,8 +566,8 @@ function DataTableComponent<T>({
                   ) : (
                     <EmptyState
                       variant="generic"
-                      title="No data"
-                      description="No data available to display."
+                      title="Nothing to show yet"
+                      description="Adjust the filters or add a record to populate this table."
                       size="sm"
                     />
                   )}
