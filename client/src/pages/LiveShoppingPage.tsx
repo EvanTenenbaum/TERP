@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getStatusBadgeVariant } from "@/lib/statusBadge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import StaffSessionConsole from "@/components/live-shopping/StaffSessionConsole";
@@ -70,15 +71,14 @@ const statusConfig: Record<
   SessionStatus,
   {
     label: string;
-    variant: "default" | "secondary" | "destructive" | "outline";
   }
 > = {
-  SCHEDULED: { label: "Scheduled", variant: "secondary" },
-  ACTIVE: { label: "Active", variant: "default" },
-  PAUSED: { label: "Paused", variant: "outline" },
-  ENDED: { label: "Ended", variant: "secondary" },
-  CONVERTED: { label: "Converted", variant: "default" },
-  CANCELLED: { label: "Cancelled", variant: "destructive" },
+  SCHEDULED: { label: "Scheduled" },
+  ACTIVE: { label: "Active" },
+  PAUSED: { label: "Paused" },
+  ENDED: { label: "Ended" },
+  CONVERTED: { label: "Converted" },
+  CANCELLED: { label: "Cancelled" },
 };
 
 export default function LiveShoppingPage() {
@@ -425,7 +425,9 @@ export default function LiveShoppingPage() {
                   return (
                     <TableRow key={session.id}>
                       <TableCell>
-                        <Badge variant={config.variant}>{config.label}</Badge>
+                        <Badge variant={getStatusBadgeVariant(status)}>
+                          {config.label}
+                        </Badge>
                       </TableCell>
                       <TableCell className="font-medium">
                         {session.title}

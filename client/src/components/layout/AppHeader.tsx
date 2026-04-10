@@ -88,8 +88,8 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   };
 
   return (
-    <header className="border-b border-border/80 bg-background/95 backdrop-blur-sm">
-      <div className="flex min-h-[52px] items-center gap-2 px-2.5 py-2 md:px-4">
+    <header className="bg-background/95 backdrop-blur-sm">
+      <div className="flex min-h-[56px] items-center gap-2 border-b border-border/50 px-2.5 py-2 md:px-4">
         <Button
           variant="ghost"
           size="icon"
@@ -101,11 +101,14 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
         </Button>
 
         {location !== "/" ? (
-          <div className="hidden xl:block max-w-[18rem] shrink-0 overflow-hidden">
+          <div className="hidden max-w-[18rem] shrink-0 overflow-hidden border-r border-border/60 pr-3 xl:block">
             <AppBreadcrumb className="max-w-full overflow-hidden" />
           </div>
         ) : (
-          <div className="hidden xl:block w-3 shrink-0" aria-hidden />
+          <div
+            className="hidden w-3 shrink-0 border-r border-border/60 pr-3 xl:block"
+            aria-hidden
+          />
         )}
 
         <form
@@ -134,7 +137,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           </div>
         </form>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-2 border-l border-border/60 pl-2.5">
           <NotificationBell className="relative hidden sm:flex" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

@@ -40,6 +40,7 @@ import {
   LinearWorkspaceShell,
   type LinearWorkspaceTab,
 } from "@/components/layout/LinearWorkspaceShell";
+import { WorkspaceCommandStripLink } from "@/components/ui/operational-states";
 import { Redirect, useLocation, useSearch } from "wouter";
 import { Layers } from "lucide-react";
 
@@ -320,26 +321,53 @@ export default function SalesWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={SALES_WORKSPACE.title}
-      description=""
+      description={SALES_WORKSPACE.description}
       section="Sell"
       density="compact"
       activeTab={activeTab}
       tabs={SALES_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
+      meta={[
+        {
+          label: "Action lane",
+          value:
+            activeTab === "orders"
+              ? "Quotes -> confirm -> collect"
+              : activeTab === "returns"
+                ? "Returns and resolution"
+                : "Outbound sales coordination",
+        },
+        {
+          label: "Primary queue",
+          value:
+            activeTab === "orders"
+              ? "Confirmed orders"
+              : activeTab === "quotes"
+                ? "Quote follow-up"
+                : activeTab === "sales-sheets"
+                  ? "Shareable catalogue"
+                  : "Operator workspace",
+        },
+      ]}
       commandStrip={
         shouldShowCommandStrip ? (
           <div className="flex flex-wrap items-center gap-2">
             {commandStripToggle}
+            <WorkspaceCommandStripLink
+              label="Sales Catalogue"
+              onClick={() => setActiveTab("sales-sheets")}
+              active={activeTab === "sales-sheets"}
+            />
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2 text-xs"
-              onClick={() => setActiveTab("sales-sheets")}
-              disabled={activeTab === "sales-sheets"}
-              aria-label="Open sales catalogue"
+              className="h-8 px-2.5 text-xs"
+              onClick={() => setActiveTab("create-order")}
+              disabled={activeTab === "create-order"}
+              aria-label="Open order composer"
             >
               <Layers className="mr-1 h-3 w-3" />
-              Sales Catalogue
+              Order Composer
             </Button>
           </div>
         ) : null

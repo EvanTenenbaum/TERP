@@ -3,7 +3,7 @@ import React from "react";
  * @vitest-environment jsdom
  */
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntakePilotSurface } from "./IntakePilotSurface";
 
@@ -240,13 +240,32 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     description,
+    columnDefs = [],
+    rows = [],
   }: {
     title: string;
     description?: string;
+    columnDefs?: Array<{
+      headerName?: string;
+      valueGetter?: (params: { data: Record<string, unknown> }) => string;
+    }>;
+    rows?: Array<Record<string, unknown>>;
   }) => (
     <div>
       <h2>{title}</h2>
       {description ? <p>{description}</p> : null}
+      <div data-testid="intake-grid-headers">
+        {columnDefs.map(column => (
+          <span key={column.headerName}>{column.headerName}</span>
+        ))}
+      </div>
+      {rows[0] ? (
+        <div data-testid="intake-grid-first-row-source">
+          {columnDefs
+            .find(column => column.headerName === "Source")
+            ?.valueGetter?.({ data: rows[0] }) ?? null}
+        </div>
+      ) : null}
     </div>
   ),
 }));
@@ -392,5 +411,17 @@ describe("IntakePilotSurface", () => {
 
     expect(screen.getByText("Main Warehouse / Zone A")).toBeInTheDocument();
     expect(screen.getByText("Main Warehouse / Zone B")).toBeInTheDocument();
+  });
+
+  it("labels intake rows as direct intake so they stay distinct from PO-linked receiving", () => {
+    render(<IntakePilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByText("Source")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /add row/i }));
+
+    expect(
+      screen.getByTestId("intake-grid-first-row-source")
+    ).toHaveTextContent("Direct intake");
   });
 });

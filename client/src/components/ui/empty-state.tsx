@@ -292,8 +292,8 @@ export const EmptyStatePresets = {
   NoData: () => (
     <EmptyState
       variant="analytics"
-      title="No data available"
-      description="Data will appear here once you start using the system"
+      title="Nothing to show yet"
+      description="This view will populate once activity starts or the current filters broaden."
     />
   ),
 

@@ -1,10 +1,16 @@
+import type { ReactNode } from "react";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { InvoicesSurface } from "./InvoicesSurface";
 
 const gridPropsByTitle = new Map<string, Record<string, unknown>>();
 
-const { mockParseInvoiceDeepLink, mockSetSelectedId, invoiceSelectionState } =
+const {
+  mockParseInvoiceDeepLink,
+  mockSetSelectedId,
+  mockNavigate,
+  invoiceSelectionState,
+} =
   vi.hoisted(() => ({
     mockParseInvoiceDeepLink: vi.fn(() => ({
       invoiceId: null,
@@ -14,6 +20,7 @@ const { mockParseInvoiceDeepLink, mockSetSelectedId, invoiceSelectionState } =
       from: null,
     })),
     mockSetSelectedId: vi.fn(),
+    mockNavigate: vi.fn(),
     invoiceSelectionState: { selectedId: null as number | null },
   }));
 
@@ -52,11 +59,20 @@ const mockInvoicesList = vi.hoisted(() => ({
 
 /* ── Mock PowersheetGrid ── */
 vi.mock("./PowersheetGrid", () => ({
-  PowersheetGrid: (props: { rows: unknown[]; title: string }) => {
+  PowersheetGrid: (props: {
+    rows: Array<{ invoiceId: number }>;
+    title: string;
+    onSelectedRowChange?: (row: { invoiceId: number } | null) => void;
+  }) => {
     gridPropsByTitle.set(props.title, props as Record<string, unknown>);
     return (
       <div data-testid={`grid-${props.title}`}>
         {props.title} — {props.rows.length} rows
+        {props.rows.length > 0 && props.onSelectedRowChange ? (
+          <button onClick={() => props.onSelectedRowChange?.(props.rows[0])}>
+            Select first invoice
+          </button>
+        ) : null}
       </div>
     );
   },
@@ -221,14 +237,14 @@ vi.mock("@/lib/trpc", () => ({
 
 /* ── Mock external components ── */
 vi.mock("@/components/work-surface/InspectorPanel", () => ({
-  InspectorPanel: ({ children }: { children: unknown }) => (
-    <div data-testid="inspector-panel">{children as string}</div>
+  InspectorPanel: ({ children }: { children: ReactNode }) => (
+    <div data-testid="inspector-panel">{children}</div>
   ),
-  InspectorSection: ({ children }: { children: unknown }) => (
-    <div>{children as string}</div>
+  InspectorSection: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
   ),
-  InspectorField: ({ children }: { children: unknown }) => (
-    <div>{children as string}</div>
+  InspectorField: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
   ),
 }));
 
@@ -273,7 +289,7 @@ vi.mock("@/lib/spreadsheet-native", () => ({
 
 vi.mock("wouter", () => ({
   useSearch: vi.fn(() => ""),
-  useLocation: vi.fn(() => ["/accounting/invoices", vi.fn()]),
+  useLocation: vi.fn(() => ["/accounting/invoices", mockNavigate]),
 }));
 
 vi.mock("@/lib/statusTokens", () => ({
@@ -310,6 +326,7 @@ describe("InvoicesSurface", () => {
   beforeEach(() => {
     invoiceSelectionState.selectedId = null;
     mockSetSelectedId.mockReset();
+    mockNavigate.mockReset();
     gridPropsByTitle.clear();
     mockParseInvoiceDeepLink.mockReturnValue({
       invoiceId: null,
@@ -471,5 +488,15 @@ describe("InvoicesSurface", () => {
     );
 
     expect(screen.getByTestId("record-payment-dialog")).toBeInTheDocument();
+  });
+
+  it("opens the linked client profile from the invoice inspector", () => {
+    invoiceSelectionState.selectedId = 1;
+
+    render(<InvoicesSurface />);
+
+    fireEvent.click(screen.getByRole("button", { name: /open client profile/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith("/clients/10?section=overview");
   });
 });

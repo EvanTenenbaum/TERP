@@ -405,7 +405,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
               <CardContent>
                 {chartDataByReason.length === 0 ? (
                   <p className="text-center py-8 text-muted-foreground">
-                    No data
+                    No shrinkage events match the current date range.
                   </p>
                 ) : (
                   <div className="h-64">
@@ -449,7 +449,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
               <CardContent>
                 {chartDataByCategory.length === 0 ? (
                   <p className="text-center py-8 text-muted-foreground">
-                    No data
+                    No category-level shrinkage is available for this date range.
                   </p>
                 ) : (
                   <div className="h-64">

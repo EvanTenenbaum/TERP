@@ -8,6 +8,10 @@ import { ACCOUNTING_WORKSPACE } from "@/config/workspaces";
 import AccountingDashboard from "@/pages/accounting/AccountingDashboard";
 import { lazy } from "react";
 import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
+import {
+  WorkspaceCommandStripLink,
+  WorkspacePanelSkeleton,
+} from "@/components/ui/operational-states";
 
 // All unified surfaces
 const InvoicesSurface = lazy(
@@ -61,14 +65,49 @@ export default function AccountingWorkspacePage() {
       onTabChange={setActiveTab}
       meta={[
         {
-          label: "Record a payment",
-          value: "Select an invoice, then use Record Payment",
+          label: "Financial period",
+          value: activeTab === "fiscal-periods" ? "Period controls" : "Current fiscal year",
         },
         {
-          label: "Billing cycle",
+          label: "Active lane",
+          value:
+            activeTab === "dashboard"
+              ? "Receivables and payables summary"
+              : activeTab === "payments"
+                ? "Cash application"
+                : activeTab === "general-ledger"
+                  ? "Ledger review"
+                  : "Accounting operations",
+        },
+        {
+          label: "Flow",
           value: "Invoice -> Payment -> General Ledger",
         },
       ]}
+      commandStrip={
+        <div className="flex flex-wrap items-center gap-2">
+          <WorkspaceCommandStripLink
+            label="Dashboard"
+            onClick={() => setActiveTab("dashboard")}
+            active={activeTab === "dashboard"}
+          />
+          <WorkspaceCommandStripLink
+            label="Invoices"
+            onClick={() => setActiveTab("invoices")}
+            active={activeTab === "invoices"}
+          />
+          <WorkspaceCommandStripLink
+            label="Payments"
+            onClick={() => setActiveTab("payments")}
+            active={activeTab === "payments"}
+          />
+          <WorkspaceCommandStripLink
+            label="Periods"
+            onClick={() => setActiveTab("fiscal-periods")}
+            active={activeTab === "fiscal-periods"}
+          />
+        </div>
+      }
     >
       <LinearWorkspacePanel value="dashboard">
         <AccountingDashboard embedded />
@@ -76,7 +115,10 @@ export default function AccountingWorkspacePage() {
       <LinearWorkspacePanel value="invoices">
         <PilotSurfaceBoundary
           fallback={
-            <div className="p-4 text-muted-foreground">Loading invoices...</div>
+            <WorkspacePanelSkeleton
+              title="Loading invoices"
+              data-testid="accounting-invoices-skeleton"
+            />
           }
         >
           <InvoicesSurface />
@@ -85,7 +127,10 @@ export default function AccountingWorkspacePage() {
       <LinearWorkspacePanel value="bills">
         <PilotSurfaceBoundary
           fallback={
-            <div className="p-4 text-muted-foreground">Loading bills...</div>
+            <WorkspacePanelSkeleton
+              title="Loading bills"
+              data-testid="accounting-bills-skeleton"
+            />
           }
         >
           <BillsSurface />
@@ -94,7 +139,10 @@ export default function AccountingWorkspacePage() {
       <LinearWorkspacePanel value="payments">
         <PilotSurfaceBoundary
           fallback={
-            <div className="p-4 text-muted-foreground">Loading payments...</div>
+            <WorkspacePanelSkeleton
+              title="Loading payments"
+              data-testid="accounting-payments-skeleton"
+            />
           }
         >
           <PaymentsSurface />
@@ -102,64 +150,42 @@ export default function AccountingWorkspacePage() {
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="general-ledger">
         <PilotSurfaceBoundary
-          fallback={
-            <div className="p-4 text-muted-foreground">
-              Loading general ledger...
-            </div>
-          }
+          fallback={<WorkspacePanelSkeleton title="Loading general ledger" />}
         >
           <GeneralLedgerSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="chart-of-accounts">
         <PilotSurfaceBoundary
-          fallback={
-            <div className="p-4 text-muted-foreground">
-              Loading chart of accounts...
-            </div>
-          }
+          fallback={<WorkspacePanelSkeleton title="Loading chart of accounts" />}
         >
           <ChartOfAccountsSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="expenses">
         <PilotSurfaceBoundary
-          fallback={
-            <div className="p-4 text-muted-foreground">Loading expenses...</div>
-          }
+          fallback={<WorkspacePanelSkeleton title="Loading expenses" />}
         >
           <ExpensesSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="bank-accounts">
         <PilotSurfaceBoundary
-          fallback={
-            <div className="p-4 text-muted-foreground">
-              Loading bank accounts...
-            </div>
-          }
+          fallback={<WorkspacePanelSkeleton title="Loading bank accounts" />}
         >
           <BankAccountsSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="bank-transactions">
         <PilotSurfaceBoundary
-          fallback={
-            <div className="p-4 text-muted-foreground">
-              Loading bank transactions...
-            </div>
-          }
+          fallback={<WorkspacePanelSkeleton title="Loading bank transactions" />}
         >
           <BankTransactionsSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="fiscal-periods">
         <PilotSurfaceBoundary
-          fallback={
-            <div className="p-4 text-muted-foreground">
-              Loading fiscal periods...
-            </div>
-          }
+          fallback={<WorkspacePanelSkeleton title="Loading fiscal periods" />}
         >
           <FiscalPeriodsSurface />
         </PilotSurfaceBoundary>

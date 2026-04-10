@@ -1,12 +1,31 @@
+import type { ReactNode } from "react";
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { BillsSurface } from "./BillsSurface";
+
+const { billSelectionState, mockNavigate } = vi.hoisted(() => ({
+  billSelectionState: { selectedId: null as number | null },
+  mockNavigate: vi.fn(),
+}));
 
 /* ── Mock PowersheetGrid ── */
 vi.mock("./PowersheetGrid", () => ({
-  PowersheetGrid: ({ rows, title }: { rows: unknown[]; title: string }) => (
+  PowersheetGrid: ({
+    rows,
+    title,
+    onSelectedRowChange,
+  }: {
+    rows: Array<{ billId: number }>;
+    title: string;
+    onSelectedRowChange?: (row: { billId: number } | null) => void;
+  }) => (
     <div data-testid={`grid-${title}`}>
       {title} — {rows.length} rows
+      {rows.length > 0 && onSelectedRowChange ? (
+        <button onClick={() => onSelectedRowChange(rows[0])}>
+          Select first bill
+        </button>
+      ) : null}
     </div>
   ),
 }));
@@ -127,14 +146,14 @@ vi.mock("@/lib/trpc", () => ({
 
 /* ── Mock external components ── */
 vi.mock("@/components/work-surface/InspectorPanel", () => ({
-  InspectorPanel: ({ children }: { children: unknown }) => (
-    <div data-testid="inspector-panel">{children as string}</div>
+  InspectorPanel: ({ children }: { children: ReactNode }) => (
+    <div data-testid="inspector-panel">{children}</div>
   ),
-  InspectorSection: ({ children }: { children: unknown }) => (
-    <div>{children as string}</div>
+  InspectorSection: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
   ),
-  InspectorField: ({ children }: { children: unknown }) => (
-    <div>{children as string}</div>
+  InspectorField: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
   ),
 }));
 
@@ -163,14 +182,14 @@ vi.mock("@/components/accounting/PayVendorModal", () => ({
 
 vi.mock("@/lib/spreadsheet-native", () => ({
   useSpreadsheetSelectionParam: () => ({
-    selectedId: null,
+    selectedId: billSelectionState.selectedId,
     setSelectedId: vi.fn(),
   }),
 }));
 
 vi.mock("wouter", () => ({
   useSearch: vi.fn(() => ""),
-  useLocation: vi.fn(() => ["/accounting/bills", vi.fn()]),
+  useLocation: vi.fn(() => ["/accounting/bills", mockNavigate]),
 }));
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -178,6 +197,11 @@ vi.mock("wouter", () => ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("BillsSurface", () => {
+  beforeEach(() => {
+    billSelectionState.selectedId = null;
+    mockNavigate.mockReset();
+  });
+
   it("renders AP KPI badges ($18,200 AP, 2 overdue, 31 total)", () => {
     render(<BillsSurface />);
     expect(screen.getByText(/\$18,200/)).toBeInTheDocument();
@@ -230,5 +254,15 @@ describe("BillsSurface", () => {
     render(<BillsSurface />);
     expect(screen.getByTestId("action-pay-vendor")).toBeDisabled();
     expect(screen.getByTestId("action-mark-received")).toBeDisabled();
+  });
+
+  it("opens the linked vendor profile from the bill inspector", () => {
+    billSelectionState.selectedId = 1;
+
+    render(<BillsSurface />);
+
+    fireEvent.click(screen.getByRole("button", { name: /open vendor profile/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith("/clients/10?section=overview");
   });
 });

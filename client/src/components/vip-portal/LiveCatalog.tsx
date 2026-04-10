@@ -52,6 +52,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { getStatusBadgeVariant } from "@/lib/statusBadge";
 
 interface CatalogItem {
   id: number;
@@ -854,7 +855,10 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                         {item.name}
                       </CardTitle>
                       {isInDraft(item.id) && (
-                        <Badge variant="default" className="shrink-0">
+                        <Badge
+                          variant={getStatusBadgeVariant("active")}
+                          className="shrink-0"
+                        >
                           <Check className="h-3 w-3" />
                         </Badge>
                       )}
@@ -1409,7 +1413,10 @@ function MyPriceAlerts() {
               <div className="flex items-center gap-2">
                 <p className="font-medium">{alert.productName}</p>
                 {priceDropped && (
-                  <Badge variant="default" className="bg-green-600">
+                  <Badge
+                    variant={getStatusBadgeVariant("triggered")}
+                    className="bg-green-600"
+                  >
                     <Check className="h-3 w-3 mr-1" />
                     Price Dropped!
                   </Badge>
