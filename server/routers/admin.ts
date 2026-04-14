@@ -135,6 +135,9 @@ export const adminRouter = router({
           const createdIndexes = [];
           for (const index of indexes) {
             try {
+              // SAFE: `index.sql` is drawn from the hardcoded `indexes` array
+              // defined above — all strings are compile-time DDL literals,
+              // not user-controlled input.
               await db.execute(sql.raw(index.sql));
               createdIndexes.push(index.name);
               logger.info(`  ✓ Created ${index.name}`);

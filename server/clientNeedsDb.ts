@@ -296,10 +296,18 @@ export async function getClientNeedsWithMatches(filters?: {
     const clientNameMap = new Map<number, string>();
 
     if (clientIds.length > 0) {
+      // SAFE: clientIds are derived from a prior DB query on the clientNeeds
+      // table (integer primary keys), not from user-supplied request data.
+      // Parameterize with sql.join for extra safety.
       const clientRecords = await db
         .select({ id: clients.id, name: clients.name })
         .from(clients)
-        .where(sql`${clients.id} IN (${sql.raw(clientIds.join(","))})`);
+        .where(
+          sql`${clients.id} IN (${sql.join(
+            clientIds.map(id => sql`${id}`),
+            sql`, `
+          )})`
+        );
 
       for (const client of clientRecords) {
         clientNameMap.set(client.id, client.name || "");

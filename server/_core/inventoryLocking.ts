@@ -307,7 +307,8 @@ export async function withBatchLock<T>(
 
   try {
     // Set lock timeout for this transaction
-    // SECURITY: lockTimeout is validated as integer, safe to interpolate
+    // SAFE: lockTimeout is validated as a positive integer by validateLockTimeout()
+    // above (throws on non-integer / out-of-range values), not user-controlled.
     await db.execute(
       sql.raw(`SET SESSION innodb_lock_wait_timeout = ${lockTimeout}`)
     );
@@ -408,7 +409,8 @@ export async function withMultiBatchLock<T>(
 
   try {
     // Set lock timeout for this transaction
-    // SECURITY: lockTimeout is validated as integer, safe to interpolate
+    // SAFE: lockTimeout is validated as a positive integer by validateLockTimeout()
+    // above (throws on non-integer / out-of-range values), not user-controlled.
     await db.execute(
       sql.raw(`SET SESSION innodb_lock_wait_timeout = ${lockTimeout}`)
     );
