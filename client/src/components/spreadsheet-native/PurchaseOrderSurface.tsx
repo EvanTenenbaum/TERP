@@ -18,7 +18,14 @@
  *   8. ConfirmDialogs — delete, status change, receiving handoff
  */
 
-import { Fragment, useCallback, useEffect, useMemo, useState, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  Fragment,
+} from "react";
 import { useExport } from "@/hooks/work-surface/useExport";
 import type { ExportColumn } from "@/hooks/work-surface/useExport";
 import type {
@@ -94,6 +101,9 @@ import {
   KeyboardHintBar,
   type KeyboardHint,
 } from "@/components/work-surface/KeyboardHintBar";
+import { PowersheetGrid } from "./PowersheetGrid";
+import type { PowersheetAffordance } from "./PowersheetGrid";
+import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
 import { cn } from "@/lib/utils";
 import { MonoId } from "@/components/ui/mono-id";
 import {
@@ -101,9 +111,6 @@ import {
   getPoStatusClass,
   getPaymentTermLabel,
 } from "@/lib/statusTokens";
-import { PowersheetGrid } from "./PowersheetGrid";
-import type { PowersheetAffordance } from "./PowersheetGrid";
-import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1093,14 +1100,6 @@ function PurchaseOrderCreateEditMode({
     );
   }
 
-  if (editPoId && editQuery.isError) {
-    return (
-      <div className="flex items-center justify-center py-12 text-sm text-destructive">
-        Failed to load purchase order. Please refresh.
-      </div>
-    );
-  }
-
   const editPoNumber =
     isEditMode && editDetail ? (editDetail.poNumber ?? `PO-${editPoId}`) : null;
 
@@ -1364,10 +1363,8 @@ function PurchaseOrderCreateEditMode({
 }
 
 // ---------------------------------------------------------------------------
-// Queue Mode (extracted to avoid hooks-after-early-return)
+// PO Progress Stepper (420-fork Wave 2)
 // ---------------------------------------------------------------------------
-
-// ─── PoProgressStepper ─────────────────────────────────────────────────────
 
 const PO_PROGRESS_STEPS = [
   { key: "DRAFT", label: "Draft" },
@@ -1380,41 +1377,40 @@ const PO_PROGRESS_STEPS = [
 function resolveStepperIndex(status: string): number {
   const direct = PO_PROGRESS_STEPS.findIndex(s => s.key === status);
   if (direct >= 0) return direct;
-  if (status === "PARTIALLY_RECEIVED") return 3;
-  return -1; // VOIDED/CANCELLED = no active step
+  // Map edge statuses to nearest step
+  if (status === "PARTIALLY_RECEIVED") return 3; // closest to RECEIVING
+  if (status === "VOIDED" || status === "CANCELLED") return -1; // no active step
+  return -1;
 }
 
 function PoProgressStepper({ status }: { status: string }) {
-  const activeIndex = resolveStepperIndex(status);
+  const currentIdx = resolveStepperIndex(status);
+
   return (
-    <div className="flex items-center gap-1 mb-3">
+    <div className="flex items-center gap-1 border-b border-border/40 bg-muted/20 px-4 py-2.5">
       {PO_PROGRESS_STEPS.map((step, i) => {
-        const isActive = i === activeIndex;
-        const isDone = activeIndex >= 0 && i < activeIndex;
+        const done = currentIdx >= 0 && i < currentIdx;
+        const active = i === currentIdx;
         return (
           <Fragment key={step.key}>
-            <div className={cn(
-              "flex items-center justify-center rounded-full text-[0.65rem] font-semibold",
-              "h-6 w-6 shrink-0 border",
-              isDone
-                ? "bg-emerald-500 border-emerald-500 text-white"
-                : isActive
-                  ? "bg-sky-500 border-sky-500 text-white"
-                  : "bg-muted border-border text-muted-foreground"
-            )}>
-              {isDone ? <Check className="h-3 w-3" /> : i + 1}
-            </div>
-            <span className={cn(
-              "text-[0.7rem] leading-none",
-              isActive ? "font-semibold text-foreground" : "text-muted-foreground"
-            )}>
+            <div
+              className={cn(
+                "flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[0.7rem] font-medium transition-all",
+                done && "bg-emerald-100 text-emerald-700",
+                active && "bg-primary text-primary-foreground shadow-sm",
+                !done && !active && "bg-muted/70 text-muted-foreground"
+              )}
+            >
+              {done && <Check className="h-2.5 w-2.5" />}
               {step.label}
-            </span>
+            </div>
             {i < PO_PROGRESS_STEPS.length - 1 && (
-              <div className={cn(
-                "h-px flex-1 min-w-[8px]",
-                isDone ? "bg-emerald-400" : "bg-border"
-              )} />
+              <div
+                className={cn(
+                  "h-px w-4 shrink-0",
+                  done ? "bg-emerald-300" : "bg-border"
+                )}
+              />
             )}
           </Fragment>
         );
@@ -1422,6 +1418,10 @@ function PoProgressStepper({ status }: { status: string }) {
     </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// Queue Mode (extracted to avoid hooks-after-early-return)
+// ---------------------------------------------------------------------------
 
 function PurchaseOrderQueueMode({
   defaultStatusFilter,
@@ -1542,22 +1542,20 @@ function PurchaseOrderQueueMode({
   }, [supplierFilterId, supplierNamesById]);
 
   const supplierPills = useMemo(() => {
-    const countMap = new Map<number, { name: string; count: number }>();
-    for (const po of rawPos) {
-      const sid = po.supplierClientId;
-      if (sid === null) continue;
-      const name = supplierNamesById.get(sid) ?? `Supplier #${sid}`;
-      const existing = countMap.get(sid);
-      if (existing) {
-        existing.count += 1;
-      } else {
-        countMap.set(sid, { name, count: 1 });
+    const counts = new Map<string, number>();
+    rawPos.forEach(po => {
+      const name =
+        po.supplierClientId !== null
+          ? (supplierNamesById.get(po.supplierClientId ?? -1) ?? null)
+          : null;
+      if (name && name !== "Unknown Supplier") {
+        counts.set(name, (counts.get(name) ?? 0) + 1);
       }
-    }
-    return Array.from(countMap.entries())
-      .sort((a, b) => b[1].count - a[1].count)
-      .slice(0, 8)
-      .map(([id, { name, count }]) => ({ id, name, count }));
+    });
+    return Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 7)
+      .map(([name]) => name);
   }, [rawPos, supplierNamesById]);
 
   const searchLower = searchTerm.trim().toLowerCase();
@@ -1565,13 +1563,6 @@ function PurchaseOrderQueueMode({
   const queueRows = useMemo(() => {
     const rows = mapPOsToQueueRows(rawPos, supplierNamesById);
     return rows.filter(row => {
-      // Apply supplier pill filter
-      if (
-        activeSupplierFilter !== null &&
-        row.supplierClientId !== activeSupplierFilter
-      ) {
-        return false;
-      }
       // Apply defaultStatusFilter if status is "all"
       if (statusFilter === "all") {
         if (
@@ -1598,6 +1589,10 @@ function PurchaseOrderQueueMode({
         showExpectedTodayOnly &&
         !isExpectedToday(row.expectedDeliveryDate, row.status)
       ) {
+        return false;
+      }
+
+      if (activeSupplierFilter && row.supplierName !== activeSupplierFilter) {
         return false;
       }
 
@@ -2176,38 +2171,36 @@ function PurchaseOrderQueueMode({
       </div>
 
       {/* 2b. Supplier Pill Filter Bar */}
-      {supplierPills.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 pb-1">
+      {supplierPills.length > 1 && (
+        <div className="flex items-center gap-1.5 overflow-x-auto py-1">
+          <span className="mr-1 shrink-0 text-[0.68rem] font-medium uppercase tracking-wide text-muted-foreground">
+            Supplier
+          </span>
           <button
-            type="button"
             onClick={() => setActiveSupplierFilter(null)}
             className={cn(
-              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
-              activeSupplierFilter === null
-                ? "border-sky-400 bg-sky-50 text-sky-700"
-                : "border-border bg-muted text-muted-foreground hover:bg-muted/70"
+              "shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
+              !activeSupplierFilter
+                ? "bg-primary/90 text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/70"
             )}
           >
             All
           </button>
-          {supplierPills.map(pill => (
+          {supplierPills.map(name => (
             <button
-              key={pill.id}
-              type="button"
+              key={name}
               onClick={() =>
-                setActiveSupplierFilter(
-                  activeSupplierFilter === pill.id ? null : pill.id
-                )
+                setActiveSupplierFilter(prev => (prev === name ? null : name))
               }
               className={cn(
-                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
-                activeSupplierFilter === pill.id
-                  ? "border-sky-400 bg-sky-50 text-sky-700"
-                  : "border-border bg-muted text-muted-foreground hover:bg-muted/70"
+                "shrink-0 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors",
+                activeSupplierFilter === name
+                  ? "bg-primary/90 text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/70"
               )}
             >
-              {pill.name}
-              <span className="ml-1 opacity-60">{pill.count}</span>
+              {name}
             </button>
           ))}
         </div>
@@ -2459,7 +2452,7 @@ function PurchaseOrderQueueMode({
           selectedRow ? (
             <span
               className={cn(
-                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                "rounded-full border px-2 py-0.5 text-xs font-medium",
                 getPoStatusClass(selectedRow.status)
               )}
             >
@@ -2507,7 +2500,7 @@ function PurchaseOrderQueueMode({
               <InspectorField label="Status">
                 <span
                   className={cn(
-                    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                    "inline-block rounded-full border px-2 py-0.5 text-xs font-medium",
                     getPoStatusClass(selectedRow.status)
                   )}
                 >
@@ -2628,7 +2621,7 @@ function PurchaseOrderQueueMode({
         confirmLabel={
           updateStatus.isPending || submitPO.isPending || confirmPO.isPending
             ? "Updating..."
-            : `Set to ${pendingStatusChange ? (getPoStatusLabel(pendingStatusChange.status)) : ""}`
+            : `Set to ${pendingStatusChange ? getPoStatusLabel(pendingStatusChange.status) : ""}`
         }
         onConfirm={handleStatusConfirm}
       />

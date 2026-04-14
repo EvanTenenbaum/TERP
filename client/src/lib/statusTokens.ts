@@ -55,15 +55,16 @@ export const STATUS_NEUTRAL = "bg-slate-100 text-slate-800 border-slate-200";
 export const STATUS_COMPLETE =
   "bg-emerald-100 text-emerald-700 border-emerald-200";
 
-export const OPERATIONAL_STATUS_TOKENS: Record<OperationalStatusTone, string> = {
-  neutral: STATUS_NEUTRAL,
-  info: STATUS_INFO,
-  success: STATUS_SUCCESS,
-  warning: STATUS_WARNING,
-  caution: STATUS_CAUTION,
-  danger: STATUS_DANGER,
-  complete: STATUS_COMPLETE,
-};
+export const OPERATIONAL_STATUS_TOKENS: Record<OperationalStatusTone, string> =
+  {
+    neutral: STATUS_NEUTRAL,
+    info: STATUS_INFO,
+    success: STATUS_SUCCESS,
+    warning: STATUS_WARNING,
+    caution: STATUS_CAUTION,
+    danger: STATUS_DANGER,
+    complete: STATUS_COMPLETE,
+  };
 
 const buildStatusTokenMap = <
   TStatus extends string,

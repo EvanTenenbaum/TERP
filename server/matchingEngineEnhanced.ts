@@ -583,16 +583,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
         };
 
         matches.push(match);
-
-        // Record match for learning
-        await recordMatch({
-          clientNeedId: needId,
-          clientId: need.clientId,
-          inventoryBatchId: batch.id,
-          matchType: match.type,
-          confidenceScore: confidence.toString(),
-          matchReasons: reasons,
-        });
+        // M-4: recordMatch removed from read path — call explicitly when needed
       }
     }
 
@@ -629,16 +620,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
         };
 
         matches.push(match);
-
-        // Record match for learning
-        await recordMatch({
-          clientNeedId: needId,
-          clientId: need.clientId,
-          vendorSupplyId: supply.id,
-          matchType: match.type,
-          confidenceScore: confidence.toString(),
-          matchReasons: reasons,
-        });
+        // M-4: recordMatch removed from read path — call explicitly when needed
       }
     }
 
@@ -672,15 +654,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
         sourceId: histMatch.sourceId,
         sourceData: histMatch.sourceData,
       });
-
-      // Record historical match
-      await recordMatch({
-        clientNeedId: needId,
-        clientId: need.clientId,
-        matchType: "HISTORICAL",
-        confidenceScore: histMatch.confidence.toString(),
-        matchReasons: histMatch.reasons,
-      });
+      // M-4: recordMatch removed from read path — call explicitly when needed
     }
 
     // Sort matches by confidence (highest first)
