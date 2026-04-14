@@ -4,9 +4,12 @@
  * Simplified fixed 6-card dashboard replacing the customizable widget system.
  * Cards: Today's Orders, Open Invoices, Inventory Alerts, Pending Intake,
  *        Calendar Today, Quick Stats
+ *
+ * Wave 4 (420-fork): Added WorkQueue as primary content above KPI cards,
+ * plus a compact quick stats strip.
  */
 
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,9 +23,12 @@ import {
   Calendar,
   TrendingUp,
   ArrowRight,
+  Clock,
+  TrendingDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { WorkQueue, type WorkQueueItem } from "@/components/dashboard/WorkQueue";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -33,14 +39,6 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function formatDate(): string {
-  return new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 // --- Today's Orders Card ---
 const TodaysOrdersCard = memo(function TodaysOrdersCard() {
@@ -306,6 +304,215 @@ const CalendarTodayCard = memo(function CalendarTodayCard() {
   );
 });
 
+// --- Work Queue Section ---
+const WorkQueueSection = memo(function WorkQueueSection() {
+
+  const { data: draftOrdersData, isLoading: draftLoading } =
+    trpc.orders.getAll.useQuery(
+      { isDraft: true },
+      { refetchInterval: 60000 }
+    );
+
+  const { data: invoiceSummary, isLoading: invoiceLoading } =
+    trpc.invoices.getSummary.useQuery(undefined, { refetchInterval: 60000 });
+
+  const { data: inventoryStats, isLoading: inventoryLoading } =
+    trpc.inventory.dashboardStats.useQuery(undefined, { refetchInterval: 60000 });
+
+  const { data: posData, isLoading: posLoading } =
+    trpc.purchaseOrders.getAll.useQuery(
+      { limit: 100, offset: 0 },
+      { refetchInterval: 60000 }
+    );
+
+  const isLoading =
+    draftLoading || invoiceLoading || inventoryLoading || posLoading;
+
+  const items: WorkQueueItem[] = useMemo(() => {
+    const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const result: WorkQueueItem[] = [];
+
+    // 1. Stale draft orders (isDraft=true, createdAt >24h ago)
+    const allDrafts = Array.isArray(draftOrdersData)
+      ? draftOrdersData
+      : (draftOrdersData?.items ?? []);
+    const staleDrafts = allDrafts.filter((o: { createdAt?: string | Date | null }) => {
+      if (!o.createdAt) return false;
+      const created = new Date(o.createdAt);
+      return created < cutoff24h;
+    });
+    if (staleDrafts.length > 0) {
+      result.push({
+        id: "stale-drafts",
+        urgency: staleDrafts.length > 5 ? "critical" : "warning",
+        icon: Clock,
+        label: `${staleDrafts.length} order${staleDrafts.length !== 1 ? "s" : ""} awaiting confirmation — draft >24h`,
+        count: staleDrafts.length,
+        href: buildSalesWorkspacePath("orders"),
+      });
+    }
+
+    // 2. Overdue invoices (status=OVERDUE in invoice summary)
+    const overdueRow = invoiceSummary?.byStatus.find(r => r.status === "OVERDUE");
+    const overdueCount = overdueRow?.count ?? 0;
+    const overdueAmount = overdueRow?.amountDue ?? 0;
+    if (overdueCount > 0) {
+      result.push({
+        id: "overdue-invoices",
+        urgency: "critical",
+        icon: FileText,
+        label: `${overdueCount} invoice${overdueCount !== 1 ? "s" : ""} overdue`,
+        count: overdueCount,
+        value: overdueAmount > 0 ? `$${overdueAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : undefined,
+        href: "/accounting?tab=invoices",
+      });
+    }
+
+    // 3. Low stock / at-risk batches
+    const statusCounts: Record<string, number> =
+      inventoryStats?.statusCounts ?? {};
+    const lowStockCount =
+      (statusCounts["QUARANTINED"] ?? 0) + (statusCounts["ON_HOLD"] ?? 0);
+    if (lowStockCount > 0) {
+      result.push({
+        id: "low-stock",
+        urgency: "warning",
+        icon: TrendingDown,
+        label: `${lowStockCount} batch${lowStockCount !== 1 ? "es" : ""} on hold or quarantined — may block open orders`,
+        count: lowStockCount,
+        href: "/inventory",
+      });
+    }
+
+    // 4. POs ready for intake
+    const posItems = Array.isArray(posData)
+      ? posData
+      : (posData?.items ?? []);
+    const posForIntake = posItems.filter(
+      (po: { purchaseOrderStatus?: string }) =>
+        po.purchaseOrderStatus === "SENT" ||
+        po.purchaseOrderStatus === "CONFIRMED" ||
+        po.purchaseOrderStatus === "RECEIVING"
+    );
+    if (posForIntake.length > 0) {
+      result.push({
+        id: "po-intake",
+        urgency: "info",
+        icon: Package,
+        label: `${posForIntake.length} PO${posForIntake.length !== 1 ? "s" : ""} ready for intake`,
+        count: posForIntake.length,
+        href: "/purchase-orders",
+      });
+    }
+
+    return result;
+  }, [draftOrdersData, invoiceSummary, inventoryStats, posData]);
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-baseline justify-between mb-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Today&apos;s Work
+        </h2>
+        <span className="text-xs text-muted-foreground">
+          {new Date().toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })}
+        </span>
+      </div>
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {isLoading ? (
+          <div className="space-y-px p-1">
+            <Skeleton className="h-11 w-full rounded" />
+            <Skeleton className="h-11 w-full rounded" />
+            <Skeleton className="h-11 w-full rounded" />
+          </div>
+        ) : (
+          <WorkQueue items={items} />
+        )}
+      </div>
+    </div>
+  );
+});
+
+// --- Quick Stats Strip ---
+const QuickStatsStrip = memo(function QuickStatsStrip() {
+  const { data: snapshot, isLoading: snapshotLoading } =
+    trpc.dashboard.getTransactionSnapshot.useQuery(undefined, {
+      refetchInterval: 60000,
+    });
+  const { data: debtData, isLoading: debtLoading } =
+    trpc.dashboard.getTotalDebt.useQuery(undefined, {
+      refetchInterval: 60000,
+    });
+  const { data: inventoryStats, isLoading: inventoryLoading } =
+    trpc.inventory.dashboardStats.useQuery(undefined, { refetchInterval: 60000 });
+
+  // Count live/active batches as a proxy for "active orders" count
+  const statusCounts: Record<string, number> =
+    inventoryStats?.statusCounts ?? {};
+  const activeBatchCount = statusCounts["LIVE"] ?? 0;
+  const arTotal = debtData?.totalDebtOwedToMe ?? 0;
+
+  // Revenue MTD: use thisMonth if available, fall back to thisWeek
+  const revenueMtd =
+    (snapshot as { thisMonth?: { sales?: number } } | undefined)?.thisMonth
+      ?.sales ?? snapshot?.thisWeek.sales;
+
+  const inventoryValue =
+    (inventoryStats as { totalValue?: number } | undefined)?.totalValue;
+
+  const isLoading = snapshotLoading || debtLoading || inventoryLoading;
+
+  const stats = [
+    {
+      label: "Revenue MTD",
+      value: isLoading
+        ? null
+        : revenueMtd !== null && revenueMtd !== undefined
+          ? formatCurrency(revenueMtd)
+          : "—",
+    },
+    {
+      label: "Open AR",
+      value: isLoading ? null : formatCurrency(arTotal),
+    },
+    {
+      label: "Inventory Value",
+      value: isLoading
+        ? null
+        : inventoryValue !== null && inventoryValue !== undefined
+          ? formatCurrency(inventoryValue)
+          : "—",
+    },
+    {
+      label: "Live Batches",
+      value: isLoading ? null : String(activeBatchCount),
+    },
+  ];
+
+  return (
+    <div className="flex items-center gap-6 px-1 mb-6 text-sm">
+      {stats.map(stat => (
+        <div key={stat.label} className="flex flex-col">
+          <span className="text-[0.68rem] uppercase tracking-wide text-muted-foreground font-medium">
+            {stat.label}
+          </span>
+          {stat.value === null ? (
+            <Skeleton className="h-5 w-16 mt-0.5" />
+          ) : (
+            <span className="text-base font-semibold tabular-nums">
+              {stat.value}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+});
+
 // --- Quick Stats Card ---
 const QuickStatsCard = memo(function QuickStatsCard() {
   const { data: snapshot, isLoading } =
@@ -360,23 +567,33 @@ const QuickStatsCard = memo(function QuickStatsCard() {
 // --- Main SimpleDashboard ---
 export const SimpleDashboard = memo(function SimpleDashboard() {
   return (
-    <div className="space-y-6">
-      {/* TER-617: Simple header — title + current date only */}
-      <div>
+    <div className="space-y-2">
+      {/* TER-617: Simple header — title only (date moved to WorkQueue header) */}
+      <div className="mb-4">
         <h1 className="text-2xl font-semibold leading-tight text-foreground">
           Dashboard
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">{formatDate()}</p>
       </div>
 
-      {/* TER-615/616: Fixed 6-card grid — no customization */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <TodaysOrdersCard />
-        <OpenInvoicesCard />
-        <InventoryAlertsCard />
-        <PendingIntakeCard />
-        <CalendarTodayCard />
-        <QuickStatsCard />
+      {/* Wave 4: Work queue — primary actionable content */}
+      <WorkQueueSection />
+
+      {/* Wave 4: Quick stats strip */}
+      <QuickStatsStrip />
+
+      {/* TER-615/616: Fixed KPI cards — secondary context */}
+      <div>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-0.5">
+          Overview
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <TodaysOrdersCard />
+          <OpenInvoicesCard />
+          <InventoryAlertsCard />
+          <PendingIntakeCard />
+          <CalendarTodayCard />
+          <QuickStatsCard />
+        </div>
       </div>
     </div>
   );
