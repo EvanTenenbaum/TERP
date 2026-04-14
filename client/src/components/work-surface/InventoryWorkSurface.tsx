@@ -14,14 +14,10 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useLocation } from "wouter";
-import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import {
-  getBatchStatusLabel,
-  INVENTORY_STATUS_TOKENS,
-} from "../../lib/statusTokens";
+import { INVENTORY_STATUS_TOKENS } from "../../lib/statusTokens";
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { formatInventoryAdjustmentReason } from "@shared/inventoryAdjustmentReasons";
 
@@ -204,12 +200,12 @@ interface BatchVersionEntity {
 
 const BATCH_STATUSES = [
   { value: "ALL", label: "All Statuses" },
-  { value: "AWAITING_INTAKE", label: getBatchStatusLabel("AWAITING_INTAKE") },
-  { value: "LIVE", label: getBatchStatusLabel("LIVE") },
-  { value: "ON_HOLD", label: getBatchStatusLabel("ON_HOLD") },
-  { value: "QUARANTINED", label: getBatchStatusLabel("QUARANTINED") },
-  { value: "SOLD_OUT", label: getBatchStatusLabel("SOLD_OUT") },
-  { value: "CLOSED", label: getBatchStatusLabel("CLOSED") },
+  { value: "AWAITING_INTAKE", label: "Awaiting Intake" },
+  { value: "LIVE", label: "Live" },
+  { value: "ON_HOLD", label: "On Hold" },
+  { value: "QUARANTINED", label: "Quarantined" },
+  { value: "SOLD_OUT", label: "Sold Out" },
+  { value: "CLOSED", label: "Closed" },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -356,7 +352,7 @@ function BatchStatusBadge({ status }: { status: string }) {
       variant="outline"
       className={cn("text-xs", STATUS_COLORS[status] || STATUS_COLORS.LIVE)}
     >
-      {getBatchStatusLabel(status)}
+      {status.replace(/_/g, " ")}
     </Badge>
   );
 }
@@ -409,29 +405,12 @@ function BatchInspectorContent({
 
         <InspectorField label="Product">
           <p className="font-medium">{product?.nameCanonical || "Unknown"}</p>
-          {(() => {
-            const identityLines = buildProductIdentityLines({
-              brand: brand?.name,
-              vendor: vendor?.name,
-              category: product?.category,
-              subcategory: product?.subcategory,
-            });
-
-            return (
-              <>
-                {identityLines.secondary ? (
-                  <p className="text-sm text-muted-foreground">
-                    {identityLines.secondary}
-                  </p>
-                ) : null}
-                {identityLines.tertiary ? (
-                  <p className="text-sm text-muted-foreground/80">
-                    {identityLines.tertiary}
-                  </p>
-                ) : null}
-              </>
-            );
-          })()}
+          {product?.category && (
+            <p className="text-sm text-muted-foreground">
+              {product.category}{" "}
+              {product.subcategory ? `/ ${product.subcategory}` : ""}
+            </p>
+          )}
         </InspectorField>
 
         {batch.grade && (
@@ -572,7 +551,7 @@ export function InventoryWorkSurface() {
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editBatchId, setEditBatchId] = useState<number | null>(null);
-  const [_editRack, setEditRack] = useState("");
+  const [editRack, setEditRack] = useState("");
   const [editStatus, setEditStatus] = useState<InventoryBatchStatus>("LIVE");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
@@ -580,6 +559,7 @@ export function InventoryWorkSurface() {
     Record<number, string>
   >({});
   const pageSize = 50;
+  const useEnhancedApi = true;
   const utils = trpc.useUtils();
   const { filters, updateFilter, clearAllFilters, hasActiveFilters } =
     useInventoryFilters();
@@ -598,7 +578,11 @@ export function InventoryWorkSurface() {
   } = useConcurrentEditDetection<BatchVersionEntity>({
     entityType: "Batch",
     onRefresh: async () => {
-      await Promise.all([refetchEnhanced(), refetchDashboardStats()]);
+      await Promise.all([
+        refetchEnhanced(),
+        refetchLegacy(),
+        refetchDashboardStats(),
+      ]);
     },
   });
 
@@ -676,11 +660,30 @@ export function InventoryWorkSurface() {
       sortOrder: sortDirection,
     },
     {
-      enabled: true,
+      enabled: useEnhancedApi,
     }
   );
 
-  // Legacy inventory.list query removed (L-3): useEnhancedApi is always true
+  const {
+    data: legacyData,
+    isLoading: isLegacyLoading,
+    error: legacyError,
+    refetch: refetchLegacy,
+  } = trpc.inventory.list.useQuery(
+    {
+      query: search || undefined,
+      status:
+        filters.status.length > 0
+          ? (filters.status[0] as InventoryBatchStatus)
+          : undefined,
+      category: filters.category || undefined,
+      limit: pageSize,
+      cursor: page * pageSize,
+    },
+    {
+      enabled: !useEnhancedApi,
+    }
+  );
 
   const {
     data: dashboardStats,
@@ -689,54 +692,133 @@ export function InventoryWorkSurface() {
   } = trpc.inventory.dashboardStats.useQuery();
 
   const refreshInventory = useCallback(async () => {
-    await Promise.all([refetchEnhanced(), refetchDashboardStats()]);
-  }, [refetchEnhanced, refetchDashboardStats]);
+    await Promise.all([
+      refetchEnhanced(),
+      refetchLegacy(),
+      refetchDashboardStats(),
+    ]);
+  }, [refetchEnhanced, refetchLegacy, refetchDashboardStats]);
 
   const normalizedItems = useMemo(() => {
-    return (enhancedData?.items ?? []).map(
-      (item): InventoryItem => ({
-        batch: {
-          id: item.id,
-          sku: item.sku,
-          batchStatus: item.status,
-          grade: item.grade || undefined,
-          onHandQty: String(item.onHandQty ?? 0),
-          reservedQty: String(item.reservedQty ?? 0),
-          quarantineQty: String(item.quarantineQty ?? 0),
-          holdQty: String(item.holdQty ?? 0),
-          unitCogs:
-            item.unitCogs !== null && item.unitCogs !== undefined
-              ? String(item.unitCogs)
+    if (useEnhancedApi) {
+      return (enhancedData?.items ?? []).map(
+        (item): InventoryItem => ({
+          batch: {
+            id: item.id,
+            sku: item.sku,
+            batchStatus: item.status,
+            grade: item.grade || undefined,
+            onHandQty: String(item.onHandQty ?? 0),
+            reservedQty: String(item.reservedQty ?? 0),
+            quarantineQty: String(item.quarantineQty ?? 0),
+            holdQty: String(item.holdQty ?? 0),
+            unitCogs:
+              item.unitCogs !== null && item.unitCogs !== undefined
+                ? String(item.unitCogs)
+                : undefined,
+            createdAt: item.receivedDate
+              ? new Date(item.receivedDate).toISOString()
               : undefined,
-          createdAt: item.receivedDate
-            ? new Date(item.receivedDate).toISOString()
+            intakeDate: item.receivedDate
+              ? new Date(item.receivedDate).toISOString()
+              : undefined,
+            ageDays: (item as typeof item & { ageDays?: number }).ageDays,
+            ageBracket: (item as typeof item & { ageBracket?: AgeBracket })
+              .ageBracket,
+            stockStatus: (item as typeof item & { stockStatus?: StockStatus })
+              .stockStatus,
+          },
+          product: {
+            id: 0,
+            nameCanonical: item.productName || "Unknown Product",
+            category: item.category || undefined,
+            subcategory: item.subcategory || undefined,
+          },
+          vendor: item.vendorName
+            ? { id: 0, name: item.vendorName }
             : undefined,
-          intakeDate: item.receivedDate
-            ? new Date(item.receivedDate).toISOString()
-            : undefined,
-          ageDays: (item as typeof item & { ageDays?: number }).ageDays,
-          ageBracket: (item as typeof item & { ageBracket?: AgeBracket })
-            .ageBracket,
-          stockStatus: (item as typeof item & { stockStatus?: StockStatus })
-            .stockStatus,
-        },
-        product: {
-          id: 0,
-          nameCanonical: item.productName || "Unknown Product",
-          category: item.category || undefined,
-          subcategory: item.subcategory || undefined,
-        },
-        vendor: item.vendorName ? { id: 0, name: item.vendorName } : undefined,
-        brand: item.brandName ? { id: 0, name: item.brandName } : undefined,
-      })
-    );
-  }, [enhancedData?.items]);
+          brand: item.brandName ? { id: 0, name: item.brandName } : undefined,
+        })
+      );
+    }
+    return ((legacyData?.items ?? []) as unknown as InventoryItem[]) || [];
+  }, [useEnhancedApi, enhancedData?.items, legacyData?.items]);
 
   const items = normalizedItems;
-  const inventoryLoadError = enhancedError ?? dashboardStatsError;
-  // L-3: useEnhancedApi is always true; client-side filtering never applies (variable removed)
+  const inventoryLoadError = useEnhancedApi
+    ? (enhancedError ?? dashboardStatsError)
+    : (legacyError ?? dashboardStatsError);
 
-  const filteredItems = items; // L-3: useEnhancedApi always true; server handles filtering
+  const filteredItems = useMemo(() => {
+    if (useEnhancedApi) {
+      return items;
+    }
+
+    return items.filter(item => {
+      const batch = item.batch;
+      if (!batch) return false;
+
+      const onHand = parseFloat(batch.onHandQty || "0");
+      const reserved = parseFloat(batch.reservedQty || "0");
+      const quarantine = parseFloat(batch.quarantineQty || "0");
+      const hold = parseFloat(batch.holdQty || "0");
+      const available = onHand - reserved - quarantine - hold;
+      const unitCogs = parseFloat(batch.unitCogs || "0");
+
+      if (filters.stockLevel !== "all") {
+        if (filters.stockLevel === "in_stock" && available <= 0) return false;
+        if (filters.stockLevel === "low_stock" && available > 50) return false;
+        if (filters.stockLevel === "out_of_stock" && available > 0) {
+          return false;
+        }
+      }
+
+      if (filters.cogsRange.min !== null && unitCogs < filters.cogsRange.min) {
+        return false;
+      }
+      if (filters.cogsRange.max !== null && unitCogs > filters.cogsRange.max) {
+        return false;
+      }
+
+      if (filters.dateRange.from || filters.dateRange.to) {
+        const receivedAt = batch.intakeDate || batch.createdAt;
+        if (!receivedAt) return false;
+        const receivedDate = new Date(receivedAt);
+        if (Number.isNaN(receivedDate.getTime())) return false;
+
+        if (filters.dateRange.from) {
+          const from = new Date(filters.dateRange.from);
+          from.setHours(0, 0, 0, 0);
+          if (receivedDate < from) return false;
+        }
+        if (filters.dateRange.to) {
+          const to = new Date(filters.dateRange.to);
+          to.setHours(23, 59, 59, 999);
+          if (receivedDate > to) return false;
+        }
+      }
+
+      if (filters.location) {
+        const locationQuery = filters.location.toLowerCase();
+        const fallbackLocationText = [batch.sku, batch.id, batch.grade]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!fallbackLocationText.includes(locationQuery)) return false;
+      }
+
+      return true;
+    });
+  }, [
+    useEnhancedApi,
+    items,
+    filters.stockLevel,
+    filters.cogsRange.min,
+    filters.cogsRange.max,
+    filters.dateRange.from,
+    filters.dateRange.to,
+    filters.location,
+  ]);
 
   const vendorOptions = useMemo(
     () =>
@@ -808,10 +890,18 @@ export function InventoryWorkSurface() {
     [items]
   );
 
-  const hasMore = enhancedData?.pagination.hasMore ?? false;
-  const totalCount = enhancedData?.summary.totalItems ?? filteredItems.length;
-  const totalPages = Math.max(page + 1 + (hasMore ? 1 : 0), 1);
-  const isLoading = isEnhancedLoading;
+  const hasMore = useEnhancedApi
+    ? (enhancedData?.pagination.hasMore ?? false)
+    : ((legacyData as { hasMore?: boolean } | undefined)?.hasMore ?? false);
+  const totalCount = useEnhancedApi
+    ? (enhancedData?.summary.totalItems ?? filteredItems.length)
+    : hasMore
+      ? filteredItems.length + pageSize
+      : filteredItems.length;
+  const totalPages = useEnhancedApi
+    ? Math.max(page + 1 + (hasMore ? 1 : 0), 1)
+    : Math.max(Math.ceil(totalCount / pageSize), 1);
+  const isLoading = useEnhancedApi ? isEnhancedLoading : isLegacyLoading;
 
   // Statistics
   const stats = useMemo(() => {
@@ -1241,7 +1331,7 @@ export function InventoryWorkSurface() {
             if (!previousStatus || previousStatus === newStatus) return;
             notifyStatusFilterExit({ sku: batch?.sku, id: batchId }, newStatus);
             undo.registerAction({
-              description: `Changed status to ${getBatchStatusLabel(newStatus)}`,
+              description: `Changed status to ${newStatus.replace(/_/g, " ")}`,
               undo: async () => {
                 setSaving("Undoing status update...");
                 await undoStatusMutation.mutateAsync({
@@ -1355,7 +1445,7 @@ export function InventoryWorkSurface() {
             editStatus
           );
           undo.registerAction({
-            description: `Edited status to ${getBatchStatusLabel(editStatus)}`,
+            description: `Edited status to ${editStatus.replace(/_/g, " ")}`,
             undo: async () => {
               setSaving("Undoing status update...");
               await undoStatusMutation.mutateAsync({
@@ -1499,9 +1589,7 @@ export function InventoryWorkSurface() {
         vendor: vendor?.name || "",
         brand: brand?.name || "",
         grade: batch?.grade || "",
-        status: batch?.batchStatus
-          ? getBatchStatusLabel(batch.batchStatus)
-          : "",
+        status: batch?.batchStatus || "",
         onHand: formatQuantity(onHand),
         reserved: formatQuantity(reserved),
         quarantine: formatQuantity(quarantine),
@@ -2331,33 +2419,7 @@ export function InventoryWorkSurface() {
                                   {item.batch?.sku}
                                 </TableCell>
                                 <TableCell>
-                                  {(() => {
-                                    const identityLines =
-                                      buildProductIdentityLines({
-                                        brand: item.brand?.name,
-                                        vendor: item.vendor?.name,
-                                        category: item.product?.category,
-                                        subcategory: item.product?.subcategory,
-                                      });
-
-                                    return (
-                                      <div className="flex min-w-0 flex-col py-0.5">
-                                        <span className="truncate font-medium">
-                                          {item.product?.nameCanonical || "-"}
-                                        </span>
-                                        {identityLines.secondary ? (
-                                          <span className="truncate text-[10px] text-muted-foreground">
-                                            {identityLines.secondary}
-                                          </span>
-                                        ) : null}
-                                        {identityLines.tertiary ? (
-                                          <span className="truncate text-[10px] text-muted-foreground/80">
-                                            {identityLines.tertiary}
-                                          </span>
-                                        ) : null}
-                                      </div>
-                                    );
-                                  })()}
+                                  {item.product?.nameCanonical || "-"}
                                 </TableCell>
                                 <TableCell>{item.brand?.name || "-"}</TableCell>
                                 <TableCell>
@@ -2453,10 +2515,9 @@ export function InventoryWorkSurface() {
                             sku: item.batch.sku,
                             productName:
                               item.product?.nameCanonical || "Unknown",
-                            brandName: item.brand?.name,
-                            vendorName: item.vendor?.name,
+                            brandName: item.brand?.name || "Unknown",
+                            vendorName: item.vendor?.name || "Unknown",
                             category: item.product?.category,
-                            subcategory: item.product?.subcategory,
                             grade: item.batch.grade || "-",
                             status: item.batch.batchStatus,
                             onHandQty: item.batch.onHandQty,
@@ -2496,10 +2557,9 @@ export function InventoryWorkSurface() {
                         productName={
                           item.product?.nameCanonical || "Unknown Product"
                         }
-                        brandName={item.brand?.name}
-                        vendorName={item.vendor?.name}
+                        brandName={item.brand?.name || "-"}
+                        vendorName={item.vendor?.name || "-"}
                         category={item.product?.category}
-                        subcategory={item.product?.subcategory}
                         status={item.batch.batchStatus}
                         onHandQty={item.batch.onHandQty}
                         reservedQty={item.batch.reservedQty}
@@ -2640,6 +2700,15 @@ export function InventoryWorkSurface() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rack">Rack</Label>
+              <Input
+                id="rack"
+                value={editRack}
+                onChange={e => setEditRack(e.target.value)}
+                placeholder="e.g., R2"
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="edit-status">Status</Label>
               <Select
