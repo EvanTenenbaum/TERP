@@ -221,7 +221,9 @@ describe("Consolidated workspace pages", () => {
     expect(
       within(metadata).getByText("Conversation and money readiness")
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Notifications" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Notifications" })
+    ).toBeInTheDocument();
   });
 
   it("renders Inventory workspace with inventory default content", () => {
@@ -354,9 +356,13 @@ describe("Consolidated workspace pages", () => {
       )
     ).toBeInTheDocument();
     expect(screen.getByText("Action lane")).toBeInTheDocument();
-    expect(screen.getByText("Quotes -> confirm -> collect")).toBeInTheDocument();
+    expect(
+      screen.getByText("Quotes -> confirm -> collect")
+    ).toBeInTheDocument();
     expect(screen.getByText("Primary queue")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Sales Catalogue" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Sales Catalogue" })
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Open order composer" })
     ).toBeInTheDocument();
@@ -426,22 +432,20 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByText("Credit Settings Embedded")).toBeInTheDocument();
   });
 
-  it("renders procurement workspace", () => {
+  it("renders buying workspace", () => {
     mockActiveTab = "purchase-orders";
     render(<ProcurementWorkspacePage />);
-    expect(
-      screen.getByRole("heading", { name: "Procurement" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Buying" })).toBeInTheDocument();
     expect(screen.getByText("Purchase Order Surface")).toBeInTheDocument();
   });
 
-  it("renders Procurement workspace description, meta, and command strip", () => {
+  it("renders Buying workspace description, meta, and command strip", () => {
     mockActiveTab = "purchase-orders";
     render(<ProcurementWorkspacePage />);
 
     expect(
       screen.getByText(
-        /Create purchase orders here, then continue product intake and inventory work from Operations/i
+        /Create and manage purchase orders, track supplier intake, and walk POs from draft to received/i
       )
     ).toBeInTheDocument();
     expect(screen.getByText("Primary queue")).toBeInTheDocument();
@@ -452,16 +456,16 @@ describe("Consolidated workspace pages", () => {
     expect(
       screen.getByRole("button", { name: "Product Intake" })
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Inventory" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Inventory" })
+    ).toBeInTheDocument();
   });
 
-  it("shows a visible redirect handoff for procurement tabs that moved to Operations", () => {
+  it("shows a visible redirect handoff for buying tabs that moved to Operations", () => {
     mockActiveTab = "receiving";
     render(<ProcurementWorkspacePage />);
 
-    expect(
-      screen.getByRole("heading", { name: "Procurement" })
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Buying" })).toBeInTheDocument();
     expect(
       screen.getByText("This workflow moved to Operations")
     ).toBeInTheDocument();
@@ -474,7 +478,9 @@ describe("Consolidated workspace pages", () => {
     mockActiveTab = "dashboard";
     render(<AccountingWorkspacePage />);
 
-    expect(screen.getByRole("heading", { name: "Accounting" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Accounting" })
+    ).toBeInTheDocument();
     expect(screen.getByText("Financial period")).toBeInTheDocument();
     expect(screen.getByText("Current fiscal year")).toBeInTheDocument();
     expect(screen.getByText("Active lane")).toBeInTheDocument();
@@ -485,8 +491,12 @@ describe("Consolidated workspace pages", () => {
     expect(
       screen.getByText("Invoice -> Payment -> General Ledger")
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Invoices" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Payments" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Invoices" })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Payments" })
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Periods" })).toBeInTheDocument();
   });
 });

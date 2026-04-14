@@ -16,7 +16,10 @@ import { findHistoricalBuyers } from "./historicalAnalysis";
 import { recordMatch } from "./matchRecordsDb";
 import { strainService } from "./services/strainService";
 import { logger } from "./_core/logger";
-import { calculateSubcategoryScore, getSubcategoryMatchReason } from "./utils/subcategoryMatcher";
+import {
+  calculateSubcategoryScore,
+  getSubcategoryMatchReason,
+} from "./utils/subcategoryMatcher";
 
 /**
  * Match types and confidence levels
@@ -29,7 +32,10 @@ export interface Match {
   reasons: string[];
   source: "INVENTORY" | "VENDOR" | "HISTORICAL";
   sourceId: number;
-  sourceData: EnhancedBatchSourceData | EnhancedVendorSourceData | EnhancedHistoricalSourceData;
+  sourceData:
+    | EnhancedBatchSourceData
+    | EnhancedVendorSourceData
+    | EnhancedHistoricalSourceData;
   calculatedPrice?: number; // For inventory matches with pricing
   availableQuantity?: number; // For inventory/vendor matches
 }
@@ -165,17 +171,22 @@ async function calculateMatchConfidence(
   const reasons: string[] = [];
 
   // Product Name match for non-flower (25 points)
-  const isFlower = need.category?.toLowerCase() === 'flower' || need.category?.toLowerCase() === 'flowers';
-  
+  const isFlower =
+    need.category?.toLowerCase() === "flower" ||
+    need.category?.toLowerCase() === "flowers";
+
   if (!isFlower && (need.productName || candidate.productName)) {
     if (need.productName && candidate.productName) {
       const needProduct = need.productName.toLowerCase().trim();
       const candidateProduct = candidate.productName.toLowerCase().trim();
-      
+
       if (needProduct === candidateProduct) {
         confidence += 25;
         reasons.push("Exact product name match");
-      } else if (needProduct.includes(candidateProduct) || candidateProduct.includes(needProduct)) {
+      } else if (
+        needProduct.includes(candidateProduct) ||
+        candidateProduct.includes(needProduct)
+      ) {
         confidence += 15;
         reasons.push("Partial product name match");
       } else {
@@ -183,7 +194,7 @@ async function calculateMatchConfidence(
         const needWords = needProduct.split(/\s+/);
         const candidateWords = candidateProduct.split(/\s+/);
         const commonWords = needWords.filter(w => candidateWords.includes(w));
-        
+
         if (commonWords.length >= 2) {
           confidence += 10;
           reasons.push("Similar product name");
@@ -191,7 +202,7 @@ async function calculateMatchConfidence(
       }
     }
   }
-  
+
   // Strain match (40 points for flower, 20 points for non-flower) - Use strainId for family matching
   const strainWeight = isFlower ? 40 : 20;
   if (need.strainId && candidate.strainId) {
@@ -274,7 +285,10 @@ async function calculateMatchConfidence(
 
   // Subcategory match (15 points) - FEAT-020: Enhanced with related subcategory scoring
   if (need.subcategory && candidate.subcategory) {
-    const subcategoryScore = calculateSubcategoryScore(need.subcategory, candidate.subcategory);
+    const subcategoryScore = calculateSubcategoryScore(
+      need.subcategory,
+      candidate.subcategory
+    );
 
     if (subcategoryScore === 100) {
       // Exact match
@@ -283,12 +297,18 @@ async function calculateMatchConfidence(
     } else if (subcategoryScore === 50) {
       // Related subcategories (e.g., Smalls and Trim)
       confidence += 7.5; // Half points for related match
-      const reason = getSubcategoryMatchReason(need.subcategory, candidate.subcategory);
+      const reason = getSubcategoryMatchReason(
+        need.subcategory,
+        candidate.subcategory
+      );
       if (reason) reasons.push(reason);
     } else if (subcategoryScore === 30) {
       // Partial match
       confidence += 4.5; // Partial credit
-      const reason = getSubcategoryMatchReason(need.subcategory, candidate.subcategory);
+      const reason = getSubcategoryMatchReason(
+        need.subcategory,
+        candidate.subcategory
+      );
       if (reason) reasons.push(reason);
     }
   }
@@ -392,7 +412,10 @@ async function calculateMatchConfidence(
 /**
  * Get batch with product details for matching
  */
-async function getBatchWithProduct(db: MySql2Database<Record<string, unknown>>, batchId: number) {
+async function getBatchWithProduct(
+  db: MySql2Database<Record<string, unknown>>,
+  batchId: number
+) {
   const [batch] = await db
     .select({
       batch: matchingBatchSelection,
@@ -518,7 +541,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
           reasons,
           source: "INVENTORY",
           sourceId: batch.id,
-          sourceData: { 
+          sourceData: {
             batch: {
               id: batch.id,
               code: batch.code,
@@ -529,30 +552,23 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
               cogsMode: batch.cogsMode ?? undefined,
               unitCogsMin: batch.unitCogsMin ?? undefined,
               unitCogsMax: batch.unitCogsMax ?? undefined,
-            }, 
-            product: product ? {
-              id: product.id,
-              nameCanonical: product.nameCanonical,
-              category: product.category,
-              subcategory: product.subcategory ?? undefined,
-              strainId: product.strainId ?? undefined,
-            } : undefined,
+            },
+            product: product
+              ? {
+                  id: product.id,
+                  nameCanonical: product.nameCanonical,
+                  category: product.category,
+                  subcategory: product.subcategory ?? undefined,
+                  strainId: product.strainId ?? undefined,
+                }
+              : undefined,
           },
           calculatedPrice: calculatedPrice || undefined,
           availableQuantity,
         };
 
         matches.push(match);
-
-        // Record match for learning
-        await recordMatch({
-          clientNeedId: needId,
-          clientId: need.clientId,
-          inventoryBatchId: batch.id,
-          matchType: match.type,
-          confidenceScore: confidence.toString(),
-          matchReasons: reasons,
-        });
+        // M-4: recordMatch removed from read path — call explicitly when needed
       }
     }
 
@@ -589,16 +605,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
         };
 
         matches.push(match);
-
-        // Record match for learning
-        await recordMatch({
-          clientNeedId: needId,
-          clientId: need.clientId,
-          vendorSupplyId: supply.id,
-          matchType: match.type,
-          confidenceScore: confidence.toString(),
-          matchReasons: reasons,
-        });
+        // M-4: recordMatch removed from read path — call explicitly when needed
       }
     }
 
@@ -611,13 +618,16 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
     });
 
     // Helper to check if sourceData has client property (type guard)
-    const hasClient = (data: unknown): data is { client?: { id: number; name?: string } } => {
-      return typeof data === 'object' && data !== null && 'client' in data;
+    const hasClient = (
+      data: unknown
+    ): data is { client?: { id: number; name?: string } } => {
+      return typeof data === "object" && data !== null && "client" in data;
     };
 
     // Filter to only this client's historical patterns
     const clientHistoricalMatches = historicalMatches.filter(
-      hm => hasClient(hm.sourceData) && hm.sourceData?.client?.id === need.clientId
+      hm =>
+        hasClient(hm.sourceData) && hm.sourceData?.client?.id === need.clientId
     );
 
     for (const histMatch of clientHistoricalMatches) {
@@ -629,15 +639,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
         sourceId: histMatch.sourceId,
         sourceData: histMatch.sourceData,
       });
-
-      // Record historical match
-      await recordMatch({
-        clientNeedId: needId,
-        clientId: need.clientId,
-        matchType: "HISTORICAL",
-        confidenceScore: histMatch.confidence.toString(),
-        matchReasons: histMatch.reasons,
-      });
+      // M-4: recordMatch removed from read path — call explicitly when needed
     }
 
     // Sort matches by confidence (highest first)
@@ -684,13 +686,15 @@ export async function findBuyersForInventory(
     let strainType: string | null = null;
     if (product?.strainId) {
       try {
-        const strainData = await strainService.getStrainWithFamily(product.strainId);
+        const strainData = await strainService.getStrainWithFamily(
+          product.strainId
+        );
         strainType = strainData?.category || null;
       } catch (error) {
         logger.warn({
           msg: "[MatchingEngine] Failed to lookup strain type",
           strainId: product.strainId,
-          error
+          error,
         });
         // Continue without strain type - not critical to matching
       }
@@ -730,7 +734,7 @@ export async function findBuyersForInventory(
           reasons,
           source: "INVENTORY",
           sourceId: batchId,
-          sourceData: { 
+          sourceData: {
             batch: {
               id: batch.id,
               code: batch.code,
@@ -741,14 +745,16 @@ export async function findBuyersForInventory(
               cogsMode: batch.cogsMode ?? undefined,
               unitCogsMin: batch.unitCogsMin ?? undefined,
               unitCogsMax: batch.unitCogsMax ?? undefined,
-            }, 
-            product: product ? {
-              id: product.id,
-              nameCanonical: product.nameCanonical,
-              category: product.category,
-              subcategory: product.subcategory ?? undefined,
-              strainId: product.strainId ?? undefined,
-            } : undefined,
+            },
+            product: product
+              ? {
+                  id: product.id,
+                  nameCanonical: product.nameCanonical,
+                  category: product.category,
+                  subcategory: product.subcategory ?? undefined,
+                  strainId: product.strainId ?? undefined,
+                }
+              : undefined,
           },
           calculatedPrice: calculatedPrice || undefined,
           availableQuantity,
@@ -781,12 +787,16 @@ export async function findBuyersForInventory(
     });
 
     // Helper to check if sourceData has client property (type guard)
-    const hasClientData = (data: unknown): data is { client?: { id: number; name?: string } } => {
-      return typeof data === 'object' && data !== null && 'client' in data;
+    const hasClientData = (
+      data: unknown
+    ): data is { client?: { id: number; name?: string } } => {
+      return typeof data === "object" && data !== null && "client" in data;
     };
 
     for (const histMatch of historicalBuyers) {
-      const clientId = hasClientData(histMatch.sourceData) ? histMatch.sourceData?.client?.id : undefined;
+      const clientId = hasClientData(histMatch.sourceData)
+        ? histMatch.sourceData?.client?.id
+        : undefined;
       if (!clientId) continue;
 
       // Skip if already matched via explicit need

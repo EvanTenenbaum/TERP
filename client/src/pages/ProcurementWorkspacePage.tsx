@@ -54,8 +54,8 @@ export default function ProcurementWorkspacePage() {
 
   return (
     <LinearWorkspaceShell
-      title="Procurement"
-      description="Create purchase orders here, then continue product intake and inventory work from Operations."
+      title="Buying"
+      description="Create and manage purchase orders, track supplier intake, and walk POs from draft to received."
       section="Operations"
       activeTab={isRedirectContext ? "purchase-orders" : activeTab}
       tabs={PROCUREMENT_TABS}
@@ -85,11 +85,15 @@ export default function ProcurementWorkspacePage() {
           />
           <WorkspaceCommandStripLink
             label="Product Intake"
-            onClick={() => setLocation(buildOperationsWorkspacePath("receiving"))}
+            onClick={() =>
+              setLocation(buildOperationsWorkspacePath("receiving"))
+            }
           />
           <WorkspaceCommandStripLink
             label="Inventory"
-            onClick={() => setLocation(buildOperationsWorkspacePath("inventory"))}
+            onClick={() =>
+              setLocation(buildOperationsWorkspacePath("inventory"))
+            }
           />
         </div>
       }
