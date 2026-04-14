@@ -9,6 +9,7 @@ import { Router } from "express";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { logger } from "../_core/logger.js";
+import { simpleAuth } from "../_core/simpleAuth";
 
 const execAsync = promisify(exec);
 
@@ -21,6 +22,24 @@ const router = Router();
  * Body: { scripts: string[] } (optional - defaults to all)
  */
 router.post("/run", async (req, res) => {
+  if (process.env.NODE_ENV === "production") {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+
+  let user: Awaited<ReturnType<typeof simpleAuth.authenticateRequest>>;
+  try {
+    user = await simpleAuth.authenticateRequest(req);
+  } catch {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+
+  if (user.role !== "admin") {
+    res.status(403).json({ error: "Admin access required" });
+    return;
+  }
+
   const { scripts } = req.body || {};
   
   const allScripts = [
