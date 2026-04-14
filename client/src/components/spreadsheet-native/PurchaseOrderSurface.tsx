@@ -354,7 +354,9 @@ function getReceivingStatusMeta(status: string): {
   }
 }
 
-function isQueueRowOverdue(row: Pick<POQueueRow, "expectedDeliveryDate" | "status">) {
+function isQueueRowOverdue(
+  row: Pick<POQueueRow, "expectedDeliveryDate" | "status">
+) {
   return isPastExpectedDate(row.expectedDeliveryDate, row.status);
 }
 
@@ -1077,6 +1079,14 @@ function PurchaseOrderCreateEditMode({
     return (
       <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
         Loading purchase order...
+      </div>
+    );
+  }
+
+  if (editPoId && editQuery.isError) {
+    return (
+      <div className="flex items-center justify-center py-12 text-sm text-destructive">
+        Failed to load purchase order. Please refresh.
       </div>
     );
   }
