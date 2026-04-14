@@ -39,6 +39,17 @@ export function getSessionCookieOptions(
 
   const secure = isSecureRequest(req);
 
+  // SECURITY: sameSite policy
+  //   - Non-HTTPS (dev / HTTP-only deploys): 'lax' — prevents CSRF while
+  //     allowing normal same-site navigation. 'none' would be rejected by
+  //     browsers without Secure anyway, so 'lax' is the safe default.
+  //   - HTTPS (production / staging behind TLS): 'none' is required when the
+  //     frontend and API are served from different origins (e.g. Vite dev
+  //     server on :5173 talking to Express on :3000, or a CDN-fronted SPA
+  //     talking to an API subdomain). 'none' MUST be paired with Secure=true,
+  //     which is enforced by the `secure` flag below.
+  //   NOTE: A CSRF-token layer is planned (separate coordinated change) to
+  //   provide defence-in-depth on top of this sameSite policy.
   return {
     httpOnly: true,
     path: "/",
