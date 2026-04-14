@@ -397,37 +397,13 @@ export async function getClientNeedsWithMatches(filters?: {
   try {
     const needs = await getClientNeeds(filters);
 
-    // FE-BUG-005: Calculate actual matchCount using matching engine
-    const { findMatchesForNeed } = await import("./matchingEngineEnhanced");
-
-    const needsWithCounts = await Promise.all(
-      needs.map(async need => {
-        try {
-          // Only calculate matches for ACTIVE needs
-          if (need.status === "ACTIVE") {
-            const result = await findMatchesForNeed(need.id);
-            return {
-              ...need,
-              matchCount: result.matches.length,
-            };
-          }
-          return {
-            ...need,
-            matchCount: 0,
-          };
-        } catch (matchError) {
-          // Log but don't fail - return 0 if matching fails for one need
-          logger.warn(
-            { needId: need.id, error: matchError },
-            "Failed to find matches for need"
-          );
-          return {
-            ...need,
-            matchCount: 0,
-          };
-        }
-      })
-    );
+    // M-7: Removed matching engine call from list query to avoid N+1.
+    // matchCount is returned as 0 on list load; callers fetch per-row
+    // match counts lazily via the dedicated findMatchesForNeed endpoint.
+    const needsWithCounts = needs.map(need => ({
+      ...need,
+      matchCount: 0,
+    }));
 
     return needsWithCounts;
   } catch (error) {
