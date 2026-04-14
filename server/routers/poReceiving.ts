@@ -397,6 +397,7 @@ export const poReceivingRouter = router({
       .orderBy(purchaseOrders.expectedDeliveryDate);
 
     // Get items for each PO
+    // H-6: Correctly awaiting Promise.all to avoid fire-and-forget async map
     const results = await Promise.all(
       pendingPOs.map(async po => {
         const items = await db

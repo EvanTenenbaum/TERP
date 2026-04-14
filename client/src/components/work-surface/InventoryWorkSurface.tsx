@@ -580,7 +580,6 @@ export function InventoryWorkSurface() {
     Record<number, string>
   >({});
   const pageSize = 50;
-  const useEnhancedApi = true;
   const utils = trpc.useUtils();
   const { filters, updateFilter, clearAllFilters, hasActiveFilters } =
     useInventoryFilters();
@@ -599,11 +598,7 @@ export function InventoryWorkSurface() {
   } = useConcurrentEditDetection<BatchVersionEntity>({
     entityType: "Batch",
     onRefresh: async () => {
-      await Promise.all([
-        refetchEnhanced(),
-        refetchLegacy(),
-        refetchDashboardStats(),
-      ]);
+      await Promise.all([refetchEnhanced(), refetchDashboardStats()]);
     },
   });
 
@@ -681,30 +676,11 @@ export function InventoryWorkSurface() {
       sortOrder: sortDirection,
     },
     {
-      enabled: useEnhancedApi,
+      enabled: true,
     }
   );
 
-  const {
-    data: legacyData,
-    isLoading: isLegacyLoading,
-    error: legacyError,
-    refetch: refetchLegacy,
-  } = trpc.inventory.list.useQuery(
-    {
-      query: search || undefined,
-      status:
-        filters.status.length > 0
-          ? (filters.status[0] as InventoryBatchStatus)
-          : undefined,
-      category: filters.category || undefined,
-      limit: pageSize,
-      cursor: page * pageSize,
-    },
-    {
-      enabled: !useEnhancedApi,
-    }
-  );
+  // Legacy inventory.list query removed (L-3): useEnhancedApi is always true
 
   const {
     data: dashboardStats,
@@ -713,141 +689,54 @@ export function InventoryWorkSurface() {
   } = trpc.inventory.dashboardStats.useQuery();
 
   const refreshInventory = useCallback(async () => {
-    await Promise.all([
-      refetchEnhanced(),
-      refetchLegacy(),
-      refetchDashboardStats(),
-    ]);
-  }, [refetchEnhanced, refetchLegacy, refetchDashboardStats]);
+    await Promise.all([refetchEnhanced(), refetchDashboardStats()]);
+  }, [refetchEnhanced, refetchDashboardStats]);
 
   const normalizedItems = useMemo(() => {
-    if (useEnhancedApi) {
-      return (enhancedData?.items ?? []).map(
-        (item): InventoryItem => ({
-          batch: {
-            id: item.id,
-            sku: item.sku,
-            batchStatus: item.status,
-            grade: item.grade || undefined,
-            onHandQty: String(item.onHandQty ?? 0),
-            reservedQty: String(item.reservedQty ?? 0),
-            quarantineQty: String(item.quarantineQty ?? 0),
-            holdQty: String(item.holdQty ?? 0),
-            unitCogs:
-              item.unitCogs !== null && item.unitCogs !== undefined
-                ? String(item.unitCogs)
-                : undefined,
-            createdAt: item.receivedDate
-              ? new Date(item.receivedDate).toISOString()
+    return (enhancedData?.items ?? []).map(
+      (item): InventoryItem => ({
+        batch: {
+          id: item.id,
+          sku: item.sku,
+          batchStatus: item.status,
+          grade: item.grade || undefined,
+          onHandQty: String(item.onHandQty ?? 0),
+          reservedQty: String(item.reservedQty ?? 0),
+          quarantineQty: String(item.quarantineQty ?? 0),
+          holdQty: String(item.holdQty ?? 0),
+          unitCogs:
+            item.unitCogs !== null && item.unitCogs !== undefined
+              ? String(item.unitCogs)
               : undefined,
-            intakeDate: item.receivedDate
-              ? new Date(item.receivedDate).toISOString()
-              : undefined,
-            ageDays: (item as typeof item & { ageDays?: number }).ageDays,
-            ageBracket: (item as typeof item & { ageBracket?: AgeBracket })
-              .ageBracket,
-            stockStatus: (item as typeof item & { stockStatus?: StockStatus })
-              .stockStatus,
-          },
-          product: {
-            id: 0,
-            nameCanonical: item.productName || "Unknown Product",
-            category: item.category || undefined,
-            subcategory: item.subcategory || undefined,
-          },
-          vendor: item.vendorName
-            ? { id: 0, name: item.vendorName }
+          createdAt: item.receivedDate
+            ? new Date(item.receivedDate).toISOString()
             : undefined,
-          brand: item.brandName ? { id: 0, name: item.brandName } : undefined,
-        })
-      );
-    }
-    return ((legacyData?.items ?? []) as unknown as InventoryItem[]) || [];
-  }, [useEnhancedApi, enhancedData?.items, legacyData?.items]);
+          intakeDate: item.receivedDate
+            ? new Date(item.receivedDate).toISOString()
+            : undefined,
+          ageDays: (item as typeof item & { ageDays?: number }).ageDays,
+          ageBracket: (item as typeof item & { ageBracket?: AgeBracket })
+            .ageBracket,
+          stockStatus: (item as typeof item & { stockStatus?: StockStatus })
+            .stockStatus,
+        },
+        product: {
+          id: 0,
+          nameCanonical: item.productName || "Unknown Product",
+          category: item.category || undefined,
+          subcategory: item.subcategory || undefined,
+        },
+        vendor: item.vendorName ? { id: 0, name: item.vendorName } : undefined,
+        brand: item.brandName ? { id: 0, name: item.brandName } : undefined,
+      })
+    );
+  }, [enhancedData?.items]);
 
   const items = normalizedItems;
-  const inventoryLoadError = useEnhancedApi
-    ? (enhancedError ?? dashboardStatsError)
-    : (legacyError ?? dashboardStatsError);
-  const clientSideFilterActive =
-    !useEnhancedApi &&
-    (filters.stockLevel !== "all" ||
-      filters.cogsRange.min !== null ||
-      filters.cogsRange.max !== null ||
-      filters.dateRange.from !== null ||
-      filters.dateRange.to !== null ||
-      filters.location !== null);
+  const inventoryLoadError = enhancedError ?? dashboardStatsError;
+  // L-3: useEnhancedApi is always true; client-side filtering never applies (variable removed)
 
-  const filteredItems = useMemo(() => {
-    if (useEnhancedApi) {
-      return items;
-    }
-
-    return items.filter(item => {
-      const batch = item.batch;
-      if (!batch) return false;
-
-      const onHand = parseFloat(batch.onHandQty || "0");
-      const reserved = parseFloat(batch.reservedQty || "0");
-      const quarantine = parseFloat(batch.quarantineQty || "0");
-      const hold = parseFloat(batch.holdQty || "0");
-      const available = onHand - reserved - quarantine - hold;
-      const unitCogs = parseFloat(batch.unitCogs || "0");
-
-      if (filters.stockLevel !== "all") {
-        if (filters.stockLevel === "in_stock" && available <= 0) return false;
-        if (filters.stockLevel === "low_stock" && available > 50) return false;
-        if (filters.stockLevel === "out_of_stock" && available > 0) {
-          return false;
-        }
-      }
-
-      if (filters.cogsRange.min !== null && unitCogs < filters.cogsRange.min) {
-        return false;
-      }
-      if (filters.cogsRange.max !== null && unitCogs > filters.cogsRange.max) {
-        return false;
-      }
-
-      if (filters.dateRange.from || filters.dateRange.to) {
-        const receivedAt = batch.intakeDate || batch.createdAt;
-        if (!receivedAt) return false;
-        const receivedDate = new Date(receivedAt);
-        if (Number.isNaN(receivedDate.getTime())) return false;
-
-        if (filters.dateRange.from) {
-          const from = new Date(filters.dateRange.from);
-          from.setHours(0, 0, 0, 0);
-          if (receivedDate < from) return false;
-        }
-        if (filters.dateRange.to) {
-          const to = new Date(filters.dateRange.to);
-          to.setHours(23, 59, 59, 999);
-          if (receivedDate > to) return false;
-        }
-      }
-
-      if (filters.location) {
-        const locationQuery = filters.location.toLowerCase();
-        const fallbackLocationText = [batch.sku, batch.id, batch.grade]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        if (!fallbackLocationText.includes(locationQuery)) return false;
-      }
-
-      return true;
-    });
-  }, [
-    useEnhancedApi,
-    items,
-    filters.stockLevel,
-    filters.cogsRange.min,
-    filters.cogsRange.max,
-    filters.dateRange.from,
-    filters.dateRange.to,
-    filters.location,
-  ]);
+  const filteredItems = items; // L-3: useEnhancedApi always true; server handles filtering
 
   const vendorOptions = useMemo(
     () =>
@@ -919,20 +808,10 @@ export function InventoryWorkSurface() {
     [items]
   );
 
-  const hasMore = useEnhancedApi
-    ? (enhancedData?.pagination.hasMore ?? false)
-    : ((legacyData as { hasMore?: boolean } | undefined)?.hasMore ?? false);
-  const totalCount = useEnhancedApi
-    ? clientSideFilterActive
-      ? filteredItems.length
-      : (enhancedData?.summary.totalItems ?? filteredItems.length)
-    : hasMore
-      ? filteredItems.length + pageSize
-      : filteredItems.length;
-  const totalPages = useEnhancedApi
-    ? Math.max(page + 1 + (hasMore ? 1 : 0), 1)
-    : Math.max(Math.ceil(totalCount / pageSize), 1);
-  const isLoading = useEnhancedApi ? isEnhancedLoading : isLegacyLoading;
+  const hasMore = enhancedData?.pagination.hasMore ?? false;
+  const totalCount = enhancedData?.summary.totalItems ?? filteredItems.length;
+  const totalPages = Math.max(page + 1 + (hasMore ? 1 : 0), 1);
+  const isLoading = isEnhancedLoading;
 
   // Statistics
   const stats = useMemo(() => {
