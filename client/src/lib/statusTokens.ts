@@ -168,3 +168,59 @@ export const RELATIONSHIP_STATUS_TOKENS = buildStatusTokenMap({
   DORMANT: "neutral",
   "NEEDS-ATTENTION": "danger",
 });
+
+// ─── PO Status Tokens (420-fork Wave 2) ────────────────────────────────────
+
+export const PO_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Draft",
+  CONFIRMED: "Confirmed",
+  SENT: "Sent",
+  RECEIVING: "Receiving",
+  RECEIVED: "Received",
+  PARTIALLY_RECEIVED: "Partial",
+  VOIDED: "Voided",
+  CANCELLED: "Cancelled",
+};
+
+export const PO_STATUS_CLASSES: Record<string, string> = {
+  DRAFT: "bg-amber-50 text-amber-700 border border-amber-200",
+  CONFIRMED: "bg-sky-50 text-sky-700 border border-sky-200",
+  SENT: "bg-cyan-50 text-cyan-700 border border-cyan-200",
+  RECEIVING: "bg-violet-50 text-violet-700 border border-violet-200",
+  RECEIVED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  PARTIALLY_RECEIVED: "bg-purple-50 text-purple-700 border border-purple-200",
+  VOIDED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  CANCELLED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+};
+
+export function getPoStatusLabel(status: string): string {
+  return (
+    PO_STATUS_LABELS[status] ??
+    status
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase())
+  );
+}
+
+export function getPoStatusClass(status: string): string {
+  return (
+    PO_STATUS_CLASSES[status] ??
+    "bg-muted text-muted-foreground border border-border"
+  );
+}
+
+export const PAYMENT_TERM_LABELS: Record<string, string> = {
+  CONSIGNMENT: "Consignment",
+  NET_30: "Net 30",
+  NET_15: "Net 15",
+  NET_7: "Net 7",
+  COD: "Cash on Delivery",
+  PREPAID: "Prepaid",
+  DUE_ON_RECEIPT: "Due on Receipt",
+  WIRE: "Wire Transfer",
+};
+
+export function getPaymentTermLabel(term: string): string {
+  return PAYMENT_TERM_LABELS[term] ?? term.replace(/_/g, " ");
+}

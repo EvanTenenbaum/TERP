@@ -426,22 +426,22 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByText("Credit Settings Embedded")).toBeInTheDocument();
   });
 
-  it("renders procurement workspace", () => {
+  it("renders buying workspace", () => {
     mockActiveTab = "purchase-orders";
     render(<ProcurementWorkspacePage />);
     expect(
-      screen.getByRole("heading", { name: "Procurement" })
+      screen.getByRole("heading", { name: "Buying" })
     ).toBeInTheDocument();
     expect(screen.getByText("Purchase Order Surface")).toBeInTheDocument();
   });
 
-  it("renders Procurement workspace description, meta, and command strip", () => {
+  it("renders Buying workspace description, meta, and command strip", () => {
     mockActiveTab = "purchase-orders";
     render(<ProcurementWorkspacePage />);
 
     expect(
       screen.getByText(
-        /Create purchase orders here, then continue product intake and inventory work from Operations/i
+        /Create and manage purchase orders, track supplier intake, and walk POs from draft to received/i
       )
     ).toBeInTheDocument();
     expect(screen.getByText("Primary queue")).toBeInTheDocument();
@@ -460,7 +460,7 @@ describe("Consolidated workspace pages", () => {
     render(<ProcurementWorkspacePage />);
 
     expect(
-      screen.getByRole("heading", { name: "Procurement" })
+      screen.getByRole("heading", { name: "Buying" })
     ).toBeInTheDocument();
     expect(
       screen.getByText("This workflow moved to Operations")

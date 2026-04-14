@@ -324,16 +324,33 @@ async function startServer() {
       )
     );
 
-    // CORS whitelist — staging + production origins, or all in dev
+    // CORS — explicit origin allowlist for all environments.
+    // SECURITY: replaced `origin: true` (wildcard) to prevent credential-bearing
+    // cross-origin requests from arbitrary origins.
     const allowedOrigins = [
       "https://terp-staging-yicld.ondigitalocean.app",
       ...(process.env.ALLOWED_ORIGINS?.split(",")
         .map(o => o.trim())
         .filter(Boolean) ?? []),
+      // Development origins — included only outside of production
+      ...(process.env.NODE_ENV !== "production"
+        ? [
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://localhost:3001",
+          ]
+        : []),
     ];
     app.use(
       cors({
-        origin: process.env.NODE_ENV === "production" ? allowedOrigins : true,
+        // SECURITY: explicit allowlist instead of `origin: true` (wildcard).
+        // Credentials (cookies) must never be sent to arbitrary origins.
+        origin: (origin, callback) => {
+          // Allow requests with no origin (same-origin, curl, mobile apps, etc.)
+          if (!origin) return callback(null, true);
+          if (allowedOrigins.includes(origin)) return callback(null, true);
+          callback(new Error(`CORS: origin '${origin}' not in allowlist`));
+        },
         credentials: true,
       })
     );
