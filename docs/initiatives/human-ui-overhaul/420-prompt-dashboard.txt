@@ -1,0 +1,231 @@
+You are implementing Wave 4 of the TERP 420 Fork on the `human-ui-overhaul` branch.
+
+REPO: /Users/evantenenbaum/spec-erp-docker/TERP/TERP
+BRANCH: human-ui-overhaul
+
+WAIT FIRST: Poll /tmp/wave3-done.txt every 30 seconds. Start only when it contains "WAVE3_COMPLETE".
+Then `git pull`.
+
+---
+
+## WAVE 4 — DASHBOARD ACTION QUEUE
+
+The dashboard needs to become a work queue — actionable items, not just metrics.
+
+### 1. Find the dashboard component
+Run: `find client/src -name "*Dashboard*" -o -name "*dashboard*" | grep -v test | grep -v node_modules`
+Read the main dashboard page component.
+
+### 2. Add work queue data fetching
+The dashboard should query for:
+- Unconfirmed orders older than 24h (status=DRAFT, createdAt < now-24h)
+- POs with expected delivery today or overdue for intake
+- Low stock batches that are referenced in open orders
+- Invoices overdue >30 days
+
+Use existing tRPC endpoints. Look for:
+- `trpc.orders.list` — filter by status=DRAFT
+- `trpc.purchaseOrders.list` — filter by status
+- `trpc.inventory.list` — filter by lowStock
+- `trpc.invoices.list` — filter by overdue
+
+### 3. Work Queue component
+
+Create: `client/src/components/dashboard/WorkQueue.tsx`
+
+```tsx
+import { cn } from "@/lib/utils";
+import { AlertCircle, ArrowRight, CheckCircle2, Clock, Package, TrendingDown } from "lucide-react";
+import { Link } from "wouter";
+
+interface WorkQueueItem {
+  id: string;
+  urgency: "critical" | "warning" | "info" | "ok";
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  count: number;
+  value?: string;        // e.g. "$47,000" for dollar amounts
+  href: string;          // where to go when clicked
+}
+
+const URGENCY_STYLES = {
+  critical: "border-l-red-500 bg-red-50/40",
+  warning: "border-l-amber-400 bg-amber-50/30",
+  info: "border-l-sky-400 bg-sky-50/30",
+  ok: "border-l-emerald-400 bg-emerald-50/30",
+} as const;
+
+const URGENCY_COUNT_STYLES = {
+  critical: "text-red-600 font-bold",
+  warning: "text-amber-700 font-semibold",
+  info: "text-sky-700 font-medium",
+  ok: "text-emerald-700 font-medium",
+} as const;
+
+export function WorkQueue({ items }: { items: WorkQueueItem[] }) {
+  if (items.length === 0) {
+    return (
+      <div className="flex items-center gap-3 px-4 py-5 text-muted-foreground">
+        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+        <span className="text-sm">All clear — no urgent items.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="divide-y divide-border/40">
+      {items.map(item => (
+        <Link key={item.id} href={item.href}>
+          <div className={cn(
+            "flex items-center gap-3 px-4 py-3 border-l-[3px] cursor-pointer",
+            "hover:brightness-95 transition-all group",
+            URGENCY_STYLES[item.urgency]
+          )}>
+            <item.icon className="w-4 h-4 text-muted-foreground shrink-0" />
+            <span className="flex-1 text-sm text-foreground">{item.label}</span>
+            {item.value && (
+              <span className="text-sm text-muted-foreground font-mono">{item.value}</span>
+            )}
+            <span className={cn("text-base min-w-[1.5rem] text-right", URGENCY_COUNT_STYLES[item.urgency])}>
+              {item.count}
+            </span>
+            <ArrowRight className="w-3.5 h-3.5 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors" />
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+```
+
+### 4. Update DashboardPage (or equivalent)
+
+In the main dashboard component:
+
+a) Add the WorkQueue section as the primary content above the existing KPI cards:
+
+```tsx
+import { WorkQueue } from "@/components/dashboard/WorkQueue";
+
+// Build work queue items from real data:
+const workQueueItems: WorkQueueItem[] = [
+  // Unconfirmed orders >24h old
+  staleDraftOrders.length > 0 && {
+    id: "stale-drafts",
+    urgency: staleDraftOrders.length > 5 ? "critical" : "warning",
+    icon: Clock,
+    label: `${staleDraftOrders.length} order${staleDraftOrders.length !== 1 ? "s" : ""} awaiting confirmation — draft >24h`,
+    count: staleDraftOrders.length,
+    href: "/sales?tab=orders&filter=stale-draft",
+  },
+  // Overdue invoices
+  overdueInvoices.length > 0 && {
+    id: "overdue-invoices",
+    urgency: "critical",
+    icon: AlertCircle,
+    label: `${overdueInvoices.length} invoice${overdueInvoices.length !== 1 ? "s" : ""} overdue >30 days`,
+    count: overdueInvoices.length,
+    value: overdueTotal ? `$${overdueTotal.toLocaleString()}` : undefined,
+    href: "/accounting?tab=invoices&filter=overdue",
+  },
+  // Low stock alerts
+  lowStockCount > 0 && {
+    id: "low-stock",
+    urgency: "warning",
+    icon: TrendingDown,
+    label: `${lowStockCount} batch${lowStockCount !== 1 ? "es" : ""} low stock — may block open orders`,
+    count: lowStockCount,
+    href: "/inventory?tab=inventory&filter=low-stock",
+  },
+  // POs ready for intake
+  posReadyForIntake.length > 0 && {
+    id: "po-intake",
+    urgency: "info",
+    icon: Package,
+    label: `${posReadyForIntake.length} PO${posReadyForIntake.length !== 1 ? "s" : ""} ready for intake`,
+    count: posReadyForIntake.length,
+    href: "/purchase-orders",
+  },
+].filter(Boolean) as WorkQueueItem[];
+```
+
+b) Render it above the existing KPI cards:
+```tsx
+<div className="mb-6">
+  <div className="flex items-baseline justify-between mb-3">
+    <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+      Today's Work
+    </h2>
+    <span className="text-xs text-muted-foreground">
+      {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+    </span>
+  </div>
+  <div className="rounded-xl border border-border bg-card overflow-hidden">
+    <WorkQueue items={workQueueItems} />
+  </div>
+</div>
+```
+
+c) Keep existing KPI cards below — but make them smaller/secondary (reduce heading size, maybe wrap in a grid-4).
+
+### 5. Quick stats strip
+Below the work queue and above the KPI cards, add a compact stats strip:
+
+```tsx
+<div className="flex items-center gap-6 px-1 mb-6 text-sm">
+  {[
+    { label: "Revenue MTD", value: revenueMtd },
+    { label: "Open AR", value: openAr },
+    { label: "Inventory Value", value: inventoryValue },
+    { label: "Active Orders", value: activeOrderCount },
+  ].map(stat => (
+    <div key={stat.label} className="flex flex-col">
+      <span className="text-[0.68rem] uppercase tracking-wide text-muted-foreground font-medium">
+        {stat.label}
+      </span>
+      <span className="text-base font-semibold tabular-nums">{stat.value ?? "—"}</span>
+    </div>
+  ))}
+</div>
+```
+
+Use whatever tRPC hooks already fetch this data. Don't add new endpoints.
+
+---
+
+## VERIFICATION
+
+```bash
+cd /Users/evantenenbaum/spec-erp-docker/TERP/TERP
+pnpm exec eslint client/src/components/dashboard/WorkQueue.tsx
+pnpm -s tsc --noEmit 2>&1 | grep -v StagingAgentation
+pnpm exec vitest run client/src/pages/SalesWorkspacePage.test.tsx
+```
+
+---
+
+## ADVERSARIAL QA
+
+1. Are the tRPC query calls correct — do `orders.list`, `invoices.list` etc. exist with the right filter params? Run grep to confirm: `grep -r "orders.list\|invoices.list" client/src --include="*.ts" -l`
+2. Do all the href links in WorkQueue items point to real routes that exist?
+3. Does the WorkQueue gracefully handle loading states (show skeleton/spinner while data loads)?
+4. Does the date comparison for "stale drafts >24h" work with the date format the API returns?
+
+Fix issues. If a tRPC endpoint doesn't exist for a query, use the closest available one or skip that queue item rather than adding new endpoints.
+
+---
+
+## COMMIT
+
+```bash
+git add -A
+git commit -m "feat(420-fork): Wave 4 — dashboard action queue
+
+- Work queue replaces hero KPIs as primary content
+- Prioritized items: stale drafts, overdue invoices, low stock, PO intake
+- Each item links directly to the relevant filtered view
+- Quick stats strip: Revenue MTD, Open AR, Inventory Value, Active Orders
+- WorkQueue component with urgency-coded left borders"
+```
+
+Write to /tmp/wave4-done.txt: "WAVE4_COMPLETE: <commit hash>"

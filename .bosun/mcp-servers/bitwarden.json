@@ -1,0 +1,10 @@
+{
+  "id": "bitwarden",
+  "name": "Bitwarden",
+  "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+  "transport": "stdio",
+  "command": "/Users/evantenenbaum/.codex/bin/bitwarden-mcp",
+  "args": [],
+  "source": "autodiscovered",
+  "tags": ["autodiscovered", "codex-config", "mcp"]
+}

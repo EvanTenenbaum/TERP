@@ -1,0 +1,696 @@
+{
+  "entries": [
+    {
+      "id": "autofix-fallback",
+      "type": "prompt",
+      "name": "Autofix Fallback",
+      "description": "{{FALLBACK_ERROR_LINES}}",
+      "filename": "autofix-fallback.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.662Z",
+      "updatedAt": "2026-04-09T18:09:15.662Z"
+    },
+    {
+      "id": "autofix-fix",
+      "type": "prompt",
+      "name": "Autofix Fix",
+      "description": "Type: {{ERROR_TYPE}}",
+      "filename": "autofix-fix.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.662Z",
+      "updatedAt": "2026-04-09T18:09:15.662Z"
+    },
+    {
+      "id": "autofix-loop",
+      "type": "prompt",
+      "name": "Autofix Loop",
+      "description": "This error repeats {{REPEAT_COUNT}} times:",
+      "filename": "autofix-loop.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.663Z",
+      "updatedAt": "2026-04-09T18:09:15.663Z"
+    },
+    {
+      "id": "conflict-resolver",
+      "type": "prompt",
+      "name": "Conflict Resolver",
+      "description": "",
+      "filename": "conflict-resolver.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.661Z",
+      "updatedAt": "2026-04-09T18:09:15.661Z"
+    },
+    {
+      "id": "custom-tool-reflect",
+      "type": "prompt",
+      "name": "Custom Tool Reflect",
+      "description": "Before closing the task, check for reusable tooling:",
+      "filename": "custom-tool-reflect.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.665Z",
+      "updatedAt": "2026-04-09T18:09:15.665Z"
+    },
+    {
+      "id": "custom-tools-context",
+      "type": "prompt",
+      "name": "Custom Tools Context",
+      "description": "",
+      "filename": "custom-tools-context.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.665Z",
+      "updatedAt": "2026-04-09T18:09:15.665Z"
+    },
+    {
+      "id": "frontend-agent",
+      "type": "prompt",
+      "name": "Frontend Specialist Agent",
+      "description": "You are a **front-end development specialist** agent managed by Bosun.",
+      "filename": "frontend-agent.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.664Z",
+      "updatedAt": "2026-04-09T18:09:15.664Z"
+    },
+    {
+      "id": "merge-strategy-fix",
+      "type": "prompt",
+      "name": "Fix Required",
+      "description": "{{TASK_CONTEXT_BLOCK}}",
+      "filename": "merge-strategy-fix.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.661Z",
+      "updatedAt": "2026-04-09T18:09:15.662Z"
+    },
+    {
+      "id": "merge-strategy-reattempt",
+      "type": "prompt",
+      "name": "Task Re-Attempt",
+      "description": "A previous attempt failed.",
+      "filename": "merge-strategy-reattempt.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.662Z",
+      "updatedAt": "2026-04-09T18:09:15.662Z"
+    },
+    {
+      "id": "merge-strategy",
+      "type": "prompt",
+      "name": "Merge Strategy Decision",
+      "description": "You are a senior engineering reviewer. An AI agent has completed (or attempted) a task.",
+      "filename": "merge-strategy.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.661Z",
+      "updatedAt": "2026-04-09T18:09:15.661Z"
+    },
+    {
+      "id": "monitor-crash-fix",
+      "type": "prompt",
+      "name": "Monitor Crash Fix",
+      "description": "",
+      "filename": "monitor-crash-fix.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.663Z",
+      "updatedAt": "2026-04-09T18:09:15.663Z"
+    },
+    {
+      "id": "monitor-restart-loop-fix",
+      "type": "prompt",
+      "name": "Monitor Restart Loop Fix",
+      "description": "",
+      "filename": "monitor-restart-loop-fix.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.663Z",
+      "updatedAt": "2026-04-09T18:09:15.663Z"
+    },
+    {
+      "id": "orchestrator",
+      "type": "prompt",
+      "name": "Task Orchestrator Agent",
+      "description": "You are an autonomous task orchestrator agent. You receive implementation tasks and execute them end-to-end.",
+      "filename": "orchestrator.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.657Z",
+      "updatedAt": "2026-04-09T18:09:15.657Z"
+    },
+    {
+      "id": "reviewer",
+      "type": "prompt",
+      "name": "Reviewer",
+      "description": "1. Security vulnerabilities",
+      "filename": "reviewer.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.660Z",
+      "updatedAt": "2026-04-09T18:09:15.661Z"
+    },
+    {
+      "id": "sdk-conflict-resolver",
+      "type": "prompt",
+      "name": "Merge Conflict Resolution",
+      "description": "You are resolving merge conflicts in a git worktree.",
+      "filename": "sdk-conflict-resolver.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.661Z",
+      "updatedAt": "2026-04-09T18:09:15.661Z"
+    },
+    {
+      "id": "task-executor-continue-has-commits",
+      "type": "prompt",
+      "name": "{{TASK_ID}} — CONTINUE (Verify and Push)",
+      "description": "You were working on \"{{TASK_TITLE}}\" and appear to have stopped.",
+      "filename": "task-executor-continue-has-commits.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.659Z",
+      "updatedAt": "2026-04-09T18:09:15.659Z"
+    },
+    {
+      "id": "task-executor-continue-has-edits",
+      "type": "prompt",
+      "name": "{{TASK_ID}} — CONTINUE (Commit and Push)",
+      "description": "You were working on \"{{TASK_TITLE}}\" and appear to have stopped.",
+      "filename": "task-executor-continue-has-edits.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.659Z",
+      "updatedAt": "2026-04-09T18:09:15.660Z"
+    },
+    {
+      "id": "task-executor-continue-no-progress",
+      "type": "prompt",
+      "name": "CONTINUE - Resume Implementation",
+      "description": "You were working on \"{{TASK_TITLE}}\" but stopped without meaningful progress.",
+      "filename": "task-executor-continue-no-progress.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.660Z",
+      "updatedAt": "2026-04-09T18:09:15.660Z"
+    },
+    {
+      "id": "task-executor-retry",
+      "type": "prompt",
+      "name": "{{TASK_ID}} — ERROR RECOVERY (Attempt {{ATTEMPT_NUMBER}})",
+      "description": "Your previous attempt on task \"{{TASK_TITLE}}\" encountered an issue:",
+      "filename": "task-executor-retry.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.659Z",
+      "updatedAt": "2026-04-09T18:09:15.659Z"
+    },
+    {
+      "id": "task-executor",
+      "type": "prompt",
+      "name": "{{TASK_ID}} — {{TASK_TITLE}}",
+      "description": "## Description",
+      "filename": "task-executor.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.658Z",
+      "updatedAt": "2026-04-09T18:09:15.658Z"
+    },
+    {
+      "id": "task-manager",
+      "type": "prompt",
+      "name": "Bosun Task Manager Agent",
+      "description": "You manage the backlog via CLI, REST API, or Node.js API.",
+      "filename": "task-manager.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.663Z",
+      "updatedAt": "2026-04-09T18:09:15.663Z"
+    },
+    {
+      "id": "voice-agent-compact",
+      "type": "prompt",
+      "name": "Bosun Voice (Compact)",
+      "description": "Voice assistant for VirtEngine. Access tasks, agents, workspace.",
+      "filename": "voice-agent-compact.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.664Z",
+      "updatedAt": "2026-04-09T18:09:15.664Z"
+    },
+    {
+      "id": "voice-agent",
+      "type": "prompt",
+      "name": "Bosun Voice Agent",
+      "description": "You are **Bosun**, a voice-first assistant for the VirtEngine development platform.",
+      "filename": "voice-agent.md",
+      "tags": [],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.664Z",
+      "updatedAt": "2026-04-09T18:09:15.664Z"
+    },
+    {
+      "id": "backend-agent",
+      "type": "agent",
+      "name": "Backend Agent",
+      "description": "Backend/API specialist. Auto-selected for feat(api), feat(server), feat(db) tasks.",
+      "filename": "backend-agent.json",
+      "tags": ["api", "server", "backend", "database"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.668Z",
+      "updatedAt": "2026-04-09T18:09:15.668Z"
+    },
+    {
+      "id": "devops-agent",
+      "type": "agent",
+      "name": "DevOps Agent",
+      "description": "CI/CD and infrastructure specialist. Auto-selected for ci(), build(), infra() tasks.",
+      "filename": "devops-agent.json",
+      "tags": ["ci", "cd", "build", "deploy", "infra", "devops"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.668Z",
+      "updatedAt": "2026-04-09T18:09:15.668Z"
+    },
+    {
+      "id": "docs-agent",
+      "type": "agent",
+      "name": "Docs Agent",
+      "description": "Documentation specialist. Auto-selected for docs() tasks.",
+      "filename": "docs-agent.json",
+      "tags": [
+        "docs",
+        "documentation",
+        "readme",
+        "markdown",
+        "audit",
+        "annotation"
+      ],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.668Z",
+      "updatedAt": "2026-04-09T18:09:15.668Z"
+    },
+    {
+      "id": "test-agent",
+      "type": "agent",
+      "name": "Test Agent",
+      "description": "Testing specialist. Auto-selected for test() tasks.",
+      "filename": "test-agent.json",
+      "tags": ["test", "testing", "e2e", "unit", "coverage"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.669Z",
+      "updatedAt": "2026-04-09T18:09:15.669Z"
+    },
+    {
+      "id": "ui-agent",
+      "type": "agent",
+      "name": "UI Agent",
+      "description": "Front-end specialist for portal and UI tasks. Auto-selected for feat(portal), feat(ui), fix(portal) tasks.",
+      "filename": "ui-agent.json",
+      "tags": ["ui", "frontend", "portal", "css", "web"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.668Z",
+      "updatedAt": "2026-04-09T18:09:15.668Z"
+    },
+    {
+      "id": "voice-agent-female",
+      "type": "agent",
+      "name": "Voice Agent (Female)",
+      "description": "Conversational voice specialist with concise guidance and call-friendly pacing.",
+      "filename": "voice-agent-female.json",
+      "tags": [
+        "voice",
+        "assistant",
+        "realtime",
+        "female",
+        "default",
+        "audio-agent"
+      ],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.669Z",
+      "updatedAt": "2026-04-09T18:09:15.669Z"
+    },
+    {
+      "id": "voice-agent-male",
+      "type": "agent",
+      "name": "Voice Agent (Male)",
+      "description": "Operational voice specialist focused on diagnostics and execution.",
+      "filename": "voice-agent-male.json",
+      "tags": [
+        "voice",
+        "assistant",
+        "realtime",
+        "male",
+        "default",
+        "audio-agent"
+      ],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.669Z",
+      "updatedAt": "2026-04-09T18:09:15.669Z"
+    },
+    {
+      "id": "voice-agent",
+      "type": "agent",
+      "name": "Voice Agent",
+      "description": "Default voice assistant agent. Handles real-time voice sessions, tool calls, and delegate orchestration. Customize tools and MCP servers for voice interactions.",
+      "filename": "voice-agent.json",
+      "tags": ["voice", "assistant", "realtime", "default"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {},
+      "createdAt": "2026-04-09T18:09:15.669Z",
+      "updatedAt": "2026-04-09T18:09:15.669Z"
+    },
+    {
+      "id": "playwright-test-generator",
+      "type": "prompt",
+      "name": "For each test you generate",
+      "description": "---",
+      "filename": "playwright-test-generator.md",
+      "tags": ["prompt", "autodiscovered", "local-agent-template"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "local-agent-template",
+          "sourcePath": ".github/agents/playwright-test-generator.agent.md",
+          "syncedAt": "2026-04-09T18:09:15.686Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.686Z",
+      "updatedAt": "2026-04-09T18:09:15.686Z"
+    },
+    {
+      "id": "playwright-test-healer",
+      "type": "prompt",
+      "name": "Playwright Test Healer",
+      "description": "---",
+      "filename": "playwright-test-healer.md",
+      "tags": ["prompt", "autodiscovered", "local-agent-template"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "local-agent-template",
+          "sourcePath": ".github/agents/playwright-test-healer.agent.md",
+          "syncedAt": "2026-04-09T18:09:15.686Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.686Z",
+      "updatedAt": "2026-04-09T18:09:15.686Z"
+    },
+    {
+      "id": "playwright-test-planner",
+      "type": "prompt",
+      "name": "Playwright Test Planner",
+      "description": "---",
+      "filename": "playwright-test-planner.md",
+      "tags": ["prompt", "autodiscovered", "local-agent-template"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "local-agent-template",
+          "sourcePath": ".github/agents/playwright-test-planner.agent.md",
+          "syncedAt": "2026-04-09T18:09:15.686Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.686Z",
+      "updatedAt": "2026-04-09T18:09:15.686Z"
+    },
+    {
+      "id": "linear",
+      "type": "mcp",
+      "name": "Linear",
+      "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+      "filename": "linear.json",
+      "tags": ["mcp", "autodiscovered", "codex-config"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "codex-mcp-config",
+          "sourcePath": "/Users/evantenenbaum/.codex/config.toml",
+          "section": "mcp_servers.linear",
+          "rawId": "linear",
+          "syncedAt": "2026-04-09T18:09:15.687Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.687Z",
+      "updatedAt": "2026-04-09T18:09:15.687Z"
+    },
+    {
+      "id": "playwright",
+      "type": "mcp",
+      "name": "Playwright",
+      "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+      "filename": "playwright.json",
+      "tags": ["mcp", "autodiscovered", "codex-config"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "codex-mcp-config",
+          "sourcePath": "/Users/evantenenbaum/.codex/config.toml",
+          "section": "mcp_servers.playwright",
+          "rawId": "playwright",
+          "syncedAt": "2026-04-09T18:09:15.687Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.687Z",
+      "updatedAt": "2026-04-09T18:09:15.687Z"
+    },
+    {
+      "id": "digitalocean",
+      "type": "mcp",
+      "name": "Digitalocean",
+      "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+      "filename": "digitalocean.json",
+      "tags": ["mcp", "autodiscovered", "codex-config"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "codex-mcp-config",
+          "sourcePath": "/Users/evantenenbaum/.codex/config.toml",
+          "section": "mcp_servers.digitalocean",
+          "rawId": "digitalocean",
+          "syncedAt": "2026-04-09T18:09:15.688Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.688Z",
+      "updatedAt": "2026-04-09T18:09:15.688Z"
+    },
+    {
+      "id": "digitalocean-mysql",
+      "type": "mcp",
+      "name": "Digitalocean Mysql",
+      "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+      "filename": "digitalocean-mysql.json",
+      "tags": ["mcp", "autodiscovered", "codex-config"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "codex-mcp-config",
+          "sourcePath": "/Users/evantenenbaum/.codex/config.toml",
+          "section": "mcp_servers.digitalocean_mysql",
+          "rawId": "digitalocean_mysql",
+          "syncedAt": "2026-04-09T18:09:15.688Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.688Z",
+      "updatedAt": "2026-04-09T18:09:15.688Z"
+    },
+    {
+      "id": "context7",
+      "type": "mcp",
+      "name": "Context7",
+      "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+      "filename": "context7.json",
+      "tags": ["mcp", "autodiscovered", "codex-config"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "codex-mcp-config",
+          "sourcePath": "/Users/evantenenbaum/.codex/config.toml",
+          "section": "mcp_servers.context7",
+          "rawId": "context7",
+          "syncedAt": "2026-04-09T18:09:15.688Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.688Z",
+      "updatedAt": "2026-04-09T18:09:15.688Z"
+    },
+    {
+      "id": "sequential-thinking",
+      "type": "mcp",
+      "name": "Sequential Thinking",
+      "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+      "filename": "sequential-thinking.json",
+      "tags": ["mcp", "autodiscovered", "codex-config"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "codex-mcp-config",
+          "sourcePath": "/Users/evantenenbaum/.codex/config.toml",
+          "section": "mcp_servers.sequential-thinking",
+          "rawId": "sequential-thinking",
+          "syncedAt": "2026-04-09T18:09:15.689Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.689Z",
+      "updatedAt": "2026-04-09T18:09:15.689Z"
+    },
+    {
+      "id": "microsoft-docs",
+      "type": "mcp",
+      "name": "Microsoft Docs",
+      "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+      "filename": "microsoft-docs.json",
+      "tags": ["mcp", "autodiscovered", "codex-config"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "codex-mcp-config",
+          "sourcePath": "/Users/evantenenbaum/.codex/config.toml",
+          "section": "mcp_servers.microsoft-docs",
+          "rawId": "microsoft-docs",
+          "syncedAt": "2026-04-09T18:09:15.689Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.689Z",
+      "updatedAt": "2026-04-09T18:09:15.689Z"
+    },
+    {
+      "id": "figma",
+      "type": "mcp",
+      "name": "Figma",
+      "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+      "filename": "figma.json",
+      "tags": ["mcp", "autodiscovered", "codex-config"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "codex-mcp-config",
+          "sourcePath": "/Users/evantenenbaum/.codex/config.toml",
+          "section": "mcp_servers.figma",
+          "rawId": "figma",
+          "syncedAt": "2026-04-09T18:09:15.689Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.690Z",
+      "updatedAt": "2026-04-09T18:09:15.690Z"
+    },
+    {
+      "id": "bitwarden",
+      "type": "mcp",
+      "name": "Bitwarden",
+      "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+      "filename": "bitwarden.json",
+      "tags": ["mcp", "autodiscovered", "codex-config"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "codex-mcp-config",
+          "sourcePath": "/Users/evantenenbaum/.codex/config.toml",
+          "section": "mcp_servers.bitwarden",
+          "rawId": "bitwarden",
+          "syncedAt": "2026-04-09T18:09:15.690Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.690Z",
+      "updatedAt": "2026-04-09T18:09:15.690Z"
+    },
+    {
+      "id": "agentation",
+      "type": "mcp",
+      "name": "Agentation",
+      "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+      "filename": "agentation.json",
+      "tags": ["mcp", "autodiscovered", "codex-config"],
+      "scope": "global",
+      "workspace": null,
+      "meta": {
+        "autoSync": {
+          "kind": "codex-mcp-config",
+          "sourcePath": "/Users/evantenenbaum/.codex/config.toml",
+          "section": "mcp_servers.agentation",
+          "rawId": "agentation",
+          "syncedAt": "2026-04-09T18:09:15.690Z"
+        }
+      },
+      "createdAt": "2026-04-09T18:09:15.690Z",
+      "updatedAt": "2026-04-09T18:09:15.690Z"
+    }
+  ],
+  "generated": "2026-04-09T18:09:15.691Z"
+}

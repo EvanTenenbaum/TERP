@@ -1,0 +1,23 @@
+{
+  "id": "ui-agent",
+  "name": "UI Agent",
+  "description": "Front-end specialist for portal and UI tasks. Auto-selected for feat(portal), feat(ui), fix(portal) tasks.",
+  "titlePatterns": [
+    "\\(portal\\)",
+    "\\(ui\\)",
+    "\\(frontend\\)",
+    "\\(web\\)",
+    "\\(css\\)",
+    "\\bUI\\b",
+    "\\bfrontend\\b"
+  ],
+  "scopes": ["portal", "ui", "frontend", "web", "css"],
+  "sdk": null,
+  "model": null,
+  "promptOverride": "frontend-agent",
+  "skills": ["frontend-patterns"],
+  "hookProfile": null,
+  "env": {},
+  "tags": ["ui", "frontend", "portal", "css", "web"],
+  "agentType": "task"
+}

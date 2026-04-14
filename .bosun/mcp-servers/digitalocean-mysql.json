@@ -1,0 +1,19 @@
+{
+  "id": "digitalocean-mysql",
+  "name": "Digitalocean Mysql",
+  "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+  "transport": "stdio",
+  "command": "npx",
+  "args": ["-y", "mcp-server-mysql@latest"],
+  "env": {
+    "MCP_DB_NAME": "",
+    "MYSQL_DB": "",
+    "MYSQL_HOST": "",
+    "MYSQL_PASS": "",
+    "MYSQL_PORT": "",
+    "MYSQL_SSL": "",
+    "MYSQL_USER": ""
+  },
+  "source": "autodiscovered",
+  "tags": ["autodiscovered", "codex-config", "mcp"]
+}

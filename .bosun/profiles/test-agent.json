@@ -1,0 +1,21 @@
+{
+  "id": "test-agent",
+  "name": "Test Agent",
+  "description": "Testing specialist. Auto-selected for test() tasks.",
+  "titlePatterns": [
+    "\\(test\\)",
+    "\\(tests\\)",
+    "\\(e2e\\)",
+    "\\(unit\\)",
+    "\\btesting\\b"
+  ],
+  "scopes": ["test", "tests", "e2e", "unit"],
+  "sdk": null,
+  "model": null,
+  "promptOverride": null,
+  "skills": [],
+  "hookProfile": null,
+  "env": {},
+  "tags": ["test", "testing", "e2e", "unit", "coverage"],
+  "agentType": "task"
+}

@@ -1,0 +1,177 @@
+You are implementing Wave 5 of the TERP 420 Fork on the `human-ui-overhaul` branch.
+
+REPO: /Users/evantenenbaum/spec-erp-docker/TERP/TERP
+BRANCH: human-ui-overhaul
+
+WAIT FIRST: Poll /tmp/wave4-done.txt every 30 seconds. Start only when it contains "WAVE4_COMPLETE".
+Then `git pull`.
+
+---
+
+## WAVE 5 — ACCOUNTING SURFACE
+
+### 1. Invoice/bill status system
+FILE: client/src/lib/statusTokens.ts — ADD:
+
+```ts
+export const INVOICE_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Draft",
+  SENT: "Sent",
+  PAID: "Paid",
+  PARTIAL: "Partial",
+  OVERDUE: "Overdue",
+  VOIDED: "Voided",
+  CANCELLED: "Cancelled",
+  WRITE_OFF: "Written Off",
+};
+
+export const INVOICE_STATUS_CLASSES: Record<string, string> = {
+  DRAFT: "bg-amber-50 text-amber-700 border border-amber-200",
+  SENT: "bg-sky-50 text-sky-700 border border-sky-200",
+  PAID: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  PARTIAL: "bg-violet-50 text-violet-700 border border-violet-200",
+  OVERDUE: "bg-red-50 text-red-700 border border-red-200 font-semibold",
+  VOIDED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  CANCELLED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  WRITE_OFF: "bg-neutral-200 text-neutral-600 border border-neutral-300 line-through",
+};
+
+export function getInvoiceStatusLabel(status: string): string {
+  return INVOICE_STATUS_LABELS[status] ??
+    status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+export function getInvoiceStatusClass(status: string): string {
+  return INVOICE_STATUS_CLASSES[status] ??
+    "bg-muted text-muted-foreground border border-border";
+}
+
+// Currency formatting helper
+export function formatCurrency(value: number | string | null | undefined, opts?: { showSign?: boolean }): string {
+  const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
+  if (isNaN(num)) return "—";
+  const formatted = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(num));
+  if (opts?.showSign) {
+    return num >= 0 ? `+${formatted}` : `-${formatted}`;
+  }
+  return formatted;
+}
+```
+
+### 2. Apply to accounting surfaces
+Find all accounting surface files:
+```bash
+find client/src -name "*Invoice*" -o -name "*Bill*" -o -name "*Payment*" -o -name "*Accounting*" | grep -v test | grep -v node_modules | grep "\.tsx$"
+```
+
+For each file found:
+a) Import `getInvoiceStatusLabel`, `getInvoiceStatusClass`, `MonoId`, `formatCurrency`
+b) Replace hardcoded status colors with the token functions
+c) Wrap invoice/bill reference numbers with `<MonoId value={ref} />`
+d) For monetary amounts: apply `tabular-nums text-right` to all price cells. For positive amounts (received payments, revenue), add `text-emerald-700`. For negative/expense amounts, add `text-red-600`.
+e) For OVERDUE status rows: add `bg-red-50/30` to the entire row (not just the badge)
+
+### 3. AccountingDashboard P&L color semantics
+FILE: client/src/pages/accounting/AccountingDashboard.tsx
+
+Read the file. Find:
+- AR/receivables totals → apply `text-emerald-700 font-semibold`
+- AP/payables totals → apply `text-red-600 font-semibold`
+- Net/profit figures → positive=emerald, negative=red
+- "Overdue" counts/amounts → `text-red-600 font-bold`
+
+### 4. Invoice from Order — one-click path
+FILE: client/src/pages/accounting/AccountingDashboard.tsx or InvoicesSurface.tsx
+
+Find where "Create Invoice" or "New Invoice" buttons exist. Check if there's already a way to pre-fill from an order. If not:
+
+Add a prop or URL parameter pattern: `/accounting?tab=invoices&fromOrder=<orderId>`
+
+In the invoices surface, check for `fromOrder` in the URL search params. If present, pre-fetch that order's data and auto-populate a new invoice draft with:
+- Client from order
+- Line items from order (mapped to invoice line items)
+- Auto-set to "DRAFT" status
+
+This eliminates manual re-entry when converting a fulfilled order to an invoice.
+
+---
+
+## FINAL VERIFICATION — FULL SUITE
+
+After Wave 5, run the complete targeted test suite for all changed surfaces:
+
+```bash
+cd /Users/evantenenbaum/spec-erp-docker/TERP/TERP
+
+pnpm exec vitest run \
+  client/src/components/layout/AppHeader.test.tsx \
+  client/src/components/layout/LinearWorkspaceShell.test.tsx \
+  client/src/pages/SalesWorkspacePage.test.tsx \
+  client/src/components/spreadsheet-native/SalesCatalogueSurface.test.tsx \
+  client/src/components/spreadsheet-native/InventoryManagementSurface.test.tsx \
+  client/src/components/spreadsheet-native/PurchaseOrderSurface.test.tsx \
+  client/src/components/spreadsheet-native/SalesOrderSurface.test.tsx \
+  client/src/components/spreadsheet-native/InvoicesSurface.test.tsx \
+  client/src/components/spreadsheet-native/BillsSurface.test.tsx \
+  client/src/components/spreadsheet-native/PaymentsSurface.test.tsx \
+  client/src/components/spreadsheet-native/GeneralLedgerSurface.test.tsx
+
+pnpm exec eslint client/src/lib/statusTokens.ts
+
+pnpm -s tsc --noEmit 2>&1 | grep -v StagingAgentation
+
+NODE_ENV=production pnpm vite build 2>&1 | tail -15
+```
+
+ALL MUST PASS. If anything fails, fix it before committing.
+
+---
+
+## FINAL ADVERSARIAL QA — FULL 420 FORK REVIEW
+
+Now that all 5 waves are done, do a holistic review:
+
+1. Run: `git diff main...human-ui-overhaul --stat` — review the full scope of changes
+2. Check: `git log --oneline main..human-ui-overhaul` — are all 5 wave commits there?
+3. Test the build output: does `dist/public/index.html` exist and look valid?
+4. Grep for any remaining hardcoded status colors that weren't updated:
+   ```bash
+   grep -r "bg-blue-100\|bg-green-100\|text-blue-800\|text-green-800" client/src --include="*.tsx" | grep -v "test\|\.d\.ts" | head -20
+   ```
+5. Grep for raw enum strings still shown to users:
+   ```bash
+   grep -rn '"DRAFT"\|"CONFIRMED"\|"LIVE"\|"RECEIVED"' client/src/components --include="*.tsx" | grep -v "status===\|status ==\|=== status\|switch\|case\|filter\|map\|Object\." | head -20
+   ```
+   For any found — check if it's a display string (fix it) or a logic comparison (leave it).
+
+Fix any issues. Then do the final commit.
+
+---
+
+## FINAL COMMIT
+
+```bash
+git add -A
+git commit -m "feat(420-fork): Wave 5 — accounting surface + final QA pass
+
+- Invoice/bill status badges: Draft/Sent/Paid/Partial/Overdue semantic colors
+- P&L color semantics: AR=emerald, AP=red throughout AccountingDashboard
+- MonoId on all invoice/bill reference numbers
+- Currency formatting: tabular-nums, right-aligned, sign-aware
+- Overdue row highlight: bg-red-50/30 on entire overdue rows
+- Invoice from Order: fromOrder URL param for one-click pre-fill
+- statusTokens: INVOICE_STATUS complete system + formatCurrency helper
+- Final QA: cleared remaining hardcoded color strings"
+```
+
+Write to /tmp/wave5-done.txt: "WAVE5_COMPLETE: <commit hash>"
+Then write a summary to /tmp/420fork-complete-report.txt with:
+- Total files changed across all waves
+- All 5 commit hashes
+- Any known remaining issues or gaps
+- Recommendation for next steps

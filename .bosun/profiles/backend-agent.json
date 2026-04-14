@@ -1,0 +1,22 @@
+{
+  "id": "backend-agent",
+  "name": "Backend Agent",
+  "description": "Backend/API specialist. Auto-selected for feat(api), feat(server), feat(db) tasks.",
+  "titlePatterns": [
+    "\\(api\\)",
+    "\\(server\\)",
+    "\\(db\\)",
+    "\\(backend\\)",
+    "\\bAPI\\b",
+    "\\bserver\\b"
+  ],
+  "scopes": ["api", "server", "db", "backend"],
+  "sdk": null,
+  "model": null,
+  "promptOverride": null,
+  "skills": ["background-task-execution"],
+  "hookProfile": null,
+  "env": {},
+  "tags": ["api", "server", "backend", "database"],
+  "agentType": "task"
+}
