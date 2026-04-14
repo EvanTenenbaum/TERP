@@ -1,4 +1,5 @@
 import { getLoginUrl } from "@/const";
+import { clearAuthStorage } from "@/lib/logout";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -106,6 +107,9 @@ export function useAuth(options?: UseAuthOptions) {
         "manus-runtime-user-info",
         JSON.stringify(meQuery.data)
       );
+    } else if (meQuery.data === null) {
+      // User is explicitly unauthenticated — clear all auth storage
+      clearAuthStorage();
     }
   }, [meQuery.data]);
 
