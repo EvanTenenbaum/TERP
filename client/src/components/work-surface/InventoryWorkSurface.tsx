@@ -748,14 +748,6 @@ export function InventoryWorkSurface() {
   const inventoryLoadError = useEnhancedApi
     ? (enhancedError ?? dashboardStatsError)
     : (legacyError ?? dashboardStatsError);
-  const clientSideFilterActive =
-    !useEnhancedApi &&
-    (filters.stockLevel !== "all" ||
-      filters.cogsRange.min !== null ||
-      filters.cogsRange.max !== null ||
-      filters.dateRange.from !== null ||
-      filters.dateRange.to !== null ||
-      filters.location !== null);
 
   const filteredItems = useMemo(() => {
     if (useEnhancedApi) {
@@ -902,9 +894,7 @@ export function InventoryWorkSurface() {
     ? (enhancedData?.pagination.hasMore ?? false)
     : ((legacyData as { hasMore?: boolean } | undefined)?.hasMore ?? false);
   const totalCount = useEnhancedApi
-    ? clientSideFilterActive
-      ? filteredItems.length
-      : (enhancedData?.summary.totalItems ?? filteredItems.length)
+    ? (enhancedData?.summary.totalItems ?? filteredItems.length)
     : hasMore
       ? filteredItems.length + pageSize
       : filteredItems.length;
