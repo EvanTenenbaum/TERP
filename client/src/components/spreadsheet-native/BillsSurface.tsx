@@ -58,6 +58,7 @@ import { PayVendorModal } from "@/components/accounting/PayVendorModal";
 import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
+import { getInvoiceStatusLabel, getInvoiceStatusClass } from "@/lib/statusTokens";
 import { cn } from "@/lib/utils";
 import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
 
@@ -135,15 +136,20 @@ const BILL_STATUS_TABS: Array<{ value: BillStatusTab; label: string }> = [
   { value: "VOID", label: "Void" },
 ];
 
-const BILL_STATUS_TOKENS: Record<string, string> = {
-  DRAFT: "bg-slate-50 text-slate-700 border-slate-200",
-  PENDING: "bg-blue-50 text-blue-700 border-blue-200",
-  APPROVED: "bg-purple-50 text-purple-700 border-purple-200",
-  PARTIAL: "bg-amber-50 text-amber-700 border-amber-200",
-  PAID: "bg-green-50 text-green-700 border-green-200",
-  OVERDUE: "bg-red-50 text-red-700 border-red-200",
-  VOID: "bg-gray-50 text-gray-500 border-gray-200 line-through",
+// Bill-specific status overrides for AP-only workflow states
+const BILL_STATUS_OVERRIDES: Record<string, string> = {
+  PENDING: "bg-blue-50 text-blue-700 border border-blue-200",
+  APPROVED: "bg-purple-50 text-purple-700 border border-purple-200",
+  VOID: "bg-neutral-100 text-neutral-500 border border-neutral-200",
 };
+
+function getBillStatusClass(status: string): string {
+  return BILL_STATUS_OVERRIDES[status] ?? getInvoiceStatusClass(status);
+}
+
+function getBillStatusLabel(status: string): string {
+  return getInvoiceStatusLabel(status);
+}
 
 const AP_AGING_TOKENS: Record<string, string> = {
   current: "bg-green-50 border-green-200 text-green-700",
@@ -274,8 +280,9 @@ function mapBillsToGridRows(items: BillItem[]): BillGridRow[] {
 
 function statusCellRenderer(params: { value: string }): string {
   const status = params.value ?? "DRAFT";
-  const color = BILL_STATUS_TOKENS[status] ?? BILL_STATUS_TOKENS.DRAFT;
-  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium ${color}">${status}</span>`;
+  const color = getBillStatusClass(status);
+  const label = getBillStatusLabel(status);
+  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium ${color}">${label}</span>`;
 }
 
 // ============================================================================
@@ -773,11 +780,10 @@ export function BillsSurface() {
                 variant="outline"
                 className={cn(
                   "text-[9px]",
-                  BILL_STATUS_TOKENS[selectedRow.status] ??
-                    BILL_STATUS_TOKENS.DRAFT
+                  getBillStatusClass(selectedRow.status)
                 )}
               >
-                {selectedRow.status}
+                {getBillStatusLabel(selectedRow.status)}
               </Badge>
             }
           >

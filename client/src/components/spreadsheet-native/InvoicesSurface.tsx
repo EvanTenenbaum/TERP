@@ -89,6 +89,8 @@ import {
   INVOICE_STATUS_TOKENS,
   INVOICE_AGING_TOKENS,
   LEDGER_TYPE_TOKENS,
+  getInvoiceStatusLabel,
+  getInvoiceStatusClass,
 } from "@/lib/statusTokens";
 import { cn } from "@/lib/utils";
 import { parseInvoiceDeepLink } from "@/components/work-surface/invoiceDeepLink";
@@ -318,17 +320,9 @@ function mapInvoicesToGridRows(
 
 function statusCellRenderer(params: { value: string }): string {
   const status = params.value ?? "DRAFT";
-  const colorMap: Record<string, string> = {
-    DRAFT: "text-slate-700 bg-slate-50 border-slate-200",
-    SENT: "text-blue-700 bg-blue-50 border-blue-200",
-    VIEWED: "text-purple-700 bg-purple-50 border-purple-200",
-    PARTIAL: "text-amber-700 bg-amber-50 border-amber-200",
-    PAID: "text-green-700 bg-green-50 border-green-200",
-    OVERDUE: "text-red-700 bg-red-50 border-red-200",
-    VOID: "text-gray-500 bg-gray-50 border-gray-200 line-through",
-  };
-  const color = colorMap[status] ?? colorMap.DRAFT;
-  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium ${color}">${status}</span>`;
+  const color = getInvoiceStatusClass(status);
+  const label = getInvoiceStatusLabel(status);
+  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium ${color}">${label}</span>`;
 }
 
 // ============================================================================
@@ -501,6 +495,15 @@ export function InvoicesSurface() {
     [routeSearch]
   );
 
+  // fromOrder param — one-click "Invoice from Order" path
+  const fromOrderId = useMemo(() => {
+    const params = new URLSearchParams(routeSearch);
+    const val = params.get("fromOrder");
+    if (!val) return null;
+    const n = parseInt(val, 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }, [routeSearch]);
+
   // Selection tracked in URL param
   const { selectedId: selectedInvoiceId, setSelectedId: setSelectedInvoiceId } =
     useSpreadsheetSelectionParam("invoiceId");
@@ -589,6 +592,12 @@ export function InvoicesSurface() {
   const paymentHistoryQuery = trpc.accounting.payments.getForInvoice.useQuery(
     { invoiceId: selectedInvoiceId ?? 0 },
     { enabled: !!selectedInvoiceId }
+  );
+
+  // fromOrder: fetch the order so we can pre-populate the create dialog
+  const fromOrderQuery = trpc.orders.getById.useQuery(
+    { id: fromOrderId ?? 0 },
+    { enabled: fromOrderId !== null }
   );
 
   // Client ledger query — enabled when a client is selected and ledger visible
@@ -998,6 +1007,20 @@ export function InvoicesSurface() {
     navigate(`?${params.toString()}`, { replace: true });
   }, [navigate, routeSearch]);
 
+  // fromOrder: auto-populate create form and open dialog when order data arrives
+  useEffect(() => {
+    const order = fromOrderQuery.data;
+    if (!order || fromOrderId === null) return;
+    const customerId = (order as { customerId?: number | null }).customerId ?? 0;
+    if (!customerId) return;
+    setCreateForm(f => ({
+      ...f,
+      customerId,
+      notes: f.notes || `Auto-filled from Order #${fromOrderId}`,
+    }));
+    setShowCreateDialog(true);
+  }, [fromOrderQuery.data, fromOrderId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const openPaymentDialogFromHandoff = useCallback(() => {
     setShowPaymentDialog(true);
   }, []);
@@ -1282,6 +1305,27 @@ export function InvoicesSurface() {
         </div>
       )}
 
+      {fromOrderId !== null && (
+        <div
+          className="mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-sky-200 bg-sky-50/70 px-2 py-1.5"
+          data-testid="from-order-banner"
+        >
+          <Badge
+            variant="outline"
+            className="text-[9px] bg-sky-100 text-sky-800 border-sky-200"
+          >
+            From Order #{fromOrderId}
+          </Badge>
+          <span className="text-[11px] text-sky-900">
+            {fromOrderQuery.isLoading
+              ? "Loading order details..."
+              : fromOrderQuery.data
+                ? "Create Invoice pre-filled from order. Review and submit."
+                : "Order not found — fill in the invoice manually."}
+          </span>
+        </div>
+      )}
+
       {deepLink.openRecordPayment && selectedRow && (
         <div
           className="mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50/70 px-2 py-1.5"
@@ -1390,11 +1434,10 @@ export function InvoicesSurface() {
                 variant="outline"
                 className={cn(
                   "text-[9px]",
-                  INVOICE_STATUS_TOKENS[selectedRow.status] ??
-                    INVOICE_STATUS_TOKENS.DRAFT
+                  getInvoiceStatusClass(selectedRow.status)
                 )}
               >
-                {selectedRow.status}
+                {getInvoiceStatusLabel(selectedRow.status)}
               </Badge>
             }
           >

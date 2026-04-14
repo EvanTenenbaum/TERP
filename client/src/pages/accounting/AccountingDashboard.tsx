@@ -243,28 +243,34 @@ export default function AccountingDashboard({
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-xl border border-green-200 bg-white/90 p-3 shadow-sm">
+            <div className="rounded-xl border border-emerald-200 bg-white/90 p-3 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
                 Receivables
               </p>
-              <p className="mt-2 text-2xl font-semibold text-green-700">
+              <p className="mt-2 text-2xl font-semibold text-emerald-700">
                 {formatCurrency(arSummary?.totalAR)}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {overdueInvoiceCount} overdue invoice
-                {overdueInvoiceCount === 1 ? "" : "s"} ready for follow-up
+                <span className={overdueInvoiceCount > 0 ? "text-red-600 font-bold" : ""}>
+                  {overdueInvoiceCount} overdue invoice
+                  {overdueInvoiceCount === 1 ? "" : "s"}
+                </span>{" "}
+                ready for follow-up
               </p>
             </div>
-            <div className="rounded-xl border border-amber-200 bg-white/90 p-3 shadow-sm">
+            <div className="rounded-xl border border-red-200 bg-white/90 p-3 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
                 Payables
               </p>
-              <p className="mt-2 text-2xl font-semibold text-amber-700">
+              <p className="mt-2 text-2xl font-semibold text-red-600">
                 {formatCurrency(apSummary?.totalAP)}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                {overdueBillCount} overdue bill
-                {overdueBillCount === 1 ? "" : "s"} need attention
+                <span className={overdueBillCount > 0 ? "text-red-600 font-bold" : ""}>
+                  {overdueBillCount} overdue bill
+                  {overdueBillCount === 1 ? "" : "s"}
+                </span>{" "}
+                need attention
               </p>
             </div>
             <div className="rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm">
@@ -334,12 +340,15 @@ export default function AccountingDashboard({
                   <ArrowDownCircle className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="mt-2 space-y-1">
-                  <p className="text-lg font-semibold text-green-700">
+                  <p className="text-lg font-semibold text-emerald-700">
                     {formatCurrency(arSummary?.totalAR)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {overdueInvoiceCount} overdue invoice
-                    {overdueInvoiceCount === 1 ? "" : "s"} ready for follow-up
+                    <span className={overdueInvoiceCount > 0 ? "text-red-600 font-bold" : ""}>
+                      {overdueInvoiceCount} overdue invoice
+                      {overdueInvoiceCount === 1 ? "" : "s"}
+                    </span>{" "}
+                    ready for follow-up
                   </p>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -370,12 +379,15 @@ export default function AccountingDashboard({
                   <ArrowUpCircle className="h-5 w-5 text-amber-600" />
                 </div>
                 <div className="mt-2 space-y-1">
-                  <p className="text-lg font-semibold text-amber-700">
+                  <p className="text-lg font-semibold text-red-600">
                     {formatCurrency(apSummary?.totalAP)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {overdueBillCount} overdue bill
-                    {overdueBillCount === 1 ? "" : "s"} need attention
+                    <span className={overdueBillCount > 0 ? "text-red-600 font-bold" : ""}>
+                      {overdueBillCount} overdue bill
+                      {overdueBillCount === 1 ? "" : "s"}
+                    </span>{" "}
+                    need attention
                   </p>
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -619,7 +631,7 @@ export default function AccountingDashboard({
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-sm font-mono font-bold text-orange-600">
+                      <span className="text-sm font-mono font-bold text-red-600">
                         {formatCurrency(vendor.totalOwed)}
                       </span>
                       <p className="text-xs text-muted-foreground">
@@ -807,7 +819,7 @@ export default function AccountingDashboard({
                             {bill.daysOverdue} days
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right font-mono font-bold text-orange-600">
+                        <TableCell className="text-right font-mono font-bold text-red-600">
                           {formatCurrency(bill.amountDue)}
                         </TableCell>
                       </TableRow>

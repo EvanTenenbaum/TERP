@@ -243,3 +243,53 @@ export function getGradeClass(grade: string): string {
     "bg-muted text-muted-foreground border border-border"
   );
 }
+
+// ─── Invoice/Bill Status Tokens (420-fork Wave 5) ──────────────────────────
+
+export const INVOICE_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Draft",
+  SENT: "Sent",
+  PAID: "Paid",
+  PARTIAL: "Partial",
+  OVERDUE: "Overdue",
+  VOIDED: "Voided",
+  CANCELLED: "Cancelled",
+  WRITE_OFF: "Written Off",
+};
+
+export const INVOICE_STATUS_CLASSES: Record<string, string> = {
+  DRAFT: "bg-amber-50 text-amber-700 border border-amber-200",
+  SENT: "bg-sky-50 text-sky-700 border border-sky-200",
+  PAID: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  PARTIAL: "bg-violet-50 text-violet-700 border border-violet-200",
+  OVERDUE: "bg-red-50 text-red-700 border border-red-200 font-semibold",
+  VOIDED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  CANCELLED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  WRITE_OFF: "bg-neutral-200 text-neutral-600 border border-neutral-300 line-through",
+};
+
+export function getInvoiceStatusLabel(status: string): string {
+  return INVOICE_STATUS_LABELS[status] ??
+    status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+export function getInvoiceStatusClass(status: string): string {
+  return INVOICE_STATUS_CLASSES[status] ??
+    "bg-muted text-muted-foreground border border-border";
+}
+
+// Currency formatting helper
+export function formatCurrency(value: number | string | null | undefined, opts?: { showSign?: boolean }): string {
+  const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
+  if (isNaN(num)) return "—";
+  const formatted = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(num));
+  if (opts?.showSign) {
+    return num >= 0 ? `+${formatted}` : `-${formatted}`;
+  }
+  return formatted;
+}

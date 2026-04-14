@@ -185,6 +185,15 @@ vi.mock("@/lib/trpc", () => ({
         })),
       },
     },
+    orders: {
+      getById: {
+        useQuery: vi.fn(() => ({
+          data: null,
+          isLoading: false,
+          error: null,
+        })),
+      },
+    },
     payments: {
       list: {
         invalidate: vi.fn(),
@@ -291,6 +300,10 @@ vi.mock("@/lib/statusTokens", () => ({
     CREDIT: "bg-teal-100 text-teal-700 border-teal-200",
     REFUND: "bg-red-100 text-red-700 border-red-200",
   },
+  getInvoiceStatusLabel: (status: string) =>
+    status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (c: string) => c.toUpperCase()),
+  getInvoiceStatusClass: (status: string) =>
+    `mock-status-class-${status.toLowerCase()}`,
 }));
 
 // ─────────────────────────────────────────────────────────────────────────────
