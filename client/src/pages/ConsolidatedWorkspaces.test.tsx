@@ -276,11 +276,11 @@ describe("Consolidated workspace pages", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders Sales workspace with live shopping tab content", () => {
+  it("renders Sales workspace with live shopping tab content", async () => {
     mockActiveTab = "live-shopping";
     render(<SalesWorkspacePage />);
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
-    expect(screen.getByText("Live Shopping Surface")).toBeInTheDocument();
+    expect(await screen.findByText("Live Shopping Surface")).toBeInTheDocument();
   });
 
   it("redirects pick-pack to the shipping workspace while preserving search params", () => {
@@ -318,11 +318,11 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByText("Credit Settings Embedded")).toBeInTheDocument();
   });
 
-  it("renders procurement workspace", () => {
+  it("renders buying workspace", () => {
     mockActiveTab = "purchase-orders";
     render(<ProcurementWorkspacePage />);
     expect(
-      screen.getByRole("heading", { name: "Procurement" })
+      screen.getByRole("heading", { name: "Buying" })
     ).toBeInTheDocument();
     expect(screen.getByText("Purchase Order Surface")).toBeInTheDocument();
   });

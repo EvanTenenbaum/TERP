@@ -111,6 +111,14 @@ export const ACCOUNTING_WORKSPACE = {
   | "fiscal-periods"
 >;
 
+export const BUYING_WORKSPACE = {
+  title: "Buying",
+  homePath: "/procurement",
+  description:
+    "Create and manage purchase orders, track supplier intake, and walk POs from draft to received.",
+  tabs: [{ value: "purchase-orders", label: "Purchase Orders" }],
+} as const satisfies WorkspaceConfig<"purchase-orders">;
+
 export const CALENDAR_WORKSPACE = {
   title: "Calendar",
   homePath: "/calendar",

@@ -57,8 +57,8 @@ export default function ProcurementWorkspacePage() {
 
   return (
     <LinearWorkspaceShell
-      title="Procurement"
-      description="Create purchase orders here, then hand them cleanly into receiving and inventory."
+      title="Buying"
+      description="Create and manage purchase orders, track supplier intake, and walk POs from draft to received."
       section="Operations"
       activeTab={activeTab}
       tabs={PROCUREMENT_TABS}
