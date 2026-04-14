@@ -31,6 +31,7 @@ import { LogOut, LogIn, Settings, PanelLeft, Menu, User } from "lucide-react";
 import { useLocation } from "wouter";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { buildNavigationGroups, navigationItems } from "@/config/navigation";
+import { performLogout } from "@/lib/logout";
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
 const DEFAULT_WIDTH = 280;
@@ -123,14 +124,7 @@ function DashboardLayoutContent({
       });
   }, [toast]);
 
-  const logout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
-  };
+  const logout = performLogout;
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
