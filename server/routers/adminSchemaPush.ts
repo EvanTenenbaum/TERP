@@ -343,6 +343,8 @@ export const adminSchemaPushRouter = router({
       ];
 
       for (const table of softDeleteTables) {
+        // SAFE: `table` is drawn from the hardcoded `softDeleteTables` array above,
+        // not user-controlled input. The array is a compile-time constant.
         await safeExecute(
           `0039_add_${table}_deleted_at`,
           sql.raw(`
