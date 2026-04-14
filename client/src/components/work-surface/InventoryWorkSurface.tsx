@@ -551,7 +551,7 @@ export function InventoryWorkSurface() {
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editBatchId, setEditBatchId] = useState<number | null>(null);
-  const [editRack, setEditRack] = useState("");
+  const [_editRack, setEditRack] = useState("");
   const [editStatus, setEditStatus] = useState<InventoryBatchStatus>("LIVE");
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [bulkDeleteError, setBulkDeleteError] = useState<string | null>(null);
@@ -2710,15 +2710,6 @@ export function InventoryWorkSurface() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="rack">Rack</Label>
-              <Input
-                id="rack"
-                value={editRack}
-                onChange={e => setEditRack(e.target.value)}
-                placeholder="e.g., R2"
-              />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="edit-status">Status</Label>
               <Select
