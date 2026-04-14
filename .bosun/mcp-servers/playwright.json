@@ -1,0 +1,10 @@
+{
+  "id": "playwright",
+  "name": "Playwright",
+  "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+  "transport": "stdio",
+  "command": "npx",
+  "args": ["@playwright/mcp@latest"],
+  "source": "autodiscovered",
+  "tags": ["autodiscovered", "codex-config", "mcp"]
+}

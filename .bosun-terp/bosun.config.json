@@ -1,0 +1,125 @@
+{
+  "$schema": "./bosun.schema.json",
+  "projectName": "TERP",
+  "executors": [
+    {
+      "name": "codex-default",
+      "executor": "CODEX",
+      "variant": "DEFAULT",
+      "weight": 100,
+      "role": "primary",
+      "enabled": true
+    }
+  ],
+  "failover": {
+    "strategy": "next-in-line",
+    "maxRetries": 3,
+    "cooldownMinutes": 5,
+    "disableOnConsecutiveFailures": 3
+  },
+  "distribution": "primary-only",
+  "repositories": [
+    {
+      "name": "TERP",
+      "slug": "EvanTenenbaum/TERP",
+      "primary": true
+    }
+  ],
+  "agentPrompts": {
+    "orchestrator": ".bosun/agents/orchestrator.md",
+    "taskExecutor": ".bosun/agents/task-executor.md",
+    "taskExecutorRetry": ".bosun/agents/task-executor-retry.md",
+    "taskExecutorContinueHasCommits": ".bosun/agents/task-executor-continue-has-commits.md",
+    "taskExecutorContinueHasEdits": ".bosun/agents/task-executor-continue-has-edits.md",
+    "taskExecutorContinueNoProgress": ".bosun/agents/task-executor-continue-no-progress.md",
+    "reviewer": ".bosun/agents/reviewer.md",
+    "conflictResolver": ".bosun/agents/conflict-resolver.md",
+    "sdkConflictResolver": ".bosun/agents/sdk-conflict-resolver.md",
+    "mergeStrategy": ".bosun/agents/merge-strategy.md",
+    "mergeStrategyFix": ".bosun/agents/merge-strategy-fix.md",
+    "mergeStrategyReAttempt": ".bosun/agents/merge-strategy-reattempt.md",
+    "autofixFix": ".bosun/agents/autofix-fix.md",
+    "autofixFallback": ".bosun/agents/autofix-fallback.md",
+    "autofixLoop": ".bosun/agents/autofix-loop.md",
+    "monitorCrashFix": ".bosun/agents/monitor-crash-fix.md",
+    "monitorRestartLoopFix": ".bosun/agents/monitor-restart-loop-fix.md",
+    "taskManager": ".bosun/agents/task-manager.md",
+    "frontendAgent": ".bosun/agents/frontend-agent.md",
+    "voiceAgent": ".bosun/agents/voice-agent.md",
+    "voiceAgentCompact": ".bosun/agents/voice-agent-compact.md",
+    "customToolReflect": ".bosun/agents/custom-tool-reflect.md",
+    "customToolsContext": ".bosun/agents/custom-tools-context.md"
+  },
+  "defaultRepository": "EvanTenenbaum/TERP",
+  "kanban": {
+    "backend": "internal",
+    "syncPolicy": "internal-primary"
+  },
+  "internalExecutor": {
+    "mode": "internal",
+    "backlogReplenishment": {
+      "enabled": false,
+      "minNewTasks": 1,
+      "maxNewTasks": 2,
+      "requirePriority": true
+    },
+    "projectRequirements": {
+      "profile": "feature",
+      "notes": "OpenClaw-routed only. TERP repo-local sidecar. No independent intake or Telegram control."
+    }
+  },
+  "projectRequirements": {
+    "profile": "feature",
+    "notes": "OpenClaw-routed only. TERP repo-local sidecar. No independent intake or Telegram control."
+  },
+  "prAutomation": {
+    "assistiveActions": {
+      "installOnSetup": false
+    }
+  },
+  "workflowDefaults": {
+    "profile": "manual",
+    "autoInstall": false,
+    "templates": [
+      "template-error-recovery",
+      "template-task-finalization-guard",
+      "template-task-repair-worktree",
+      "template-task-status-transition-manager",
+      "template-review-agent",
+      "template-health-check"
+    ],
+    "templateOverridesById": {}
+  },
+  "hookProfiles": {
+    "enabled": true,
+    "profile": "balanced",
+    "targets": ["codex", "claude", "copilot"],
+    "overwriteExisting": false
+  },
+  "gates": {
+    "prs": {
+      "repoVisibility": "unknown",
+      "automationPreference": "runtime-first",
+      "githubActionsBudget": "ask-user"
+    },
+    "checks": {
+      "mode": "all",
+      "requiredPatterns": [],
+      "optionalPatterns": [],
+      "ignorePatterns": [],
+      "requireAnyRequiredCheck": true,
+      "treatPendingRequiredAsBlocking": true,
+      "treatNeutralAsPass": false
+    },
+    "execution": {
+      "sandboxMode": "workspace-write",
+      "containerIsolationEnabled": false,
+      "containerRuntime": "auto",
+      "networkAccess": "default"
+    },
+    "runtime": {
+      "enforceBacklog": true,
+      "agentTriggerControl": true
+    }
+  }
+}

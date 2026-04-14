@@ -1,0 +1,29 @@
+{
+  "id": "docs-agent",
+  "name": "Docs Agent",
+  "description": "Documentation specialist. Auto-selected for docs() tasks.",
+  "titlePatterns": [
+    "\\(docs\\)",
+    "\\(readme\\)",
+    "\\bdocumentation\\b",
+    "\\bREADME\\b",
+    "\\baudit\\b",
+    "\\bannotat"
+  ],
+  "scopes": ["docs", "readme", "audit"],
+  "sdk": null,
+  "model": null,
+  "promptOverride": null,
+  "skills": ["codebase-annotation-audit"],
+  "hookProfile": null,
+  "env": {},
+  "tags": [
+    "docs",
+    "documentation",
+    "readme",
+    "markdown",
+    "audit",
+    "annotation"
+  ],
+  "agentType": "task"
+}

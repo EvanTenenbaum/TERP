@@ -1,0 +1,246 @@
+You are implementing Wave 2 of the TERP 420 Fork on the `human-ui-overhaul` branch.
+
+REPO: /Users/evantenenbaum/spec-erp-docker/TERP/TERP
+BRANCH: human-ui-overhaul
+
+WAIT FIRST: Poll /tmp/wave1-done.txt every 30 seconds. Do not start until it contains "WAVE1_COMPLETE". This ensures Wave 1's global changes (MonoId, statusTokens, sidebar, CSS) are committed before you start.
+
+Once Wave 1 is done, do a `git pull` to get the latest changes, then implement the following.
+
+---
+
+## WAVE 2 — BUYING SURFACE
+
+### 1. Rename "Procurement" → "Buying"
+FILE: client/src/config/workspaces.ts — find the procurement workspace config, change `title: "Procurement"` → `title: "Buying"`, update description to "Create and manage purchase orders, track supplier intake, and walk POs from draft to received."
+
+FILE: client/src/pages/ProcurementWorkspacePage.tsx — change `title="Procurement"` → `title="Buying"` in LinearWorkspaceShell props. Update any hardcoded "Procurement" strings in this file.
+
+### 2. PO status badge system
+FILE: client/src/lib/statusTokens.ts — ADD (don't remove existing):
+
+```ts
+export const PO_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Draft",
+  CONFIRMED: "Confirmed",
+  SENT: "Sent",
+  RECEIVING: "Receiving",
+  RECEIVED: "Received",
+  PARTIALLY_RECEIVED: "Partial",
+  VOIDED: "Voided",
+  CANCELLED: "Cancelled",
+};
+
+export const PO_STATUS_CLASSES: Record<string, string> = {
+  DRAFT: "bg-amber-50 text-amber-700 border border-amber-200",
+  CONFIRMED: "bg-sky-50 text-sky-700 border border-sky-200",
+  SENT: "bg-cyan-50 text-cyan-700 border border-cyan-200",
+  RECEIVING: "bg-violet-50 text-violet-700 border border-violet-200",
+  RECEIVED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  PARTIALLY_RECEIVED: "bg-purple-50 text-purple-700 border border-purple-200",
+  VOIDED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  CANCELLED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+};
+
+export function getPoStatusLabel(status: string): string {
+  return PO_STATUS_LABELS[status] ??
+    status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+export function getPoStatusClass(status: string): string {
+  return PO_STATUS_CLASSES[status] ??
+    "bg-muted text-muted-foreground border border-border";
+}
+
+export const PAYMENT_TERM_LABELS: Record<string, string> = {
+  CONSIGNMENT: "Consignment",
+  NET_30: "Net 30",
+  NET_15: "Net 15",
+  NET_7: "Net 7",
+  COD: "Cash on Delivery",
+  PREPAID: "Prepaid",
+  DUE_ON_RECEIPT: "Due on Receipt",
+  WIRE: "Wire Transfer",
+};
+
+export function getPaymentTermLabel(term: string): string {
+  return PAYMENT_TERM_LABELS[term] ?? term.replace(/_/g, " ");
+}
+```
+
+### 3. Apply to PurchaseOrderSurface
+FILE: client/src/components/spreadsheet-native/PurchaseOrderSurface.tsx
+
+Read the full file. Then:
+
+a) Import: `import { getPoStatusLabel, getPoStatusClass, getPaymentTermLabel } from "@/lib/statusTokens";`
+b) Import: `import { MonoId } from "@/components/ui/mono-id";`
+c) Find all status badge renders → replace hardcoded color maps with `getPoStatusLabel(status)` / `getPoStatusClass(status)`.
+d) Find PO number / reference ID renders → wrap with `<MonoId value={poNumber} />`.
+e) Find payment terms renders → wrap with `getPaymentTermLabel(term)`.
+
+### 4. PO Progress Stepper
+FILE: client/src/components/spreadsheet-native/PurchaseOrderSurface.tsx
+
+Add this component near the top of the file (after imports, before the main component):
+
+```tsx
+import { Fragment } from "react";
+import { Check } from "lucide-react";
+
+const PO_PROGRESS_STEPS = [
+  { key: "DRAFT", label: "Draft" },
+  { key: "CONFIRMED", label: "Confirmed" },
+  { key: "SENT", label: "Sent" },
+  { key: "RECEIVING", label: "Intake" },
+  { key: "RECEIVED", label: "Received" },
+] as const;
+
+function PoProgressStepper({ status }: { status: string }) {
+  const currentIdx = PO_PROGRESS_STEPS.findIndex(s => s.key === status);
+
+  return (
+    <div className="flex items-center gap-1 py-2.5 px-4 bg-muted/20 border-b border-border/40">
+      {PO_PROGRESS_STEPS.map((step, i) => {
+        const done = i < currentIdx;
+        const active = i === currentIdx;
+        return (
+          <Fragment key={step.key}>
+            <div className={cn(
+              "flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[0.7rem] font-medium transition-all",
+              done && "bg-emerald-100 text-emerald-700",
+              active && "bg-primary text-primary-foreground shadow-sm",
+              !done && !active && "bg-muted/70 text-muted-foreground"
+            )}>
+              {done && <Check className="w-2.5 h-2.5" />}
+              {step.label}
+            </div>
+            {i < PO_PROGRESS_STEPS.length - 1 && (
+              <div className={cn(
+                "h-px w-4 shrink-0",
+                i < currentIdx ? "bg-emerald-300" : "bg-border"
+              )} />
+            )}
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+}
+```
+
+Find where the selected PO's detail is shown (InspectorPanel, or detail section). Add `<PoProgressStepper status={selectedPo.status} />` above the detail content when a PO is selected. Pass the selected PO's status. Handle edge cases: if status doesn't match any step (e.g. PARTIALLY_RECEIVED), find the closest step or default to RECEIVING.
+
+### 5. Supplier pill filter bar
+FILE: client/src/components/spreadsheet-native/PurchaseOrderSurface.tsx
+
+Add supplier quick-filter pills above the PO grid. Find the section where the toolbar/filter bar is rendered (usually before the PowersheetGrid or AgGrid). Insert this before the grid:
+
+```tsx
+// Add this state near the top of the component:
+const [activeSupplierFilter, setActiveSupplierFilter] = useState<string | null>(null);
+
+// Derive top suppliers from loaded data
+const supplierPills = useMemo(() => {
+  if (!poRows || poRows.length === 0) return [];
+  const counts = new Map<string, number>();
+  poRows.forEach((po: any) => {
+    const name = po.supplierName ?? po.supplier?.name ?? po.vendorName;
+    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+  });
+  return Array.from(counts.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 7)
+    .map(([name]) => name);
+}, [poRows]);
+
+// Render (add before the grid):
+{supplierPills.length > 1 && (
+  <div className="flex items-center gap-1.5 px-4 py-2 border-b border-border/40 overflow-x-auto flex-shrink-0">
+    <span className="text-[0.68rem] text-muted-foreground font-medium uppercase tracking-wide shrink-0 mr-1">
+      Supplier
+    </span>
+    <button
+      onClick={() => setActiveSupplierFilter(null)}
+      className={cn(
+        "px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 transition-colors",
+        !activeSupplierFilter
+          ? "bg-primary/90 text-primary-foreground"
+          : "bg-muted text-muted-foreground hover:bg-muted/70"
+      )}
+    >
+      All
+    </button>
+    {supplierPills.map(name => (
+      <button
+        key={name}
+        onClick={() => setActiveSupplierFilter(prev => prev === name ? null : name)}
+        className={cn(
+          "px-2.5 py-0.5 rounded-full text-xs font-medium shrink-0 whitespace-nowrap transition-colors",
+          activeSupplierFilter === name
+            ? "bg-primary/90 text-primary-foreground"
+            : "bg-muted text-muted-foreground hover:bg-muted/70"
+        )}
+      >
+        {name}
+      </button>
+    ))}
+  </div>
+)}
+```
+
+Apply `activeSupplierFilter` to filter the displayed rows — either via `rowData.filter(...)` or by passing it to the grid's external filter. Find the pattern used for existing filters in this file and follow the same approach.
+
+---
+
+## VERIFICATION
+
+```bash
+cd /Users/evantenenbaum/spec-erp-docker/TERP/TERP
+
+pnpm exec vitest run \
+  client/src/components/spreadsheet-native/PurchaseOrderSurface.test.tsx \
+  client/src/pages/SalesWorkspacePage.test.tsx
+
+pnpm exec eslint \
+  client/src/components/spreadsheet-native/PurchaseOrderSurface.tsx \
+  client/src/pages/ProcurementWorkspacePage.tsx \
+  client/src/lib/statusTokens.ts
+
+pnpm -s tsc --noEmit 2>&1 | grep -v StagingAgentation
+```
+
+Fix any failures before proceeding.
+
+---
+
+## ADVERSARIAL QA
+
+Ask yourself:
+1. Does the stepper handle PARTIALLY_RECEIVED, VOIDED, CANCELLED correctly without crashing?
+2. Is the supplier filter wired up to the actual grid data or is it purely visual?
+3. Are there other files outside PurchaseOrderSurface.tsx that render PO statuses with hardcoded colors? (grep for `CONFIRMED.*bg-blue` or similar)
+4. Does renaming "Procurement" → "Buying" break any test that asserts on that string?
+5. Are there navigation links or breadcrumbs elsewhere that say "Procurement" and need updating?
+
+Run: `grep -r "Procurement" client/src --include="*.tsx" --include="*.ts" -l` and check each file.
+Fix any found issues.
+
+---
+
+## COMMIT
+
+```bash
+git add -A
+git commit -m "feat(420-fork): Wave 2 — buying surface redesign
+
+- Renamed Procurement → Buying throughout
+- PO status badge system: Draft/Confirmed/Sent/Intake/Received semantic colors
+- PO progress stepper: linear walk visualization on detail view
+- Supplier pill filter bar above PO queue
+- MonoId on PO refs and numbers
+- Payment terms human-readable labels
+- statusTokens: PO_STATUS_LABELS/CLASSES, PAYMENT_TERM_LABELS"
+```
+
+Write to /tmp/wave2-done.txt: "WAVE2_COMPLETE: <commit hash>"

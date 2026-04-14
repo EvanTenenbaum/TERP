@@ -1,0 +1,9 @@
+{
+  "id": "microsoft-docs",
+  "name": "Microsoft Docs",
+  "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+  "transport": "url",
+  "url": "https://learn.microsoft.com/api/mcp",
+  "source": "autodiscovered",
+  "tags": ["autodiscovered", "codex-config", "mcp"]
+}

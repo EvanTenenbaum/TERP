@@ -1,0 +1,10 @@
+{
+  "id": "context7",
+  "name": "Context7",
+  "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+  "transport": "stdio",
+  "command": "npx",
+  "args": ["-y", "@upstash/context7-mcp"],
+  "source": "autodiscovered",
+  "tags": ["autodiscovered", "codex-config", "mcp"]
+}

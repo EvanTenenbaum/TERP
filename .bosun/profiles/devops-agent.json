@@ -1,0 +1,24 @@
+{
+  "id": "devops-agent",
+  "name": "DevOps Agent",
+  "description": "CI/CD and infrastructure specialist. Auto-selected for ci(), build(), infra() tasks.",
+  "titlePatterns": [
+    "\\(ci\\)",
+    "\\(cd\\)",
+    "\\(build\\)",
+    "\\(infra\\)",
+    "\\(deploy\\)",
+    "\\bCI\\b",
+    "\\bCD\\b",
+    "\\bpipeline\\b"
+  ],
+  "scopes": ["ci", "cd", "build", "infra", "deploy"],
+  "sdk": null,
+  "model": null,
+  "promptOverride": null,
+  "skills": [],
+  "hookProfile": null,
+  "env": {},
+  "tags": ["ci", "cd", "build", "deploy", "infra", "devops"],
+  "agentType": "task"
+}

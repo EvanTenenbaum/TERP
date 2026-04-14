@@ -1,0 +1,167 @@
+You are implementing Wave 3 of the TERP 420 Fork on the `human-ui-overhaul` branch.
+
+REPO: /Users/evantenenbaum/spec-erp-docker/TERP/TERP
+BRANCH: human-ui-overhaul
+
+WAIT FIRST: Poll /tmp/wave2-done.txt every 30 seconds. Do not start until it contains "WAVE2_COMPLETE".
+Then `git pull` to get latest changes.
+
+---
+
+## WAVE 3 — INVENTORY SURFACE
+
+### 1. Batch status labels + LIVE-first default filter
+FILE: client/src/lib/statusTokens.ts — ADD:
+
+```ts
+export const BATCH_STATUS_LABELS: Record<string, string> = {
+  LIVE: "Available",
+  RESERVED: "Reserved",
+  SOLD: "Sold",
+  LOW_STOCK: "Low Stock",
+  DEPLETED: "Depleted",
+  QUARANTINE: "Quarantine",
+  ARCHIVED: "Archived",
+  PENDING_INTAKE: "Pending Intake",
+};
+
+export const BATCH_STATUS_CLASSES: Record<string, string> = {
+  LIVE: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  RESERVED: "bg-sky-50 text-sky-700 border border-sky-200",
+  SOLD: "bg-violet-50 text-violet-700 border border-violet-200",
+  LOW_STOCK: "bg-amber-50 text-amber-700 border border-amber-200",
+  DEPLETED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  QUARANTINE: "bg-red-50 text-red-700 border border-red-200",
+  ARCHIVED: "bg-neutral-100 text-neutral-400 border border-neutral-200",
+  PENDING_INTAKE: "bg-blue-50 text-blue-700 border border-blue-200",
+};
+
+export function getBatchStatusLabel(status: string): string {
+  return BATCH_STATUS_LABELS[status] ??
+    status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+export function getBatchStatusClass(status: string): string {
+  return BATCH_STATUS_CLASSES[status] ??
+    "bg-muted text-muted-foreground border border-border";
+}
+
+export const GRADE_CLASSES: Record<string, string> = {
+  A: "bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold",
+  "A+": "bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold",
+  B: "bg-sky-100 text-sky-800 border border-sky-200 font-medium",
+  C: "bg-amber-100 text-amber-800 border border-amber-200",
+  D: "bg-neutral-100 text-neutral-600 border border-neutral-200",
+};
+
+export function getGradeClass(grade: string): string {
+  return GRADE_CLASSES[grade] ?? "bg-muted text-muted-foreground border border-border";
+}
+```
+
+FILE: client/src/hooks/useInventoryFilters.ts — Read it. Find the `defaultFilters` object. Change `status: []` → `status: ["LIVE"]`. Find `clearAllFilters` function — change the status reset to `["LIVE"]` not `[]`.
+
+### 2. Apply to InventoryManagementSurface
+FILE: client/src/components/spreadsheet-native/InventoryManagementSurface.tsx
+
+Read the full file. Then:
+a) Import: `import { getBatchStatusLabel, getBatchStatusClass, getGradeClass } from "@/lib/statusTokens";`
+b) Import: `import { MonoId } from "@/components/ui/mono-id";`
+c) Find all status badge/cell renderers → apply `getBatchStatusLabel` + `getBatchStatusClass`.
+d) Find grade badge renders → apply `getGradeClass`.
+e) Find SKU/batch number renders → wrap with `<MonoId value={sku} />`.
+f) Find On Hand quantity column → ensure cell has `tabular-nums text-right` class. When value is low stock, add `text-amber-700 font-semibold`.
+
+### 3. "Order from Inventory" row action
+FILE: client/src/components/spreadsheet-native/InventoryManagementSurface.tsx
+
+Add an "Order" action to inventory rows. This should open the order drawer (same Sheet pattern from Sales — but since we're in a different surface, use a local drawer).
+
+Add a state: `const [orderFromBatch, setOrderFromBatch] = useState<{batchId: number; productName: string; sku: string} | null>(null);`
+
+In the row actions area (right-click menu or action column), add an "Order" button that calls `setOrderFromBatch({ batchId: row.id, productName: row.productName, sku: row.sku })`.
+
+Add a Sheet that opens when `orderFromBatch` is non-null:
+```tsx
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+
+<Sheet open={!!orderFromBatch} onOpenChange={(open) => !open && setOrderFromBatch(null)}>
+  <SheetContent side="right" className="w-[560px] sm:max-w-[560px] p-0 overflow-hidden flex flex-col">
+    <SheetHeader className="px-5 py-4 border-b flex-shrink-0">
+      <SheetTitle className="text-sm font-semibold">
+        New Order — {orderFromBatch?.productName}
+      </SheetTitle>
+      <p className="text-xs text-muted-foreground mt-0.5">
+        <span className="font-mono">{orderFromBatch?.sku}</span>
+      </p>
+    </SheetHeader>
+    <div className="flex-1 overflow-y-auto p-5">
+      <p className="text-sm text-muted-foreground">
+        Select a client and enter quantity to create an order from this batch.
+      </p>
+      {/* Minimal order form: ClientCombobox + qty input + confirm button */}
+      {/* Import ClientCombobox from @/components/ui/client-combobox */}
+      {/* On submit: call the trpc order creation mutation with this batchId */}
+      {/* On success: show toast "Order created", close drawer */}
+    </div>
+  </SheetContent>
+</Sheet>
+```
+
+For the minimal order form inside the drawer, implement:
+- ClientCombobox for client selection
+- A number input for quantity
+- A "Create Draft Order" button that calls `trpc.orders.create.useMutation` with the selected client and this batch's ID + quantity
+- On success: `toast.success("Draft order created")` + close drawer
+
+---
+
+## VERIFICATION
+
+```bash
+cd /Users/evantenenbaum/spec-erp-docker/TERP/TERP
+
+pnpm exec vitest run \
+  client/src/components/spreadsheet-native/InventoryManagementSurface.test.tsx \
+  client/src/components/spreadsheet-native/SalesCatalogueSurface.test.tsx
+
+pnpm exec eslint \
+  client/src/components/spreadsheet-native/InventoryManagementSurface.tsx \
+  client/src/hooks/useInventoryFilters.ts \
+  client/src/lib/statusTokens.ts
+
+pnpm -s tsc --noEmit 2>&1 | grep -v StagingAgentation
+```
+
+Fix any failures.
+
+---
+
+## ADVERSARIAL QA
+
+1. Does LIVE-first default filter change break any existing tests that expect empty status filter?
+2. Does the MonoId render correctly inside ag-grid cells (ag-grid uses its own cell renderer — check if React components work directly or need `cellRendererFramework`)?
+3. Is the "Order from Inventory" drawer connected to a real mutation or just a stub?
+4. Are there other inventory-related files that hardcode status colors (grep: `LIVE.*bg-green`, `RESERVED.*bg-blue`)?
+5. Does the grade color system handle lowercase grades (`a`, `b`) or only uppercase?
+
+Fix all issues found.
+
+---
+
+## COMMIT
+
+```bash
+git add -A
+git commit -m "feat(420-fork): Wave 3 — inventory surface redesign
+
+- Batch status labels: LIVE→Available, human-readable throughout
+- LIVE-first default filter (clears also reset to LIVE)
+- Grade color pills: A=green, B=blue, C=amber
+- SKU/batch refs → MonoId
+- On Hand quantity: tabular-nums, amber on low stock
+- Order from Inventory: Sheet drawer to create draft order from row
+- statusTokens: BATCH_STATUS_LABELS/CLASSES, GRADE_CLASSES"
+```
+
+Write to /tmp/wave3-done.txt: "WAVE3_COMPLETE: <commit hash>"

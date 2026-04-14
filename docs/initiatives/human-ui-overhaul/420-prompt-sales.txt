@@ -1,0 +1,261 @@
+You are implementing Wave 1 of the TERP 420 Fork — a drastic OpenTHC-inspired UI/UX redesign on the `human-ui-overhaul` branch.
+
+REPO: /Users/evantenenbaum/spec-erp-docker/TERP/TERP
+BRANCH: human-ui-overhaul (already checked out — verify with `git branch`)
+
+Read the full spec first: docs/initiatives/human-ui-overhaul/phase2-drastic-spec.md
+
+Then implement ALL of the following. Work methodically, one file at a time. Read each file before editing.
+
+---
+
+## WAVE 1A — GLOBAL FOUNDATION (do first, everything else depends on this)
+
+### 1. Sidebar → dark forest green
+FILE: client/src/components/layout/Sidebar.tsx
+
+Read the file. Find:
+- The sidebar container div with `bg-background/96 border-r border-border/80` → replace with `bg-[oklch(0.22_0.05_155)] border-r border-white/5`
+- Active nav item: find `border-l border-[oklch(0.53_0.13_44)] bg-muted/40 text-foreground font-medium` → replace with `border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold`
+- Inactive nav item: find `border-l border-transparent font-normal text-muted-foreground hover:bg-muted/60 hover:text-foreground` → replace with `border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90`
+- Group header dots: find `bg-[oklch(0.53_0.13_44)]` on the small dot element → replace with `bg-[oklch(0.78_0.18_130)]`
+- Group header text/button containing section labels (Sell, Buy, Operations etc): ensure text is `text-white/40` for the label
+- User row at bottom: add `text-white/70` to name, `text-white/40` to role/email if shown
+- Collapse/expand toggle button: `text-white/50 hover:text-white/80`
+
+### 2. MonoId component (new file)
+CREATE: client/src/components/ui/mono-id.tsx
+
+```tsx
+import { cn } from "@/lib/utils";
+
+interface MonoIdProps {
+  value: string;
+  truncate?: number;
+  className?: string;
+}
+
+export function MonoId({ value, truncate, className }: MonoIdProps) {
+  const display = truncate && value.length > truncate
+    ? value.slice(0, truncate) + "…"
+    : value;
+  return (
+    <span
+      className={cn(
+        "font-mono text-[0.72rem] bg-muted/60 text-muted-foreground",
+        "px-1.5 py-0.5 rounded border border-border/50 tracking-tight",
+        "whitespace-nowrap inline-block leading-none",
+        className
+      )}
+    >
+      {display}
+    </span>
+  );
+}
+```
+
+### 3. Status token utilities (update or create)
+FILE: client/src/lib/statusTokens.ts — read it first, then ADD these exports (don't remove existing ones):
+
+```ts
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Draft",
+  CONFIRMED: "Confirmed",
+  FULFILLED: "Fulfilled",
+  INVOICED: "Invoiced",
+  VOIDED: "Voided",
+  CANCELLED: "Cancelled",
+  PENDING: "Pending",
+};
+
+export const ORDER_STATUS_CLASSES: Record<string, string> = {
+  DRAFT: "bg-amber-50 text-amber-700 border border-amber-200",
+  CONFIRMED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  FULFILLED: "bg-sky-50 text-sky-700 border border-sky-200",
+  INVOICED: "bg-violet-50 text-violet-700 border border-violet-200",
+  VOIDED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  CANCELLED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
+};
+
+export function getOrderStatusLabel(status: string): string {
+  return ORDER_STATUS_LABELS[status] ??
+    status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
+export function getOrderStatusClass(status: string): string {
+  return ORDER_STATUS_CLASSES[status] ??
+    "bg-muted text-muted-foreground border border-border";
+}
+```
+
+### 4. CSS — display titles + ag-grid headers + sidebar polish
+FILE: client/src/index.css
+
+Find `.linear-workspace-title` block (or the clamp font-size line for the workspace title). Change:
+- `font-size: clamp(1.15rem, 1.9vw, 1.45rem)` → `font-size: clamp(1.75rem, 2.4vw, 2.5rem)`
+- `font-weight: 660` → `font-weight: 700`
+- `letter-spacing: -0.02em` → `letter-spacing: -0.03em`
+- `line-height: ...` → `line-height: 1.1`
+
+Add to the end of the file:
+```css
+/* AG Grid headers — OpenTHC small-caps style */
+.ag-header-cell-text {
+  font-size: 0.67rem !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+}
+
+/* Sidebar dark theme overrides */
+[data-sidebar-dark] .sidebar-group-label,
+[data-sidebar-dark] .group-label {
+  color: rgba(255,255,255,0.38);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* MonoId tabular numbers everywhere */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+```
+
+---
+
+## WAVE 1B — SALES SURFACE
+
+### 5. Order status badges — apply throughout SalesOrderSurface
+FILE: client/src/components/spreadsheet-native/SalesOrderSurface.tsx
+
+Import the new tokens:
+```tsx
+import { getOrderStatusLabel, getOrderStatusClass } from "@/lib/statusTokens";
+```
+
+Find where order stage/status is rendered as a badge or cell. Replace raw status strings with `getOrderStatusLabel(status)` for display text and `getOrderStatusClass(status)` for the className. Look for any hardcoded color maps like `DRAFT: "bg-..."` and replace with the token functions.
+
+Also: find where Order IDs or order numbers are displayed. Import `MonoId` and wrap them:
+```tsx
+import { MonoId } from "@/components/ui/mono-id";
+// then: <MonoId value={orderId} truncate={12} />
+```
+
+Price/total columns: find dollar amount renders and ensure the cell or span has `tabular-nums` class.
+
+### 6. Order creation → right-side Sheet drawer
+FILE: client/src/pages/SalesWorkspacePage.tsx
+
+Read the full file carefully first. Understand the current tab structure.
+
+Goal: "+ New Order" opens a Sheet (right-side drawer) overlaying the queue instead of navigating to a separate tab.
+
+Steps:
+a) Add import: `import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";`
+   Also add: `import { useState } from "react";` if not already imported.
+
+b) Inside the component, add state: `const [showOrderDrawer, setShowOrderDrawer] = useState(false);`
+
+c) Find where the "+ New Order" / "create-order" tab is triggered (look for `setActiveTab("create-order")` or similar). Add a handler that sets `showOrderDrawer(true)` in addition to or instead of switching the tab.
+
+d) Find the render section for the `create-order` tab (where `SalesOrderSurface` is rendered for order creation mode). Wrap it in a Sheet:
+
+```tsx
+<Sheet open={showOrderDrawer} onOpenChange={setShowOrderDrawer}>
+  <SheetContent
+    side="right"
+    className="w-[600px] sm:max-w-[600px] p-0 overflow-hidden flex flex-col"
+  >
+    <SheetHeader className="px-5 py-4 border-b flex-shrink-0">
+      <SheetTitle className="text-base font-semibold">New Order</SheetTitle>
+    </SheetHeader>
+    <div className="flex-1 overflow-y-auto">
+      {/* Render the order creator content here */}
+      <SalesOrderSurface onComplete={() => setShowOrderDrawer(false)} />
+    </div>
+  </SheetContent>
+</Sheet>
+```
+
+e) If SalesOrderSurface doesn't accept `onComplete`, check if it has a different prop for completion callbacks (`onSave`, `onConfirm`, etc.) or add `onComplete?: () => void` to its props interface and call it after a successful order save.
+
+Keep the existing "create-order" tab route working for deep-link backward compat — just also support the drawer path.
+
+### 7. Orders queue — row expand bottom panel
+FILE: client/src/components/spreadsheet-native/SalesOrderSurface.tsx (or OrdersWorkSurface.tsx — check which one has the orders queue grid)
+
+Find the "Selected Order Lines" panel or the row-click/selection handler. Ensure when a row is selected, a bottom panel slides up showing:
+- **Client name** (bold, 15px)
+- **Line items** summary (up to 3 items: "Product name × qty @ $price")
+- **Total** (right-aligned, 18px bold)
+- **Primary action button** based on status:
+  - DRAFT → `<Button variant="default" className="bg-emerald-600 hover:bg-emerald-700">Confirm Order</Button>`
+  - CONFIRMED → `<Button variant="default" className="bg-sky-600 hover:bg-sky-700">Fulfill</Button>`
+  - FULFILLED → `<Button variant="default">Create Invoice</Button>`
+
+The panel should have `animate-in slide-in-from-bottom-2` when opening and be dismissible.
+
+---
+
+## VERIFICATION (run after all changes)
+
+```bash
+cd /Users/evantenenbaum/spec-erp-docker/TERP/TERP
+
+# 1. Targeted test suite
+pnpm exec vitest run \
+  client/src/pages/SalesWorkspacePage.test.tsx \
+  client/src/components/spreadsheet-native/SalesOrderSurface.test.tsx \
+  client/src/components/layout/LinearWorkspaceShell.test.tsx \
+  client/src/components/layout/AppHeader.test.tsx
+
+# 2. ESLint on changed files
+pnpm exec eslint \
+  client/src/components/layout/Sidebar.tsx \
+  client/src/pages/SalesWorkspacePage.tsx \
+  client/src/components/spreadsheet-native/SalesOrderSurface.tsx \
+  client/src/components/ui/mono-id.tsx \
+  client/src/lib/statusTokens.ts
+
+# 3. TypeScript (only StagingAgentation.tsx errors acceptable)
+pnpm -s tsc --noEmit 2>&1 | grep -v StagingAgentation
+
+# 4. Build check
+NODE_ENV=production pnpm vite build 2>&1 | tail -10
+```
+
+If any test fails or new TS errors appear: FIX THEM before proceeding. Do not commit broken code.
+
+---
+
+## ADVERSARIAL QA (run after verification passes)
+
+Re-read what you changed and answer these questions honestly:
+1. Does the sidebar dark treatment apply everywhere — mobile drawer, collapsed state, and desktop expanded?
+2. Does the Sheet drawer close properly after order save? Is there a back-navigation race condition?
+3. Are there any surfaces where the old status badge classes are hardcoded and weren't updated?
+4. Does the MonoId component render correctly in ag-grid cell renderers (where React components need special ag-grid setup)?
+5. Does the display title change break any tests that assert on font sizes or specific class names?
+
+Fix any issues found. Then run verification again.
+
+---
+
+## COMMIT
+```bash
+git add -A
+git commit -m "feat(420-fork): Wave 1 — dark sidebar, display titles, MonoId, order drawer flow, status badge system
+
+- Sidebar: dark forest green (#1e3a2a) with lime active border
+- Typography: workspace titles 1.75–2.5rem display scale
+- MonoId: reusable component for IDs, refs, SKUs
+- AG Grid headers: uppercase small-caps 0.67rem
+- Sales: order creation opens as right-side Sheet drawer
+- Sales: status badges use semantic color system (Draft/Confirmed/Fulfilled)
+- Sales: row expand panel with context action button
+- statusTokens.ts: ORDER_STATUS_LABELS + ORDER_STATUS_CLASSES"
+```
+
+Then write to /tmp/wave1-done.txt: "WAVE1_COMPLETE: <commit hash>"

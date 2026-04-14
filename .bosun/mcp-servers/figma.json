@@ -1,0 +1,9 @@
+{
+  "id": "figma",
+  "name": "Figma",
+  "description": "Auto-discovered from /Users/evantenenbaum/.codex/config.toml",
+  "transport": "url",
+  "url": "https://mcp.figma.com/mcp",
+  "source": "autodiscovered",
+  "tags": ["autodiscovered", "codex-config", "mcp"]
+}
