@@ -402,7 +402,7 @@ function Router() {
                 />
                 <Route
                   path="/products"
-                  component={withErrorBoundary(
+                  component={withLazyErrorBoundary(
                     lazy(() => import("@/pages/ProductsPage"))
                   )}
                 />
