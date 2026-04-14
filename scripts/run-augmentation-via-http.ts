@@ -10,6 +10,19 @@ config();
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.VITE_API_URL || "https://terp-app-b9s35.ondigitalocean.app";
 
+/**
+ * TERP_SESSION_COOKIE env var is required for authentication.
+ * This must be a valid admin session token obtained from a browser login.
+ * Example: TERP_SESSION_COOKIE="<token>" pnpm tsx scripts/run-augmentation-via-http.ts
+ */
+const SESSION_COOKIE = process.env.TERP_SESSION_COOKIE;
+if (!SESSION_COOKIE) {
+  console.error("❌ TERP_SESSION_COOKIE environment variable is required.");
+  console.error("   Obtain a valid admin session token from your browser and set it:");
+  console.error('   TERP_SESSION_COOKIE="<token>" pnpm tsx scripts/run-augmentation-via-http.ts');
+  process.exit(1);
+}
+
 async function runScripts(scripts?: string[]) {
   console.log("🚀 Running DATA-002-AUGMENT scripts via HTTP endpoint...");
   console.log(`   API URL: ${API_URL}\n`);
@@ -27,6 +40,7 @@ async function runScripts(scripts?: string[]) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Cookie": `terp_session=${SESSION_COOKIE}`,
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(1800000), // 30 minutes total timeout

@@ -9,7 +9,7 @@ import { Router } from "express";
 import { exec } from "child_process";
 import { promisify } from "util";
 import { logger } from "../_core/logger.js";
-import { simpleAuth } from "../_core/simpleAuth";
+import { simpleAuth } from "../_core/simpleAuth.js";
 
 const execAsync = promisify(exec);
 
@@ -22,7 +22,7 @@ const router = Router();
  * Body: { scripts: string[] } (optional - defaults to all)
  */
 router.post("/run", async (req, res) => {
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV?.toLowerCase() === "production") {
     res.status(404).json({ error: "Not found" });
     return;
   }
@@ -32,6 +32,15 @@ router.post("/run", async (req, res) => {
     user = await simpleAuth.authenticateRequest(req);
   } catch {
     res.status(401).json({ error: "Authentication required" });
+    return;
+  }
+
+
+  // Fix 1: Check token blacklist/invalidation
+  const { isTokenInvalidated } = await import('../_core/tokenInvalidation.js');
+  const rawToken = req.cookies?.['terp_session'];
+  if (rawToken && isTokenInvalidated(rawToken)) {
+    res.status(401).json({ error: 'Session has been revoked' });
     return;
   }
 
