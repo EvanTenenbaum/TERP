@@ -475,6 +475,8 @@ export default function VIPDashboard() {
                           <Button
                             variant="outline"
                             className="h-auto flex-col gap-2 p-4 md:p-6"
+                            disabled={true}
+                            title="Credit management coming soon"
                           >
                             <CreditCard className="h-5 w-5 md:h-6 md:w-6" />
                             <span className="text-xs md:text-sm">
