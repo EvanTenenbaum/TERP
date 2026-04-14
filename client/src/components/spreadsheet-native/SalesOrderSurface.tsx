@@ -277,7 +277,11 @@ function mapInventoryToRows(
   }));
 }
 
-export function SalesOrderSurface() {
+export function SalesOrderSurface({
+  onComplete,
+}: {
+  onComplete?: () => void;
+} = {}) {
   const [, setLocation] = useLocation();
   const search = useSearch();
   const utils = trpc.useUtils();
@@ -1082,7 +1086,13 @@ export function SalesOrderSurface() {
               size="sm"
               variant="outline"
               className="h-7 px-2 text-xs"
-              onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
+              onClick={() => {
+                if (onComplete) {
+                  onComplete();
+                } else {
+                  setLocation(buildSalesWorkspacePath("orders"));
+                }
+              }}
             >
               <ArrowLeft className="mr-1 h-3 w-3" />
               Queue

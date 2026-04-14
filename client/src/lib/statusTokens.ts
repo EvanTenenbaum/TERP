@@ -91,3 +91,42 @@ export const LEDGER_TYPE_TOKENS: Record<string, string> = {
   CREDIT: STATUS_COMPLETE,
   REFUND: STATUS_DANGER,
 };
+
+// ─── Order Status Tokens (420-fork Wave 1) ─────────────────────────
+
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Draft",
+  CONFIRMED: "Confirmed",
+  FULFILLED: "Fulfilled",
+  INVOICED: "Invoiced",
+  VOIDED: "Voided",
+  CANCELLED: "Cancelled",
+  PENDING: "Pending",
+};
+
+export const ORDER_STATUS_CLASSES: Record<string, string> = {
+  DRAFT: "bg-amber-50 text-amber-700 border border-amber-200",
+  CONFIRMED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  FULFILLED: "bg-sky-50 text-sky-700 border border-sky-200",
+  INVOICED: "bg-violet-50 text-violet-700 border border-violet-200",
+  VOIDED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  CANCELLED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  PENDING: "bg-amber-50 text-amber-700 border border-amber-200",
+};
+
+export function getOrderStatusLabel(status: string): string {
+  return (
+    ORDER_STATUS_LABELS[status] ??
+    status
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase())
+  );
+}
+
+export function getOrderStatusClass(status: string): string {
+  return (
+    ORDER_STATUS_CLASSES[status] ??
+    "bg-muted text-muted-foreground border border-border"
+  );
+}

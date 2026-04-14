@@ -223,7 +223,7 @@ export const Sidebar = React.memo(function Sidebar({
       )}
       <aside
         className={cn(
-          "flex flex-col bg-background/96 border-r border-border/80 transition-all duration-200 ease-in-out z-50 backdrop-blur-sm",
+          "flex flex-col bg-[oklch(0.22_0.05_155)] border-r border-white/5 transition-all duration-200 ease-in-out z-50",
           "md:relative md:translate-x-0",
           // Keep the mobile header interactive so the same top-left affordance can close the drawer.
           "fixed left-0 top-14 bottom-0 max-w-[calc(100vw-3rem)]",
@@ -233,17 +233,17 @@ export const Sidebar = React.memo(function Sidebar({
       >
         {/* TER-599: Simplified header — just collapse/expand button */}
         {/* BUG-102: close button must be visible and reachable on all phone widths */}
-        <div className="flex items-center justify-between h-12 px-3 border-b border-border/80">
+        <div className="flex items-center justify-between h-12 px-3 border-b border-white/10">
           <button
             onClick={onClose}
-            className="md:hidden p-2 hover:bg-accent rounded-md max-md:size-11 flex-shrink-0"
+            className="md:hidden p-2 hover:bg-white/10 rounded-md max-md:size-11 flex-shrink-0 text-white/70"
             aria-label="Close menu"
           >
             <X className="h-5 w-5" />
           </button>
           <button
             onClick={() => setCollapsed(prev => !prev)}
-            className="hidden md:flex p-2 hover:bg-accent rounded-md text-muted-foreground ml-auto"
+            className="hidden md:flex p-2 hover:bg-white/10 rounded-md text-white/50 hover:text-white/80 ml-auto"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
@@ -265,7 +265,7 @@ export const Sidebar = React.memo(function Sidebar({
                 key={group.key}
                 className={cn(
                   "rounded-lg border border-transparent transition-colors",
-                  hasActiveItem && "border-border bg-muted/40"
+                  hasActiveItem && "border-white/10 bg-white/5"
                 )}
               >
                 {!collapsed && (
@@ -274,8 +274,8 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex w-full items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors max-md:min-h-11",
                       hasActiveItem
-                        ? "text-[oklch(0.53_0.13_44)] hover:text-[oklch(0.45_0.13_44)]"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "text-white/40 hover:text-white/60"
+                        : "text-white/40 hover:text-white/60"
                     )}
                     onClick={() => toggleGroup(group.key)}
                     aria-expanded={isOpen}
@@ -284,7 +284,7 @@ export const Sidebar = React.memo(function Sidebar({
                     <span className="flex items-center gap-1.5">
                       {hasActiveItem && (
                         <span
-                          className="inline-block h-1.5 w-1.5 rounded-full bg-[oklch(0.53_0.13_44)] flex-shrink-0"
+                          className="inline-block h-1.5 w-1.5 rounded-full bg-[oklch(0.78_0.18_130)] flex-shrink-0"
                           aria-hidden
                         />
                       )}
@@ -325,9 +325,9 @@ export const Sidebar = React.memo(function Sidebar({
                                   : "px-3 py-2",
                                 isActive
                                   ? cn(
-                                      "border-l border-[oklch(0.53_0.13_44)] bg-muted/40 text-foreground font-medium"
+                                      "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
                                     )
-                                  : "border-l border-transparent font-normal text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                                  : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                               )}
                               aria-current={isActive ? "page" : undefined}
                             >
@@ -356,15 +356,15 @@ export const Sidebar = React.memo(function Sidebar({
         </nav>
 
         {/* TER-599: Simplified footer — user info + logout only */}
-        <div className="border-t border-border/80 p-3">
+        <div className="border-t border-white/10 p-3">
           {!collapsed && (
             <div className="flex items-center gap-2 mb-2">
               <Avatar className="h-7 w-7">
-                <AvatarFallback className="text-xs">
+                <AvatarFallback className="text-xs bg-white/10 text-white/70">
                   <UserCircle2 className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
-              <p className="text-xs text-muted-foreground truncate">
+              <p className="text-xs text-white/70 truncate">
                 {currentUser?.name || currentUser?.email || "TERP Operator"}
               </p>
             </div>
@@ -373,7 +373,7 @@ export const Sidebar = React.memo(function Sidebar({
             variant="ghost"
             size="sm"
             className={cn(
-              "text-muted-foreground hover:text-foreground",
+              "text-white/50 hover:text-white/80 hover:bg-white/10",
               collapsed ? "w-10 p-0" : "w-full justify-start"
             )}
             onClick={handleLogout}

@@ -40,6 +40,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { MonoId } from "@/components/ui/mono-id";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -282,18 +283,18 @@ const STATUS_ICONS: Record<FulfillmentDisplayStatus, ReactNode> = {
   CANCELLED: <XCircle className="h-4 w-4" />,
 };
 
-// WSQA-003: Added return status colors
+// WSQA-003: Added return status colors — updated 420-fork Wave 1 to semantic tokens
 const STATUS_COLORS: Record<FulfillmentDisplayStatus, string> = {
-  DRAFT: "bg-gray-100 text-gray-800",
-  CONFIRMED: "bg-blue-100 text-blue-800",
-  PENDING: "bg-yellow-100 text-yellow-800",
-  READY: "bg-purple-100 text-purple-800",
-  SHIPPED: "bg-indigo-100 text-indigo-800",
-  DELIVERED: "bg-green-100 text-green-800",
-  RETURNED: "bg-orange-100 text-orange-800",
-  RESTOCKED: "bg-emerald-100 text-emerald-800",
-  RETURNED_TO_VENDOR: "bg-amber-100 text-amber-800",
-  CANCELLED: "bg-red-100 text-red-800",
+  DRAFT: "bg-amber-50 text-amber-700 border-amber-200",
+  CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  PENDING: "bg-amber-50 text-amber-700 border-amber-200",
+  READY: "bg-sky-50 text-sky-700 border-sky-200",
+  SHIPPED: "bg-sky-50 text-sky-700 border-sky-200",
+  DELIVERED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  RETURNED: "bg-neutral-100 text-neutral-500 border-neutral-200",
+  RESTOCKED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  RETURNED_TO_VENDOR: "bg-neutral-100 text-neutral-500 border-neutral-200",
+  CANCELLED: "bg-neutral-100 text-neutral-500 border-neutral-200",
 };
 
 // ============================================================================
@@ -907,7 +908,11 @@ function OrderInspectorContent({
 // MAIN COMPONENT
 // ============================================================================
 
-export function OrdersWorkSurface() {
+export function OrdersWorkSurface({
+  onNewOrder,
+}: {
+  onNewOrder?: () => void;
+} = {}) {
   const [location, setLocation] = useLocation();
   const routeSearch = useRouteSearch();
   const trpcUtils = trpc.useUtils();
@@ -1593,11 +1598,19 @@ export function OrdersWorkSurface() {
       },
       "cmd+n": e => {
         e.preventDefault();
-        setLocation(buildSalesWorkspacePath("create-order"));
+        if (onNewOrder) {
+          onNewOrder();
+        } else {
+          setLocation(buildSalesWorkspacePath("create-order"));
+        }
       },
       "ctrl+n": e => {
         e.preventDefault();
-        setLocation(buildSalesWorkspacePath("create-order"));
+        if (onNewOrder) {
+          onNewOrder();
+        } else {
+          setLocation(buildSalesWorkspacePath("create-order"));
+        }
       },
       arrowdown: e => {
         e.preventDefault();
@@ -1821,7 +1834,9 @@ export function OrdersWorkSurface() {
               </Button>
               <Button
                 onClick={() =>
-                  setLocation(buildSalesWorkspacePath("create-order"))
+                  onNewOrder
+                    ? onNewOrder()
+                    : setLocation(buildSalesWorkspacePath("create-order"))
                 }
                 data-testid="new-order-button"
               >
@@ -1837,96 +1852,167 @@ export function OrdersWorkSurface() {
       <div className="flex-1 flex overflow-hidden">
         <div
           className={cn(
-            "flex-1 overflow-auto transition-all duration-200",
+            "flex-1 flex flex-col overflow-hidden transition-all duration-200",
             inspector.isOpen && "mr-96"
           )}
         >
-          <Table data-testid="orders-table" className="min-h-[420px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order #</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+          <div className="flex-1 overflow-auto">
+            <Table data-testid="orders-table" className="min-h-[420px]">
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="h-64 text-center">
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      <span>Loading orders…</span>
-                    </div>
-                  </TableCell>
+                  <TableHead>Order #</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ) : displayOrders.length === 0 ? (
-                <TableRow data-testid="orders-empty-state">
-                  <TableCell colSpan={7} className="h-64 text-center">
-                    <EmptyState
-                      variant="orders"
-                      title="No orders found"
-                      description={
-                        search
-                          ? "No orders match this search yet. Clear the filters and try a broader lookup."
-                          : statusFilter !== "ALL"
-                            ? `No ${statusFilter.toLowerCase()} orders match the current status filter.`
-                            : activeTab === "draft"
-                              ? "Create a sales order draft so pricing, review, and final confirmation can all happen from one place."
-                              : "Confirmed orders appear here once a draft is finalized."
-                      }
-                      action={orderEmptyStateAction}
-                    />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                displayOrders.map((order: Order, index: number) => (
-                  <TableRow
-                    key={order.id}
-                    data-testid={`order-row-${order.id}`}
-                    data-orderid={order.id}
-                    className={cn(
-                      "cursor-pointer hover:bg-muted/50",
-                      selectedOrderId === order.id && "bg-muted",
-                      selectedIndex === index &&
-                        "ring-1 ring-inset ring-primary"
-                    )}
-                    onClick={() => {
-                      setSelectedOrderId(order.id);
-                      setSelectedIndex(index);
-                      inspector.open();
-                    }}
-                  >
-                    <TableCell className="font-medium">
-                      {getDisplayOrderNumber(order) || order.orderNumber}
-                    </TableCell>
-                    <TableCell>{getClientName(order.clientId)}</TableCell>
-                    <TableCell>{formatDate(order.createdAt)}</TableCell>
-                    <TableCell>
-                      {formatPaymentStatus(order.saleStatus)}
-                    </TableCell>
-                    <TableCell>
-                      <OrderStatusBadge
-                        status={order.fulfillmentStatus}
-                        isDraft={order.isDraft}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(order.total)}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-64 text-center">
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>Loading orders…</span>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))
+                ) : displayOrders.length === 0 ? (
+                  <TableRow data-testid="orders-empty-state">
+                    <TableCell colSpan={7} className="h-64 text-center">
+                      <EmptyState
+                        variant="orders"
+                        title="No orders found"
+                        description={
+                          search
+                            ? "No orders match this search yet. Clear the filters and try a broader lookup."
+                            : statusFilter !== "ALL"
+                              ? `No ${statusFilter.toLowerCase()} orders match the current status filter.`
+                              : activeTab === "draft"
+                                ? "Create a sales order draft so pricing, review, and final confirmation can all happen from one place."
+                                : "Confirmed orders appear here once a draft is finalized."
+                        }
+                        action={orderEmptyStateAction}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  displayOrders.map((order: Order, index: number) => (
+                    <TableRow
+                      key={order.id}
+                      data-testid={`order-row-${order.id}`}
+                      data-orderid={order.id}
+                      className={cn(
+                        "cursor-pointer hover:bg-muted/50",
+                        selectedOrderId === order.id && "bg-muted",
+                        selectedIndex === index &&
+                          "ring-1 ring-inset ring-primary"
+                      )}
+                      onClick={() => {
+                        setSelectedOrderId(order.id);
+                        setSelectedIndex(index);
+                        inspector.open();
+                      }}
+                    >
+                      <TableCell className="font-medium">
+                        <MonoId
+                          value={
+                            getDisplayOrderNumber(order) ||
+                            order.orderNumber ||
+                            `#${order.id}`
+                          }
+                          truncate={14}
+                        />
+                      </TableCell>
+                      <TableCell>{getClientName(order.clientId)}</TableCell>
+                      <TableCell>{formatDate(order.createdAt)}</TableCell>
+                      <TableCell>
+                        {formatPaymentStatus(order.saleStatus)}
+                      </TableCell>
+                      <TableCell>
+                        <OrderStatusBadge
+                          status={order.fulfillmentStatus}
+                          isDraft={order.isDraft}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right font-medium tabular-nums">
+                        {formatCurrency(order.total)}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Quick-action bottom panel — slides up when a row is selected */}
+          {selectedOrder && (
+            <div className="animate-in slide-in-from-bottom-2 duration-200 border-t bg-card px-4 py-3 flex items-center gap-4 flex-shrink-0">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-[15px] truncate">
+                  {getClientName(selectedOrder.clientId)}
+                </p>
+                {(selectedOrder.lineItems ?? []).length > 0 && (
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {(selectedOrder.lineItems ?? [])
+                      .slice(0, 3)
+                      .map(
+                        item =>
+                          `${item.productName} × ${item.quantity} @ ${formatCurrency(item.unitPrice)}`
+                      )
+                      .join(" · ")}
+                    {(selectedOrder.lineItems ?? []).length > 3 && " …"}
+                  </p>
+                )}
+              </div>
+              <p className="text-[18px] font-bold tabular-nums flex-shrink-0">
+                {formatCurrency(selectedOrder.total)}
+              </p>
+              {selectedOrder.isDraft && (
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white flex-shrink-0"
+                  onClick={() => handleConfirm(selectedOrder.id)}
+                >
+                  Confirm Order
+                </Button>
               )}
-            </TableBody>
-          </Table>
+              {!selectedOrder.isDraft &&
+                (selectedOrder.fulfillmentStatus === "CONFIRMED" ||
+                  selectedOrder.fulfillmentStatus === null) && (
+                  <Button
+                    className="bg-sky-600 hover:bg-sky-700 text-white flex-shrink-0"
+                    onClick={() => handleConfirmFulfillment(selectedOrder.id)}
+                  >
+                    Fulfill
+                  </Button>
+                )}
+              {!selectedOrder.isDraft &&
+                selectedOrder.fulfillmentStatus === "DELIVERED" && (
+                  <Button
+                    variant="default"
+                    className="flex-shrink-0"
+                    onClick={() => handleGenerateInvoice(selectedOrder.id)}
+                  >
+                    Create Invoice
+                  </Button>
+                )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-shrink-0 text-muted-foreground"
+                onClick={() => setSelectedOrderId(null)}
+              >
+                ×
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Inspector */}
