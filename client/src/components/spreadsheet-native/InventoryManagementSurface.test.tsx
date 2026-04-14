@@ -205,6 +205,20 @@ vi.mock("@/lib/trpc", () => ({
         },
       },
     },
+    clients: {
+      list: {
+        useQuery: vi.fn(() => ({
+          data: { items: [] },
+          isLoading: false,
+          error: null,
+        })),
+      },
+    },
+    orders: {
+      createDraftEnhanced: {
+        useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
+      },
+    },
   },
 }));
 

@@ -17,9 +17,16 @@ import {
   Filter,
   Grid3X3,
   Image,
+  ShoppingCart,
   SquareArrowOutUpRight,
   Trash2,
 } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +57,14 @@ import type {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { MonoId } from "@/components/ui/mono-id";
+import type { ClientOption } from "@/components/ui/client-combobox";
+import { ClientCombobox } from "@/components/ui/client-combobox";
+import {
+  getBatchStatusLabel,
+  getBatchStatusClass,
+  getGradeClass,
+} from "@/lib/statusTokens";
 import {
   Select,
   SelectContent,
@@ -203,6 +218,13 @@ interface InventoryLocationRow {
   quantity: number;
 }
 
+interface OrderFromBatchState {
+  batchId: number;
+  productName: string;
+  sku: string;
+  unitCogs: number;
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -231,6 +253,12 @@ export function InventoryManagementSurface() {
   // Adjustment drawer state
   const [adjustDrawerState, setAdjustDrawerState] =
     useState<AdjustDrawerState | null>(null);
+
+  // Order from inventory drawer state
+  const [orderFromBatch, setOrderFromBatch] =
+    useState<OrderFromBatchState | null>(null);
+  const [orderClientId, setOrderClientId] = useState<number | null>(null);
+  const [orderQty, setOrderQty] = useState<string>("");
 
   // Saved views state
   const [currentViewId, setCurrentViewId] = useState<number | null>(null);
@@ -269,6 +297,10 @@ export function InventoryManagementSurface() {
 
   const dashboardQuery = trpc.inventory.dashboardStats.useQuery();
   const viewsQuery = trpc.inventory.views.list.useQuery();
+  const buyersQuery = trpc.clients.list.useQuery(
+    { limit: 1000 },
+    { enabled: orderFromBatch !== null }
+  );
   const detailQuery = trpc.inventory.getById.useQuery(selectedBatchId ?? 0, {
     enabled: selectedBatchId !== null,
   });
@@ -401,6 +433,18 @@ export function InventoryManagementSurface() {
     },
   });
 
+  const createOrderMutation = trpc.orders.createDraftEnhanced.useMutation({
+    onSuccess: () => {
+      toast.success("Draft order created");
+      setOrderFromBatch(null);
+      setOrderClientId(null);
+      setOrderQty("");
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to create order");
+    },
+  });
+
   // ============================================================================
   // Row data
   // ============================================================================
@@ -485,6 +529,21 @@ export function InventoryManagementSurface() {
   );
   const selectedOnHandQty = selectedRow?.onHandQty ?? null;
 
+  const buyerClientOptions = useMemo<ClientOption[]>(() => {
+    const data = buyersQuery.data;
+    const items = Array.isArray(data) ? data : (data?.items ?? []);
+    return (
+      items as Array<{
+        id: number;
+        name: string;
+        email?: string | null;
+        isBuyer?: boolean | null;
+      }>
+    )
+      .filter(c => c.isBuyer !== false)
+      .map(c => ({ id: c.id, name: c.name, email: c.email ?? null }));
+  }, [buyersQuery.data]);
+
   useEffect(() => {
     if (selectedBatchId === null || selectedOnHandQty === null) {
       setInspectorTargetQty("");
@@ -534,6 +593,9 @@ export function InventoryManagementSurface() {
         minWidth: 120,
         maxWidth: 140,
         cellClass: "powersheet-cell--locked",
+        cellRenderer: (params: { value: string }) => (
+          <MonoId value={params.value ?? ""} />
+        ),
       },
       {
         field: "productSummary",
@@ -565,6 +627,20 @@ export function InventoryManagementSurface() {
         cellClass: canUpdateInventory
           ? "powersheet-cell--editable"
           : "powersheet-cell--locked",
+        cellRenderer: (params: { value: string }) => {
+          if (!params.value) return null;
+          const cls = getGradeClass(params.value);
+          return (
+            <span
+              className={cn(
+                "inline-flex items-center rounded px-1.5 py-0.5 text-xs",
+                cls
+              )}
+            >
+              {params.value}
+            </span>
+          );
+        },
       },
       {
         field: "status",
@@ -579,6 +655,21 @@ export function InventoryManagementSurface() {
         cellClass: canUpdateInventory
           ? "powersheet-cell--editable"
           : "powersheet-cell--locked",
+        cellRenderer: (params: { value: string }) => {
+          if (!params.value) return null;
+          const label = getBatchStatusLabel(params.value);
+          const cls = getBatchStatusClass(params.value);
+          return (
+            <span
+              className={cn(
+                "inline-flex items-center rounded px-1.5 py-0.5 text-xs",
+                cls
+              )}
+            >
+              {label}
+            </span>
+          );
+        },
       },
       {
         field: "onHandQty",
@@ -588,8 +679,16 @@ export function InventoryManagementSurface() {
         editable: canUpdateInventory,
         valueFormatter: params => formatQuantity(Number(params.value ?? 0)),
         cellClass: canUpdateInventory
-          ? "powersheet-cell--editable"
-          : "powersheet-cell--locked",
+          ? "powersheet-cell--editable tabular-nums text-right"
+          : "powersheet-cell--locked tabular-nums text-right",
+        cellClassRules: {
+          "text-amber-700 font-semibold": (params: {
+            data?: InventoryPilotRow;
+          }) => {
+            const s = params.data?.stockStatus;
+            return s === "LOW" || s === "CRITICAL";
+          },
+        },
       },
       {
         field: "reservedQty",
@@ -631,6 +730,40 @@ export function InventoryManagementSurface() {
         minWidth: 90,
         maxWidth: 110,
         cellClass: "powersheet-cell--locked",
+      },
+      {
+        headerName: "",
+        field: "batchId",
+        minWidth: 80,
+        maxWidth: 80,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        cellClass: "powersheet-cell--locked flex items-center justify-center",
+        cellRenderer: (params: { data?: InventoryPilotRow }) => {
+          const row = params.data;
+          if (!row) return null;
+          return (
+            <button
+              type="button"
+              title="Create order from this batch"
+              className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={e => {
+                e.stopPropagation();
+                setOrderFromBatch({
+                  batchId: row.batchId,
+                  productName: row.productName,
+                  sku: row.sku,
+                  unitCogs: row.unitCogs ?? 0,
+                });
+                setOrderClientId(null);
+                setOrderQty("");
+              }}
+            >
+              <ShoppingCart className="h-3.5 w-3.5" />
+            </button>
+          );
+        },
       },
     ],
     [canUpdateInventory]
@@ -1499,6 +1632,93 @@ export function InventoryManagementSurface() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* ── 8b. Order from Inventory Drawer ── */}
+      <Sheet
+        open={!!orderFromBatch}
+        onOpenChange={open => {
+          if (!open) {
+            setOrderFromBatch(null);
+            setOrderClientId(null);
+            setOrderQty("");
+          }
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="flex w-[560px] flex-col overflow-hidden p-0 sm:max-w-[560px]"
+        >
+          <SheetHeader className="flex-shrink-0 border-b px-5 py-4">
+            <SheetTitle className="text-sm font-semibold">
+              New Order — {orderFromBatch?.productName}
+            </SheetTitle>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              <span className="font-mono">{orderFromBatch?.sku}</span>
+            </p>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto p-5">
+            <p className="mb-4 text-sm text-muted-foreground">
+              Select a client and enter quantity to create a draft order from
+              this batch.
+            </p>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="order-client">Client</Label>
+                <ClientCombobox
+                  value={orderClientId}
+                  onValueChange={setOrderClientId}
+                  clients={buyerClientOptions}
+                  placeholder="Select a client..."
+                  isLoading={buyersQuery.isLoading}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="order-qty">Quantity</Label>
+                <Input
+                  id="order-qty"
+                  type="number"
+                  inputMode="decimal"
+                  min={1}
+                  value={orderQty}
+                  onChange={e => setOrderQty(e.target.value)}
+                  placeholder="e.g. 100"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <Button
+                className="w-full"
+                disabled={
+                  !orderClientId ||
+                  !orderQty ||
+                  Number(orderQty) <= 0 ||
+                  createOrderMutation.isPending
+                }
+                onClick={() => {
+                  if (!orderFromBatch || !orderClientId) return;
+                  const qty = Number(orderQty);
+                  if (!Number.isFinite(qty) || qty <= 0) return;
+                  createOrderMutation.mutate({
+                    orderType: "SALE",
+                    clientId: orderClientId,
+                    lineItems: [
+                      {
+                        batchId: orderFromBatch.batchId,
+                        batchSku: orderFromBatch.sku,
+                        quantity: qty,
+                        cogsPerUnit: orderFromBatch.unitCogs,
+                      },
+                    ],
+                  });
+                }}
+              >
+                {createOrderMutation.isPending
+                  ? "Creating..."
+                  : "Create Draft Order"}
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* ── 8. Adjustment Context Drawer (right side) ── */}
       {adjustDrawerState?.isOpen && (

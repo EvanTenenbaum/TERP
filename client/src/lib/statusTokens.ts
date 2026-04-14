@@ -186,3 +186,60 @@ export const PAYMENT_TERM_LABELS: Record<string, string> = {
 export function getPaymentTermLabel(term: string): string {
   return PAYMENT_TERM_LABELS[term] ?? term.replace(/_/g, " ");
 }
+
+// ─── Batch Status Tokens (420-fork Wave 3) ────────────────────────────────────
+
+export const BATCH_STATUS_LABELS: Record<string, string> = {
+  LIVE: "Available",
+  RESERVED: "Reserved",
+  SOLD: "Sold",
+  LOW_STOCK: "Low Stock",
+  DEPLETED: "Depleted",
+  QUARANTINE: "Quarantine",
+  ARCHIVED: "Archived",
+  PENDING_INTAKE: "Pending Intake",
+};
+
+export const BATCH_STATUS_CLASSES: Record<string, string> = {
+  LIVE: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  RESERVED: "bg-sky-50 text-sky-700 border border-sky-200",
+  SOLD: "bg-violet-50 text-violet-700 border border-violet-200",
+  LOW_STOCK: "bg-amber-50 text-amber-700 border border-amber-200",
+  DEPLETED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  QUARANTINE: "bg-red-50 text-red-700 border border-red-200",
+  ARCHIVED: "bg-neutral-100 text-neutral-400 border border-neutral-200",
+  PENDING_INTAKE: "bg-blue-50 text-blue-700 border border-blue-200",
+};
+
+export function getBatchStatusLabel(status: string): string {
+  return (
+    BATCH_STATUS_LABELS[status] ??
+    status
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase())
+  );
+}
+
+export function getBatchStatusClass(status: string): string {
+  return (
+    BATCH_STATUS_CLASSES[status] ??
+    "bg-muted text-muted-foreground border border-border"
+  );
+}
+
+export const GRADE_CLASSES: Record<string, string> = {
+  A: "bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold",
+  "A+": "bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold",
+  B: "bg-sky-100 text-sky-800 border border-sky-200 font-medium",
+  C: "bg-amber-100 text-amber-800 border border-amber-200",
+  D: "bg-neutral-100 text-neutral-600 border border-neutral-200",
+};
+
+export function getGradeClass(grade: string): string {
+  const normalized = grade.toUpperCase();
+  return (
+    GRADE_CLASSES[normalized] ??
+    "bg-muted text-muted-foreground border border-border"
+  );
+}

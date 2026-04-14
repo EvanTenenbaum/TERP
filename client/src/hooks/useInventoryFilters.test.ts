@@ -17,7 +17,7 @@ describe("useInventoryFilters", () => {
     it("initializes with default filters", () => {
       const { result } = renderHook(() => useInventoryFilters());
 
-      expect(result.current.filters.status).toEqual([]);
+      expect(result.current.filters.status).toEqual(["LIVE"]);
       expect(result.current.filters.category).toBeNull();
       expect(result.current.filters.stockLevel).toBe("all");
       expect(result.current.hasActiveFilters).toBe(false);
@@ -139,7 +139,7 @@ describe("useInventoryFilters", () => {
       const { result } = renderHook(() => useInventoryFilters());
 
       act(() => {
-        result.current.updateFilter("status", ["LIVE"]);
+        result.current.updateFilter("status", ["QUARANTINE"]);
       });
 
       expect(result.current.hasActiveFilters).toBe(true);
@@ -189,7 +189,7 @@ describe("useInventoryFilters", () => {
       const { result } = renderHook(() => useInventoryFilters());
 
       act(() => {
-        result.current.updateFilter("status", ["LIVE"]);
+        result.current.updateFilter("status", ["QUARANTINE"]);
         result.current.updateFilter("category", "Flower");
         result.current.updateFilter("stockLevel", "low_stock");
       });

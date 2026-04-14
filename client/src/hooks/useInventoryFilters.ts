@@ -31,7 +31,7 @@ export interface InventoryFilters {
 }
 
 export const defaultFilters: InventoryFilters = {
-  status: [],
+  status: ["LIVE"],
   category: null,
   subcategory: null,
   vendor: [],
@@ -134,9 +134,16 @@ export function useInventoryFilters() {
     setFilters(defaultFilters);
   };
 
+  const isStatusNonDefault = useMemo(() => {
+    // ["LIVE"] is the default state — not an active filter
+    if (filters.status.length === 0) return true; // showing all = also non-default
+    if (filters.status.length === 1 && filters.status[0] === "LIVE") return false;
+    return true;
+  }, [filters.status]);
+
   const hasActiveFilters = useMemo(() => {
     return (
-      filters.status.length > 0 ||
+      isStatusNonDefault ||
       filters.category !== null ||
       filters.subcategory !== null ||
       filters.vendor.length > 0 ||
@@ -154,11 +161,11 @@ export function useInventoryFilters() {
       filters.ageBracket !== "ALL" ||
       filters.batchId !== null
     );
-  }, [filters]);
+  }, [filters, isStatusNonDefault]);
 
   const activeFilterCount = useMemo(() => {
     let count = 0;
-    if (filters.status.length > 0) count++;
+    if (isStatusNonDefault) count++;
     if (filters.category) count++;
     if (filters.subcategory) count++;
     if (filters.vendor.length > 0) count++;
@@ -175,7 +182,7 @@ export function useInventoryFilters() {
     if (filters.ageBracket !== "ALL") count++;
     if (filters.batchId) count++;
     return count;
-  }, [filters]);
+  }, [filters, isStatusNonDefault]);
 
   return {
     filters,
