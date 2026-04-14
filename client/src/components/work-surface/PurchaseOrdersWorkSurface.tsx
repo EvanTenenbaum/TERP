@@ -1708,7 +1708,9 @@ export function PurchaseOrdersWorkSurface() {
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => setLocation(buildOperationsWorkspacePath("receiving"))}
+              onClick={() =>
+                setLocation(buildOperationsWorkspacePath("receiving"))
+              }
             >
               Open Receiving Queue
             </Button>
@@ -1977,7 +1979,18 @@ export function PurchaseOrdersWorkSurface() {
                               </TableRow>
                             )
                           )}
+                          {recentSupplierProductsQuery.isError && (
+                            <TableRow>
+                              <TableCell
+                                colSpan={4}
+                                className="text-sm text-destructive"
+                              >
+                                Failed to load supplier products.
+                              </TableCell>
+                            </TableRow>
+                          )}
                           {!recentSupplierProductsQuery.isLoading &&
+                            !recentSupplierProductsQuery.isError &&
                             (recentSupplierProductsQuery.data ?? []).length ===
                               0 && (
                               <TableRow>
@@ -2042,7 +2055,18 @@ export function PurchaseOrdersWorkSurface() {
                                 </TableCell>
                               </TableRow>
                             ))}
+                          {supplierHistoryQuery.isError && (
+                            <TableRow>
+                              <TableCell
+                                colSpan={4}
+                                className="text-sm text-destructive"
+                              >
+                                Failed to load supplier history.
+                              </TableCell>
+                            </TableRow>
+                          )}
                           {!supplierHistoryQuery.isLoading &&
+                            !supplierHistoryQuery.isError &&
                             (supplierHistoryQuery.data ?? []).length === 0 && (
                               <TableRow>
                                 <TableCell
