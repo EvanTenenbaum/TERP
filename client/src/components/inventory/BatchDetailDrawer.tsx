@@ -1156,7 +1156,12 @@ export function BatchDetailDrawer({
             unitCogs: batch.unitCogs,
             onHandQty: batch.onHandQty,
           }}
-          currentAvgPrice={0} // TODO: Calculate from profitability data
+          // TODO: use batch.averageCost once the API exposes average sale price; falling back to unitCogs
+          currentAvgPrice={parseFloat(
+            (batch as unknown as { averageCost?: string }).averageCost ??
+              batch.unitCogs ??
+              "0"
+          )}
         />
       )}
     </Sheet>
