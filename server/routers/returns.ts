@@ -632,6 +632,8 @@ export const returnsRouter = router({
             )
           )
           .orderBy(desc(invoices.createdAt));
+        // H-6: Correctly awaiting Promise.all to avoid fire-and-forget async map
+        // H-6: Correctly awaiting Promise.all to avoid fire-and-forget async map
         const orderInvoice = pickReturnAccountingInvoice(
           await Promise.all(
             orderInvoices.map(async invoice => {
