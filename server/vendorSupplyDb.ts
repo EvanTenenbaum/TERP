@@ -258,38 +258,13 @@ export async function getVendorSupplyWithMatches(filters?: {
   try {
     const supplies = await getVendorSupply(filters);
 
-    // FE-QA-FIX: Calculate actual buyer counts using matching engine
-    const { findBuyersForVendorSupply } =
-      await import("./matchingEngineEnhanced");
-
-    const suppliesWithCounts = await Promise.all(
-      supplies.map(async supply => {
-        try {
-          // Only calculate matches for available items
-          if (supply.status === "AVAILABLE") {
-            const buyers = await findBuyersForVendorSupply(supply.id);
-            return {
-              ...supply,
-              buyerCount: buyers.length,
-            };
-          }
-          return {
-            ...supply,
-            buyerCount: 0,
-          };
-        } catch (matchError) {
-          // Log but don't fail - return 0 if matching fails for one item
-          logger.warn(
-            { supplyId: supply.id, error: matchError },
-            "Failed to find buyers for supply item"
-          );
-          return {
-            ...supply,
-            buyerCount: 0,
-          };
-        }
-      })
-    );
+    // H-9: Removed N+1 matching engine call from list query.
+    // buyerCount is now returned as 0 on list load; callers fetch
+    // per-row buyer counts lazily via the dedicated findBuyersForVendorSupply endpoint.
+    const suppliesWithCounts = supplies.map(supply => ({
+      ...supply,
+      buyerCount: 0,
+    }));
 
     return suppliesWithCounts;
   } catch (error) {
