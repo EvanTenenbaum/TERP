@@ -12,10 +12,12 @@ import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { adaptInventorySavedViewToSalesFilters } from "@/lib/portableInventoryViews";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { trpc } from "@/lib/trpc";
 import { normalizePositiveIntegerWithin } from "@/lib/quantity";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { useOrderCalculations } from "@/hooks/orders/useOrderCalculations";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   type CreditCheckResult,
   resolveOrderCostVisibility,
@@ -41,6 +43,7 @@ import {
   OrderAdjustmentsBar,
   CreditWarningDialog,
 } from "@/components/orders";
+import { ClientCommitContextCard } from "@/components/orders/ClientCommitContextCard";
 import type { OrderAdjustment } from "@/components/orders/types";
 import { QuickViewSelector } from "@/components/sales/QuickViewSelector";
 import { SaveViewDialog } from "@/components/sales/SaveViewDialog";
@@ -334,6 +337,7 @@ export function SalesOrderSurface({
   const isQuoteCreateEntry =
     isCreateOrderEntry &&
     (routeMode === "quote" || draft.orderType === "QUOTE");
+  const { hasAnyPermission } = usePermissions();
 
   const clientsQuery = trpc.clients.list.useQuery({ limit: 1000 });
   const clientList = useMemo(() => {
@@ -368,6 +372,14 @@ export function SalesOrderSurface({
     () => resolveOrderCostVisibility(displaySettingsQuery.data),
     [displaySettingsQuery.data]
   );
+  const canViewPricingContext = hasAnyPermission([
+    "orders:view_pricing",
+    "pricing:read",
+    "pricing:access",
+    "pricing:rules:read",
+    "pricing:profiles:read",
+    "pricing:defaults:view",
+  ]);
 
   const selectedBatchIds = useMemo(
     () => new Set(draft.items.map(item => item.batchId)),
@@ -1138,6 +1150,32 @@ export function SalesOrderSurface({
       />
     </div>
   );
+  const handleOpenClientOverview = useCallback(() => {
+    if (!draft.clientId) {
+      return;
+    }
+
+    setLocation(buildRelationshipProfilePath(draft.clientId, "overview"));
+  }, [draft.clientId, setLocation]);
+  const handleOpenClientMoney = useCallback(() => {
+    if (!draft.clientId) {
+      return;
+    }
+
+    setLocation(buildRelationshipProfilePath(draft.clientId, "money"));
+  }, [draft.clientId, setLocation]);
+  const handleOpenClientPricing = useCallback(() => {
+    if (!draft.clientId) {
+      return;
+    }
+
+    setLocation(buildRelationshipProfilePath(draft.clientId, "sales-pricing"));
+  }, [draft.clientId, setLocation]);
+  const showClientCommitContext =
+    draft.clientId !== null &&
+    !isUnavailableClientRoute &&
+    !draft.isFinalizingDraft;
+  const activeClientId = draft.clientId ?? 0;
 
   return (
     <div {...keyboardProps} className="flex h-full flex-col gap-1">
@@ -1251,6 +1289,18 @@ export function SalesOrderSurface({
           onOpenChange={setShowAdvancedFilters}
         />
       )}
+
+      {showClientCommitContext ? (
+        <div className="px-1">
+          <ClientCommitContextCard
+            clientId={activeClientId}
+            canViewPricingContext={canViewPricingContext}
+            onOpenOverview={handleOpenClientOverview}
+            onOpenMoney={handleOpenClientMoney}
+            onOpenPricing={handleOpenClientPricing}
+          />
+        </div>
+      ) : null}
 
       {draft.clientId ? (
         isUnavailableClientRoute ? (
