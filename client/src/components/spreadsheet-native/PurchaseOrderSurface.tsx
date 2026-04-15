@@ -18,7 +18,14 @@
  *   8. ConfirmDialogs — delete, status change, receiving handoff
  */
 
-import { Fragment, useCallback, useEffect, useMemo, useState, useRef } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
 import { useExport } from "@/hooks/work-surface/useExport";
 import type { ExportColumn } from "@/hooks/work-surface/useExport";
 import type { CellValueChangedEvent, ColDef } from "ag-grid-community";
@@ -1340,7 +1347,7 @@ function resolveStepperIndex(status: string): number {
   const direct = PO_PROGRESS_STEPS.findIndex(s => s.key === status);
   if (direct >= 0) return direct;
   if (status === "PARTIALLY_RECEIVED") return 3;
-  return -1;
+  return -1; // VOIDED/CANCELLED = no active step
 }
 
 function PoProgressStepper({ status }: { status: string }) {
@@ -1352,28 +1359,36 @@ function PoProgressStepper({ status }: { status: string }) {
         const isDone = activeIndex >= 0 && i < activeIndex;
         return (
           <Fragment key={step.key}>
-            <div className={cn(
-              "flex items-center justify-center rounded-full text-[0.65rem] font-semibold",
-              "h-6 w-6 shrink-0 border",
-              isDone
-                ? "bg-emerald-500 border-emerald-500 text-white"
-                : isActive
-                  ? "bg-sky-500 border-sky-500 text-white"
-                  : "bg-muted border-border text-muted-foreground"
-            )}>
+            <div
+              className={cn(
+                "flex items-center justify-center rounded-full text-[0.65rem] font-semibold",
+                "h-6 w-6 shrink-0 border",
+                isDone
+                  ? "bg-emerald-500 border-emerald-500 text-white"
+                  : isActive
+                    ? "bg-sky-500 border-sky-500 text-white"
+                    : "bg-muted border-border text-muted-foreground"
+              )}
+            >
               {isDone ? <Check className="h-3 w-3" /> : i + 1}
             </div>
-            <span className={cn(
-              "text-[0.7rem] leading-none",
-              isActive ? "font-semibold text-foreground" : "text-muted-foreground"
-            )}>
+            <span
+              className={cn(
+                "text-[0.7rem] leading-none",
+                isActive
+                  ? "font-semibold text-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
               {step.label}
             </span>
             {i < PO_PROGRESS_STEPS.length - 1 && (
-              <div className={cn(
-                "h-px flex-1 min-w-[8px]",
-                isDone ? "bg-emerald-400" : "bg-border"
-              )} />
+              <div
+                className={cn(
+                  "h-px flex-1 min-w-[8px]",
+                  isDone ? "bg-emerald-400" : "bg-border"
+                )}
+              />
             )}
           </Fragment>
         );
@@ -1410,7 +1425,9 @@ function PurchaseOrderQueueMode({
   // Filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
-  const [activeSupplierFilter, setActiveSupplierFilter] = useState<number | null>(null);
+  const [activeSupplierFilter, setActiveSupplierFilter] = useState<
+    number | null
+  >(null);
   const [showExpectedTodayOnly, setShowExpectedTodayOnly] = useState(false);
 
   // Dialog state
@@ -2557,7 +2574,7 @@ function PurchaseOrderQueueMode({
         confirmLabel={
           updateStatus.isPending || submitPO.isPending || confirmPO.isPending
             ? "Updating..."
-            : `Set to ${pendingStatusChange ? (getPoStatusLabel(pendingStatusChange.status)) : ""}`
+            : `Set to ${pendingStatusChange ? getPoStatusLabel(pendingStatusChange.status) : ""}`
         }
         onConfirm={handleStatusConfirm}
       />
