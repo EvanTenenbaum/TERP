@@ -1,7 +1,7 @@
 import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "./db";
 import { orders, clients } from "../drizzle/schema";
-import type { Match } from "./matchingEngine";
+import type { Match } from "./matchingEngineEnhanced";
 import { logger } from "./_core/logger";
 
 /**
@@ -211,8 +211,17 @@ export async function findHistoricalBuyers(
             source: "HISTORICAL",
             sourceId: client.id,
             sourceData: {
-              client,
-              pattern,
+              client: {
+                id: client.id,
+                name: client.name,
+              },
+              purchaseCount: pattern.purchaseCount,
+              lastPurchaseDate: pattern.lastPurchaseDate,
+              totalQuantity: pattern.totalQuantity,
+              averageQuantity:
+                pattern.purchaseCount > 0
+                  ? pattern.totalQuantity / pattern.purchaseCount
+                  : 0,
             },
             pattern,
             isLapsedBuyer: pattern.daysSinceLastPurchase > lapsedDaysThreshold,
@@ -321,7 +330,12 @@ export async function getProactiveOpportunities(
     clientName: string;
     daysSinceLastPurchase: number;
     pattern: PurchasePattern;
-    availableInventory: Array<{ batchId: number; productName: string; quantity: number; unitCost: number }>;
+    availableInventory: Array<{
+      batchId: number;
+      productName: string;
+      quantity: number;
+      unitCost: number;
+    }>;
   }>
 > {
   const db = await getDb();

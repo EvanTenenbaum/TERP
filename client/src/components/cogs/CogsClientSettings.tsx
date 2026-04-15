@@ -58,9 +58,12 @@ export function CogsClientSettings() {
     }
     const numValue = parseFloat(value);
     const displayValue = Math.abs(numValue);
-    // Legacy "PERCENTAGE"/"FIXED_AMOUNT" treated as decrease for backward compat
+    const isLegacyIncrease =
+      (type === "PERCENTAGE" || type === "FIXED_AMOUNT") && numValue < 0;
     const isIncrease =
-      type === "PERCENTAGE_INCREASE" || type === "FIXED_INCREASE";
+      type === "PERCENTAGE_INCREASE" ||
+      type === "FIXED_INCREASE" ||
+      isLegacyIncrease;
     const direction = isIncrease ? "Increase" : "Decrease";
     const badgeVariant: "default" | "destructive" = isIncrease
       ? "destructive"
