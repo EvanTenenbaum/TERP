@@ -92,6 +92,7 @@ export function ProductBrowserGrid({
   const [activeTab, setActiveTab] = useState<ActiveTab>("supplier-history");
   const [search, setSearch] = useState("");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [selectedRow, setSelectedRow] = useState<BrowserRow | null>(null);
   const [requestedQuantities, setRequestedQuantities] = useState<
     Record<string, string>
   >({});
@@ -405,6 +406,7 @@ export function ProductBrowserGrid({
               onClick={() => {
                 setActiveTab(tab.id);
                 setSelectedRowId(null);
+                setSelectedRow(null);
                 setRequestedQuantities({});
               }}
             >
@@ -434,8 +436,38 @@ export function ProductBrowserGrid({
           columnDefs={columnDefs}
           getRowId={row => row.identity.rowKey}
           selectedRowId={selectedRowId}
-          onSelectedRowChange={row =>
-            setSelectedRowId(row ? row.identity.rowKey : null)
+          onSelectedRowChange={row => {
+            setSelectedRowId(row ? row.identity.rowKey : null);
+            setSelectedRow(row ?? null);
+          }}
+          headerActions={
+            selectedRow ? (
+              selectedRow.productId !== null &&
+              selectedRow.productId !== undefined &&
+              addedProductIds.has(selectedRow.productId) ? (
+                <Button size="sm" disabled>
+                  Added
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() =>
+                    onAddProduct({
+                      productId: selectedRow.productId,
+                      productName: selectedRow.productName,
+                      category: selectedRow.category,
+                      subcategory: selectedRow.subcategory,
+                      cogsMode: selectedRow.cogsMode,
+                      unitCost: selectedRow.unitCost,
+                      unitCostMin: selectedRow.unitCostMin,
+                      unitCostMax: selectedRow.unitCostMax,
+                    })
+                  }
+                >
+                  + Add Selected
+                </Button>
+              )
+            ) : undefined
           }
           isLoading={isLoading}
           emptyTitle="No products found"

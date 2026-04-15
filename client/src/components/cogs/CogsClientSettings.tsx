@@ -55,10 +55,24 @@ export function CogsClientSettings() {
   const getAdjustmentBadge = (type: string, value: string) => {
     if (type === "NONE") {
       return <Badge variant="secondary">No Adjustment</Badge>;
-    } else if (type === "PERCENTAGE") {
-      return <Badge variant="default">{value}% Discount</Badge>;
+    }
+    const numValue = parseFloat(value);
+    const isDecrease = numValue >= 0;
+    const displayValue = Math.abs(numValue);
+    const direction = isDecrease ? "Decrease" : "Increase";
+    const badgeVariant = isDecrease ? "default" : "destructive";
+    if (type === "PERCENTAGE") {
+      return (
+        <Badge variant={badgeVariant}>
+          {displayValue}% COGS {direction}
+        </Badge>
+      );
     } else if (type === "FIXED_AMOUNT") {
-      return <Badge variant="default">${value} Discount</Badge>;
+      return (
+        <Badge variant={badgeVariant}>
+          ${displayValue} COGS {direction}
+        </Badge>
+      );
     }
     return null;
   };
@@ -169,11 +183,17 @@ export function CogsClientSettings() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">No Adjustment</SelectItem>
-                  <SelectItem value="PERCENTAGE">
-                    Percentage Discount
+                  <SelectItem value="PERCENTAGE_DECREASE">
+                    Percentage — COGS Decrease
                   </SelectItem>
-                  <SelectItem value="FIXED_AMOUNT">
-                    Fixed Amount Discount
+                  <SelectItem value="PERCENTAGE_INCREASE">
+                    Percentage — COGS Increase
+                  </SelectItem>
+                  <SelectItem value="FIXED_DECREASE">
+                    Fixed Amount — COGS Decrease
+                  </SelectItem>
+                  <SelectItem value="FIXED_INCREASE">
+                    Fixed Amount — COGS Increase
                   </SelectItem>
                 </SelectContent>
               </Select>

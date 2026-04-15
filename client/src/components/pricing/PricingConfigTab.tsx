@@ -246,9 +246,17 @@ export function PricingConfigTab({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="NONE">No Adjustment</SelectItem>
-                <SelectItem value="PERCENTAGE">Percentage Discount</SelectItem>
-                <SelectItem value="FIXED_AMOUNT">
-                  Fixed Amount Discount
+                <SelectItem value="PERCENTAGE_DECREASE">
+                  Percentage — COGS Decrease
+                </SelectItem>
+                <SelectItem value="PERCENTAGE_INCREASE">
+                  Percentage — COGS Increase
+                </SelectItem>
+                <SelectItem value="FIXED_DECREASE">
+                  Fixed Amount — COGS Decrease
+                </SelectItem>
+                <SelectItem value="FIXED_INCREASE">
+                  Fixed Amount — COGS Increase
                 </SelectItem>
               </SelectContent>
             </Select>
@@ -256,10 +264,10 @@ export function PricingConfigTab({
 
           <div className="space-y-3">
             <Label>Adjustment Value</Label>
-            <Input type="number" min="0" step="0.01" placeholder="0.00" />
+            <Input type="number" step="0.01" placeholder="0.00" />
             <p className="text-xs text-muted-foreground">
-              This adjustment will be applied to COGS calculations for all
-              orders from this client
+              Decrease lowers effective COGS for this client. Increase raises
+              it. Applied to all orders.
             </p>
           </div>
 
