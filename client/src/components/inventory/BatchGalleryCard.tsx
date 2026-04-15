@@ -13,7 +13,10 @@ import {
   StockStatusBadge,
   type StockStatus,
 } from "@/components/inventory/StockStatusBadge";
-import { INVENTORY_STATUS_TOKENS } from "@/lib/statusTokens";
+import {
+  getBatchStatusLabel,
+  INVENTORY_STATUS_TOKENS,
+} from "@/lib/statusTokens";
 import { cn } from "@/lib/utils";
 import { getBrandLabel } from "@/lib/nomenclature";
 
@@ -52,12 +55,6 @@ const formatCurrency = (value: string | number | null | undefined) => {
     maximumFractionDigits: 2,
   }).format(Number.isFinite(numeric) ? numeric : 0);
 };
-
-const formatStatus = (status: string) =>
-  status
-    .split("_")
-    .map(part => part.charAt(0) + part.slice(1).toLowerCase())
-    .join(" ");
 
 export const BatchGalleryCard = memo(function BatchGalleryCard({
   sku,
@@ -108,7 +105,7 @@ export const BatchGalleryCard = memo(function BatchGalleryCard({
             variant="secondary"
             className={cn("absolute left-3 top-3 border-0", statusTone)}
           >
-            {formatStatus(status)}
+            {getBatchStatusLabel(status)}
           </Badge>
         </div>
 

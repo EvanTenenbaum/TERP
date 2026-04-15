@@ -375,7 +375,9 @@ function mapPOsToQueueRows(
       expectedDeliveryDate: po.expectedDeliveryDate ?? "",
       total,
       supplierClientId: supplierId,
-      paymentTerms: po.paymentTerms ?? "-",
+      paymentTerms: po.paymentTerms
+        ? getPaymentTermLabel(po.paymentTerms)
+        : "-",
       isReceivable: RECEIVABLE_STATUSES.has(status),
       isDraft: status === "DRAFT",
     };
@@ -1241,7 +1243,7 @@ function PurchaseOrderCreateEditMode({
                     <SelectItem value="none">None</SelectItem>
                     {PAYMENT_TERMS_OPTIONS.map(term => (
                       <SelectItem key={term} value={term}>
-                        {term.replace(/_/g, " ")}
+                        {getPaymentTermLabel(term)}
                       </SelectItem>
                     ))}
                   </SelectContent>

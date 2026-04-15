@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Edit, Eye } from "lucide-react";
 import { getBrandLabel } from "@/lib/nomenclature";
+import { getBatchStatusLabel } from "@/lib/statusTokens";
 
 interface InventoryCardProps {
   batch: {
@@ -47,13 +48,6 @@ export const InventoryCard = memo(function InventoryCard({
     }
   };
 
-  const formatStatus = (status: string) => {
-    return status
-      .split("_")
-      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
-      .join(" ");
-  };
-
   const isAwaitingIntake = batch.status.toUpperCase() === "AWAITING_INTAKE";
 
   return (
@@ -67,7 +61,7 @@ export const InventoryCard = memo(function InventoryCard({
             <h3 className="text-lg font-semibold">{batch.productName}</h3>
           </div>
           <Badge className={getStatusColor(batch.status)} variant="outline">
-            {formatStatus(batch.status)}
+            {getBatchStatusLabel(batch.status)}
           </Badge>
         </div>
       </CardHeader>

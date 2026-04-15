@@ -17,7 +17,10 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { INVENTORY_STATUS_TOKENS } from "../../lib/statusTokens";
+import {
+  getBatchStatusLabel,
+  INVENTORY_STATUS_TOKENS,
+} from "../../lib/statusTokens";
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { formatInventoryAdjustmentReason } from "@shared/inventoryAdjustmentReasons";
 
@@ -200,12 +203,12 @@ interface BatchVersionEntity {
 
 const BATCH_STATUSES = [
   { value: "ALL", label: "All Statuses" },
-  { value: "AWAITING_INTAKE", label: "Awaiting Intake" },
-  { value: "LIVE", label: "Live" },
-  { value: "ON_HOLD", label: "On Hold" },
-  { value: "QUARANTINED", label: "Quarantined" },
-  { value: "SOLD_OUT", label: "Sold Out" },
-  { value: "CLOSED", label: "Closed" },
+  { value: "AWAITING_INTAKE", label: getBatchStatusLabel("AWAITING_INTAKE") },
+  { value: "LIVE", label: getBatchStatusLabel("LIVE") },
+  { value: "ON_HOLD", label: getBatchStatusLabel("ON_HOLD") },
+  { value: "QUARANTINED", label: getBatchStatusLabel("QUARANTINED") },
+  { value: "SOLD_OUT", label: getBatchStatusLabel("SOLD_OUT") },
+  { value: "CLOSED", label: getBatchStatusLabel("CLOSED") },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -352,7 +355,7 @@ function BatchStatusBadge({ status }: { status: string }) {
       variant="outline"
       className={cn("text-xs", STATUS_COLORS[status] || STATUS_COLORS.LIVE)}
     >
-      {status.replace(/_/g, " ")}
+      {getBatchStatusLabel(status)}
     </Badge>
   );
 }
@@ -1341,7 +1344,7 @@ export function InventoryWorkSurface() {
             if (!previousStatus || previousStatus === newStatus) return;
             notifyStatusFilterExit({ sku: batch?.sku, id: batchId }, newStatus);
             undo.registerAction({
-              description: `Changed status to ${newStatus.replace(/_/g, " ")}`,
+              description: `Changed status to ${getBatchStatusLabel(newStatus)}`,
               undo: async () => {
                 setSaving("Undoing status update...");
                 await undoStatusMutation.mutateAsync({
@@ -1455,7 +1458,7 @@ export function InventoryWorkSurface() {
             editStatus
           );
           undo.registerAction({
-            description: `Edited status to ${editStatus.replace(/_/g, " ")}`,
+            description: `Edited status to ${getBatchStatusLabel(editStatus)}`,
             undo: async () => {
               setSaving("Undoing status update...");
               await undoStatusMutation.mutateAsync({
@@ -1599,7 +1602,9 @@ export function InventoryWorkSurface() {
         vendor: vendor?.name || "",
         brand: brand?.name || "",
         grade: batch?.grade || "",
-        status: batch?.batchStatus || "",
+        status: batch?.batchStatus
+          ? getBatchStatusLabel(batch.batchStatus)
+          : "",
         onHand: formatQuantity(onHand),
         reserved: formatQuantity(reserved),
         quarantine: formatQuantity(quarantine),
