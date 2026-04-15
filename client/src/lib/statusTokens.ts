@@ -190,25 +190,21 @@ export function getPaymentTermLabel(term: string): string {
 // ─── Batch Status Tokens (420-fork Wave 3) ────────────────────────────────────
 
 export const BATCH_STATUS_LABELS: Record<string, string> = {
+  AWAITING_INTAKE: "Awaiting Intake",
   LIVE: "Available",
-  RESERVED: "Reserved",
-  SOLD: "Sold",
-  LOW_STOCK: "Low Stock",
-  DEPLETED: "Depleted",
-  QUARANTINE: "Quarantine",
-  ARCHIVED: "Archived",
-  PENDING_INTAKE: "Pending Intake",
+  ON_HOLD: "On Hold",
+  QUARANTINED: "Quality Hold",
+  SOLD_OUT: "Sold Out",
+  CLOSED: "Closed",
 };
 
 export const BATCH_STATUS_CLASSES: Record<string, string> = {
+  AWAITING_INTAKE: "bg-blue-50 text-blue-700 border border-blue-200",
   LIVE: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  RESERVED: "bg-sky-50 text-sky-700 border border-sky-200",
-  SOLD: "bg-violet-50 text-violet-700 border border-violet-200",
-  LOW_STOCK: "bg-amber-50 text-amber-700 border border-amber-200",
-  DEPLETED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
-  QUARANTINE: "bg-red-50 text-red-700 border border-red-200",
-  ARCHIVED: "bg-neutral-100 text-neutral-400 border border-neutral-200",
-  PENDING_INTAKE: "bg-blue-50 text-blue-700 border border-blue-200",
+  ON_HOLD: "bg-amber-50 text-amber-700 border border-amber-200",
+  QUARANTINED: "bg-red-50 text-red-700 border border-red-200",
+  SOLD_OUT: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  CLOSED: "bg-neutral-100 text-neutral-400 border border-neutral-200",
 };
 
 export function getBatchStatusLabel(status: string): string {
@@ -265,21 +261,32 @@ export const INVOICE_STATUS_CLASSES: Record<string, string> = {
   OVERDUE: "bg-red-50 text-red-700 border border-red-200 font-semibold",
   VOIDED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
   CANCELLED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
-  WRITE_OFF: "bg-neutral-200 text-neutral-600 border border-neutral-300 line-through",
+  WRITE_OFF:
+    "bg-neutral-200 text-neutral-600 border border-neutral-300 line-through",
 };
 
 export function getInvoiceStatusLabel(status: string): string {
-  return INVOICE_STATUS_LABELS[status] ??
-    status.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+  return (
+    INVOICE_STATUS_LABELS[status] ??
+    status
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase())
+  );
 }
 
 export function getInvoiceStatusClass(status: string): string {
-  return INVOICE_STATUS_CLASSES[status] ??
-    "bg-muted text-muted-foreground border border-border";
+  return (
+    INVOICE_STATUS_CLASSES[status] ??
+    "bg-muted text-muted-foreground border border-border"
+  );
 }
 
 // Currency formatting helper
-export function formatCurrency(value: number | string | null | undefined, opts?: { showSign?: boolean }): string {
+export function formatCurrency(
+  value: number | string | null | undefined,
+  opts?: { showSign?: boolean }
+): string {
   const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
   if (isNaN(num)) return "—";
   const formatted = new Intl.NumberFormat("en-US", {

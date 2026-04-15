@@ -276,15 +276,7 @@ export async function getClientPricingContext(
       pricingProfileId: client.pricingProfileId,
       pricingProfileName,
       pricingRules: pricingRulesArray,
-      cogsAdjustmentType:
-        (client.cogsAdjustmentType as
-          | "NONE"
-          | "PERCENTAGE"
-          | "PERCENTAGE_DECREASE"
-          | "PERCENTAGE_INCREASE"
-          | "FIXED_AMOUNT"
-          | "FIXED_DECREASE"
-          | "FIXED_INCREASE") || "NONE",
+      cogsAdjustmentType: client.cogsAdjustmentType || "NONE",
       cogsAdjustmentValue: client.cogsAdjustmentValue
         ? parseFloat(client.cogsAdjustmentValue.toString())
         : null,

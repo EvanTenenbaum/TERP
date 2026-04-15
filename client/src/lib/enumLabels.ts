@@ -5,16 +5,6 @@
  * TER-1064
  */
 
-/** Inventory batch status labels */
-export const INVENTORY_STATUS_LABELS: Record<string, string> = {
-  AWAITING_INTAKE: "Awaiting Intake",
-  LIVE: "Available",
-  ON_HOLD: "On Hold",
-  QUARANTINED: "Quality Hold",
-  SOLD_OUT: "Sold Out",
-  CLOSED: "Closed",
-};
-
 /** Vendor supply item status labels */
 export const VENDOR_SUPPLY_STATUS_LABELS: Record<string, string> = {
   AVAILABLE: "Available",

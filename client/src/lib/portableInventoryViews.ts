@@ -9,7 +9,6 @@ export function adaptInventorySavedViewToSalesFilters(
 ): SalesInventoryFilters {
   return {
     ...DEFAULT_SALES_FILTERS,
-    search: savedFilters.batchId ?? "",
     categories: savedFilters.category ? [savedFilters.category] : [],
     brands: savedFilters.brand ?? [],
     grades: savedFilters.grade ?? [],

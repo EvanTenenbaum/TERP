@@ -211,11 +211,14 @@ function buildCatalogueDescriptor(item: {
   subcategory?: string | null;
   batchSku?: string | null;
 }) {
-  return [
-    item.brand || item.vendor,
-    item.subcategory || item.category,
-    item.batchSku,
-  ]
+  const identityLines = buildProductIdentityLines({
+    brand: item.brand,
+    vendor: item.vendor,
+    category: item.category,
+    subcategory: item.subcategory,
+  });
+
+  return [identityLines.secondary, identityLines.tertiary, item.batchSku]
     .filter(value => Boolean(value) && value !== "-")
     .join(" · ");
 }

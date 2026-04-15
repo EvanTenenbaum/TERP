@@ -23,17 +23,26 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { FileText, Clock, Package } from "lucide-react";
 
 function buildSharedDescriptor(item: {
   brand?: string | null;
+  vendor?: string | null;
   subcategory?: string | null;
   category?: string | null;
   batchSku?: string | null;
 }) {
-  return [item.brand, item.subcategory || item.category, item.batchSku]
-    .filter(Boolean)
-    .join(" • ");
+  const identityLines = buildProductIdentityLines({
+    brand: item.brand,
+    vendor: item.vendor,
+    category: item.category,
+    subcategory: item.subcategory,
+  });
+
+  return [identityLines.secondary, identityLines.tertiary, item.batchSku]
+    .filter(value => Boolean(value) && value !== "-")
+    .join(" · ");
 }
 
 export default function SharedSalesSheetPage() {

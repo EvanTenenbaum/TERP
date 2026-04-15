@@ -433,7 +433,7 @@ describe("SalesCatalogueSurface", () => {
 
     expect(chatText).toContain("Available Now (1)");
     expect(chatText).toContain("Blue Dream");
-    expect(chatText).toContain("Andy Rhan · Indoor · BT-42");
+    expect(chatText).toContain("Andy Rhan · Flower · Indoor · BT-42");
     expect(chatText).toContain("$1,200.00");
   });
 
@@ -499,7 +499,7 @@ describe("SalesCatalogueSurface", () => {
     await waitFor(() => {
       expect(clipboardWriteText).toHaveBeenCalledWith(
         expect.stringContaining(
-          '3.5g "Loud" Pack — Andy Rhan · Indoor · BT-100'
+          '3.5g "Loud" Pack — Andy Rhan · Flower "Top Shelf" · Indoor · BT-100'
         )
       );
     });

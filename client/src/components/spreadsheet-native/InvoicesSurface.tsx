@@ -86,7 +86,6 @@ import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
 import {
-  INVOICE_STATUS_TOKENS,
   INVOICE_AGING_TOKENS,
   LEDGER_TYPE_TOKENS,
   getInvoiceStatusLabel,
@@ -1011,7 +1010,8 @@ export function InvoicesSurface() {
   useEffect(() => {
     const order = fromOrderQuery.data;
     if (!order || fromOrderId === null) return;
-    const customerId = (order as { customerId?: number | null }).customerId ?? 0;
+    const customerId =
+      (order as { customerId?: number | null }).customerId ?? 0;
     if (!customerId) return;
     setCreateForm(f => ({
       ...f,
@@ -1019,7 +1019,7 @@ export function InvoicesSurface() {
       notes: f.notes || `Auto-filled from Order #${fromOrderId}`,
     }));
     setShowCreateDialog(true);
-  }, [fromOrderQuery.data, fromOrderId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fromOrderQuery.data, fromOrderId]);
 
   const openPaymentDialogFromHandoff = useCallback(() => {
     setShowPaymentDialog(true);
