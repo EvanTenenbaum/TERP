@@ -321,14 +321,18 @@ export function PricingContextPanel({
                 <span className="text-muted-foreground">COGS Adjustment</span>
                 <Badge
                   variant={
-                    client.cogsAdjustmentType?.includes("INCREASE")
+                    client.cogsAdjustmentType === "PERCENTAGE_INCREASE" ||
+                    client.cogsAdjustmentType === "FIXED_INCREASE"
                       ? "destructive"
                       : "secondary"
                   }
                 >
-                  {client.cogsAdjustmentType?.includes("PERCENTAGE")
-                    ? `${client.cogsAdjustmentValue}% COGS ${client.cogsAdjustmentType?.includes("INCREASE") ? "Increase" : "Decrease"}`
-                    : `$${client.cogsAdjustmentValue} COGS ${client.cogsAdjustmentType?.includes("INCREASE") ? "Increase" : "Decrease"}`}
+                  {/* Legacy "PERCENTAGE"/"FIXED_AMOUNT" values treated as decrease */}
+                  {client.cogsAdjustmentType === "PERCENTAGE" ||
+                  client.cogsAdjustmentType === "PERCENTAGE_DECREASE" ||
+                  client.cogsAdjustmentType === "PERCENTAGE_INCREASE"
+                    ? `${client.cogsAdjustmentValue}% COGS ${client.cogsAdjustmentType === "PERCENTAGE_INCREASE" ? "Increase" : "Decrease"}`
+                    : `$${client.cogsAdjustmentValue} COGS ${client.cogsAdjustmentType === "FIXED_INCREASE" ? "Increase" : "Decrease"}`}
                 </Badge>
               </div>
             )}

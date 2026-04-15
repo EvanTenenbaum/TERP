@@ -57,24 +57,30 @@ export function CogsClientSettings() {
       return <Badge variant="secondary">No Adjustment</Badge>;
     }
     const numValue = parseFloat(value);
-    const isDecrease = numValue >= 0;
     const displayValue = Math.abs(numValue);
-    const direction = isDecrease ? "Decrease" : "Increase";
-    const badgeVariant = isDecrease ? "default" : "destructive";
-    if (type === "PERCENTAGE") {
+    // Legacy "PERCENTAGE"/"FIXED_AMOUNT" treated as decrease for backward compat
+    const isIncrease =
+      type === "PERCENTAGE_INCREASE" || type === "FIXED_INCREASE";
+    const direction = isIncrease ? "Increase" : "Decrease";
+    const badgeVariant: "default" | "destructive" = isIncrease
+      ? "destructive"
+      : "default";
+    const isPercent =
+      type === "PERCENTAGE" ||
+      type === "PERCENTAGE_DECREASE" ||
+      type === "PERCENTAGE_INCREASE";
+    if (isPercent) {
       return (
         <Badge variant={badgeVariant}>
           {displayValue}% COGS {direction}
         </Badge>
       );
-    } else if (type === "FIXED_AMOUNT") {
-      return (
-        <Badge variant={badgeVariant}>
-          ${displayValue} COGS {direction}
-        </Badge>
-      );
     }
-    return null;
+    return (
+      <Badge variant={badgeVariant}>
+        ${displayValue} COGS {direction}
+      </Badge>
+    );
   };
 
   return (
