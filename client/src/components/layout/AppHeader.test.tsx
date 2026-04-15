@@ -13,9 +13,16 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 
 // Mock wouter
 const mockSetLocation = vi.fn();
+let mockLocation = "/";
 vi.mock("wouter", () => ({
-  useLocation: () => ["/", mockSetLocation],
+  useLocation: () => [mockLocation, mockSetLocation],
   useSearch: () => "",
+}));
+
+vi.mock("./AppBreadcrumb", () => ({
+  AppBreadcrumb: ({ className }: { className?: string }) => (
+    <div className={className}>Breadcrumb Trail</div>
+  ),
 }));
 
 // Mock version.json
@@ -89,6 +96,7 @@ vi.mock("@/lib/trpc", () => ({
 describe("AppHeader - Notification Bell", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLocation = "/";
   });
 
   const openAccountMenu = () => {
@@ -138,5 +146,25 @@ describe("AppHeader - Notification Bell", () => {
     expect(
       screen.getByRole("menuitem", { name: /switch to comfortable spacing/i })
     ).toBeInTheDocument();
+  });
+
+  it("separates breadcrumb and account zones with bordered containers", () => {
+    mockLocation = "/orders";
+
+    render(
+      <ThemeProvider>
+        <AppHeader />
+      </ThemeProvider>
+    );
+
+    const breadcrumbZone = screen
+      .getByText("Breadcrumb Trail")
+      .closest("div.border-r");
+    const accountZone = screen
+      .getByRole("button", { name: /test user/i })
+      .closest("div.border-l");
+
+    expect(breadcrumbZone).not.toBeNull();
+    expect(accountZone).not.toBeNull();
   });
 });

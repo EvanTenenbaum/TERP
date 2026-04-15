@@ -8,9 +8,13 @@ import {
 } from "@testing-library/react";
 import { SalesOrderSurface } from "./SalesOrderSurface";
 
-const { mockToastError } = vi.hoisted(() => ({
+const { mockToastError, mockToastInfo, mockCreditDialogProps } = vi.hoisted(
+  () => ({
   mockToastError: vi.fn(),
-}));
+  mockToastInfo: vi.fn(),
+    mockCreditDialogProps: vi.fn(),
+  })
+);
 
 const mockSetLocation = vi.fn();
 const mockBuildDocumentRoute = vi.fn(() => "/sales?tab=create-order");
@@ -57,6 +61,15 @@ let mockInventoryData = [
     status: "LIVE",
   },
 ];
+let mockSavedViewsData: Array<{
+  id: number;
+  name: string;
+  filters: Record<string, unknown>;
+  sort: { field: string; direction: "asc" | "desc" };
+  columnVisibility: Record<string, boolean>;
+  isDefault?: boolean;
+}> = [];
+const gridPropsByTitle = new Map<string, Record<string, unknown>>();
 
 const mockDraftState = {
   clientId: null as number | null,
@@ -123,6 +136,7 @@ vi.mock("./PowersheetGrid", () => ({
     }>;
     rows?: Array<Record<string, unknown>>;
   }) => {
+    gridPropsByTitle.set(title, { title, columnDefs, rows });
     const actionColumn = columnDefs.find(column => column.field === "inOrder");
     const firstRow = rows[0];
     const actionCell =
@@ -150,6 +164,12 @@ vi.mock("@/hooks/useOrderDraft", () => ({
 
 vi.mock("@/hooks/orders/useOrderCalculations", () => ({
   useOrderCalculations: () => mockCalculationState,
+}));
+
+vi.mock("@/hooks/usePermissions", () => ({
+  usePermissions: () => ({
+    hasAnyPermission: () => true,
+  }),
 }));
 
 vi.mock("@/hooks/work-surface/useWorkSurfaceKeyboard", () => ({
@@ -182,7 +202,7 @@ vi.mock("@/lib/trpc", () => ({
         })),
       },
       getViews: {
-        useQuery: vi.fn(() => ({ data: [] })),
+        useQuery: vi.fn(() => ({ data: mockSavedViewsData })),
       },
     },
     organizationSettings: {
@@ -209,6 +229,7 @@ vi.mock("wouter", () => ({
 vi.mock("sonner", () => ({
   toast: {
     error: mockToastError,
+    info: mockToastInfo,
     success: vi.fn(),
   },
 }));
@@ -257,7 +278,52 @@ vi.mock("@/components/orders", () => ({
       </button>
     </div>
   ),
-  CreditWarningDialog: () => null,
+  CreditWarningDialog: (props: {
+    open: boolean;
+    creditCheck: object | null;
+    onViewPaymentHistory?: () => void;
+    onRecordPayment?: () => void;
+  }) => {
+    mockCreditDialogProps(props);
+    if (!props.open || !props.creditCheck) {
+      return null;
+    }
+
+    return (
+      <div data-testid="credit-warning-dialog">
+        <button type="button" onClick={props.onViewPaymentHistory}>
+          View payment history
+        </button>
+        <button type="button" onClick={props.onRecordPayment}>
+          Record payment
+        </button>
+      </div>
+    );
+  },
+}));
+
+vi.mock("@/components/orders/ClientCommitContextCard", () => ({
+  ClientCommitContextCard: ({
+    onOpenOverview,
+    onOpenMoney,
+    onOpenPricing,
+  }: {
+    onOpenOverview: () => void;
+    onOpenMoney: () => void;
+    onOpenPricing: () => void;
+  }) => (
+    <div data-testid="client-commit-context">
+      <button type="button" onClick={onOpenOverview}>
+        Overview
+      </button>
+      <button type="button" onClick={onOpenMoney}>
+        Money
+      </button>
+      <button type="button" onClick={onOpenPricing}>
+        Pricing
+      </button>
+    </div>
+  ),
 }));
 
 vi.mock("@/components/sales/QuickViewSelector", () => ({
@@ -278,6 +344,8 @@ vi.mock("@/components/inventory/SavedViewsDropdown", () => ({
 
 describe("SalesOrderSurface", () => {
   beforeEach(() => {
+    window.sessionStorage.clear();
+    gridPropsByTitle.clear();
     mockInventoryData = [
       {
         id: 11,
@@ -289,6 +357,7 @@ describe("SalesOrderSurface", () => {
         status: "LIVE",
       },
     ];
+    mockSavedViewsData = [];
     mockDraftState.clientId = null;
     mockDraftState.items = [];
     mockDraftState.orderType = "SALE";
@@ -309,6 +378,8 @@ describe("SalesOrderSurface", () => {
     mockSetLocation.mockReset();
     mockBuildDocumentRoute.mockReset();
     mockUseOrderDraft.mockReset();
+    mockCreditDialogProps.mockReset();
+    mockToastInfo.mockReset();
     mockUseOrderDraft.mockImplementation(
       (options?: { surfaceVariant?: string }) => {
         const surfaceVariant =
@@ -388,6 +459,7 @@ describe("SalesOrderSurface", () => {
     mockDraftState.clientId = 7;
     const { container } = render(<SalesOrderSurface />);
     expect(screen.getByText("Selected client: Acme")).toBeInTheDocument();
+    expect(screen.getByTestId("client-commit-context")).toBeInTheDocument();
     expect(screen.getByTestId("grid-inventory")).toBeInTheDocument();
     expect(screen.getByTestId("document-grid")).toBeInTheDocument();
     expect(screen.getByTestId("invoice-bottom")).toBeInTheDocument();
@@ -413,6 +485,174 @@ describe("SalesOrderSurface", () => {
     expect(
       screen.getAllByRole("button", { name: "Confirm Order" })
     ).toHaveLength(1);
+  });
+
+  it("defaults the order inventory browser to sellable rows only", async () => {
+    mockDraftState.clientId = 7;
+    mockInventoryData = [
+      {
+        id: 11,
+        name: "Blue Dream",
+        retailPrice: 20,
+        basePrice: 10,
+        quantity: 5,
+        appliedRules: [],
+        brand: "Andy Rhan",
+        subcategory: "Indoor",
+        batchSku: "BD-11",
+        status: "LIVE",
+      },
+      {
+        id: 12,
+        name: "Quarantined Cut",
+        retailPrice: 18,
+        basePrice: 9,
+        quantity: 4,
+        appliedRules: [],
+        brand: "Andy Rhan",
+        subcategory: "Indoor",
+        batchSku: "QC-12",
+        status: "QUARANTINED",
+      },
+    ];
+
+    render(<SalesOrderSurface />);
+
+    await waitFor(() => {
+      expect(
+        (
+          gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }> | undefined
+        )?.map(row => row.name)
+      ).toEqual(["Blue Dream"]);
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Available now" })
+    ).toBeInTheDocument();
+  });
+
+  it("applies imported portable cuts and preserves include-unavailable carryover", async () => {
+    mockDraftState.clientId = 7;
+    mockInventoryData = [
+      {
+        id: 11,
+        name: "Blue Dream",
+        retailPrice: 20,
+        basePrice: 10,
+        quantity: 5,
+        appliedRules: [],
+        brand: "Andy Rhan",
+        subcategory: "Indoor",
+        batchSku: "BD-11",
+        status: "LIVE",
+      },
+      {
+        id: 12,
+        name: "Quarantined Cut",
+        retailPrice: 18,
+        basePrice: 9,
+        quantity: 4,
+        appliedRules: [],
+        brand: "Andy Rhan",
+        subcategory: "Indoor",
+        batchSku: "QC-12",
+        status: "QUARANTINED",
+      },
+      {
+        id: 13,
+        name: "Outdoor Value",
+        retailPrice: 14,
+        basePrice: 7,
+        quantity: 10,
+        appliedRules: [],
+        brand: "Westside Farms",
+        subcategory: "Outdoor",
+        batchSku: "OV-13",
+        status: "LIVE",
+      },
+    ];
+    mockSavedViewsData = [
+      {
+        id: 3,
+        name: "Andy Indoor",
+        filters: {
+          search: "",
+          categories: [],
+          brands: ["Andy Rhan"],
+          grades: [],
+          priceMin: null,
+          priceMax: null,
+          strainFamilies: [],
+          vendors: [],
+          inStockOnly: false,
+          includeUnavailable: true,
+        },
+        sort: { field: "name", direction: "asc" },
+        columnVisibility: {
+          category: true,
+          quantity: true,
+          basePrice: true,
+          retailPrice: true,
+          markup: true,
+          grade: false,
+          vendor: true,
+          strain: false,
+        },
+      },
+    ];
+    window.sessionStorage.setItem(
+      "salesCataloguePortableCut",
+      JSON.stringify({
+        clientId: 7,
+        viewId: 3,
+        viewName: "Andy Indoor",
+        filters: {
+          search: "",
+          categories: [],
+          brands: ["Andy Rhan"],
+          grades: [],
+          priceMin: null,
+          priceMax: null,
+          strainFamilies: [],
+          vendors: [],
+          inStockOnly: false,
+          includeUnavailable: true,
+        },
+      })
+    );
+
+    render(<SalesOrderSurface />);
+
+    await waitFor(() => {
+      expect(mockToastInfo).toHaveBeenCalledWith("Imported cut: Andy Indoor");
+      expect(
+        (
+          gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }> | undefined
+        )?.map(row => row.name)
+      ).toEqual(["Blue Dream", "Quarantined Cut"]);
+    });
+
+    expect(screen.getByText("Saved cut: Andy Indoor")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Including unavailable" })
+    ).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Including unavailable" })
+    );
+
+    await waitFor(() => {
+      expect(
+        (
+          gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }> | undefined
+        )?.map(row => row.name)
+      ).toEqual(["Blue Dream"]);
+    });
+
+    expect(
+      screen.getByRole("button", { name: "Available now" })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Include unavailable")).toBeInTheDocument();
   });
 
   it("clears route hydration params before switching clients", () => {
@@ -508,7 +748,7 @@ describe("SalesOrderSurface", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("disables add for non-sellable inventory rows", () => {
+  it("keeps non-sellable rows blocked even when unavailable inventory is shown", async () => {
     mockDraftState.clientId = 7;
     mockInventoryData = [
       {
@@ -524,7 +764,38 @@ describe("SalesOrderSurface", () => {
 
     render(<SalesOrderSurface />);
 
-    expect(screen.getByRole("button", { name: /add/i })).toBeDisabled();
+    expect(
+      (gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }>).length
+    ).toBe(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "Available now" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /add/i })).toBeDisabled();
+    });
+  });
+
+  it("routes commit-context quick actions into the relationship profile", () => {
+    mockDraftState.clientId = 7;
+
+    render(<SalesOrderSurface />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Overview" }));
+    fireEvent.click(screen.getByRole("button", { name: "Money" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pricing" }));
+
+    expect(mockSetLocation).toHaveBeenNthCalledWith(
+      1,
+      "/clients/7?section=overview"
+    );
+    expect(mockSetLocation).toHaveBeenNthCalledWith(
+      2,
+      "/clients/7?section=money"
+    );
+    expect(mockSetLocation).toHaveBeenNthCalledWith(
+      3,
+      "/clients/7?section=sales-pricing"
+    );
   });
 
   it("applies staged quantity and markup before adding a row", () => {
@@ -624,5 +895,243 @@ describe("SalesOrderSurface", () => {
       );
     });
     expect(screen.queryByText("Confirm order?")).not.toBeInTheDocument();
+  });
+
+  it("disables confirmation when every tracked draft line is unavailable", async () => {
+    mockDraftState.clientId = 7;
+    mockDraftState.items = [
+      {
+        batchId: 11,
+        quantity: 1,
+        cogsPerUnit: 10,
+        originalCogsPerUnit: 10,
+        marginPercent: 25,
+        marginDollar: 2.5,
+        unitPrice: 12.5,
+        lineTotal: 12.5,
+        isCogsOverridden: false,
+        isMarginOverridden: false,
+        marginSource: "DEFAULT",
+        isSample: false,
+      },
+    ];
+    mockCalculationState.isValid = true;
+    mockInventoryData = [
+      {
+        id: 11,
+        name: "Blue Dream",
+        retailPrice: 20,
+        basePrice: 10,
+        quantity: 5,
+        appliedRules: [],
+        status: "QUARANTINED",
+      },
+    ];
+
+    render(<SalesOrderSurface />);
+
+    expect(screen.getByRole("button", { name: "Confirm Order" })).toBeDisabled();
+    expect(
+      screen.getByText(
+        "This draft only contains unavailable, blocked, or unresolved lines. Replace, recheck, or remove them before confirming the order."
+      )
+    ).toBeInTheDocument();
+    expect(mockCreditMutation.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("keeps confirmation available when sellable and blocked draft lines are mixed", () => {
+    mockDraftState.clientId = 7;
+    mockDraftState.items = [
+      {
+        batchId: 11,
+        quantity: 1,
+        cogsPerUnit: 10,
+        originalCogsPerUnit: 10,
+        marginPercent: 25,
+        marginDollar: 2.5,
+        unitPrice: 12.5,
+        lineTotal: 12.5,
+        isCogsOverridden: false,
+        isMarginOverridden: false,
+        marginSource: "DEFAULT",
+        isSample: false,
+      },
+      {
+        batchId: 12,
+        quantity: 1,
+        cogsPerUnit: 12,
+        originalCogsPerUnit: 12,
+        marginPercent: 30,
+        marginDollar: 4,
+        unitPrice: 16,
+        lineTotal: 16,
+        isCogsOverridden: false,
+        isMarginOverridden: false,
+        marginSource: "DEFAULT",
+        isSample: false,
+      },
+    ];
+    mockCalculationState.isValid = true;
+    mockInventoryData = [
+      {
+        id: 11,
+        name: "Blue Dream",
+        retailPrice: 20,
+        basePrice: 10,
+        quantity: 5,
+        appliedRules: [],
+        status: "QUARANTINED",
+      },
+      {
+        id: 12,
+        name: "Gelato",
+        retailPrice: 24,
+        basePrice: 12,
+        quantity: 5,
+        appliedRules: [],
+        status: "LIVE",
+      },
+    ];
+
+    render(<SalesOrderSurface />);
+
+    expect(
+      screen.getByText(
+        "1 draft line still needs live availability confirmation before final confirmation."
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 blocked line")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Confirm Order" })
+    ).toBeEnabled();
+  });
+
+  it("disables confirmation when every tracked draft line is unresolved from live inventory", () => {
+    mockDraftState.clientId = 7;
+    mockDraftState.items = [
+      {
+        batchId: 99,
+        quantity: 1,
+        cogsPerUnit: 10,
+        originalCogsPerUnit: 10,
+        marginPercent: 25,
+        marginDollar: 2.5,
+        unitPrice: 12.5,
+        lineTotal: 12.5,
+        isCogsOverridden: false,
+        isMarginOverridden: false,
+        marginSource: "DEFAULT",
+        isSample: false,
+      },
+    ];
+    mockCalculationState.isValid = true;
+    mockInventoryData = [
+      {
+        id: 11,
+        name: "Blue Dream",
+        retailPrice: 20,
+        basePrice: 10,
+        quantity: 5,
+        appliedRules: [],
+        status: "LIVE",
+      },
+    ];
+
+    render(<SalesOrderSurface />);
+
+    expect(screen.getByRole("button", { name: "Confirm Order" })).toBeDisabled();
+    expect(
+      screen.getByText(
+        "This draft only contains unavailable, blocked, or unresolved lines. Replace, recheck, or remove them before confirming the order."
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText("1 unresolved line")).toBeInTheDocument();
+    expect(mockCreditMutation.mutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("routes the credit warning payment-history next step into accounting", async () => {
+    mockDraftState.clientId = 7;
+    mockDraftState.items = [
+      {
+        batchId: 11,
+        quantity: 1,
+        cogsPerUnit: 10,
+        originalCogsPerUnit: 10,
+        marginPercent: 25,
+        marginDollar: 2.5,
+        unitPrice: 12.5,
+        lineTotal: 12.5,
+        isCogsOverridden: false,
+        isMarginOverridden: false,
+        marginSource: "DEFAULT",
+        isSample: false,
+      },
+    ];
+    mockCalculationState.isValid = true;
+    mockCreditMutation.mutateAsync.mockResolvedValueOnce({
+      allowed: false,
+      warning: "Credit limit exceeded",
+      requiresOverride: true,
+      creditLimit: 1000,
+      currentExposure: 900,
+      newExposure: 1100,
+      availableCredit: 100,
+      utilizationPercent: 110,
+      enforcementMode: "SOFT_BLOCK",
+    });
+
+    render(<SalesOrderSurface />);
+    fireEvent.click(screen.getByRole("button", { name: "Confirm Order" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("credit-warning-dialog")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "View payment history" }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith("/accounting?tab=invoices");
+  });
+
+  it("routes the credit warning record-payment next step into accounting", async () => {
+    mockDraftState.clientId = 7;
+    mockDraftState.items = [
+      {
+        batchId: 11,
+        quantity: 1,
+        cogsPerUnit: 10,
+        originalCogsPerUnit: 10,
+        marginPercent: 25,
+        marginDollar: 2.5,
+        unitPrice: 12.5,
+        lineTotal: 12.5,
+        isCogsOverridden: false,
+        isMarginOverridden: false,
+        marginSource: "DEFAULT",
+        isSample: false,
+      },
+    ];
+    mockCalculationState.isValid = true;
+    mockCreditMutation.mutateAsync.mockResolvedValueOnce({
+      allowed: false,
+      warning: "Credit limit exceeded",
+      requiresOverride: true,
+      creditLimit: 1000,
+      currentExposure: 900,
+      newExposure: 1100,
+      availableCredit: 100,
+      utilizationPercent: 110,
+      enforcementMode: "SOFT_BLOCK",
+    });
+
+    render(<SalesOrderSurface />);
+    fireEvent.click(screen.getByRole("button", { name: "Confirm Order" }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("credit-warning-dialog")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Record payment" }));
+
+    expect(mockSetLocation).toHaveBeenCalledWith("/accounting?tab=payments");
   });
 });

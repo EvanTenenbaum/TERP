@@ -17,6 +17,7 @@ describe("productIntakeDrafts", () => {
     createProductIntakeDraftFromPO({
       poId: 1001,
       poNumber: "PO-1001",
+      expectedDeliveryDate: "2026-04-08T14:00:00.000Z",
       vendorId: 15,
       vendorName: "Golden Supplier",
       warehouseId: 3,
@@ -51,6 +52,7 @@ describe("productIntakeDrafts", () => {
     expect(saved).not.toBeNull();
     expect(saved?.status).toBe("DRAFT");
     expect(saved?.idempotencyKey).toContain(`receive-${draft.id}`);
+    expect(saved?.expectedDeliveryDate).toBe("2026-04-08");
   });
 
   it("increments version on each upsert", () => {

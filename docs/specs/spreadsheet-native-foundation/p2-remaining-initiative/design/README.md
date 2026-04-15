@@ -134,6 +134,8 @@ The sales flow still makes users reconstruct the same decision in multiple place
 - `TER-1054` and `TER-1062` are already locally implemented and should be reconciled during Tranche 0 rather than re-built here.
 - adjacent artifact-quality anchor: `TER-344`
 - adjacent QA anchor: `TER-1003`
+- imported non-sellable rows need an explicit commit-time safeguard instead of relying only on add-row blocking in the live grid
+- shared view, print/PDF, and copied catalogue text should reuse one customer-facing identity and confirmation-terms system
 
 ### Tranche 3: Operations And Settlement Continuity
 

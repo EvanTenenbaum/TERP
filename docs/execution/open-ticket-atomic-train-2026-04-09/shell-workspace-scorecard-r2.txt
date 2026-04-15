@@ -1,0 +1,11 @@
+TER-1098|93|below_bar|Concrete implementation with line refs but no explicit border assertions shown|Add test assertions verifying border presence on breadcrumb/account separation zones
+TER-1099|97|meets_bar|Direct test proof of h1 hierarchy and separation|none
+TER-1100|96|meets_bar|Direct test assertion for sales description|none
+TER-1101|96|meets_bar|Direct test assertion for sales meta items|none
+TER-1102|96|meets_bar|Direct test assertion for inventory meta cluster|none
+TER-1103|96|meets_bar|Direct test assertion for procurement meta|none
+TER-1104|96|meets_bar|Direct test assertion for procurement commandStrip|none
+TER-1105|96|meets_bar|Direct test assertion for relationships commandStrip|none
+TER-1106|96|meets_bar|Direct test assertion for accounting operational meta|none
+TER-1107|96|meets_bar|Direct test assertion for accounting commandStrip|none
+TER-1108|96|meets_bar|Direct test proof of tab preservation via query params|none

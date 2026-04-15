@@ -55,7 +55,7 @@ vi.mock("@/lib/trpc", () => ({
                 id: 1,
                 clientId: 10,
                 sampleRequestStatus: "REQUESTED",
-                notes: "Due: 2026-04-01",
+                notes: "Due Date: 2026-04-01",
                 requestDate: "2026-03-01",
                 createdAt: "2026-03-01T00:00:00.000Z",
                 products: [
@@ -256,7 +256,18 @@ vi.mock("@/components/work-surface/InspectorPanel", () => ({
       {children}
     </div>
   ),
-  InspectorField: () => null,
+  InspectorField: ({
+    label,
+    children,
+  }: {
+    label: string;
+    children: React.ReactNode;
+  }) => (
+    <div>
+      <span>{label}</span>
+      {children}
+    </div>
+  ),
 }));
 
 vi.mock("@/components/work-surface/WorkSurfaceStatusBar", () => ({
@@ -369,5 +380,13 @@ describe("SamplesPilotSurface", () => {
 
     expect(screen.getByText("Sample #1")).toBeInTheDocument();
     expect(screen.getByText("Request Details")).toBeInTheDocument();
+  });
+
+  it("formats requested and due dates in the inspector", () => {
+    render(<SamplesPilotSurface onOpenClassic={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /open sample 1/i }));
+
+    expect(screen.getByText("Mar 1, 2026")).toBeInTheDocument();
+    expect(screen.getByText("Apr 1, 2026")).toBeInTheDocument();
   });
 });

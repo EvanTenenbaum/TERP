@@ -19,7 +19,7 @@ import { requirePermission } from "../_core/permissionMiddleware";
 import { storagePut, storageDelete, isStorageConfigured } from "../storage";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { getDb } from "../db";
-import { batches, inventoryMovements } from "../../drizzle/schema";
+import { batches, inventoryMovements, pricingDefaults } from "../../drizzle/schema";
 import { eq, sql, desc, inArray, and, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { env } from "../_core/env";
@@ -28,6 +28,7 @@ import {
   formatInventoryAdjustmentReason,
   type InventoryAdjustmentReason,
 } from "@shared/inventoryAdjustmentReasons";
+import { marginCalculationService } from "../services/marginCalculationService";
 import {
   buildDemoMediaUrl,
   createDemoMediaBlob,
@@ -377,7 +378,9 @@ export const inventoryRouter = router({
           holdQty: number;
           availableQty: number;
           totalQty: string;
+          unitPrice: number | null;
           unitCogs: number | null;
+          marginPercent: number | null;
           totalValue: number | null;
           receivedDate: Date | null;
           ageDays: number;
@@ -456,7 +459,9 @@ export const inventoryRouter = router({
                 holdQty: hold,
                 availableQty: available,
                 totalQty: inventoryUtils.computeTotalQty(batch),
+                unitPrice: null,
                 unitCogs,
+                marginPercent: null,
                 totalValue: unitCogs !== null ? onHand * unitCogs : null,
                 receivedDate,
                 ageDays,
@@ -472,6 +477,57 @@ export const inventoryRouter = router({
             ];
           }
         );
+
+        const db = await getDb();
+        const pricingDefaultsRows = db
+          ? await db
+              .select({
+                productCategory: pricingDefaults.productCategory,
+                defaultMarginPercent: pricingDefaults.defaultMarginPercent,
+              })
+              .from(pricingDefaults)
+          : [];
+        const marginByCategory = new Map<string, number>();
+        for (const row of pricingDefaultsRows) {
+          const margin = parseFloat(String(row.defaultMarginPercent));
+          if (Number.isFinite(margin)) {
+            marginByCategory.set(row.productCategory, margin);
+          }
+        }
+        const defaultMargin = marginByCategory.get("DEFAULT");
+        const otherMargin = marginByCategory.get("OTHER");
+        const resolveMargin = (category: string | null) => {
+          if (category && marginByCategory.has(category)) {
+            return marginByCategory.get(category) ?? null;
+          }
+          if (category && category !== "OTHER" && otherMargin !== undefined) {
+            return otherMargin;
+          }
+          if (defaultMargin !== undefined) {
+            return defaultMargin;
+          }
+          return null;
+        };
+
+        filteredItems = filteredItems.map(item => {
+          const marginPercent = resolveMargin(item.category);
+          if (item.unitCogs === null || marginPercent === null) {
+            return { ...item, marginPercent, unitPrice: null };
+          }
+
+          try {
+            return {
+              ...item,
+              marginPercent,
+              unitPrice: marginCalculationService.calculatePriceFromMarginPercent(
+                item.unitCogs,
+                marginPercent
+              ),
+            };
+          } catch {
+            return { ...item, marginPercent, unitPrice: null };
+          }
+        });
 
         // Apply search filter
         if (input.search) {
@@ -522,8 +578,6 @@ export const inventoryRouter = router({
             item.code.toLowerCase().includes(batchIdFilter)
           );
         }
-
-        const db = await getDb();
 
         const parseDateValue = (value: Date | string | null): Date | null => {
           if (!value) return null;

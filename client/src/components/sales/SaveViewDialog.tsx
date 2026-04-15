@@ -104,6 +104,7 @@ export function SaveViewDialog({
     if (filters.vendors.length > 0) count++;
     if (filters.priceMin !== null || filters.priceMax !== null) count++;
     if (filters.inStockOnly) count++;
+    if (filters.includeUnavailable) count++;
     return count;
   })();
 
@@ -216,6 +217,9 @@ export function SaveViewDialog({
               )}
               {filters.inStockOnly && (
                 <Badge variant="secondary">In Stock Only</Badge>
+              )}
+              {filters.includeUnavailable && (
+                <Badge variant="secondary">Include unavailable</Badge>
               )}
               {(filters.priceMin !== null || filters.priceMax !== null) && (
                 <Badge variant="secondary">

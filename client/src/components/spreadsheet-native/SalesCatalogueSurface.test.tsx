@@ -354,6 +354,64 @@ describe("SalesCatalogueSurface", () => {
     ).toContain("Sunset Shake");
   });
 
+  it("opens advanced filters from the catalogue toolbar", async () => {
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+
+    await waitFor(() => {
+      expect(gridPropsByTitle.get("Inventory")).toBeDefined();
+    });
+
+    expect(screen.queryByText("Advanced Filters")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Filters" }));
+
+    expect(screen.getByText("Advanced Filters")).toBeInTheDocument();
+  });
+
+  it("renders plain-language unavailable status copy in the catalogue grid", async () => {
+    render(<SalesCatalogueSurface />);
+
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Include unavailable" })
+    );
+
+    await waitFor(() => {
+      expect(
+        (gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }>)
+          ?.length
+      ).toBe(2);
+    });
+
+    const inventoryGrid = gridPropsByTitle.get("Inventory") as {
+      columnDefs?: Array<{
+        field?: string;
+        cellRenderer?: (params: {
+          data?: Record<string, unknown>;
+          value?: unknown;
+        }) => ReactNode;
+      }>;
+      rows?: Array<Record<string, unknown>>;
+    };
+    const productColumn = inventoryGrid.columnDefs?.find(
+      column => column.field === "name"
+    );
+    const unavailableRow = inventoryGrid.rows?.find(
+      row => row.status === "AWAITING_INTAKE"
+    );
+    const renderedCell = productColumn?.cellRenderer?.({
+      data: unavailableRow,
+      value: unavailableRow?.name,
+    });
+
+    const statusCell = render(<>{renderedCell}</>);
+    expect(statusCell.getByText("Incoming")).toBeInTheDocument();
+    expect(
+      statusCell.getByText("Still incoming and not ready to sell")
+    ).toBeInTheDocument();
+  });
+
   it("shows a draft-name validation hint when work is unsaved", () => {
     draftState.hasUnsavedChanges = true;
 
@@ -435,6 +493,9 @@ describe("SalesCatalogueSurface", () => {
     expect(chatText).toContain("Blue Dream");
     expect(chatText).toContain("Andy Rhan · Flower · Indoor · BT-42");
     expect(chatText).toContain("$1,200.00");
+    expect(chatText).toContain(
+      "Pricing, availability, and payment terms are subject to final confirmation."
+    );
   });
 
   it("omits placeholder descriptors from the chat summary", () => {
@@ -450,6 +511,9 @@ describe("SalesCatalogueSurface", () => {
 
     expect(chatText).toContain("Blue Dream");
     expect(chatText).not.toContain("- · -");
+    expect(chatText).toContain(
+      "1 line is missing grower or batch identity. Confirm the exact lot before sending."
+    );
   });
 
   it("disables both save affordances while a save is in flight", async () => {
@@ -488,7 +552,7 @@ describe("SalesCatalogueSurface", () => {
     revokeObjectURL.mockRestore();
   });
 
-  it("copies the current filtered cut for chat", async () => {
+  it("copies the selected catalogue cut for chat", async () => {
     render(<SalesCatalogueSurface />);
     fireEvent.click(screen.getByText("Select Client 1"));
     fireEvent.click(screen.getByTestId("grid-Inventory"));

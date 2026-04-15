@@ -69,6 +69,7 @@ export interface InventoryFilters {
   strainFamilies: string[];
   vendors: string[];
   inStockOnly: boolean;
+  includeUnavailable: boolean;
 }
 
 export interface InventorySortConfig {
@@ -103,6 +104,7 @@ export const DEFAULT_FILTERS: InventoryFilters = {
   strainFamilies: [],
   vendors: [],
   inStockOnly: false,
+  includeUnavailable: false,
 };
 
 export const DEFAULT_SORT: InventorySortConfig = {

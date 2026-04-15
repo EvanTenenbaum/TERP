@@ -2,9 +2,9 @@
  * @vitest-environment jsdom
  */
 
-import type { ReactNode } from "react";
+import { isValidElement, type ReactNode } from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PurchaseOrderSurface } from "./PurchaseOrderSurface";
 
 const mockSetLocation = vi.fn();
@@ -71,29 +71,44 @@ vi.mock("./PowersheetGrid", () => ({
     title,
     rows = [],
     columnDefs = [],
+    getRowClass,
     onSelectedRowChange,
     onRowClicked,
     headerActions,
     selectionMode,
   }: {
     title: string;
-    rows?: Array<{ identity?: { rowKey: string } }>;
+    rows?: Array<{ identity?: { rowKey: string }; poNumber?: string }>;
     columnDefs?: Array<{ field?: string }>;
+    getRowClass?: (params: { data?: unknown }) => string | string[] | undefined;
     onSelectedRowChange?: (
-      row: { identity?: { rowKey: string } } | null
+      row: { identity?: { rowKey: string }; poNumber?: string } | null
     ) => void;
     onRowClicked?: (event: {
-      data: { identity?: { rowKey: string } } | undefined;
+      data:
+        | { identity?: { rowKey: string }; poNumber?: string }
+        | undefined;
     }) => void;
     headerActions?: ReactNode;
     selectionMode?: string;
   }) =>
     (() => {
-      mockPowersheetGrid({ title, rows, selectionMode, columnDefs });
+      mockPowersheetGrid({
+        title,
+        rows,
+        selectionMode,
+        columnDefs,
+        getRowClass,
+      });
       return (
         <div data-testid={`grid-${title}`}>
           <div>{title}</div>
           {headerActions}
+          <div>
+            {rows.map(row => (
+              <div key={row.identity?.rowKey ?? row.poNumber}>{row.poNumber}</div>
+            ))}
+          </div>
           {rows.length > 0 && onSelectedRowChange ? (
             <button onClick={() => onSelectedRowChange(rows[0])}>
               Select first purchase order
@@ -392,6 +407,10 @@ describe("PurchaseOrderSurface", () => {
     getAllQueryInput = null;
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('renders "Purchase Orders" title in queue mode', () => {
     render(<PurchaseOrderSurface />);
     expect(screen.getByText("Purchase Orders")).toBeInTheDocument();
@@ -477,6 +496,7 @@ describe("PurchaseOrderSurface", () => {
         expect.objectContaining({
           poId: 33,
           poNumber: "PO-033",
+          expectedDeliveryDate: "2026-04-03",
         })
       );
       expect(mockUpsertProductIntakeDraft).toHaveBeenCalledWith(
@@ -485,6 +505,106 @@ describe("PurchaseOrderSurface", () => {
       );
       expect(mockSetLocation).toHaveBeenCalledWith(
         expect.stringContaining("draftId=draft-123")
+      );
+    });
+  });
+
+  it("filters the receiving queue to expected-today purchase orders", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-08T12:00:00.000Z"));
+
+    queueData = [
+      {
+        id: 201,
+        poNumber: "PO-201",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-04-07",
+        expectedDeliveryDate: "2026-04-08T15:00:00.000Z",
+        total: "125.00",
+        paymentTerms: "NET_15",
+      },
+      {
+        id: 202,
+        poNumber: "PO-202",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-04-07",
+        expectedDeliveryDate: "2026-04-09T15:00:00.000Z",
+        total: "225.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+
+    render(<PurchaseOrderSurface defaultStatusFilter={["CONFIRMED"]} />);
+
+    expect(
+      screen.getByRole("button", { name: /Expected Today \(1\)/i })
+    ).toBeInTheDocument();
+
+    const findQueueRows = () =>
+      mockPowersheetGrid.mock.calls
+        .map(([payload]) => payload)
+        .filter(call => call.title === "Purchase Orders Queue")
+        .at(-1)?.rows;
+
+    expect(findQueueRows()).toHaveLength(2);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /Expected Today \(1\)/i })
+    );
+
+    expect(findQueueRows()).toHaveLength(1);
+    expect(findQueueRows()?.[0]?.poNumber).toBe("PO-201");
+    expect(screen.getByText("PO-201")).toBeInTheDocument();
+    expect(screen.queryByText("PO-202")).not.toBeInTheDocument();
+  });
+
+  it("drops invalid expected-delivery dates before persisting receiving drafts", () => {
+    queueData = [
+      {
+        id: 35,
+        poNumber: "PO-035",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: "not-a-date",
+        total: "250.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+    poDetailData = {
+      poNumber: "PO-035",
+      supplier: { email: "ops@northfarm.test", phone: "555-0100" },
+      items: [
+        {
+          id: 503,
+          productId: 91,
+          productName: "Wedding Cake",
+          category: "Flower",
+          subcategory: "Top Shelf",
+          quantityOrdered: "20",
+          quantityReceived: "5",
+          cogsMode: "FIXED",
+          unitCost: "2.40",
+        },
+      ],
+    };
+    mockSelectedPoId = 35;
+
+    render(<PurchaseOrderSurface defaultStatusFilter={["CONFIRMED"]} />);
+
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /open product intake/i })[0]
+    );
+
+    return waitFor(() => {
+      expect(mockCreateProductIntakeDraftFromPO).toHaveBeenCalledWith(
+        expect.objectContaining({
+          poId: 35,
+          poNumber: "PO-035",
+          expectedDeliveryDate: null,
+        })
       );
     });
   });
@@ -624,7 +744,7 @@ describe("PurchaseOrderSurface", () => {
     ).toBeInTheDocument();
   });
 
-  it("hides the expected delivery column when every visible row is unset", () => {
+  it("always shows the expected delivery column, even when every visible row is unset", () => {
     queueData = [
       {
         id: 71,
@@ -654,12 +774,12 @@ describe("PurchaseOrderSurface", () => {
       ([props]) => props.title === "Purchase Orders Queue"
     )?.[0] as { columnDefs: Array<{ field?: string }> };
 
-    expect(queueGridCall.columnDefs.map(col => col.field)).not.toContain(
+    expect(queueGridCall.columnDefs.map(col => col.field)).toContain(
       "expectedDeliveryDate"
     );
   });
 
-  it("shows the expected delivery column when at least one purchase order has a date", () => {
+  it("adds receiving and ETA columns to the queue table", () => {
     queueData = [
       {
         id: 81,
@@ -691,6 +811,150 @@ describe("PurchaseOrderSurface", () => {
 
     expect(queueGridCall.columnDefs.map(col => col.field)).toContain(
       "expectedDeliveryDate"
+    );
+    expect(queueGridCall.columnDefs.map(col => col.field)).toContain(
+      "receivingStatusLabel"
+    );
+  });
+
+  it("renders the receiving-status cell as a React badge instead of raw HTML", () => {
+    queueData = [
+      {
+        id: 83,
+        poNumber: "PO-083",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-28",
+        expectedDeliveryDate: "2026-04-10",
+        total: "180.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+
+    render(<PurchaseOrderSurface />);
+
+    const queueGridCall = mockPowersheetGrid.mock.calls.find(
+      ([props]) => props.title === "Purchase Orders Queue"
+    )?.[0] as {
+      columnDefs: Array<{
+        field?: string;
+        cellRenderer?: (params: {
+          data?: {
+            receivingStatusClassName: string;
+            receivingStatusLabel: string;
+          };
+        }) => unknown;
+      }>;
+    };
+
+    const receivingColumn = queueGridCall.columnDefs.find(
+      col => col.field === "receivingStatusLabel"
+    );
+    const rendered = receivingColumn?.cellRenderer?.({
+      data: {
+        receivingStatusClassName:
+          "bg-emerald-50 text-emerald-700 border-emerald-200",
+        receivingStatusLabel: "In Progress",
+      },
+    });
+
+    expect(isValidElement(rendered)).toBe(true);
+  });
+
+  it("labels PO queue rows as PO-linked receiving instead of direct intake", () => {
+    queueData = [
+      {
+        id: 84,
+        poNumber: "PO-084",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-28",
+        expectedDeliveryDate: "2026-04-10",
+        total: "180.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+
+    render(<PurchaseOrderSurface />);
+
+    const queueGridCall = mockPowersheetGrid.mock.calls.find(
+      ([props]) => props.title === "Purchase Orders Queue"
+    )?.[0] as {
+      columnDefs: Array<{
+        field?: string;
+        cellRenderer?: (params: { data?: { supplierName?: string } }) => unknown;
+      }>;
+    };
+
+    const supplierColumn = queueGridCall.columnDefs.find(
+      col => col.field === "supplierName"
+    );
+    const rendered = supplierColumn?.cellRenderer?.({
+      data: { supplierName: "North Farm" },
+    });
+
+    expect(isValidElement(rendered)).toBe(true);
+    render(<>{rendered as ReactNode}</>);
+    expect(screen.getByText("PO-linked receiving")).toBeInTheDocument();
+    expect(screen.queryByText("Direct intake")).not.toBeInTheDocument();
+  });
+
+  it("marks overdue purchase-order rows with a warning class", () => {
+    queueData = [
+      {
+        id: 91,
+        poNumber: "PO-091",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: "2026-03-28",
+        total: "180.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+
+    render(<PurchaseOrderSurface />);
+
+    const queueGridCall = mockPowersheetGrid.mock.calls.find(
+      ([props]) => props.title === "Purchase Orders Queue"
+    )?.[0] as {
+      rows: Array<unknown>;
+      getRowClass?: (params: { data?: unknown }) => string | string[] | undefined;
+    };
+
+    expect(queueGridCall.getRowClass?.({ data: queueGridCall.rows[0] })).toContain(
+      "bg-red-50/60"
+    );
+  });
+
+  it("opens the linked supplier profile from the PO inspector", () => {
+    queueData = [
+      {
+        id: 92,
+        poNumber: "PO-092",
+        supplierClientId: 12,
+        purchaseOrderStatus: "CONFIRMED",
+        orderDate: "2026-03-27",
+        expectedDeliveryDate: "2026-04-03",
+        total: "180.00",
+        paymentTerms: "NET_30",
+      },
+    ];
+    poDetailData = {
+      poNumber: "PO-092",
+      supplier: { email: "ops@northfarm.test", phone: "555-0100" },
+      items: [],
+    };
+    mockSelectedPoId = 92;
+
+    render(<PurchaseOrderSurface />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /open supplier profile/i })
+    );
+
+    expect(mockSetLocation).toHaveBeenCalledWith(
+      "/clients/12?section=overview"
     );
   });
 });

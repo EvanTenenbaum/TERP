@@ -361,7 +361,7 @@ export const searchRouter = router({
                 description: b.productName
                   ? `${b.productName}${b.strainName ? ` - ${b.strainName}` : ""}`
                   : b.sku || undefined,
-                url: `/inventory/${b.id}`,
+                url: `/inventory?tab=inventory&batchId=${b.id}`,
                 metadata: {
                   sku: b.sku,
                   productName: b.productName,
@@ -399,7 +399,11 @@ export const searchRouter = router({
                 description:
                   [b.strainName, b.category].filter(Boolean).join(" - ") ||
                   undefined,
-                url: `/products/${b.productId}`,
+                url: `/products${
+                  b.productName
+                    ? `?search=${encodeURIComponent(b.productName)}`
+                    : ""
+                }`,
                 metadata: {
                   category: b.category,
                   subcategory: b.subcategory,

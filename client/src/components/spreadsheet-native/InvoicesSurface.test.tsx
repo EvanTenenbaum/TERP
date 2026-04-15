@@ -1,8 +1,16 @@
+import type { ReactNode } from "react";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { InvoicesSurface } from "./InvoicesSurface";
 
-const { mockParseInvoiceDeepLink, mockSetSelectedId, invoiceSelectionState } =
+const gridPropsByTitle = new Map<string, Record<string, unknown>>();
+
+const {
+  mockParseInvoiceDeepLink,
+  mockSetSelectedId,
+  mockNavigate,
+  invoiceSelectionState,
+} =
   vi.hoisted(() => ({
     mockParseInvoiceDeepLink: vi.fn(() => ({
       invoiceId: null,
@@ -12,6 +20,7 @@ const { mockParseInvoiceDeepLink, mockSetSelectedId, invoiceSelectionState } =
       from: null,
     })),
     mockSetSelectedId: vi.fn(),
+    mockNavigate: vi.fn(),
     invoiceSelectionState: { selectedId: null as number | null },
   }));
 
@@ -27,7 +36,11 @@ const mockInvoicesList = vi.hoisted(() => ({
       amountDue: "5000.00",
       amountPaid: "0",
       status: "OVERDUE",
-      client: { name: "Acme Corp" },
+      client: {
+        name: "Acme Corp",
+        email: "billing@acme.test",
+        phone: "555-0100",
+      },
     },
     {
       id: 2,
@@ -46,11 +59,23 @@ const mockInvoicesList = vi.hoisted(() => ({
 
 /* ── Mock PowersheetGrid ── */
 vi.mock("./PowersheetGrid", () => ({
-  PowersheetGrid: ({ rows, title }: { rows: unknown[]; title: string }) => (
-    <div data-testid={`grid-${title}`}>
-      {title} — {rows.length} rows
-    </div>
-  ),
+  PowersheetGrid: (props: {
+    rows: Array<{ invoiceId: number }>;
+    title: string;
+    onSelectedRowChange?: (row: { invoiceId: number } | null) => void;
+  }) => {
+    gridPropsByTitle.set(props.title, props as Record<string, unknown>);
+    return (
+      <div data-testid={`grid-${props.title}`}>
+        {props.title} — {props.rows.length} rows
+        {props.rows.length > 0 && props.onSelectedRowChange ? (
+          <button onClick={() => props.onSelectedRowChange?.(props.rows[0])}>
+            Select first invoice
+          </button>
+        ) : null}
+      </div>
+    );
+  },
 }));
 
 /* ── Mock tRPC ── */
@@ -221,14 +246,14 @@ vi.mock("@/lib/trpc", () => ({
 
 /* ── Mock external components ── */
 vi.mock("@/components/work-surface/InspectorPanel", () => ({
-  InspectorPanel: ({ children }: { children: unknown }) => (
-    <div data-testid="inspector-panel">{children as string}</div>
+  InspectorPanel: ({ children }: { children: ReactNode }) => (
+    <div data-testid="inspector-panel">{children}</div>
   ),
-  InspectorSection: ({ children }: { children: unknown }) => (
-    <div>{children as string}</div>
+  InspectorSection: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
   ),
-  InspectorField: ({ children }: { children: unknown }) => (
-    <div>{children as string}</div>
+  InspectorField: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
   ),
 }));
 
@@ -273,7 +298,7 @@ vi.mock("@/lib/spreadsheet-native", () => ({
 
 vi.mock("wouter", () => ({
   useSearch: vi.fn(() => ""),
-  useLocation: vi.fn(() => ["/accounting/invoices", vi.fn()]),
+  useLocation: vi.fn(() => ["/accounting/invoices", mockNavigate]),
 }));
 
 vi.mock("@/lib/statusTokens", () => ({
@@ -314,6 +339,8 @@ describe("InvoicesSurface", () => {
   beforeEach(() => {
     invoiceSelectionState.selectedId = null;
     mockSetSelectedId.mockReset();
+    mockNavigate.mockReset();
+    gridPropsByTitle.clear();
     mockParseInvoiceDeepLink.mockReturnValue({
       invoiceId: null,
       openRecordPayment: false,
@@ -357,6 +384,44 @@ describe("InvoicesSurface", () => {
   it("renders grid with 2 rows", () => {
     render(<InvoicesSurface />);
     expect(screen.getByText(/2 rows/)).toBeInTheDocument();
+  });
+
+  it("renders overdue contact details through the client column renderer", () => {
+    render(<InvoicesSurface />);
+
+    const [gridProps] = Array.from(gridPropsByTitle.values()) as Array<{
+      rows: Array<{
+        clientName: string;
+        customerEmail: string | null;
+        customerPhone: string | null;
+        status: string;
+      }>;
+      columnDefs: Array<{
+        field?: string;
+        cellRenderer?: (params: { data?: unknown; value: string }) => string;
+      }>;
+    }>;
+
+    const clientColumn = gridProps.columnDefs.find(
+      column => column.field === "clientName"
+    );
+    expect(clientColumn?.cellRenderer).toBeDefined();
+
+    const overdueMarkup = clientColumn?.cellRenderer?.({
+      data: gridProps.rows[0],
+      value: gridProps.rows[0]?.clientName,
+    });
+
+    expect(overdueMarkup).toContain("Acme Corp");
+    expect(overdueMarkup).toContain("555-0100");
+    expect(overdueMarkup).toContain("billing@acme.test");
+
+    const paidMarkup = clientColumn?.cellRenderer?.({
+      data: gridProps.rows[1],
+      value: gridProps.rows[1]?.clientName,
+    });
+
+    expect(paidMarkup).toBe("Beta LLC");
   });
 
   it("renders AR Aging toggle", () => {
@@ -436,5 +501,15 @@ describe("InvoicesSurface", () => {
     );
 
     expect(screen.getByTestId("record-payment-dialog")).toBeInTheDocument();
+  });
+
+  it("opens the linked client profile from the invoice inspector", () => {
+    invoiceSelectionState.selectedId = 1;
+
+    render(<InvoicesSurface />);
+
+    fireEvent.click(screen.getByRole("button", { name: /open client profile/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith("/clients/10?section=overview");
   });
 });

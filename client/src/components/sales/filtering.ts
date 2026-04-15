@@ -1,3 +1,4 @@
+import { STATUS_LABELS } from "@/components/spreadsheet-native/inventoryConstants";
 import type { InventoryFilters, PricedInventoryItem } from "./types";
 
 export interface PortableSalesCut {
@@ -26,7 +27,48 @@ export function normalizeSalesFilters(
     strainFamilies: filters?.strainFamilies ?? [],
     vendors: filters?.vendors ?? [],
     inStockOnly: filters?.inStockOnly ?? false,
+    includeUnavailable: filters?.includeUnavailable ?? false,
   };
+}
+
+export function isSalesInventorySellable(
+  item: Pick<PricedInventoryItem, "quantity" | "status">
+) {
+  const availableUnits = Math.max(0, Math.floor(item.quantity || 0));
+  const statusAllowsSale = !item.status || item.status === "LIVE";
+  return statusAllowsSale && availableUnits > 0;
+}
+
+export const NON_SELLABLE_STATUS_NOTES: Record<string, string> = {
+  AWAITING_INTAKE: "Still incoming and not ready to sell",
+  ON_HOLD: "Temporarily unavailable",
+  QUARANTINED: "Blocked pending quality review",
+};
+
+export function getPlainLanguageSalesStatus(status?: string | null) {
+  if (!status) {
+    return STATUS_LABELS.LIVE;
+  }
+
+  return STATUS_LABELS[status as keyof typeof STATUS_LABELS] ?? status;
+}
+
+export function buildSalesIdentityDescriptor(item: {
+  brand?: string | null;
+  vendor?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  batchSku?: string | null;
+}) {
+  // Shared/public catalogue output prefers the branded label but must fall
+  // back to vendor identity when only supplier metadata is available.
+  return [
+    item.brand || item.vendor,
+    item.subcategory || item.category,
+    item.batchSku,
+  ]
+    .filter(value => Boolean(value) && value !== "-")
+    .join(" · ");
 }
 
 export function matchesSalesInventoryFilters(
@@ -126,6 +168,7 @@ export function countActiveSalesFilters(filters: InventoryFilters) {
   if (filters.vendors.length > 0) count++;
   if (filters.priceMin !== null || filters.priceMax !== null) count++;
   if (filters.inStockOnly) count++;
+  if (filters.includeUnavailable) count++;
   return count;
 }
 
@@ -147,6 +190,10 @@ export function summarizeSalesFilters(filters: InventoryFilters): string[] {
 
   if (filters.inStockOnly) {
     summary.push("In stock only");
+  }
+
+  if (filters.includeUnavailable) {
+    summary.push("Include unavailable");
   }
 
   return summary;

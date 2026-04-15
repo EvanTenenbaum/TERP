@@ -95,6 +95,7 @@ import { cn } from "@/lib/utils";
 import { parseInvoiceDeepLink } from "@/components/work-surface/invoiceDeepLink";
 import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
 import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 
 // ============================================================================
 // TYPES
@@ -1444,7 +1445,21 @@ export function InvoicesSurface() {
             {/* Overview */}
             <InspectorSection title="Overview" defaultOpen>
               <InspectorField label="Client">
-                <p className="text-sm font-medium">{selectedRow.clientName}</p>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">{selectedRow.clientName}</p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      navigate(
+                        buildRelationshipProfilePath(selectedRow.customerId)
+                      )
+                    }
+                  >
+                    Open client profile
+                  </Button>
+                </div>
               </InspectorField>
               <InspectorField label="Invoice Date">
                 <p className="text-sm">{selectedRow.invoiceDate}</p>
@@ -2085,7 +2100,7 @@ export function InvoicesSurface() {
                     <span className="text-muted-foreground">
                       Effective Date
                     </span>
-                    <span>{adjustmentForm.effectiveDate}</span>
+                    <span>{formatDate(adjustmentForm.effectiveDate)}</span>
                   </div>
                 )}
               </div>

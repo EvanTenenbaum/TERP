@@ -11,6 +11,7 @@
 - Treat Domscribe and local browser proof as standard tools for UI tranches.
 - Treat Claude adversarial review as required before closing a tranche.
 - If proof is ambiguous, do not close the tranche; issue a limitation or blocker packet instead.
+- Treat local test-DB mutations used only for proof bootstrap as harness actions, not product changes; record them explicitly in the evidence index.
 
 ## Evidence Inventory
 
@@ -20,11 +21,44 @@ This folder should accumulate:
 - live findings notes
 - Claude review reports or links to them
 - any limitation packets created during execution
+- canonical reconciliation packets that explain what is on `main`, what is only on a recovery branch, and what still needs landing
+
+For TER-1067 specifically, the authoritative evidence index is:
+
+- `evidence/ter-1067/README.md`
+- `output/playwright/ter-1067-recovery-2026-04-07/summary.md`
+
+For TER-1068 tranche 1, the authoritative evidence index is:
+
+- `evidence/ter-1068/README.md`
+- `output/playwright/ter-1068-tranche1-2026-04-08/summary.md`
+- `reviews/2026-04-08-ter-1068-adversarial-review.md`
+
+For TER-1069 tranche 2, the authoritative evidence index is:
+
+- `evidence/ter-1069/README.md`
+- `output/playwright/ter-1069-retrieval-continuity-2026-04-08/summary.md`
+- `reviews/2026-04-08-ter-1069-adversarial-review.md`
+
+For TER-1070 tranche 3, the authoritative evidence index is:
+
+- `evidence/ter-1070/README.md`
+- `output/playwright/ter-1070-ops-continuity-2026-04-08/summary.md`
+- `reviews/2026-04-08-ter-1070-adversarial-review.md`
+
+For TER-1071 deferred-pass normalization, the authoritative evidence index is:
+
+- `analysis/2026-04-08-ter-1071-deferred-decision-pass.md`
+- `evidence/ter-1071/README.md`
+- `reviews/2026-04-08-ter-1071-adversarial-review.md`
 
 ## Known Limitations
 
-- Current tracker state still reflects the original P2 tickets rather than the new execution-task layer.
-- Some already-landed local seams need tracker reconciliation before the remaining initiative can be considered normalized.
+- The full `pnpm test` lane is currently blocked by the reset/seed harness; see `evidence/ter-1068/2026-04-08-full-test-limitation.md`.
+- The post-review browser proof required a fresh rebuild of the local `terp-test` database after `pnpm test` left the proof environment without the `users` table; that rebuild is recorded as a harness action, not a product fix.
+- The TER-1070 runtime proof required a small local fixture because the seeded proof DB had zero `purchaseOrders` and zero `vendor_payables`; that fixture is documented in `output/playwright/ter-1070-ops-continuity-2026-04-08/summary.md` and does not represent merged product seed coverage.
+- TER-1071 is a docs-and-tracker closeout slice, so it intentionally has no runtime/browser packet and no rerun of untouched code tests.
+- PR 569's `docs/initiatives/...` files are not on `main`; keeping them and this packet side by side as co-equal systems would create drift, so the canonical repo home stays here unless explicitly changed later.
 
 ## Follow-Ups
 

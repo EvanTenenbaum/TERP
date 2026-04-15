@@ -116,6 +116,16 @@ const samplesAffordances: PowersheetAffordance[] = [
 
 type TabFilter = "ALL" | "OUT" | "RETURN";
 
+function formatOperationalDate(value: Date | string | null | undefined): string {
+  if (!value) return "—";
+  try {
+    const date = typeof value === "string" ? new Date(value) : value;
+    return format(date, "MMM d, yyyy");
+  } catch {
+    return "—";
+  }
+}
+
 // ============================================================================
 // Row type
 // ============================================================================
@@ -746,6 +756,8 @@ export function SamplesPilotSurface({
         minWidth: 110,
         maxWidth: 130,
         cellClass: "powersheet-cell--locked",
+        valueFormatter: params =>
+          formatOperationalDate(params.value as string | null | undefined),
       },
       {
         // DISC-SAM-003: dedicated column parsed from notes text
@@ -756,7 +768,8 @@ export function SamplesPilotSurface({
         cellClass: "powersheet-cell--locked",
         headerTooltip:
           "Due date parsed from notes field (Due Date: YYYY-MM-DD)",
-        valueFormatter: params => (params.value as string | null) ?? "-",
+        valueFormatter: params =>
+          formatOperationalDate(params.value as string | null | undefined),
       },
       {
         field: "location",
@@ -1134,11 +1147,11 @@ export function SamplesPilotSurface({
 
             <InspectorSection title="Dates">
               <InspectorField label="Requested">
-                <p>{selectedRow.requestedDate}</p>
+                <p>{formatOperationalDate(selectedRow.requestedDate)}</p>
               </InspectorField>
               <InspectorField label="Due Date">
                 {/* DISC-SAM-003 */}
-                <p>{selectedRow.dueDate ?? "—"}</p>
+                <p>{formatOperationalDate(selectedRow.dueDate)}</p>
               </InspectorField>
               {/* DISC-SAM-002: Editable expiration date */}
               <InspectorField label="Expires">
@@ -1188,7 +1201,7 @@ export function SamplesPilotSurface({
                     </PopoverContent>
                   </Popover>
                 ) : (
-                  <p>{selectedRow.expirationDate ?? "—"}</p>
+                  <p>{formatOperationalDate(selectedRow.expirationDate)}</p>
                 )}
               </InspectorField>
             </InspectorSection>

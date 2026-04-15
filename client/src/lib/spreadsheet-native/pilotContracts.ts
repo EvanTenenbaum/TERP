@@ -76,7 +76,9 @@ export interface InventoryPilotRow {
   onHandQty: number;
   reservedQty: number;
   availableQty: number;
+  unitPrice: number | null;
   unitCogs: number | null;
+  marginPercent: number | null;
   receivedDate: string | null;
   ageLabel: string;
   stockStatus: string | null;
@@ -227,10 +229,18 @@ export function mapInventoryItemsToPilotRows(
       onHandQty,
       reservedQty,
       availableQty: onHandQty - reservedQty - quarantineQty - holdQty,
+      unitPrice:
+        item.unitPrice === null || item.unitPrice === undefined
+          ? null
+          : toNumber(item.unitPrice),
       unitCogs:
         item.unitCogs === null || item.unitCogs === undefined
           ? null
           : toNumber(item.unitCogs),
+      marginPercent:
+        item.marginPercent === null || item.marginPercent === undefined
+          ? null
+          : toNumber(item.marginPercent),
       receivedDate: toDateString(item.receivedDate),
       ageLabel: formatAgeLabel(item.receivedDate),
       stockStatus: item.stockStatus ?? null,
@@ -273,10 +283,12 @@ export function mapInventoryDetailToPilotRow(
     onHandQty,
     reservedQty,
     availableQty: toNumber(detail.availableQty),
+    unitPrice: null,
     unitCogs:
       detail.batch.unitCogs === null || detail.batch.unitCogs === undefined
         ? null
         : toNumber(detail.batch.unitCogs),
+    marginPercent: null,
     receivedDate: toDateString(detail.batch.createdAt),
     ageLabel: formatAgeLabel(detail.batch.createdAt),
     stockStatus: null,

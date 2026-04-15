@@ -1122,6 +1122,7 @@ export interface SavedViewData {
     strainFamilies: string[];
     vendors: string[];
     inStockOnly: boolean;
+    includeUnavailable: boolean;
   };
   sort: {
     field: string;
@@ -1266,6 +1267,7 @@ export async function getViews(
       strainFamilies?: string[];
       vendors?: string[];
       inStockOnly?: boolean;
+      includeUnavailable?: boolean;
       _sort?: { field: string; direction: "asc" | "desc" };
       _isDefault?: boolean;
     }
@@ -1285,6 +1287,7 @@ export async function getViews(
         strainFamilies: filtersData?.strainFamilies ?? [],
         vendors: filtersData?.vendors ?? [],
         inStockOnly: filtersData?.inStockOnly ?? false,
+        includeUnavailable: filtersData?.includeUnavailable ?? false,
       },
       sort: filtersData?._sort ?? { field: "name", direction: "asc" },
       columnVisibility:
@@ -1356,6 +1359,7 @@ export async function loadViewById(
     strainFamilies?: string[];
     vendors?: string[];
     inStockOnly?: boolean;
+    includeUnavailable?: boolean;
     _sort?: { field: string; direction: "asc" | "desc" };
     _isDefault?: boolean;
   }
@@ -1382,6 +1386,7 @@ export async function loadViewById(
       strainFamilies: filtersData?.strainFamilies ?? [],
       vendors: filtersData?.vendors ?? [],
       inStockOnly: filtersData?.inStockOnly ?? false,
+      includeUnavailable: filtersData?.includeUnavailable ?? false,
     },
     sort: filtersData?._sort ?? { field: "name", direction: "asc" },
     columnVisibility:

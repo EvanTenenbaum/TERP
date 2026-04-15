@@ -7,8 +7,68 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { InventoryManagementSurface } from "./InventoryManagementSurface";
 
-const { mockSetSelectedId, viewsListQuery, filtersState, selectionState } =
+const {
+  inventoryRowsState,
+  mockSetSelectedId,
+  viewsListQuery,
+  filtersState,
+  selectionState,
+} =
   vi.hoisted(() => ({
+    inventoryRowsState: {
+      items: [
+        {
+          id: 42,
+          batchId: 42,
+          sku: "BATCH-042",
+          productName: "Wedding Cake",
+          productSummary: "Wedding Cake · Tops",
+          category: "Flower",
+          subcategory: "Tops",
+          vendorName: "GreenLeaf",
+          brandName: "House Reserve",
+          grade: "AAA",
+          status: "LIVE",
+          onHandQty: 100,
+          reservedQty: 10,
+          availableQty: 90,
+          unitCogs: 2.4,
+          ageLabel: "3d",
+          stockStatus: "LOW",
+          identity: {
+            rowKey: "batch:42",
+            entityId: 42,
+            entityType: "batch",
+            recordVersion: 1,
+          },
+        },
+        {
+          id: 84,
+          batchId: 84,
+          sku: "BATCH-084",
+          productName: "Lemon Cherry Gelato",
+          productSummary: "Lemon Cherry Gelato · Smalls",
+          category: "Flower",
+          subcategory: "Smalls",
+          vendorName: "GreenLeaf",
+          brandName: "House Reserve",
+          grade: "AA",
+          status: "LIVE",
+          onHandQty: 55,
+          reservedQty: 5,
+          availableQty: 50,
+          unitCogs: 1.8,
+          ageLabel: "2d",
+          stockStatus: "OK",
+          identity: {
+            rowKey: "batch:84",
+            entityId: 84,
+            entityType: "batch",
+            recordVersion: 1,
+          },
+        },
+      ] as Array<Record<string, unknown>>,
+    },
     mockSetSelectedId: vi.fn(),
     viewsListQuery: vi.fn(() => ({ data: { items: [] }, refetch: vi.fn() })),
     filtersState: {
@@ -98,7 +158,9 @@ vi.mock("./InventoryAdvancedFilters", () => ({
   }),
   hasActiveFilters: (filters: { statuses?: string[] }) =>
     (filters.statuses ?? []).join("|") !== "LIVE",
-  filtersToQueryInput: () => ({}),
+  filtersToQueryInput: (filters: { stockStatus?: string }) => ({
+    stockStatus: filters.stockStatus,
+  }),
 }));
 
 vi.mock("./InventoryGalleryView", () => ({
@@ -120,42 +182,25 @@ vi.mock("@/lib/trpc", () => ({
   trpc: {
     inventory: {
       getEnhanced: {
-        useQuery: vi.fn(() => ({
-          data: {
-            items: [
-              {
-                id: 42,
-                batchId: 42,
-                sku: "BATCH-042",
-                productName: "Wedding Cake",
-                productSummary: "Wedding Cake · Tops",
-                category: "Flower",
-                subcategory: "Tops",
-                vendorName: "GreenLeaf",
-                brandName: "House Reserve",
-                grade: "AAA",
-                status: "LIVE",
-                onHandQty: 100,
-                reservedQty: 10,
-                availableQty: 90,
-                unitCogs: 2.4,
-                ageLabel: "3d",
-                stockStatus: "LOW",
-                identity: {
-                  rowKey: "batch:42",
-                  entityId: 42,
-                  entityType: "batch",
-                  recordVersion: 1,
-                },
-              },
-            ],
-            summary: { totalItems: 1 },
-            pagination: { hasMore: false },
-          },
-          isLoading: false,
-          error: null,
-          refetch: vi.fn(),
-        })),
+        useQuery: vi.fn((input?: { stockStatus?: string }) => {
+          const items = inventoryRowsState.items.filter(item => {
+            if (!input?.stockStatus || input.stockStatus === "ALL") {
+              return true;
+            }
+            return item.stockStatus === input.stockStatus;
+          });
+
+          return {
+            data: {
+              items,
+              summary: { totalItems: items.length },
+              pagination: { hasMore: false },
+            },
+            isLoading: false,
+            error: null,
+            refetch: vi.fn(),
+          };
+        }),
       },
       dashboardStats: {
         useQuery: vi.fn(() => ({
@@ -252,6 +297,7 @@ describe("InventoryManagementSurface", () => {
     vi.clearAllMocks();
     filtersState.history = [];
     selectionState.selectedId = null;
+    inventoryRowsState.items = [...inventoryRowsState.items];
     viewsListQuery.mockImplementation(() => ({
       data: { items: [] },
       refetch: vi.fn(),
@@ -261,6 +307,14 @@ describe("InventoryManagementSurface", () => {
   it("renders toolbar with 'Inventory' title", () => {
     render(<InventoryManagementSurface />);
     expect(screen.getByText("Inventory")).toBeInTheDocument();
+  });
+
+  it("labels only LOW rows as low stock exceptions", () => {
+    render(<InventoryManagementSurface />);
+
+    expect(
+      screen.getByRole("button", { name: "Low stock (1)" })
+    ).toBeInTheDocument();
   });
 
   it("toggles the advanced filters panel from the action bar", () => {
@@ -308,6 +362,28 @@ describe("InventoryManagementSurface", () => {
 
     expect(screen.getByText("1 selected")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument();
+  });
+
+  it("shows reactive exception indicators in the toolbar", () => {
+    render(<InventoryManagementSurface />);
+
+    expect(
+      screen.getByRole("button", { name: /low stock \(1\)/i })
+    ).toBeInTheDocument();
+  });
+
+  it("updates status-bar counts when the active exception filter changes", () => {
+    render(<InventoryManagementSurface />);
+
+    expect(
+      screen.getByText(/grid view · 2 visible rows of 2 filtered rows/i)
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /low stock \(1\)/i }));
+
+    expect(
+      screen.getByText(/grid view · 1 visible rows of 1 filtered rows/i)
+    ).toBeInTheDocument();
   });
 
   it("opens the adjustment drawer from the inspector review flow", async () => {

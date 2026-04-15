@@ -102,9 +102,11 @@ Accounting and vendor settlement work should retain the same commercial context 
 
 **Acceptance criteria**
 
-- The inventory-to-order handoff preserves context instead of forcing re-discovery.
+- The inventory-to-order handoff preserves both the retrieved cut and the selected rows instead of forcing re-discovery.
 - Client money and relationship context is visible before or during item addition, not hidden behind a separate scavenger hunt.
+- Drafts made only of unavailable or blocked imported rows cannot be finalized without repair.
 - Consignment warnings and price-range implications remain clear at commit time.
+- Customer-facing catalogue outputs reuse one identity and confirmation-terms voice, and missing identity details produce an explicit warning instead of disappearing silently.
 
 **Existing ticket anchors**
 

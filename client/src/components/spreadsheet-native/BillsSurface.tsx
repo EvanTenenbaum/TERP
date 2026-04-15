@@ -17,7 +17,7 @@
 
 import { useMemo, useState, useCallback } from "react";
 import type { ColDef } from "ag-grid-community";
-import { useSearch } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import {
@@ -61,6 +61,7 @@ import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
 import { getInvoiceStatusLabel, getInvoiceStatusClass } from "@/lib/statusTokens";
 import { cn } from "@/lib/utils";
 import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 
 // ============================================================================
 // TYPES
@@ -365,6 +366,7 @@ const billColumnDefs: ColDef<BillGridRow>[] = [
 
 export function BillsSurface() {
   const _routeSearch = useSearch();
+  const [, navigate] = useLocation();
 
   // Selection tracked in URL param
   const { selectedId: selectedBillId, setSelectedId: setSelectedBillId } =
@@ -790,9 +792,23 @@ export function BillsSurface() {
             {/* Overview */}
             <InspectorSection title="Overview" defaultOpen>
               <InspectorField label="Vendor">
-                <p className="text-sm font-medium text-blue-600">
-                  {selectedRow.vendorName}
-                </p>
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-blue-600">
+                    {selectedRow.vendorName}
+                  </p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      navigate(
+                        buildRelationshipProfilePath(selectedRow.vendorId)
+                      )
+                    }
+                  >
+                    Open vendor profile
+                  </Button>
+                </div>
               </InspectorField>
               <InspectorField label="Bill Date">
                 <p className="text-sm">{selectedRow.billDate}</p>
