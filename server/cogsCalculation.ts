@@ -161,14 +161,20 @@ function applyClientCOGSAdjustment(
     return baseCost;
   }
 
-  if (client.cogsAdjustmentType === "PERCENTAGE") {
-    // Positive value = COGS decrease, negative value = COGS increase
-    // Matches cogsCalculator.ts: finalCogs = finalCogs * (1 - adjustmentPercent / 100)
+  if (
+    client.cogsAdjustmentType === "PERCENTAGE" ||
+    client.cogsAdjustmentType === "PERCENTAGE_DECREASE"
+  ) {
     return baseCost * (1 - adjustmentValue / 100);
-  } else if (client.cogsAdjustmentType === "FIXED_AMOUNT") {
-    // Positive value = COGS decrease, negative value = COGS increase
-    // Matches cogsCalculator.ts: finalCogs = finalCogs - adjustmentAmount
+  } else if (client.cogsAdjustmentType === "PERCENTAGE_INCREASE") {
+    return baseCost * (1 + adjustmentValue / 100);
+  } else if (
+    client.cogsAdjustmentType === "FIXED_AMOUNT" ||
+    client.cogsAdjustmentType === "FIXED_DECREASE"
+  ) {
     return baseCost - adjustmentValue;
+  } else if (client.cogsAdjustmentType === "FIXED_INCREASE") {
+    return baseCost + adjustmentValue;
   }
 
   return baseCost;
