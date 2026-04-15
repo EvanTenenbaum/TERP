@@ -28,6 +28,8 @@ import {
   lots,
   clients,
   users,
+  orderLineItems,
+  products,
 } from "../../drizzle/schema";
 import { eq, and, sql, isNull, desc, inArray, gte, lte } from "drizzle-orm";
 import { logger } from "../_core/logger";
@@ -62,6 +64,33 @@ const createPayableSchema = z.object({
   cogsPerUnit: z.number().positive(),
   gracePeriodHours: z.number().min(0).max(720).optional(), // Max 30 days
 });
+
+const rangeComplianceSchema = z.object({
+  vendorClientId: z.number(),
+});
+
+type RangeComplianceStatus = "IN_RANGE" | "BELOW_RANGE" | "ABOVE_RANGE";
+
+function parseNullableNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
+}
+
+function parseNumber(value: unknown): number {
+  return parseNullableNumber(value) ?? 0;
+}
 
 // ============================================================================
 // VENDOR PAYABLES ROUTER
@@ -399,6 +428,140 @@ export const vendorPayablesRouter = router({
         limit: input.limit,
       });
       return result;
+    }),
+
+  /**
+   * Get per-batch consignment range compliance for a supplier payable view
+   */
+  getRangeCompliance: protectedProcedure
+    .use(requirePermission("accounting:read"))
+    .input(rangeComplianceSchema)
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db)
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+
+      const rows = await db
+        .select({
+          batchId: vendorPayables.batchId,
+          productName: products.nameCanonical,
+          batchCode: batches.code,
+          payableCogsPerUnit: vendorPayables.cogsPerUnit,
+          payableAmountDue: vendorPayables.amountDue,
+          agreedRangeMinFromLines: sql<
+            string | number | null
+          >`MIN(CAST(${orderLineItems.originalRangeMin} AS DECIMAL(15,4)))`,
+          agreedRangeMaxFromLines: sql<
+            string | number | null
+          >`MAX(CAST(${orderLineItems.originalRangeMax} AS DECIMAL(15,4)))`,
+          actualAvgSalePrice: sql<
+            string | number
+          >`COALESCE(AVG(CAST(${orderLineItems.unitPrice} AS DECIMAL(15,2))), 0)`,
+          unitsSold: sql<
+            string | number
+          >`COALESCE(SUM(CAST(${orderLineItems.quantity} AS DECIMAL(15,2))), 0)`,
+          belowRangeFlagCount: sql<number>`COALESCE(SUM(CASE WHEN ${orderLineItems.isBelowVendorRange} = TRUE THEN 1 ELSE 0 END), 0)`,
+          belowRangeReason: sql<
+            string | null
+          >`MIN(CASE WHEN ${orderLineItems.isBelowVendorRange} = TRUE AND ${orderLineItems.belowRangeReason} IS NOT NULL AND ${orderLineItems.belowRangeReason} <> '' THEN ${orderLineItems.belowRangeReason} ELSE NULL END)`,
+        })
+        .from(vendorPayables)
+        .leftJoin(
+          orderLineItems,
+          eq(orderLineItems.batchId, vendorPayables.batchId)
+        )
+        .leftJoin(batches, eq(vendorPayables.batchId, batches.id))
+        .leftJoin(products, eq(batches.productId, products.id))
+        .where(
+          and(
+            eq(vendorPayables.vendorClientId, input.vendorClientId),
+            isNull(vendorPayables.deletedAt)
+          )
+        )
+        .groupBy(
+          vendorPayables.batchId,
+          products.nameCanonical,
+          batches.code,
+          vendorPayables.cogsPerUnit,
+          vendorPayables.amountDue
+        )
+        .orderBy(products.nameCanonical, batches.code);
+
+      const items = rows.map(row => {
+        // Captured line-item ranges are the primary source; payable COGS is the fallback.
+        const agreedRangeMin =
+          parseNullableNumber(row.agreedRangeMinFromLines) ??
+          parseNumber(row.payableCogsPerUnit);
+        const agreedRangeMax =
+          parseNullableNumber(row.agreedRangeMaxFromLines) ?? agreedRangeMin;
+        const actualAvgSalePrice = parseNumber(row.actualAvgSalePrice);
+        const unitsSold = parseNumber(row.unitsSold);
+        const isBelowVendorRange = Number(row.belowRangeFlagCount ?? 0) > 0;
+
+        let rangeComplianceStatus: RangeComplianceStatus = "IN_RANGE";
+        if (isBelowVendorRange) {
+          rangeComplianceStatus = "BELOW_RANGE";
+        } else if (
+          agreedRangeMax !== null &&
+          actualAvgSalePrice > agreedRangeMax
+        ) {
+          rangeComplianceStatus = "ABOVE_RANGE";
+        }
+
+        return {
+          batchId: row.batchId,
+          productName: row.productName ?? "Unknown Product",
+          batchCode: row.batchCode ?? "Unknown Batch",
+          agreedRangeMin,
+          agreedRangeMax,
+          actualAvgSalePrice,
+          unitsSold,
+          isBelowVendorRange,
+          belowRangeReason: row.belowRangeReason,
+          payableAmountDue: parseNumber(row.payableAmountDue),
+          rangeComplianceStatus,
+        };
+      });
+
+      const summary = items.reduce(
+        (acc, item) => {
+          acc.totalBatchCount += 1;
+          acc.totalUnitsSold += item.unitsSold;
+
+          if (item.rangeComplianceStatus === "IN_RANGE") {
+            acc.inRangeCount += 1;
+            acc.inRangeUnitsSold += item.unitsSold;
+          } else {
+            acc.outOfRangeCount += 1;
+            acc.outOfRangeUnitsSold += item.unitsSold;
+          }
+
+          if (item.rangeComplianceStatus === "BELOW_RANGE") {
+            acc.belowRangeCount += 1;
+            acc.belowRangeUnitsSold += item.unitsSold;
+          }
+
+          return acc;
+        },
+        {
+          totalBatchCount: 0,
+          inRangeCount: 0,
+          outOfRangeCount: 0,
+          belowRangeCount: 0,
+          totalUnitsSold: 0,
+          inRangeUnitsSold: 0,
+          outOfRangeUnitsSold: 0,
+          belowRangeUnitsSold: 0,
+        }
+      );
+
+      return {
+        items,
+        summary,
+      };
     }),
 
   /**
