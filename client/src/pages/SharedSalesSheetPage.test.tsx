@@ -18,6 +18,7 @@ const sharedSheet = {
       category: "Flower",
       subcategory: "Indoor",
       brand: "Andy Rhan",
+      vendor: "SupplierCo",
       batchSku: "BT-42",
       quantity: 12,
       price: 1200,
@@ -54,9 +55,27 @@ describe("SharedSalesSheetPage", () => {
     expect(screen.getByText("Andy Rhan")).toBeInTheDocument();
     expect(screen.getByText("Flower · Indoor")).toBeInTheDocument();
     expect(
+      screen.queryByRole("columnheader", { name: "Category" })
+    ).not.toBeInTheDocument();
+    expect(
       screen.getByText(
         "Pricing and availability are subject to final confirmation."
       )
     ).toBeInTheDocument();
+    expect(screen.getByText(/Shared on/)).toBeInTheDocument();
+  });
+
+  it("does not expose batch SKU or vendor in rendered output", () => {
+    render(<SharedSalesSheetPage />);
+
+    expect(screen.queryByText("BT-42")).not.toBeInTheDocument();
+    expect(screen.queryByText("SupplierCo")).not.toBeInTheDocument();
+  });
+
+  it("renders shared date label not created date", () => {
+    render(<SharedSalesSheetPage />);
+
+    expect(screen.getByText(/Shared on/)).toBeInTheDocument();
+    expect(screen.queryByText(/Created on/)).not.toBeInTheDocument();
   });
 });

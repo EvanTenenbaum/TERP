@@ -376,18 +376,21 @@ describe("Sales Sheets Router", () => {
         clientName: "Acme Wellness",
         items: [
           {
+            brand: undefined,
             id: 101,
             name: "Moonrocks",
             category: "Flower",
-            vendor: "North Farm",
+            subcategory: undefined,
             quantity: 2,
             price: 125,
             imageUrl: "https://example.com/moonrocks.png",
           },
           {
+            brand: undefined,
             id: 102,
             name: "Pre-roll Pack",
             category: undefined,
+            subcategory: undefined,
             quantity: 1,
             price: 40,
             imageUrl: undefined,

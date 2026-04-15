@@ -21,7 +21,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { FileText, Clock, Package } from "lucide-react";
@@ -112,7 +111,7 @@ export default function SharedSalesSheetPage() {
               <div>
                 <CardTitle>Order Summary</CardTitle>
                 <CardDescription>
-                  Created on {formatDate(sheet.createdAt)}
+                  Shared on {formatDate(sheet.createdAt)}
                 </CardDescription>
               </div>
               <div className="text-right">
@@ -157,7 +156,6 @@ export default function SharedSalesSheetPage() {
                     <TableHead className="w-20 text-center">Image</TableHead>
                   ) : null}
                   <TableHead>Item</TableHead>
-                  <TableHead className="text-center">Category</TableHead>
                   <TableHead className="text-right">Qty Available</TableHead>
                   <TableHead className="text-right">Unit Price</TableHead>
                   <TableHead className="text-right">Line Total</TableHead>
@@ -208,15 +206,6 @@ export default function SharedSalesSheetPage() {
                             </p>
                           ) : null}
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {item.subcategory || item.category ? (
-                          <Badge variant="outline">
-                            {item.subcategory || item.category}
-                          </Badge>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
-                        )}
                       </TableCell>
                       <TableCell className="text-right">
                         {item.quantity.toFixed(2)}

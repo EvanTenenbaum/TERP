@@ -416,8 +416,6 @@ export const salesSheetsRouter = router({
             category?: string;
             subcategory?: string;
             brand?: string;
-            vendor?: string;
-            batchSku?: string;
             quantity: number;
             finalPrice?: number;
             retailPrice: number;
@@ -426,15 +424,13 @@ export const salesSheetsRouter = router({
         ).map(item => ({
           id: item.id,
           name: item.name,
-            category: item.category,
-            subcategory: item.subcategory,
-            brand: item.brand,
-            vendor: item.vendor,
-            batchSku: item.batchSku,
-            quantity: item.quantity,
-            price: item.finalPrice ?? item.retailPrice,
-            imageUrl: item.imageUrl,
-          })),
+          category: item.category,
+          subcategory: item.subcategory,
+          brand: item.brand,
+          quantity: item.quantity,
+          price: item.finalPrice ?? item.retailPrice,
+          imageUrl: item.imageUrl,
+        })),
         totalValue: sheet.totalValue,
         itemCount: sheet.itemCount,
         createdAt: sheet.createdAt,
