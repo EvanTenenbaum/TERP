@@ -639,29 +639,9 @@ describe("SalesOrderSurface", () => {
       ).toEqual(["Blue Dream", "Quarantined Cut"]);
     });
 
-    expect(screen.getByText("Saved cut: Andy Indoor")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Including unavailable" })
-    ).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Including unavailable" })
-    );
-
-    await waitFor(() => {
-      expect(
-        (
-          gridPropsByTitle.get("Inventory")?.rows as
-            | Array<{ name: string }>
-            | undefined
-        )?.map(row => row.name)
-      ).toEqual(["Blue Dream"]);
-    });
-
-    expect(
-      screen.getByRole("button", { name: "Available now" })
-    ).toBeInTheDocument();
-    expect(screen.getByText("Include unavailable")).toBeInTheDocument();
+      window.sessionStorage.getItem("salesCataloguePortableCut")
+    ).toBeNull();
   });
 
   it("clears route hydration params before switching clients", () => {

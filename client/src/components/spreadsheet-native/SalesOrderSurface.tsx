@@ -423,8 +423,22 @@ export function SalesOrderSurface({
         filters.categories.includes(item.category ?? "")
       );
     }
+    if (filters.brands.length > 0) {
+      items = items.filter(item => filters.brands.includes(item.brand ?? ""));
+    }
     if (filters.grades.length > 0) {
       items = items.filter(item => filters.grades.includes(item.grade ?? ""));
+    }
+    if (filters.strainFamilies.length > 0) {
+      items = items.filter(item => {
+        const raw = item as PricedInventoryItem & {
+          strainFamily?: string | null;
+          strain?: string | null;
+        };
+        return filters.strainFamilies.includes(
+          raw.strainFamily ?? raw.strain ?? ""
+        );
+      });
     }
     if (filters.vendors.length > 0) {
       items = items.filter(item => filters.vendors.includes(item.vendor ?? ""));
@@ -1144,10 +1158,15 @@ export function SalesOrderSurface({
   );
 
   const activeFilterCount =
+    (filters.search.trim() ? 1 : 0) +
     filters.categories.length +
+    filters.brands.length +
     filters.grades.length +
+    filters.strainFamilies.length +
     filters.vendors.length +
-    (filters.inStockOnly ? 1 : 0);
+    (filters.priceMin !== null || filters.priceMax !== null ? 1 : 0) +
+    (filters.inStockOnly ? 1 : 0) +
+    (filters.includeUnavailable ? 1 : 0);
   const documentContextLabel = draft.activeDraftId
     ? `Draft #${draft.activeDraftId}`
     : draft.isSalesSheetImport
@@ -1429,6 +1448,22 @@ export function SalesOrderSurface({
               onClick={() => setShowSaveViewDialog(true)}
             >
               Save View
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-[10px]"
+              onClick={() =>
+                setFilters(current => ({
+                  ...current,
+                  includeUnavailable: !current.includeUnavailable,
+                }))
+              }
+            >
+              {filters.includeUnavailable
+                ? "Including unavailable"
+                : "Available now"}
             </Button>
             <Button
               type="button"
