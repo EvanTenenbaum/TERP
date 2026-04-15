@@ -272,6 +272,10 @@ vi.mock("@/components/sales/AdvancedFilters", () => ({
   AdvancedFilters: () => <div>Advanced Filters</div>,
 }));
 
+vi.mock("@/components/inventory/SavedViewsDropdown", () => ({
+  SavedViewsDropdown: () => <div>Inventory Saved Views</div>,
+}));
+
 describe("SalesOrderSurface", () => {
   beforeEach(() => {
     mockInventoryData = [

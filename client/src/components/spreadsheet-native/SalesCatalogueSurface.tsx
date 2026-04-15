@@ -27,6 +27,10 @@ import {
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { buildProductIdentityLines } from "@/lib/productIdentity";
+import {
+  adaptInventorySavedViewToSalesFilters,
+  shouldIncludeUnavailableInventory,
+} from "@/lib/portableInventoryViews";
 import { trpc } from "@/lib/trpc";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { Button } from "@/components/ui/button";
@@ -46,6 +50,7 @@ import { SaveViewDialog } from "@/components/sales/SaveViewDialog";
 import { AdvancedFilters } from "@/components/sales/AdvancedFilters";
 import { DraftDialog } from "@/components/sales/DraftDialog";
 import { SavedSheetsDialog } from "@/components/sales/SavedSheetsDialog";
+import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
 import { UnifiedExportMenu } from "@/components/common/UnifiedExportMenu";
 import {
   KeyboardHintBar,
@@ -1176,6 +1181,27 @@ export function SalesCatalogueSurface() {
     []
   );
 
+  const handleApplyInventorySavedView = useCallback(
+    (savedFilters: { [key: string]: unknown }) => {
+      setFilters(
+        adaptInventorySavedViewToSalesFilters(
+          savedFilters as Parameters<
+            typeof adaptInventorySavedViewToSalesFilters
+          >[0]
+        )
+      );
+      setIncludeUnavailableInventory(
+        shouldIncludeUnavailableInventory(
+          savedFilters as Parameters<
+            typeof shouldIncludeUnavailableInventory
+          >[0]
+        )
+      );
+      setCurrentViewId(null);
+    },
+    []
+  );
+
   const handleExport = useCallback(() => {
     if (selectedItems.length === 0) return;
     const csv = buildCatalogueCsv(selectedItems);
@@ -1607,6 +1633,7 @@ export function SalesCatalogueSurface() {
                 placeholder="Search product, vendor, category..."
                 className="h-7 max-w-xs text-xs"
               />
+              <SavedViewsDropdown onApplyView={handleApplyInventorySavedView} />
               <Button
                 size="sm"
                 className="h-7 px-2 text-[10px]"

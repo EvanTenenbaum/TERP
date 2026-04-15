@@ -121,6 +121,10 @@ vi.mock("@/components/sales/SavedSheetsDialog", () => ({
   SavedSheetsDialog: () => null,
 }));
 
+vi.mock("@/components/inventory/SavedViewsDropdown", () => ({
+  SavedViewsDropdown: () => <div>Inventory Saved Views</div>,
+}));
+
 vi.mock("@/components/common/UnifiedExportMenu", () => ({
   UnifiedExportMenu: ({
     onExportCSV,

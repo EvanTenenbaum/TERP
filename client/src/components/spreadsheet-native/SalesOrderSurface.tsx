@@ -11,6 +11,7 @@ import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { buildProductIdentityLines } from "@/lib/productIdentity";
+import { adaptInventorySavedViewToSalesFilters } from "@/lib/portableInventoryViews";
 import { trpc } from "@/lib/trpc";
 import { normalizePositiveIntegerWithin } from "@/lib/quantity";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
@@ -26,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ClientCombobox } from "@/components/ui/client-combobox";
+import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
 import {
   Select,
   SelectContent,
@@ -861,6 +863,21 @@ export function SalesOrderSurface({
     []
   );
 
+  const handleApplyInventorySavedView = useCallback(
+    (savedFilters: { [key: string]: unknown }) => {
+      skipNextDefaultViewApplyRef.current = true;
+      setFilters(
+        adaptInventorySavedViewToSalesFilters(
+          savedFilters as Parameters<
+            typeof adaptInventorySavedViewToSalesFilters
+          >[0]
+        )
+      );
+      setCurrentViewId(null);
+    },
+    []
+  );
+
   useEffect(() => {
     if (!draft.clientId || !savedViewsQuery.data) return;
     if (skipNextDefaultViewApplyRef.current) {
@@ -1193,6 +1210,7 @@ export function SalesOrderSurface({
               onLoadView={handleLoadView}
               currentViewId={currentViewId}
             />
+            <SavedViewsDropdown onApplyView={handleApplyInventorySavedView} />
             <Button
               type="button"
               size="sm"
