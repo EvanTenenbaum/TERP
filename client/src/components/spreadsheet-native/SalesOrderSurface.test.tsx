@@ -10,8 +10,8 @@ import { SalesOrderSurface } from "./SalesOrderSurface";
 
 const { mockToastError, mockToastInfo, mockCreditDialogProps } = vi.hoisted(
   () => ({
-  mockToastError: vi.fn(),
-  mockToastInfo: vi.fn(),
+    mockToastError: vi.fn(),
+    mockToastInfo: vi.fn(),
     mockCreditDialogProps: vi.fn(),
   })
 );
@@ -81,6 +81,9 @@ const mockDraftState = {
     quantity: number;
     cogsPerUnit: number;
     originalCogsPerUnit: number;
+    cogsMode?: "FIXED" | "RANGE";
+    productDisplayName?: string;
+    isBelowVendorRange?: boolean;
     marginPercent: number;
     marginDollar: number;
     unitPrice: number;
@@ -521,7 +524,9 @@ describe("SalesOrderSurface", () => {
     await waitFor(() => {
       expect(
         (
-          gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }> | undefined
+          gridPropsByTitle.get("Inventory")?.rows as
+            | Array<{ name: string }>
+            | undefined
         )?.map(row => row.name)
       ).toEqual(["Blue Dream"]);
     });
@@ -627,7 +632,9 @@ describe("SalesOrderSurface", () => {
       expect(mockToastInfo).toHaveBeenCalledWith("Imported cut: Andy Indoor");
       expect(
         (
-          gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }> | undefined
+          gridPropsByTitle.get("Inventory")?.rows as
+            | Array<{ name: string }>
+            | undefined
         )?.map(row => row.name)
       ).toEqual(["Blue Dream", "Quarantined Cut"]);
     });
@@ -644,7 +651,9 @@ describe("SalesOrderSurface", () => {
     await waitFor(() => {
       expect(
         (
-          gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }> | undefined
+          gridPropsByTitle.get("Inventory")?.rows as
+            | Array<{ name: string }>
+            | undefined
         )?.map(row => row.name)
       ).toEqual(["Blue Dream"]);
     });
@@ -765,7 +774,8 @@ describe("SalesOrderSurface", () => {
     render(<SalesOrderSurface />);
 
     expect(
-      (gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }>).length
+      (gridPropsByTitle.get("Inventory")?.rows as Array<{ name: string }>)
+        .length
     ).toBe(0);
 
     fireEvent.click(screen.getByRole("button", { name: "Available now" }));
@@ -796,6 +806,38 @@ describe("SalesOrderSurface", () => {
       3,
       "/clients/7?section=sales-pricing"
     );
+  });
+
+  it("shows a consignment risk summary before commit when a range-priced line is below vendor range", () => {
+    mockDraftState.clientId = 7;
+    mockDraftState.items = [
+      {
+        batchId: 11,
+        quantity: 1,
+        cogsPerUnit: 8,
+        originalCogsPerUnit: 10,
+        cogsMode: "RANGE",
+        productDisplayName: "Blue Dream",
+        isBelowVendorRange: true,
+        marginPercent: 20,
+        marginDollar: 2,
+        unitPrice: 10,
+        lineTotal: 10,
+        isCogsOverridden: false,
+        isMarginOverridden: false,
+        marginSource: "DEFAULT",
+        isSample: false,
+      },
+    ];
+
+    render(<SalesOrderSurface />);
+
+    expect(
+      screen.getByText(/consignment range follow-up required on 1 line/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Blue Dream\. The below-range exception stays flagged/i)
+    ).toBeInTheDocument();
   });
 
   it("applies staged quantity and markup before adding a row", () => {
@@ -930,7 +972,9 @@ describe("SalesOrderSurface", () => {
 
     render(<SalesOrderSurface />);
 
-    expect(screen.getByRole("button", { name: "Confirm Order" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Confirm Order" })
+    ).toBeDisabled();
     expect(
       screen.getByText(
         "This draft only contains unavailable, blocked, or unresolved lines. Replace, recheck, or remove them before confirming the order."
@@ -1001,9 +1045,7 @@ describe("SalesOrderSurface", () => {
       )
     ).toBeInTheDocument();
     expect(screen.getByText("1 blocked line")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Confirm Order" })
-    ).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Confirm Order" })).toBeEnabled();
   });
 
   it("disables confirmation when every tracked draft line is unresolved from live inventory", () => {
@@ -1039,7 +1081,9 @@ describe("SalesOrderSurface", () => {
 
     render(<SalesOrderSurface />);
 
-    expect(screen.getByRole("button", { name: "Confirm Order" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Confirm Order" })
+    ).toBeDisabled();
     expect(
       screen.getByText(
         "This draft only contains unavailable, blocked, or unresolved lines. Replace, recheck, or remove them before confirming the order."
@@ -1087,7 +1131,9 @@ describe("SalesOrderSurface", () => {
       expect(screen.getByTestId("credit-warning-dialog")).toBeInTheDocument();
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "View payment history" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "View payment history" })
+    );
 
     expect(mockSetLocation).toHaveBeenCalledWith("/accounting?tab=invoices");
   });
