@@ -227,3 +227,112 @@ export const PAYMENT_TERM_LABELS: Record<string, string> = {
 export function getPaymentTermLabel(term: string): string {
   return PAYMENT_TERM_LABELS[term] ?? term.replace(/_/g, " ");
 }
+
+export const BATCH_STATUS_LABELS: Record<string, string> = {
+  AWAITING_INTAKE: "Awaiting Intake",
+  LIVE: "Available",
+  ON_HOLD: "On Hold",
+  QUARANTINED: "Quality Hold",
+  SOLD_OUT: "Sold Out",
+  CLOSED: "Closed",
+};
+
+export const BATCH_STATUS_CLASSES: Record<string, string> = {
+  AWAITING_INTAKE: "bg-blue-50 text-blue-700 border border-blue-200",
+  LIVE: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  ON_HOLD: "bg-amber-50 text-amber-700 border border-amber-200",
+  QUARANTINED: "bg-red-50 text-red-700 border border-red-200",
+  SOLD_OUT: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  CLOSED: "bg-neutral-100 text-neutral-400 border border-neutral-200",
+};
+
+export function getBatchStatusLabel(status: string): string {
+  return (
+    BATCH_STATUS_LABELS[status] ??
+    status
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase())
+  );
+}
+
+export function getBatchStatusClass(status: string): string {
+  return (
+    BATCH_STATUS_CLASSES[status] ??
+    "bg-muted text-muted-foreground border border-border"
+  );
+}
+
+export const GRADE_CLASSES: Record<string, string> = {
+  A: "bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold",
+  "A+": "bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold",
+  B: "bg-sky-100 text-sky-800 border border-sky-200 font-medium",
+  C: "bg-amber-100 text-amber-800 border border-amber-200",
+  D: "bg-neutral-100 text-neutral-600 border border-neutral-200",
+};
+
+export function getGradeClass(grade: string): string {
+  const normalized = grade.toUpperCase();
+  return (
+    GRADE_CLASSES[normalized] ??
+    "bg-muted text-muted-foreground border border-border"
+  );
+}
+
+export const INVOICE_STATUS_LABELS: Record<string, string> = {
+  DRAFT: "Draft",
+  SENT: "Sent",
+  PAID: "Paid",
+  PARTIAL: "Partial",
+  OVERDUE: "Overdue",
+  VOIDED: "Voided",
+  CANCELLED: "Cancelled",
+  WRITE_OFF: "Written Off",
+};
+
+export const INVOICE_STATUS_CLASSES: Record<string, string> = {
+  DRAFT: "bg-amber-50 text-amber-700 border border-amber-200",
+  SENT: "bg-sky-50 text-sky-700 border border-sky-200",
+  PAID: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+  PARTIAL: "bg-violet-50 text-violet-700 border border-violet-200",
+  OVERDUE: "bg-red-50 text-red-700 border border-red-200 font-semibold",
+  VOIDED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  CANCELLED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
+  WRITE_OFF:
+    "bg-neutral-200 text-neutral-600 border border-neutral-300 line-through",
+};
+
+export function getInvoiceStatusLabel(status: string): string {
+  return (
+    INVOICE_STATUS_LABELS[status] ??
+    status
+      .replace(/_/g, " ")
+      .toLowerCase()
+      .replace(/\b\w/g, c => c.toUpperCase())
+  );
+}
+
+export function getInvoiceStatusClass(status: string): string {
+  return (
+    INVOICE_STATUS_CLASSES[status] ??
+    "bg-muted text-muted-foreground border border-border"
+  );
+}
+
+export function formatCurrency(
+  value: number | string | null | undefined,
+  opts?: { showSign?: boolean }
+): string {
+  const num = typeof value === "string" ? parseFloat(value) : (value ?? 0);
+  if (isNaN(num)) return "—";
+  const formatted = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(num));
+  if (opts?.showSign) {
+    return num >= 0 ? `+${formatted}` : `-${formatted}`;
+  }
+  return formatted;
+}
