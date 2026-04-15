@@ -26,25 +26,6 @@ import { Separator } from "@/components/ui/separator";
 import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { FileText, Clock, Package } from "lucide-react";
 
-function buildSharedDescriptor(item: {
-  brand?: string | null;
-  vendor?: string | null;
-  subcategory?: string | null;
-  category?: string | null;
-  batchSku?: string | null;
-}) {
-  const identityLines = buildProductIdentityLines({
-    brand: item.brand,
-    vendor: item.vendor,
-    category: item.category,
-    subcategory: item.subcategory,
-  });
-
-  return [identityLines.secondary, identityLines.tertiary, item.batchSku]
-    .filter(value => Boolean(value) && value !== "-")
-    .join(" · ");
-}
-
 export default function SharedSalesSheetPage() {
   const [, params] = useRoute("/shared/sales-sheet/:token");
   const token = params?.token || "";
@@ -209,11 +190,28 @@ export default function SharedSalesSheetPage() {
                     <TableCell>
                       <div className="space-y-0.5">
                         <p className="font-medium">{item.name}</p>
-                        {buildSharedDescriptor(item) ? (
-                          <p className="text-xs text-muted-foreground">
-                            {buildSharedDescriptor(item)}
-                          </p>
-                        ) : null}
+                        {(() => {
+                          const { secondary, tertiary } =
+                            buildProductIdentityLines({
+                              brand: item.brand,
+                              category: item.category,
+                              subcategory: item.subcategory,
+                            });
+                          return (
+                            <>
+                              {secondary ? (
+                                <p className="text-xs text-muted-foreground">
+                                  {secondary}
+                                </p>
+                              ) : null}
+                              {tertiary ? (
+                                <p className="text-xs text-muted-foreground/80">
+                                  {tertiary}
+                                </p>
+                              ) : null}
+                            </>
+                          );
+                        })()}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">
