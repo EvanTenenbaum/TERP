@@ -17,10 +17,16 @@ import {
   Filter,
   Grid3X3,
   Image,
+  ShoppingCart,
   SquareArrowOutUpRight,
   Trash2,
 } from "lucide-react";
-import { useLocation } from "wouter";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +57,14 @@ import type {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { MonoId } from "@/components/ui/mono-id";
+import type { ClientOption } from "@/components/ui/client-combobox";
+import { ClientCombobox } from "@/components/ui/client-combobox";
+import {
+  getBatchStatusLabel,
+  getBatchStatusClass,
+  getGradeClass,
+} from "@/lib/statusTokens";
 import {
   Select,
   SelectContent,
@@ -69,7 +83,6 @@ import {
   KeyboardHintBar,
   type KeyboardHint,
 } from "@/components/work-surface/KeyboardHintBar";
-import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import { AdjustmentContextDrawer } from "./AdjustmentContextDrawer";
@@ -103,6 +116,9 @@ const keyboardHints: KeyboardHint[] = [
   { key: `${mod}+A`, label: "select all" },
   { key: `${mod}+K`, label: "search" },
 ];
+
+const surfacePanelClass =
+  "rounded-xl border border-border/70 bg-card/80 shadow-sm";
 
 const inventoryAffordances: PowersheetAffordance[] = [
   { label: "Select", available: true },
@@ -151,18 +167,8 @@ const EXPORT_COLUMNS: ExportColumn<InventoryPilotRow>[] = [
     formatter: v => String(v ?? 0),
   },
   {
-    key: "unitPrice",
-    label: "Unit Price",
-    formatter: v => (v === null || v === undefined ? "" : String(v)),
-  },
-  {
     key: "unitCogs",
     label: "Unit COGS",
-    formatter: v => (v === null || v === undefined ? "" : String(v)),
-  },
-  {
-    key: "marginPercent",
-    label: "Margin %",
     formatter: v => (v === null || v === undefined ? "" : String(v)),
   },
   { key: "ageLabel", label: "Age" },
@@ -184,9 +190,6 @@ const formatCurrency = (value: number | null) =>
         style: "currency",
         currency: "USD",
       }).format(value);
-
-const formatPercent = (value: number | null) =>
-  value === null || Number.isNaN(value) ? "-" : `${value.toFixed(1)}%`;
 
 const formatQuantity = (value: number) =>
   value.toLocaleString(undefined, {
@@ -215,12 +218,18 @@ interface InventoryLocationRow {
   quantity: number;
 }
 
+interface OrderFromBatchState {
+  batchId: number;
+  productName: string;
+  sku: string;
+  unitCogs: number;
+}
+
 // ============================================================================
 // Component
 // ============================================================================
 
 export function InventoryManagementSurface() {
-  const [, setLocation] = useLocation();
   const { hasPermission } = usePermissions();
   const { selectedId: selectedBatchId, setSelectedId: setSelectedBatchId } =
     useSpreadsheetSelectionParam("batchId");
@@ -244,6 +253,12 @@ export function InventoryManagementSurface() {
   // Adjustment drawer state
   const [adjustDrawerState, setAdjustDrawerState] =
     useState<AdjustDrawerState | null>(null);
+
+  // Order from inventory drawer state
+  const [orderFromBatch, setOrderFromBatch] =
+    useState<OrderFromBatchState | null>(null);
+  const [orderClientId, setOrderClientId] = useState<number | null>(null);
+  const [orderQty, setOrderQty] = useState<string>("");
 
   // Saved views state
   const [currentViewId, setCurrentViewId] = useState<number | null>(null);
@@ -282,6 +297,10 @@ export function InventoryManagementSurface() {
 
   const dashboardQuery = trpc.inventory.dashboardStats.useQuery();
   const viewsQuery = trpc.inventory.views.list.useQuery();
+  const buyersQuery = trpc.clients.list.useQuery(
+    { limit: 1000 },
+    { enabled: orderFromBatch !== null }
+  );
   const detailQuery = trpc.inventory.getById.useQuery(selectedBatchId ?? 0, {
     enabled: selectedBatchId !== null,
   });
@@ -414,6 +433,18 @@ export function InventoryManagementSurface() {
     },
   });
 
+  const createOrderMutation = trpc.orders.createDraftEnhanced.useMutation({
+    onSuccess: () => {
+      toast.success("Draft order created");
+      setOrderFromBatch(null);
+      setOrderClientId(null);
+      setOrderQty("");
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to create order");
+    },
+  });
+
   // ============================================================================
   // Row data
   // ============================================================================
@@ -498,6 +529,21 @@ export function InventoryManagementSurface() {
   );
   const selectedOnHandQty = selectedRow?.onHandQty ?? null;
 
+  const buyerClientOptions = useMemo<ClientOption[]>(() => {
+    const data = buyersQuery.data;
+    const items = Array.isArray(data) ? data : (data?.items ?? []);
+    return (
+      items as Array<{
+        id: number;
+        name: string;
+        email?: string | null;
+        isBuyer?: boolean | null;
+      }>
+    )
+      .filter(c => c.isBuyer !== false)
+      .map(c => ({ id: c.id, name: c.name, email: c.email ?? null }));
+  }, [buyersQuery.data]);
+
   useEffect(() => {
     if (selectedBatchId === null || selectedOnHandQty === null) {
       setInspectorTargetQty("");
@@ -547,33 +593,15 @@ export function InventoryManagementSurface() {
         minWidth: 120,
         maxWidth: 140,
         cellClass: "powersheet-cell--locked",
+        cellRenderer: (params: { value: string }) => (
+          <MonoId value={params.value ?? ""} />
+        ),
       },
       {
         field: "productSummary",
         headerName: "Product",
         flex: 1.3,
         minWidth: 280,
-        cellRenderer: (params: { data?: InventoryPilotRow }) => {
-          const row = params.data;
-          if (!row) return "";
-          const subDetails = [row.vendorName, row.brandName, row.grade]
-            .map(value => value?.trim())
-            .filter(
-              (value): value is string =>
-                Boolean(value) && value !== "-" && value !== "Unknown"
-            )
-            .join(" · ");
-          return (
-            <div className="flex min-w-0 flex-col">
-              <span className="truncate font-medium">{row.productName}</span>
-              {subDetails ? (
-                <span className="truncate text-[11px] text-muted-foreground">
-                  {subDetails}
-                </span>
-              ) : null}
-            </div>
-          );
-        },
         cellClass: "powersheet-cell--locked",
       },
       {
@@ -599,6 +627,20 @@ export function InventoryManagementSurface() {
         cellClass: canUpdateInventory
           ? "powersheet-cell--editable"
           : "powersheet-cell--locked",
+        cellRenderer: (params: { value: string }) => {
+          if (!params.value) return null;
+          const cls = getGradeClass(params.value);
+          return (
+            <span
+              className={cn(
+                "inline-flex items-center rounded px-1.5 py-0.5 text-xs",
+                cls
+              )}
+            >
+              {params.value}
+            </span>
+          );
+        },
       },
       {
         field: "status",
@@ -610,13 +652,24 @@ export function InventoryManagementSurface() {
         cellEditorParams: {
           values: [...STATUS_OPTIONS],
         },
-        valueFormatter: params =>
-          STATUS_LABELS[
-            (params.value as InventoryBatchStatus) ?? "LIVE"
-          ] ?? String(params.value ?? ""),
         cellClass: canUpdateInventory
           ? "powersheet-cell--editable"
           : "powersheet-cell--locked",
+        cellRenderer: (params: { value: string }) => {
+          if (!params.value) return null;
+          const label = getBatchStatusLabel(params.value);
+          const cls = getBatchStatusClass(params.value);
+          return (
+            <span
+              className={cn(
+                "inline-flex items-center rounded px-1.5 py-0.5 text-xs",
+                cls
+              )}
+            >
+              {label}
+            </span>
+          );
+        },
       },
       {
         field: "onHandQty",
@@ -626,8 +679,16 @@ export function InventoryManagementSurface() {
         editable: canUpdateInventory,
         valueFormatter: params => formatQuantity(Number(params.value ?? 0)),
         cellClass: canUpdateInventory
-          ? "powersheet-cell--editable"
-          : "powersheet-cell--locked",
+          ? "powersheet-cell--editable tabular-nums text-right"
+          : "powersheet-cell--locked tabular-nums text-right",
+        cellClassRules: {
+          "text-amber-700 font-semibold": (params: {
+            data?: InventoryPilotRow;
+          }) => {
+            const s = params.data?.stockStatus;
+            return s === "LOW" || s === "CRITICAL";
+          },
+        },
       },
       {
         field: "reservedQty",
@@ -646,14 +707,6 @@ export function InventoryManagementSurface() {
         cellClass: "powersheet-cell--locked",
       },
       {
-        field: "unitPrice",
-        headerName: "Price",
-        minWidth: 110,
-        maxWidth: 120,
-        valueFormatter: params => formatCurrency(params.value ?? null),
-        cellClass: "powersheet-cell--locked",
-      },
-      {
         field: "unitCogs",
         headerName: "COGS",
         minWidth: 100,
@@ -663,14 +716,6 @@ export function InventoryManagementSurface() {
         cellClass: canUpdateInventory
           ? "powersheet-cell--editable"
           : "powersheet-cell--locked",
-      },
-      {
-        field: "marginPercent",
-        headerName: "Margin",
-        minWidth: 100,
-        maxWidth: 110,
-        valueFormatter: params => formatPercent(params.value ?? null),
-        cellClass: "powersheet-cell--locked",
       },
       {
         field: "ageLabel",
@@ -685,6 +730,40 @@ export function InventoryManagementSurface() {
         minWidth: 90,
         maxWidth: 110,
         cellClass: "powersheet-cell--locked",
+      },
+      {
+        headerName: "",
+        field: "batchId",
+        minWidth: 80,
+        maxWidth: 80,
+        sortable: false,
+        filter: false,
+        resizable: false,
+        cellClass: "powersheet-cell--locked flex items-center justify-center",
+        cellRenderer: (params: { data?: InventoryPilotRow }) => {
+          const row = params.data;
+          if (!row) return null;
+          return (
+            <button
+              type="button"
+              title="Create order from this batch"
+              className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+              onClick={e => {
+                e.stopPropagation();
+                setOrderFromBatch({
+                  batchId: row.batchId,
+                  productName: row.productName,
+                  sku: row.sku,
+                  unitCogs: row.unitCogs ?? 0,
+                });
+                setOrderClientId(null);
+                setOrderQty("");
+              }}
+            >
+              <ShoppingCart className="h-3.5 w-3.5" />
+            </button>
+          );
+        },
       },
     ],
     [canUpdateInventory]
@@ -877,23 +956,17 @@ export function InventoryManagementSurface() {
 
   const dashStats = dashboardQuery.data;
   const filtersActive = hasActiveFilters(filters);
-  const visibleBatchCount = rows.length;
-  const visibleUnits = rows.reduce((sum, row) => sum + row.onHandQty, 0);
-  const visibleInventoryValue = rows.reduce(
-    (sum, row) => sum + (row.unitCogs ?? 0) * row.onHandQty,
-    0
-  );
-  const lowStockCount = rows.filter(
-    row => String(row.stockStatus ?? "") === "LOW"
-  ).length;
-  const quarantinedCount = rows.filter(
-    row => String(row.status ?? "") === "QUARANTINED"
-  ).length;
 
   const statusBarLeft = (
     <span>
-      {formatQuantity(visibleUnits)} units across {visibleBatchCount} visible
-      {" "}batches
+      {dashStats?.totalUnits ?? 0} units across{" "}
+      {dashStats?.statusCounts
+        ? Object.values(dashStats.statusCounts).reduce(
+            (sum, value) => sum + value,
+            0
+          )
+        : rows.length}{" "}
+      batches
       {queueSelectionSummary
         ? ` · ${queueSelectionSummary.selectedCellCount} cells / ${queueSelectionSummary.selectedRowCount} rows selected`
         : ""}
@@ -906,7 +979,7 @@ export function InventoryManagementSurface() {
         ? isDeepLinkedOutsideLoadedGrid
           ? "Loaded via batchId outside the current loaded rows"
           : `Selected ${selectedRow.sku}`
-        : `${viewMode === "grid" ? "Grid" : "Gallery"} view · ${visibleBatchCount} visible rows of ${totalItems} filtered rows · ${views.length} saved view${views.length === 1 ? "" : "s"}`}
+        : `${rows.length} loaded rows of ${totalItems} · ${views.length} saved view${views.length === 1 ? "" : "s"}`}
       {queueSelectionSummary?.hasDiscontiguousSelection
         ? " · discontiguous selection"
         : ""}
@@ -922,62 +995,38 @@ export function InventoryManagementSurface() {
       {/* Main content column */}
       <div className="flex flex-1 flex-col gap-1.5">
         {/* ── 1. Toolbar ── */}
-        <div className="flex items-center gap-3 px-3 py-1">
-          <span className="text-sm font-semibold">Inventory</span>
-          {dashStats && (
-            <>
-              <Badge variant="outline" className="text-xs">
-                {visibleBatchCount} visible batch
-                {visibleBatchCount === 1 ? "" : "es"}
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {formatQuantity(visibleUnits)} visible units
-              </Badge>
-              <Badge variant="outline" className="text-xs">
-                {formatCurrency(visibleInventoryValue)} visible value
-              </Badge>
-            </>
-          )}
-          {lowStockCount > 0 ? (
-            <Button
-              size="sm"
-              variant={filters.stockStatus === "LOW" ? "default" : "outline"}
-              className="h-7 text-xs"
-              onClick={() =>
-                setFilters(prev => ({
-                  ...prev,
-                  stockStatus: prev.stockStatus === "LOW" ? "ALL" : "LOW",
-                }))
-              }
-            >
-              Low stock ({lowStockCount})
-            </Button>
-          ) : null}
-          {quarantinedCount > 0 ? (
-            <Button
-              size="sm"
-              variant={
-                filters.statuses.length === 1 &&
-                filters.statuses[0] === "QUARANTINED"
-                  ? "default"
-                  : "outline"
-              }
-              className="h-7 text-xs"
-              onClick={() =>
-                setFilters(prev => ({
-                  ...prev,
-                  statuses:
-                    prev.statuses.length === 1 &&
-                    prev.statuses[0] === "QUARANTINED"
-                      ? []
-                      : ["QUARANTINED"],
-                }))
-              }
-            >
-              Quarantine ({quarantinedCount})
-            </Button>
-          ) : null}
-          <div className="ml-auto flex items-center gap-1.5">
+        <div
+          className={`${surfacePanelClass} flex flex-wrap items-start gap-3 px-3 py-2`}
+        >
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-semibold">Inventory</span>
+              {dashStats && (
+                <>
+                  <Badge variant="outline" className="text-xs">
+                    {dashStats.statusCounts
+                      ? Object.values(dashStats.statusCounts).reduce(
+                          (sum, v) => sum + v,
+                          0
+                        )
+                      : 0}{" "}
+                    batches
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {formatQuantity(dashStats.totalUnits ?? 0)} units
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {formatCurrency(dashStats.totalInventoryValue ?? null)}{" "}
+                    value
+                  </Badge>
+                </>
+              )}
+            </div>
+            <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+              Inventory operations
+            </p>
+          </div>
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <Button
               size="sm"
               variant={viewMode === "grid" ? "default" : "outline"}
@@ -1011,7 +1060,9 @@ export function InventoryManagementSurface() {
         </div>
 
         {/* ── 2. Action Bar ── */}
-        <div className="flex items-center gap-2 px-3 py-0.5">
+        <div
+          className={`${surfacePanelClass} mx-0.5 flex flex-wrap items-center gap-2 px-3 py-2`}
+        >
           <Input
             value={filters.search}
             onChange={e =>
@@ -1103,6 +1154,68 @@ export function InventoryManagementSurface() {
           >
             Save View
           </Button>
+          <div className="ml-auto flex items-center gap-2">
+            {bulkActionsActive && (
+              <span className="text-xs font-medium text-muted-foreground">
+                {bulkSelectedIds.length > 0
+                  ? `${bulkSelectedIds.length} selected`
+                  : `${queueSelectionSummary?.selectedRowCount ?? 0} rows`}
+              </span>
+            )}
+            {bulkSelectedIds.length > 0 && (
+              <>
+                <Select
+                  value=""
+                  onValueChange={value => {
+                    if (!value) return;
+                    setPendingBulkStatus(value as InventoryBatchStatus);
+                    setBulkStatusDialogOpen(true);
+                  }}
+                >
+                  <SelectTrigger
+                    className="h-7 w-[140px] text-xs"
+                    aria-label="Bulk set status"
+                  >
+                    <SelectValue placeholder="Set status..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(status => (
+                      <SelectItem key={status} value={status}>
+                        {STATUS_LABELS[status]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {canDeleteInventory && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-7 text-xs"
+                    onClick={() => setBulkDeleteDialogOpen(true)}
+                    disabled={bulkDeleteMutation.isPending}
+                  >
+                    <Trash2 className="mr-1 h-3.5 w-3.5" />
+                    Delete
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs"
+                  onClick={() => setBulkSelectedIds([])}
+                >
+                  Clear
+                </Button>
+              </>
+            )}
+          </div>
+          {!bulkActionsActive && (
+            <span className="ml-auto text-xs text-muted-foreground">
+              {filtersActive
+                ? "Filters active"
+                : "Search, filter, or switch views"}
+            </span>
+          )}
           {currentViewId !== null && (
             <Button
               size="sm"
@@ -1115,63 +1228,6 @@ export function InventoryManagementSurface() {
             >
               Delete View
             </Button>
-          )}
-
-          {/* Bulk actions (right side) */}
-          {bulkActionsActive && (
-            <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                {bulkSelectedIds.length > 0
-                  ? `${bulkSelectedIds.length} selected`
-                  : `${queueSelectionSummary?.selectedRowCount ?? 0} rows`}
-              </span>
-              {bulkSelectedIds.length > 0 && (
-                <>
-                  <Select
-                    value=""
-                    onValueChange={value => {
-                      if (!value) return;
-                      setPendingBulkStatus(value as InventoryBatchStatus);
-                      setBulkStatusDialogOpen(true);
-                    }}
-                  >
-                    <SelectTrigger
-                      className="h-7 w-[140px] text-xs"
-                      aria-label="Bulk set status"
-                    >
-                      <SelectValue placeholder="Set status..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STATUS_OPTIONS.map(status => (
-                        <SelectItem key={status} value={status}>
-                          {STATUS_LABELS[status]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {canDeleteInventory && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      className="h-7 text-xs"
-                      onClick={() => setBulkDeleteDialogOpen(true)}
-                      disabled={bulkDeleteMutation.isPending}
-                    >
-                      <Trash2 className="mr-1 h-3.5 w-3.5" />
-                      Delete
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
-                    onClick={() => setBulkSelectedIds([])}
-                  >
-                    Clear
-                  </Button>
-                </>
-              )}
-            </div>
           )}
         </div>
 
@@ -1250,7 +1306,7 @@ export function InventoryManagementSurface() {
         {/* ── 5. Selected Batch Summary Cards ── */}
         {selectedRow && (
           <div className="grid gap-3 px-3 md:grid-cols-4">
-            <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
               <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                 Product
               </div>
@@ -1258,7 +1314,7 @@ export function InventoryManagementSurface() {
                 {selectedRow.productSummary}
               </div>
             </div>
-            <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
               <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                 Stock
               </div>
@@ -1268,7 +1324,7 @@ export function InventoryManagementSurface() {
                 {formatQuantity(selectedRow.availableQty)} available
               </div>
             </div>
-            <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
               <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                 Valuation
               </div>
@@ -1280,7 +1336,7 @@ export function InventoryManagementSurface() {
                   : "—"}
               </div>
             </div>
-            <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+            <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
               <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
                 Locations
               </div>
@@ -1322,8 +1378,7 @@ export function InventoryManagementSurface() {
                   selectedRow.status === "QUARANTINED" && "border-amber-300"
                 )}
               >
-                {STATUS_LABELS[selectedRow.status as InventoryBatchStatus] ??
-                  selectedRow.status}
+                {selectedRow.status}
               </Badge>
             ) : null
           }
@@ -1382,14 +1437,8 @@ export function InventoryManagementSurface() {
               </InspectorSection>
 
               <InspectorSection title="Valuation">
-                <InspectorField label="Unit Price">
-                  <p>{formatCurrency(selectedRow?.unitPrice ?? null)}</p>
-                </InspectorField>
                 <InspectorField label="Unit COGS">
                   <p>{formatCurrency(selectedRow?.unitCogs ?? null)}</p>
-                </InspectorField>
-                <InspectorField label="Margin">
-                  <p>{formatPercent(selectedRow?.marginPercent ?? null)}</p>
                 </InspectorField>
                 <InspectorField label="Total Value">
                   <p>
@@ -1432,24 +1481,6 @@ export function InventoryManagementSurface() {
 
               {canUpdateInventory && (
                 <InspectorSection title="Actions">
-                  <InspectorField label="Add to Order">
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      onClick={() => {
-                        if (!selectedRow?.batchId) return;
-                        setLocation(
-                          buildSalesWorkspacePath("create-order", {
-                            batchId: selectedRow.batchId,
-                          })
-                        );
-                      }}
-                      disabled={!selectedRow?.batchId}
-                    >
-                      <SquareArrowOutUpRight className="mr-2 h-4 w-4" />
-                      Start Order
-                    </Button>
-                  </InspectorField>
                   <InspectorField label="Adjust Quantity">
                     <div className="space-y-2">
                       <Input
@@ -1601,6 +1632,93 @@ export function InventoryManagementSurface() {
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* ── 8b. Order from Inventory Drawer ── */}
+      <Sheet
+        open={!!orderFromBatch}
+        onOpenChange={open => {
+          if (!open) {
+            setOrderFromBatch(null);
+            setOrderClientId(null);
+            setOrderQty("");
+          }
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="flex w-[560px] flex-col overflow-hidden p-0 sm:max-w-[560px]"
+        >
+          <SheetHeader className="flex-shrink-0 border-b px-5 py-4">
+            <SheetTitle className="text-sm font-semibold">
+              New Order — {orderFromBatch?.productName}
+            </SheetTitle>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              <span className="font-mono">{orderFromBatch?.sku}</span>
+            </p>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto p-5">
+            <p className="mb-4 text-sm text-muted-foreground">
+              Select a client and enter quantity to create a draft order from
+              this batch.
+            </p>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="order-client">Client</Label>
+                <ClientCombobox
+                  value={orderClientId}
+                  onValueChange={setOrderClientId}
+                  clients={buyerClientOptions}
+                  placeholder="Select a client..."
+                  isLoading={buyersQuery.isLoading}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="order-qty">Quantity</Label>
+                <Input
+                  id="order-qty"
+                  type="number"
+                  inputMode="decimal"
+                  min={1}
+                  value={orderQty}
+                  onChange={e => setOrderQty(e.target.value)}
+                  placeholder="e.g. 100"
+                  className="h-8 text-sm"
+                />
+              </div>
+              <Button
+                className="w-full"
+                disabled={
+                  !orderClientId ||
+                  !orderQty ||
+                  Number(orderQty) <= 0 ||
+                  createOrderMutation.isPending
+                }
+                onClick={() => {
+                  if (!orderFromBatch || !orderClientId) return;
+                  const qty = Number(orderQty);
+                  if (!Number.isFinite(qty) || qty <= 0) return;
+                  createOrderMutation.mutate({
+                    orderType: "SALE",
+                    clientId: orderClientId,
+                    lineItems: [
+                      {
+                        batchId: orderFromBatch.batchId,
+                        batchSku: orderFromBatch.sku,
+                        quantity: qty,
+                        cogsPerUnit: orderFromBatch.unitCogs,
+                      },
+                    ],
+                  });
+                }}
+              >
+                {createOrderMutation.isPending
+                  ? "Creating..."
+                  : "Create Draft Order"}
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* ── 8. Adjustment Context Drawer (right side) ── */}
       {adjustDrawerState?.isOpen && (

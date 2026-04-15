@@ -17,8 +17,7 @@ const sharedSheet = {
       name: "Blue Dream",
       category: "Flower",
       subcategory: "Indoor",
-      brand: null,
-      vendor: "Andy Rhan",
+      brand: "Andy Rhan",
       batchSku: "BT-42",
       quantity: 12,
       price: 1200,
@@ -52,11 +51,11 @@ describe("SharedSalesSheetPage", () => {
     expect(screen.getByText("Sales Catalogue")).toBeInTheDocument();
     expect(screen.getByText("Prepared for Golden State")).toBeInTheDocument();
     expect(screen.getByText("Blue Dream")).toBeInTheDocument();
-    expect(screen.getByText("Andy Rhan · Indoor · BT-42")).toBeInTheDocument();
-    expect(screen.getByText("1 item")).toBeInTheDocument();
+    expect(screen.getByText("Andy Rhan")).toBeInTheDocument();
+    expect(screen.getByText("Flower · Indoor")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Pricing, availability, and payment terms are subject to final confirmation."
+        "Pricing and availability are subject to final confirmation."
       )
     ).toBeInTheDocument();
   });

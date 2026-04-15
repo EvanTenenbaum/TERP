@@ -23,11 +23,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { FileText, Clock, Package } from "lucide-react";
-import {
-  buildCatalogueOutboundDescriptor,
-  buildCatalogueOutboundNotes,
-} from "@/components/sales/outbound";
 
 export default function SharedSalesSheetPage() {
   const [, params] = useRoute("/shared/sales-sheet/:token");
@@ -88,8 +85,6 @@ export default function SharedSalesSheetPage() {
   };
 
   const hasImages = sheet.items.some(item => Boolean(item.imageUrl));
-  const outboundNotes = buildCatalogueOutboundNotes(sheet.items);
-  const itemCountLabel = `${sheet.itemCount} ${sheet.itemCount === 1 ? "item" : "items"}`;
 
   return (
     <div className="min-h-screen bg-background">
@@ -130,7 +125,7 @@ export default function SharedSalesSheetPage() {
                   )}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {itemCountLabel}
+                  {sheet.itemCount} items
                 </p>
               </div>
             </div>
@@ -169,59 +164,72 @@ export default function SharedSalesSheetPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sheet.items.map((item, index) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium text-muted-foreground">
-                      {index + 1}
-                    </TableCell>
-                    {hasImages ? (
-                      <TableCell className="align-middle">
-                        {item.imageUrl ? (
-                          <div className="mx-auto h-14 w-14 overflow-hidden rounded-md border border-border/70 bg-muted/30">
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className="h-full w-full object-cover"
-                              loading="lazy"
-                            />
-                          </div>
+                {sheet.items.map((item, index) => {
+                  const identityLines = buildProductIdentityLines({
+                    brand: item.brand,
+                    category: item.category,
+                    subcategory: item.subcategory,
+                  });
+
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium text-muted-foreground">
+                        {index + 1}
+                      </TableCell>
+                      {hasImages ? (
+                        <TableCell className="align-middle">
+                          {item.imageUrl ? (
+                            <div className="mx-auto h-14 w-14 overflow-hidden rounded-md border border-border/70 bg-muted/30">
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                          ) : (
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-border/70 text-[10px] text-muted-foreground">
+                              No image
+                            </div>
+                          )}
+                        </TableCell>
+                      ) : null}
+                      <TableCell>
+                        <div className="space-y-0.5">
+                          <p className="font-medium">{item.name}</p>
+                          {identityLines.secondary ? (
+                            <p className="text-xs text-muted-foreground">
+                              {identityLines.secondary}
+                            </p>
+                          ) : null}
+                          {identityLines.tertiary ? (
+                            <p className="text-xs text-muted-foreground/80">
+                              {identityLines.tertiary}
+                            </p>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {item.subcategory || item.category ? (
+                          <Badge variant="outline">
+                            {item.subcategory || item.category}
+                          </Badge>
                         ) : (
-                          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-border/70 text-[10px] text-muted-foreground">
-                            No image
-                          </div>
+                          <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                    ) : null}
-                    <TableCell>
-                      <div className="space-y-0.5">
-                        <p className="font-medium">{item.name}</p>
-                        {buildCatalogueOutboundDescriptor(item) ? (
-                          <p className="text-xs text-muted-foreground">
-                            {buildCatalogueOutboundDescriptor(item)}
-                          </p>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {item.subcategory || item.category ? (
-                        <Badge variant="outline">
-                          {item.subcategory || item.category}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {item.quantity.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(item.price)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(item.price * item.quantity)}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      <TableCell className="text-right">
+                        {item.quantity.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(item.price)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(item.price * item.quantity)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
 
@@ -246,12 +254,12 @@ export default function SharedSalesSheetPage() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-muted-foreground">
-          <p>Interested in placing an order? Contact your sales representative.</p>
-          {outboundNotes.map(note => (
-            <p key={note} className="mt-2">
-              {note}
-            </p>
-          ))}
+          <p>
+            Interested in placing an order? Contact your sales representative.
+          </p>
+          <p className="mt-2">
+            Pricing and availability are subject to final confirmation.
+          </p>
           <p className="mt-2">Powered by TERP</p>
         </div>
       </div>

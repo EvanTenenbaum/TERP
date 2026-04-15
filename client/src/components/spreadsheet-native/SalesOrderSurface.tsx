@@ -10,12 +10,12 @@ import type { ColDef } from "ag-grid-community";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
+import { buildProductIdentityLines } from "@/lib/productIdentity";
+import { adaptInventorySavedViewToSalesFilters } from "@/lib/portableInventoryViews";
 import { trpc } from "@/lib/trpc";
 import { normalizePositiveIntegerWithin } from "@/lib/quantity";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
-import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { useOrderCalculations } from "@/hooks/orders/useOrderCalculations";
-import { usePermissions } from "@/hooks/usePermissions";
 import {
   type CreditCheckResult,
   resolveOrderCostVisibility,
@@ -23,11 +23,11 @@ import {
   useOrderDraft,
 } from "@/hooks/useOrderDraft";
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ClientCombobox } from "@/components/ui/client-combobox";
+import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
 import {
   Select,
   SelectContent,
@@ -41,7 +41,6 @@ import {
   OrderAdjustmentsBar,
   CreditWarningDialog,
 } from "@/components/orders";
-import { ClientCommitContextCard } from "@/components/orders/ClientCommitContextCard";
 import type { OrderAdjustment } from "@/components/orders/types";
 import { QuickViewSelector } from "@/components/sales/QuickViewSelector";
 import { SaveViewDialog } from "@/components/sales/SaveViewDialog";
@@ -56,19 +55,6 @@ import {
   type InventorySortConfig,
   type PricedInventoryItem,
 } from "@/components/sales/types";
-import {
-  buildSalesIdentityDescriptor,
-  clearPortableSalesCut,
-  countActiveSalesFilters,
-  getPlainLanguageSalesStatus,
-  isSalesInventorySellable,
-  matchesSalesInventoryFilters,
-  NON_SELLABLE_STATUS_NOTES,
-  normalizeSalesFilters,
-  readPortableSalesCut,
-  summarizeSalesFilters,
-  type PortableSalesCut,
-} from "@/components/sales/filtering";
 import {
   KeyboardHintBar,
   type KeyboardHint,
@@ -113,6 +99,8 @@ const keyboardHints: KeyboardHint[] = [
   { key: `${mod}+Enter`, label: "finalize" },
   { key: `${mod}+Z`, label: "undo in grid" },
 ];
+const surfacePanelClass =
+  "rounded-xl border border-border/70 bg-card/80 shadow-sm";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", {
@@ -138,9 +126,6 @@ const sanitizeDecimalInput = (value: string) => {
   const [whole, ...fraction] = cleaned.split(".");
   return fraction.length > 0 ? `${whole}.${fraction.join("")}` : whole;
 };
-
-const DRAFT_AVAILABILITY_REPAIR_MESSAGE =
-  "This draft only contains unavailable, blocked, or unresolved lines. Replace, recheck, or remove them before confirming the order.";
 
 const parseNonNegativeNumber = (value: string): number | null => {
   const trimmed = value.trim();
@@ -299,7 +284,11 @@ function mapInventoryToRows(
   }));
 }
 
-export function SalesOrderSurface() {
+export function SalesOrderSurface({
+  onComplete,
+}: {
+  onComplete?: () => void;
+} = {}) {
   const [, setLocation] = useLocation();
   const search = useSearch();
   const utils = trpc.useUtils();
@@ -340,12 +329,8 @@ export function SalesOrderSurface() {
   const [pendingCreditOverrideReason, setPendingCreditOverrideReason] =
     useState<string | undefined>();
   const [isCheckingCredit, setIsCheckingCredit] = useState(false);
-  const [portableCut, setPortableCut] = useState<PortableSalesCut | null>(
-    null
-  );
   const defaultViewAppliedClientRef = useRef<number | null>(null);
   const skipNextDefaultViewApplyRef = useRef(false);
-  const portableCutAppliedKeyRef = useRef<string | null>(null);
   const isQuoteCreateEntry =
     isCreateOrderEntry &&
     (routeMode === "quote" || draft.orderType === "QUOTE");
@@ -378,15 +363,6 @@ export function SalesOrderSurface() {
   const displaySettingsQuery =
     trpc.organizationSettings.getDisplaySettings.useQuery();
   const creditCheckMutation = trpc.credit.checkOrderCredit.useMutation();
-  const { hasAnyPermission } = usePermissions();
-  const canViewPricingContext = hasAnyPermission([
-    "orders:view_pricing",
-    "pricing:read",
-    "pricing:access",
-    "pricing:rules:read",
-    "pricing:profiles:read",
-    "pricing:defaults:view",
-  ]);
 
   const { showCogs, showMargin } = useMemo(
     () => resolveOrderCostVisibility(displaySettingsQuery.data),
@@ -396,11 +372,6 @@ export function SalesOrderSurface() {
   const selectedBatchIds = useMemo(
     () => new Set(draft.items.map(item => item.batchId)),
     [draft.items]
-  );
-  const portableCutSummary = useMemo(
-    () =>
-      portableCut ? summarizeSalesFilters(portableCut.filters).slice(0, 4) : [],
-    [portableCut]
   );
 
   const filteredInventory = useMemo(() => {
@@ -413,27 +384,41 @@ export function SalesOrderSurface() {
         return (
           item.name.toLowerCase().includes(lower) ||
           (item.category ?? "").toLowerCase().includes(lower) ||
-          (item.subcategory ?? "").toLowerCase().includes(lower) ||
-          (item.brand ?? "").toLowerCase().includes(lower) ||
           (item.vendor ?? "").toLowerCase().includes(lower) ||
           getInventorySku(item).toLowerCase().includes(lower) ||
-          batchLabel.includes(lower) ||
-          getPlainLanguageSalesStatus(item.status).toLowerCase().includes(lower)
+          batchLabel.includes(lower)
         );
       });
     }
 
-    items = items.filter(item => {
-      if (!matchesSalesInventoryFilters(item, filters)) {
-        return false;
-      }
-
-      if (!filters.includeUnavailable && !isSalesInventorySellable(item)) {
-        return false;
-      }
-
-      return true;
-    });
+    if (filters.search) {
+      const filterSearch = filters.search.toLowerCase();
+      items = items.filter(item =>
+        item.name.toLowerCase().includes(filterSearch)
+      );
+    }
+    if (filters.categories.length > 0) {
+      items = items.filter(item =>
+        filters.categories.includes(item.category ?? "")
+      );
+    }
+    if (filters.grades.length > 0) {
+      items = items.filter(item => filters.grades.includes(item.grade ?? ""));
+    }
+    if (filters.vendors.length > 0) {
+      items = items.filter(item => filters.vendors.includes(item.vendor ?? ""));
+    }
+    if (filters.priceMin !== null) {
+      const priceMin = filters.priceMin;
+      items = items.filter(item => item.retailPrice >= priceMin);
+    }
+    if (filters.priceMax !== null) {
+      const priceMax = filters.priceMax;
+      items = items.filter(item => item.retailPrice <= priceMax);
+    }
+    if (filters.inStockOnly) {
+      items = items.filter(item => item.quantity > 0);
+    }
 
     return sortInventory(items, sort);
   }, [filters, inventoryQuery.data, searchTerm, sort]);
@@ -442,42 +427,21 @@ export function SalesOrderSurface() {
     () => mapInventoryToRows(filteredInventory, selectedBatchIds),
     [filteredInventory, selectedBatchIds]
   );
-  const inventoryAvailabilityByBatchId = useMemo(
-    () => new Map((inventoryQuery.data ?? []).map(item => [item.id, item])),
+  const productIdentityByBatchId = useMemo(
+    () =>
+      Object.fromEntries(
+        (inventoryQuery.data ?? []).map(item => [
+          item.id,
+          buildProductIdentityLines({
+            brand: item.brand,
+            vendor: item.vendor,
+            category: item.category,
+            subcategory: item.subcategory,
+          }),
+        ])
+      ),
     [inventoryQuery.data]
   );
-  const draftAvailabilityRows = useMemo(
-    () =>
-      draft.items.map(item => ({
-        item,
-        inventory: inventoryAvailabilityByBatchId.get(item.batchId) ?? null,
-      })),
-    [draft.items, inventoryAvailabilityByBatchId]
-  );
-  const nonSellableDraftItems = useMemo(
-    () =>
-      draftAvailabilityRows.filter(
-        row => row.inventory && !isSalesInventorySellable(row.inventory)
-      ),
-    [draftAvailabilityRows]
-  );
-  const sellableDraftItemCount = useMemo(
-    () =>
-      draftAvailabilityRows.filter(
-        row => row.inventory && isSalesInventorySellable(row.inventory)
-      ).length,
-    [draftAvailabilityRows]
-  );
-  const unknownAvailabilityDraftItemCount = useMemo(
-    () => draftAvailabilityRows.filter(row => !row.inventory).length,
-    [draftAvailabilityRows]
-  );
-  const draftItemsNeedingAvailabilityRepairCount =
-    nonSellableDraftItems.length + unknownAvailabilityDraftItemCount;
-  const allTrackedDraftItemsNeedAvailabilityRepair =
-    draft.items.length > 0 &&
-    sellableDraftItemCount === 0 &&
-    draftItemsNeedingAvailabilityRepairCount > 0;
 
   useEffect(() => {
     setInventoryRowControls({});
@@ -709,6 +673,24 @@ export function SalesOrderSurface() {
         cellClass: "powersheet-cell--locked",
       },
       {
+        field: "status",
+        headerName: "",
+        maxWidth: 28,
+        cellRenderer: (params: { value: string }) =>
+          NON_SELLABLE_STATUSES.includes(
+            params.value as (typeof NON_SELLABLE_STATUSES)[number]
+          )
+            ? "\u26a0"
+            : "",
+        cellStyle: (params: { value: string }) =>
+          NON_SELLABLE_STATUSES.includes(
+            params.value as (typeof NON_SELLABLE_STATUSES)[number]
+          )
+            ? { color: "var(--color-amber-500)", fontWeight: "bold" }
+            : null,
+        cellClass: "powersheet-cell--locked",
+      },
+      {
         field: "sku",
         headerName: "SKU",
         minWidth: 90,
@@ -719,49 +701,29 @@ export function SalesOrderSurface() {
         field: "name",
         headerName: "Product",
         flex: 1.3,
-        minWidth: 220,
+        minWidth: 180,
         cellRenderer: (params: { data?: InventoryBrowserRow }) => {
           const row = params.data;
-          if (!row) {
-            return "";
-          }
+          if (!row) return "";
 
-          const identityMeta = buildSalesIdentityDescriptor({
+          const identityLines = buildProductIdentityLines({
             brand: row.brand,
             vendor: row.vendor,
-            subcategory: row.subcategory,
             category: row.category,
-            batchSku: row.sku,
+            subcategory: row.subcategory,
           });
-          const isNonSellable = NON_SELLABLE_STATUSES.includes(
-            row.status as (typeof NON_SELLABLE_STATUSES)[number]
-          );
-          const statusLabel = getPlainLanguageSalesStatus(row.status);
-          const statusNote = isNonSellable
-            ? NON_SELLABLE_STATUS_NOTES[row.status] ?? null
-            : null;
 
           return (
             <div className="flex min-w-0 flex-col py-0.5">
-              <div className="flex items-center gap-2">
-                <span className="truncate font-medium">{row.name}</span>
-                {isNonSellable ? (
-                  <Badge
-                    variant="outline"
-                    className="h-5 rounded-full px-1.5 text-[10px] text-amber-700"
-                  >
-                    {statusLabel}
-                  </Badge>
-                ) : null}
-              </div>
-              {identityMeta ? (
+              <span className="truncate font-medium">{row.name}</span>
+              {identityLines.secondary ? (
                 <span className="truncate text-[10px] text-muted-foreground">
-                  {identityMeta}
+                  {identityLines.secondary}
                 </span>
               ) : null}
-              {statusNote ? (
-                <span className="truncate text-[10px] text-amber-700">
-                  {statusNote}
+              {identityLines.tertiary ? (
+                <span className="truncate text-[10px] text-muted-foreground/80">
+                  {identityLines.tertiary}
                 </span>
               ) : null}
             </div>
@@ -872,9 +834,6 @@ export function SalesOrderSurface() {
       setSort(DEFAULT_SORT);
       setColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
       setCurrentViewId(null);
-      setPortableCut(null);
-      clearPortableSalesCut();
-      portableCutAppliedKeyRef.current = null;
       defaultViewAppliedClientRef.current = null;
       skipNextDefaultViewApplyRef.current = false;
       setPendingCreditOverrideReason(undefined);
@@ -896,101 +855,28 @@ export function SalesOrderSurface() {
       columnVisibility: ColumnVisibility;
     }) => {
       skipNextDefaultViewApplyRef.current = true;
-      setFilters(normalizeSalesFilters(view.filters));
+      setFilters(view.filters);
       setSort(view.sort);
       setColumnVisibility(view.columnVisibility);
       setCurrentViewId(view.id ?? null);
-      setPortableCut(null);
-      clearPortableSalesCut();
-      portableCutAppliedKeyRef.current = null;
     },
     []
   );
 
-  const handleClearPortableCut = useCallback(() => {
-    setPortableCut(null);
-    clearPortableSalesCut();
-    portableCutAppliedKeyRef.current = null;
-    setSearchTerm("");
-
-    const defaultView = savedViewsQuery.data?.find(view => view.isDefault);
-    skipNextDefaultViewApplyRef.current = true;
-
-    if (defaultView) {
-      setFilters(normalizeSalesFilters(defaultView.filters));
-      setSort(defaultView.sort as InventorySortConfig);
-      setColumnVisibility(defaultView.columnVisibility);
-      setCurrentViewId(defaultView.id);
-      defaultViewAppliedClientRef.current = draft.clientId;
-      return;
-    }
-
-    setFilters(DEFAULT_FILTERS);
-    setSort(DEFAULT_SORT);
-    setColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
-    setCurrentViewId(null);
-    defaultViewAppliedClientRef.current = draft.clientId;
-  }, [draft.clientId, savedViewsQuery.data]);
-
-  useEffect(() => {
-    if (!draft.clientId) {
-      setPortableCut(null);
-      portableCutAppliedKeyRef.current = null;
-      return;
-    }
-
-    const nextPortableCut = readPortableSalesCut();
-    if (!nextPortableCut || nextPortableCut.clientId !== draft.clientId) {
-      setPortableCut(null);
-      portableCutAppliedKeyRef.current = null;
-      return;
-    }
-
-    setPortableCut(nextPortableCut);
-  }, [draft.clientId]);
-
-  useEffect(() => {
-    if (!portableCut || portableCut.clientId !== draft.clientId) {
-      return;
-    }
-
-    if (portableCut.viewId && !savedViewsQuery.data) {
-      return;
-    }
-
-    const applyKey = JSON.stringify({
-      clientId: portableCut.clientId,
-      filters: portableCut.filters,
-      viewId: portableCut.viewId ?? null,
-    });
-    if (portableCutAppliedKeyRef.current === applyKey) {
-      return;
-    }
-
-    const matchingView =
-      portableCut.viewId !== null && portableCut.viewId !== undefined
-        ? (savedViewsQuery.data?.find(view => view.id === portableCut.viewId) ??
-          null)
-        : null;
-
-    skipNextDefaultViewApplyRef.current = true;
-    setFilters(normalizeSalesFilters(portableCut.filters));
-    if (matchingView) {
-      setSort(matchingView.sort as InventorySortConfig);
-      setColumnVisibility(matchingView.columnVisibility);
-      setCurrentViewId(matchingView.id);
-    } else {
+  const handleApplyInventorySavedView = useCallback(
+    (savedFilters: { [key: string]: unknown }) => {
+      skipNextDefaultViewApplyRef.current = true;
+      setFilters(
+        adaptInventorySavedViewToSalesFilters(
+          savedFilters as Parameters<
+            typeof adaptInventorySavedViewToSalesFilters
+          >[0]
+        )
+      );
       setCurrentViewId(null);
-    }
-    defaultViewAppliedClientRef.current = draft.clientId;
-    portableCutAppliedKeyRef.current = applyKey;
-    clearPortableSalesCut();
-    toast.info(
-      portableCut.viewName
-        ? `Imported cut: ${portableCut.viewName}`
-        : "Imported the last catalogue cut"
-    );
-  }, [draft.clientId, portableCut, savedViewsQuery.data]);
+    },
+    []
+  );
 
   useEffect(() => {
     if (!draft.clientId || !savedViewsQuery.data) return;
@@ -1001,7 +887,7 @@ export function SalesOrderSurface() {
     if (defaultViewAppliedClientRef.current === draft.clientId) return;
     const defaultView = savedViewsQuery.data.find(view => view.isDefault);
     if (!defaultView) return;
-    setFilters(normalizeSalesFilters(defaultView.filters));
+    setFilters(defaultView.filters);
     setSort(defaultView.sort as InventorySortConfig);
     setColumnVisibility(defaultView.columnVisibility);
     setCurrentViewId(defaultView.id);
@@ -1016,40 +902,6 @@ export function SalesOrderSurface() {
 
     draft.handleSaveDraft();
   }, [draft, isUnavailableClientRoute]);
-
-  const handleOpenRelationshipOverview = useCallback(() => {
-    if (!draft.clientId) {
-      return;
-    }
-
-    setLocation(buildRelationshipProfilePath(draft.clientId, "overview"));
-  }, [draft.clientId, setLocation]);
-
-  const handleOpenRelationshipMoney = useCallback(() => {
-    if (!draft.clientId) {
-      return;
-    }
-
-    setLocation(buildRelationshipProfilePath(draft.clientId, "money"));
-  }, [draft.clientId, setLocation]);
-
-  const handleOpenRelationshipPricing = useCallback(() => {
-    if (!draft.clientId) {
-      return;
-    }
-
-    setLocation(buildRelationshipProfilePath(draft.clientId, "sales-pricing"));
-  }, [draft.clientId, setLocation]);
-
-  const handleViewPaymentHistory = useCallback(() => {
-    setShowCreditWarning(false);
-    setLocation("/accounting?tab=invoices");
-  }, [setLocation]);
-
-  const handleRecordPayment = useCallback(() => {
-    setShowCreditWarning(false);
-    setLocation("/accounting?tab=payments");
-  }, [setLocation]);
 
   const handleFinalizeRequest = useCallback(async () => {
     if (isCheckingCredit || creditCheckMutation.isPending) {
@@ -1068,11 +920,6 @@ export function SalesOrderSurface() {
 
     if (!calculationState.isValid) {
       toast.error("Please add at least one valid line item before finalizing");
-      return;
-    }
-
-    if (allTrackedDraftItemsNeedAvailabilityRepair) {
-      toast.error(DRAFT_AVAILABILITY_REPAIR_MESSAGE);
       return;
     }
 
@@ -1099,7 +946,6 @@ export function SalesOrderSurface() {
 
     setShowFinalizeConfirm(true);
   }, [
-    allTrackedDraftItemsNeedAvailabilityRepair,
     calculationState.isValid,
     creditCheckMutation,
     draft.clientId,
@@ -1165,7 +1011,11 @@ export function SalesOrderSurface() {
     [keyboard.keyboardProps]
   );
 
-  const activeFilterCount = countActiveSalesFilters(filters);
+  const activeFilterCount =
+    filters.categories.length +
+    filters.grades.length +
+    filters.vendors.length +
+    (filters.inStockOnly ? 1 : 0);
   const documentContextLabel = draft.activeDraftId
     ? `Draft #${draft.activeDraftId}`
     : draft.isSalesSheetImport
@@ -1225,75 +1075,20 @@ export function SalesOrderSurface() {
     </div>
   );
   const documentPanel = (
-    <div className="rounded-lg border border-border/70 bg-background">
+    <div className="rounded-xl border border-border/70 bg-background shadow-sm">
       <OrdersDocumentLineItemsGrid
         items={draft.items}
         clientId={draft.clientId}
         onChange={draft.setItems}
         showCogsColumn={showCogs}
         showMarginColumn={showMargin}
+        productIdentityByBatchId={productIdentityByBatchId}
       />
     </div>
   );
   const documentControlsBand = (
     <div className="space-y-1">
-      <div className="grid gap-1 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
-        {draft.clientId && !isUnavailableClientRoute ? (
-          <ClientCommitContextCard
-            clientId={draft.clientId}
-            canViewPricingContext={canViewPricingContext}
-            onOpenOverview={handleOpenRelationshipOverview}
-            onOpenMoney={handleOpenRelationshipMoney}
-            onOpenPricing={handleOpenRelationshipPricing}
-          />
-        ) : (
-          <div />
-        )}
-        <section className="rounded-lg border border-border/70 bg-background p-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            Commit Continuity
-          </p>
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <Badge variant={portableCut ? "secondary" : "outline"}>
-              {portableCut ? "Imported cut active" : "Direct order flow"}
-            </Badge>
-            {nonSellableDraftItems.length > 0 ? (
-              <Badge variant="outline" className="text-amber-700">
-                {nonSellableDraftItems.length} blocked line
-                {nonSellableDraftItems.length === 1 ? "" : "s"}
-              </Badge>
-            ) : null}
-            {unknownAvailabilityDraftItemCount > 0 ? (
-              <Badge variant="outline" className="text-amber-700">
-                {unknownAvailabilityDraftItemCount} unresolved line
-                {unknownAvailabilityDraftItemCount === 1 ? "" : "s"}
-              </Badge>
-            ) : null}
-            {draft.items.length > 0 &&
-            draftItemsNeedingAvailabilityRepairCount === 0 ? (
-              <Badge variant="outline">Sellable draft lines ready</Badge>
-            ) : null}
-          </div>
-          <p className="mt-3 text-sm text-muted-foreground">
-            {allTrackedDraftItemsNeedAvailabilityRepair
-              ? DRAFT_AVAILABILITY_REPAIR_MESSAGE
-              : draftItemsNeedingAvailabilityRepairCount > 0
-                ? `${draftItemsNeedingAvailabilityRepairCount} draft line${draftItemsNeedingAvailabilityRepairCount === 1 ? " still needs" : "s still need"} live availability confirmation before final confirmation.`
-                : draft.items.length > 0
-                  ? "The current draft stays aligned with the live sellable view while credit and relationship context remain visible."
-                  : "Customer context, recent sales, and credit posture stay visible while you build the order."}
-          </p>
-          {unknownAvailabilityDraftItemCount > 0 ? (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {unknownAvailabilityDraftItemCount} line
-              {unknownAvailabilityDraftItemCount === 1 ? "" : "s"} cannot be
-              rechecked against the live inventory list yet.
-            </p>
-          ) : null}
-        </section>
-      </div>
-
-      <div className="overflow-hidden rounded-lg border border-border/70 bg-background">
+      <div className="overflow-hidden rounded-xl border border-border/70 bg-background shadow-sm">
         <InvoiceBottom
           subtotal={orderTotals.subtotal}
           adjustment={draft.adjustment as OrderAdjustment | null}
@@ -1308,7 +1103,6 @@ export function SalesOrderSurface() {
           creditAvailable={creditSummary.creditAvailable}
           creditUtilizationPercent={creditSummary.utilizationPercent}
           creditWarning={creditSummary.warning}
-          onOpenCredit={handleOpenRelationshipMoney}
           totalCogs={orderTotals.totalCogs}
           totalMargin={orderTotals.totalMargin}
           marginPercent={orderTotals.avgMarginPercent}
@@ -1336,8 +1130,7 @@ export function SalesOrderSurface() {
         finalizeDisabled={
           !calculationState.isValid ||
           isFinalizeBusy ||
-          isUnavailableClientRoute ||
-          allTrackedDraftItemsNeedAvailabilityRepair
+          isUnavailableClientRoute
         }
         isFinalizePending={isFinalizeBusy}
         isSeededFromCatalogue={draft.isSalesSheetImport}
@@ -1348,47 +1141,68 @@ export function SalesOrderSurface() {
 
   return (
     <div {...keyboardProps} className="flex h-full flex-col gap-1">
-      <div className="flex flex-wrap items-center gap-1.5 border-b border-border/70 bg-background px-2 py-1">
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
-          onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
-        >
-          <ArrowLeft className="mr-1 h-3 w-3" />
-          Queue
-        </Button>
-        <span className="text-sm font-medium text-foreground">
-          {documentContextLabel}
-        </span>
-        <div className="w-48">
-          <ClientCombobox
-            value={draft.clientId}
-            onValueChange={handleClientChange}
-            clients={clientList}
-            isLoading={clientsQuery.isLoading}
-            placeholder="Customer..."
-            emptyText="No customers"
-            selectedLabel={selectedClientLabel}
-          />
+      <div
+        className={`${surfacePanelClass} flex flex-wrap items-start gap-3 px-3 py-2`}
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={() => {
+                if (onComplete) {
+                  onComplete();
+                } else {
+                  setLocation(buildSalesWorkspacePath("orders"));
+                }
+              }}
+            >
+              <ArrowLeft className="mr-1 h-3 w-3" />
+              Queue
+            </Button>
+            <span className="text-sm font-medium text-foreground">
+              {documentContextLabel}
+            </span>
+            {draft.SaveStateIndicator}
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+            Keep the customer, document type, and totals in one working frame
+          </p>
         </div>
-        <Select
-          value={draft.orderType}
-          onValueChange={value => draft.setOrderType(value as "QUOTE" | "SALE")}
-        >
-          <SelectTrigger className="h-7 w-28 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="SALE">Sales Order</SelectItem>
-            <SelectItem value="QUOTE">Quote</SelectItem>
-          </SelectContent>
-        </Select>
-        {draft.SaveStateIndicator}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="w-48">
+            <ClientCombobox
+              value={draft.clientId}
+              onValueChange={handleClientChange}
+              clients={clientList}
+              isLoading={clientsQuery.isLoading}
+              placeholder="Customer..."
+              emptyText="No customers"
+              selectedLabel={selectedClientLabel}
+            />
+          </div>
+          <Select
+            value={draft.orderType}
+            onValueChange={value =>
+              draft.setOrderType(value as "QUOTE" | "SALE")
+            }
+          >
+            <SelectTrigger className="h-7 w-28 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="SALE">Sales Order</SelectItem>
+              <SelectItem value="QUOTE">Quote</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5 px-2 py-1">
+      <div
+        className={`${surfacePanelClass} flex flex-wrap items-center gap-1.5 px-3 py-2`}
+      >
         {draft.clientId && !isUnavailableClientRoute && (
           <>
             <QuickViewSelector
@@ -1396,6 +1210,7 @@ export function SalesOrderSurface() {
               onLoadView={handleLoadView}
               currentViewId={currentViewId}
             />
+            <SavedViewsDropdown onApplyView={handleApplyInventorySavedView} />
             <Button
               type="button"
               size="sm"
@@ -1404,20 +1219,6 @@ export function SalesOrderSurface() {
               onClick={() => setShowSaveViewDialog(true)}
             >
               Save View
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="h-6 px-2 text-[10px]"
-              onClick={() =>
-                setFilters(current => ({
-                  ...current,
-                  includeUnavailable: !current.includeUnavailable,
-                }))
-              }
-            >
-              {filters.includeUnavailable ? "Including unavailable" : "Available now"}
             </Button>
             <Button
               type="button"
@@ -1438,34 +1239,6 @@ export function SalesOrderSurface() {
               : "No line items"}
         </span>
       </div>
-
-      {portableCut && draft.clientId && !isUnavailableClientRoute ? (
-        <div className="mx-2 flex flex-wrap items-center gap-1.5 rounded-md border border-border/70 bg-muted/30 px-2 py-1">
-          <Badge variant="secondary" className="text-[10px]">
-            {portableCut.viewName
-              ? `Saved cut: ${portableCut.viewName}`
-              : "Catalogue cut applied"}
-          </Badge>
-          {portableCutSummary.map(summary => (
-            <Badge
-              key={summary}
-              variant="outline"
-              className="text-[10px] text-muted-foreground"
-            >
-              {summary}
-            </Badge>
-          ))}
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="ml-auto h-6 px-2 text-[10px]"
-            onClick={handleClearPortableCut}
-          >
-            Clear cut
-          </Button>
-        </div>
-      ) : null}
 
       {showAdvancedFilters && draft.clientId && !isUnavailableClientRoute && (
         <AdvancedFilters
@@ -1532,7 +1305,6 @@ export function SalesOrderSurface() {
             {draft.items.length} lines
             {draft.hasUnsavedChanges ? " \u00b7 unsaved" : " \u00b7 synced"}
             {currentViewId ? " \u00b7 saved view" : ""}
-            {portableCut ? " \u00b7 imported cut" : ""}
             {selectedClientLabel ? ` \u00b7 ${selectedClientLabel}` : ""}
             {isUnavailableClientRoute ? " \u00b7 action blocked" : ""}
           </span>
@@ -1566,8 +1338,6 @@ export function SalesOrderSurface() {
         orderTotal={grandTotal}
         clientName={selectedClientLabel ?? "Selected customer"}
         onProceed={handleCreditProceed}
-        onViewPaymentHistory={handleViewPaymentHistory}
-        onRecordPayment={handleRecordPayment}
         onCancel={handleCreditCancel}
       />
 

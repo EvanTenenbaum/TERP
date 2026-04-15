@@ -11,22 +11,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { InventoryPilotRow } from "@/lib/spreadsheet-native";
-import { STATUS_LABELS } from "./inventoryConstants";
-
-const STATUS_COLORS: Record<string, string> = {
-  LIVE: "bg-green-100 text-green-800",
-  AWAITING_INTAKE: "bg-slate-100 text-slate-800",
-  ON_HOLD: "bg-yellow-100 text-yellow-800",
-  QUARANTINED: "bg-amber-100 text-amber-800",
-  SOLD_OUT: "bg-red-100 text-red-800",
-  CLOSED: "bg-gray-100 text-gray-800",
-};
+import {
+  getBatchStatusLabel,
+  getBatchStatusClass,
+} from "@/lib/statusTokens";
 
 const STOCK_COLORS: Record<string, string> = {
-  OPTIMAL: "bg-green-100 text-green-800",
-  LOW: "bg-yellow-100 text-yellow-800",
-  CRITICAL: "bg-red-100 text-red-800",
-  OUT_OF_STOCK: "bg-gray-100 text-gray-800",
+  OPTIMAL: "bg-emerald-50 text-emerald-700",
+  LOW: "bg-amber-50 text-amber-700",
+  CRITICAL: "bg-red-50 text-red-700",
+  OUT_OF_STOCK: "bg-neutral-100 text-neutral-500",
 };
 
 const fmt = new Intl.NumberFormat("en-US", {
@@ -94,11 +88,10 @@ export function InventoryGalleryView({
               <Badge
                 className={cn(
                   "text-xs px-1.5 py-0",
-                  STATUS_COLORS[row.status] ?? "bg-gray-100 text-gray-800"
+                  getBatchStatusClass(row.status)
                 )}
               >
-                {STATUS_LABELS[row.status as keyof typeof STATUS_LABELS] ??
-                  row.status}
+                {getBatchStatusLabel(row.status)}
               </Badge>
               <span
                 className={cn(

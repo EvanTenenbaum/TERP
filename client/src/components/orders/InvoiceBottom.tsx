@@ -16,6 +16,7 @@ import {
   type OrderAdjustment,
   type PaymentTerms,
 } from "./types";
+import { getPaymentTermLabel } from "@/lib/statusTokens";
 
 interface InvoiceBottomProps {
   subtotal: number;
@@ -227,7 +228,7 @@ export function InvoiceBottom({
                   <SelectContent>
                     {PAYMENT_TERMS_OPTIONS.map(option => (
                       <SelectItem key={option} value={option}>
-                        {option.replace("_", " ")}
+                        {getPaymentTermLabel(option)}
                       </SelectItem>
                     ))}
                   </SelectContent>

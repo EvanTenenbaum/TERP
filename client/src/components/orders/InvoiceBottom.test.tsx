@@ -61,7 +61,7 @@ describe("InvoiceBottom", () => {
     );
 
     fireEvent.click(screen.getByLabelText("Payment Terms"));
-    fireEvent.click(screen.getByText("COD"));
+    fireEvent.click(screen.getByText("Cash on Delivery"));
     fireEvent.change(screen.getByLabelText("Freight"), {
       target: { value: "80.5" },
     });

@@ -18,17 +18,21 @@
  *   8. ConfirmDialogs — delete, status change, receiving handoff
  */
 
-import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
 import { useExport } from "@/hooks/work-surface/useExport";
 import type { ExportColumn } from "@/hooks/work-surface/useExport";
-import type {
-  CellValueChangedEvent,
-  ColDef,
-  ICellRendererParams,
-} from "ag-grid-community";
+import type { CellValueChangedEvent, ColDef } from "ag-grid-community";
 import {
   ArrowLeft,
   Building,
+  Check,
   Download,
   Package,
   Plus,
@@ -40,13 +44,6 @@ import {
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import {
-  formatCalendarDate,
-  isCalendarDatePast,
-  isCalendarDateToday,
-  normalizeCalendarDate,
-} from "@/lib/calendarDates";
-import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
 import { useAuth } from "@/hooks/useAuth";
@@ -93,6 +90,13 @@ import {
   KeyboardHintBar,
   type KeyboardHint,
 } from "@/components/work-surface/KeyboardHintBar";
+import { cn } from "@/lib/utils";
+import { MonoId } from "@/components/ui/mono-id";
+import {
+  getPoStatusLabel,
+  getPoStatusClass,
+  getPaymentTermLabel,
+} from "@/lib/statusTokens";
 import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
@@ -145,17 +149,14 @@ interface POQueueRow {
   identity: { rowKey: string; entityId: number | string; entityType: string };
   poId: number;
   poNumber: string;
-  supplierClientId: number | null;
   supplierName: string;
   status: string;
   statusLabel: string;
-  receivingStatus: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETE";
-  receivingStatusLabel: string;
-  receivingStatusClassName: string;
   orderDate: Date | string;
   expectedDeliveryDate: Date | string;
   total: number;
   paymentTerms: string;
+  supplierClientId: number | null;
   isReceivable: boolean;
   isDraft: boolean;
 }
@@ -177,15 +178,6 @@ interface POLineRow {
 // Constants
 // ---------------------------------------------------------------------------
 
-const PO_STATUS_LABELS: Record<string, string> = {
-  DRAFT: "Draft",
-  SENT: "Sent",
-  CONFIRMED: "Confirmed",
-  RECEIVING: "Receiving",
-  RECEIVED: "Received",
-  CANCELLED: "Cancelled",
-};
-
 const RECEIVABLE_STATUSES = new Set(["CONFIRMED", "RECEIVING"]);
 
 const PO_ALLOWED_TRANSITIONS: Record<string, POStatus[]> = {
@@ -202,6 +194,9 @@ const queueKeyboardHints: KeyboardHint[] = [
   { key: "Enter", label: "focus selection" },
   { key: "Esc", label: "clear dialogs" },
 ];
+
+const surfacePanelClass =
+  "rounded-xl border border-border/70 bg-card/80 shadow-sm";
 
 const queueAffordances: PowersheetAffordance[] = [
   { label: "Select", available: true },
@@ -253,13 +248,14 @@ const formatCurrency = (value: number) =>
   }).format(value);
 
 const formatDate = (value: Date | string | null | undefined): string => {
-  return formatCalendarDate(value);
-};
-
-const normalizeDraftDate = (
-  value: Date | string | null | undefined
-): string | null => {
-  return normalizeCalendarDate(value);
+  if (!value) return "-";
+  try {
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return "-";
+    return d.toLocaleDateString();
+  } catch {
+    return "-";
+  }
 };
 
 const formatAgeLabel = (value: Date | string | null | undefined): string => {
@@ -276,6 +272,14 @@ const formatAgeLabel = (value: Date | string | null | undefined): string => {
   }
 };
 
+function isSameCalendarDay(left: Date, right: Date) {
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+}
+
 function isPastExpectedDate(
   value: Date | string | null | undefined,
   currentStatus?: string
@@ -284,7 +288,16 @@ function isPastExpectedDate(
     return false;
   }
 
-  return isCalendarDatePast(value);
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return false;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dueDate = new Date(parsed);
+  dueDate.setHours(0, 0, 0, 0);
+
+  return dueDate.getTime() < today.getTime();
 }
 
 function getExpectedDeliveryLabel(
@@ -292,14 +305,17 @@ function getExpectedDeliveryLabel(
   currentStatus?: string
 ) {
   if (!value || value === "") return "Not set";
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Not set";
 
-  const base = formatDate(value);
+  const base = formatDate(parsed);
+  const today = new Date();
 
-  if (isCalendarDateToday(value)) {
+  if (isSameCalendarDay(parsed, today)) {
     return `${base} · Today`;
   }
 
-  if (isPastExpectedDate(value, currentStatus)) {
+  if (isPastExpectedDate(parsed, currentStatus)) {
     return `${base} · Late`;
   }
 
@@ -314,7 +330,10 @@ function isExpectedToday(
     return false;
   }
 
-  return isCalendarDateToday(value);
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return false;
+
+  return isSameCalendarDay(parsed, new Date());
 }
 
 function buildRowKey(entityType: string, id: number): string {
@@ -324,38 +343,9 @@ function buildRowKey(entityType: string, id: number): string {
 function hasExpectedDeliveryDate(
   value: Date | string | null | undefined
 ): boolean {
-  return normalizeCalendarDate(value) !== null;
-}
-
-function getReceivingStatusMeta(status: string): {
-  value: POQueueRow["receivingStatus"];
-  label: string;
-  className: string;
-} {
-  switch (status) {
-    case "RECEIVED":
-      return {
-        value: "COMPLETE",
-        label: "Complete",
-        className: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      };
-    case "RECEIVING":
-      return {
-        value: "IN_PROGRESS",
-        label: "In Progress",
-        className: "bg-amber-50 text-amber-700 border-amber-200",
-      };
-    default:
-      return {
-        value: "NOT_STARTED",
-        label: "Not Started",
-        className: "bg-slate-100 text-slate-700 border-slate-200",
-      };
-  }
-}
-
-function isQueueRowOverdue(row: Pick<POQueueRow, "expectedDeliveryDate" | "status">) {
-  return isPastExpectedDate(row.expectedDeliveryDate, row.status);
+  if (!value) return false;
+  const date = value instanceof Date ? value : new Date(value);
+  return !Number.isNaN(date.getTime());
 }
 
 function mapPOsToQueueRows(
@@ -370,7 +360,6 @@ function mapPOsToQueueRows(
         : "Unknown Supplier";
     const status = po.purchaseOrderStatus;
     const total = toNumber(po.total);
-    const receivingStatus = getReceivingStatusMeta(status);
     return {
       identity: {
         rowKey: buildRowKey("po", po.id),
@@ -379,17 +368,16 @@ function mapPOsToQueueRows(
       },
       poId: po.id,
       poNumber: po.poNumber,
-      supplierClientId: supplierId,
       supplierName,
       status,
-      statusLabel: PO_STATUS_LABELS[status] ?? status,
-      receivingStatus: receivingStatus.value,
-      receivingStatusLabel: receivingStatus.label,
-      receivingStatusClassName: receivingStatus.className,
+      statusLabel: getPoStatusLabel(status),
       orderDate: po.orderDate ?? "",
       expectedDeliveryDate: po.expectedDeliveryDate ?? "",
       total,
-      paymentTerms: po.paymentTerms ?? "-",
+      supplierClientId: supplierId,
+      paymentTerms: po.paymentTerms
+        ? getPaymentTermLabel(po.paymentTerms)
+        : "-",
       isReceivable: RECEIVABLE_STATUSES.has(status),
       isDraft: status === "DRAFT",
     };
@@ -1255,7 +1243,7 @@ function PurchaseOrderCreateEditMode({
                     <SelectItem value="none">None</SelectItem>
                     {PAYMENT_TERMS_OPTIONS.map(term => (
                       <SelectItem key={term} value={term}>
-                        {term.replace(/_/g, " ")}
+                        {getPaymentTermLabel(term)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -1347,6 +1335,70 @@ function PurchaseOrderCreateEditMode({
 // Queue Mode (extracted to avoid hooks-after-early-return)
 // ---------------------------------------------------------------------------
 
+// ─── PoProgressStepper ────────────────────────────────────────────────────────────
+
+const PO_PROGRESS_STEPS = [
+  { key: "DRAFT", label: "Draft" },
+  { key: "CONFIRMED", label: "Confirmed" },
+  { key: "SENT", label: "Sent" },
+  { key: "RECEIVING", label: "Intake" },
+  { key: "RECEIVED", label: "Received" },
+] as const;
+
+function resolveStepperIndex(status: string): number {
+  const direct = PO_PROGRESS_STEPS.findIndex(s => s.key === status);
+  if (direct >= 0) return direct;
+  if (status === "PARTIALLY_RECEIVED") return 3;
+  return -1; // VOIDED/CANCELLED = no active step
+}
+
+function PoProgressStepper({ status }: { status: string }) {
+  const activeIndex = resolveStepperIndex(status);
+  return (
+    <div className="flex items-center gap-1 mb-3">
+      {PO_PROGRESS_STEPS.map((step, i) => {
+        const isActive = i === activeIndex;
+        const isDone = activeIndex >= 0 && i < activeIndex;
+        return (
+          <Fragment key={step.key}>
+            <div
+              className={cn(
+                "flex items-center justify-center rounded-full text-[0.65rem] font-semibold",
+                "h-6 w-6 shrink-0 border",
+                isDone
+                  ? "bg-emerald-500 border-emerald-500 text-white"
+                  : isActive
+                    ? "bg-sky-500 border-sky-500 text-white"
+                    : "bg-muted border-border text-muted-foreground"
+              )}
+            >
+              {isDone ? <Check className="h-3 w-3" /> : i + 1}
+            </div>
+            <span
+              className={cn(
+                "text-[0.7rem] leading-none",
+                isActive
+                  ? "font-semibold text-foreground"
+                  : "text-muted-foreground"
+              )}
+            >
+              {step.label}
+            </span>
+            {i < PO_PROGRESS_STEPS.length - 1 && (
+              <div
+                className={cn(
+                  "h-px flex-1 min-w-[8px]",
+                  isDone ? "bg-emerald-400" : "bg-border"
+                )}
+              />
+            )}
+          </Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
 function PurchaseOrderQueueMode({
   defaultStatusFilter,
   initialStatusFilter,
@@ -1375,6 +1427,9 @@ function PurchaseOrderQueueMode({
   // Filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>(initialStatusFilter);
+  const [activeSupplierFilter, setActiveSupplierFilter] = useState<
+    number | null
+  >(null);
   const [showExpectedTodayOnly, setShowExpectedTodayOnly] = useState(false);
 
   // Dialog state
@@ -1457,11 +1512,37 @@ function PurchaseOrderQueueMode({
     );
   }, [supplierFilterId, supplierNamesById]);
 
+  const supplierPills = useMemo(() => {
+    const countMap = new Map<number, { name: string; count: number }>();
+    for (const po of rawPos) {
+      const sid = po.supplierClientId;
+      if (sid === null) continue;
+      const name = supplierNamesById.get(sid) ?? `Supplier #${sid}`;
+      const existing = countMap.get(sid);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        countMap.set(sid, { name, count: 1 });
+      }
+    }
+    return Array.from(countMap.entries())
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 8)
+      .map(([id, { name, count }]) => ({ id, name, count }));
+  }, [rawPos, supplierNamesById]);
+
   const searchLower = searchTerm.trim().toLowerCase();
 
   const queueRows = useMemo(() => {
     const rows = mapPOsToQueueRows(rawPos, supplierNamesById);
     return rows.filter(row => {
+      // Apply supplier pill filter
+      if (
+        activeSupplierFilter !== null &&
+        row.supplierClientId !== activeSupplierFilter
+      ) {
+        return false;
+      }
       // Apply defaultStatusFilter if status is "all"
       if (statusFilter === "all") {
         if (
@@ -1500,6 +1581,7 @@ function PurchaseOrderQueueMode({
     searchLower,
     defaultStatusFilter,
     showExpectedTodayOnly,
+    activeSupplierFilter,
   ]);
 
   const expectedTodayCount = useMemo(() => {
@@ -1536,8 +1618,13 @@ function PurchaseOrderQueueMode({
     searchLower,
   ]);
 
+  const showExpectedDeliveryColumn = useMemo(
+    () =>
+      queueRows.some(row => hasExpectedDeliveryDate(row.expectedDeliveryDate)),
+    [queueRows]
+  );
+
   const selectedRow = queueRows.find(row => row.poId === selectedPoId) ?? null;
-  const selectedSupplierClientId = selectedRow?.supplierClientId ?? null;
 
   const lineItemRows = useMemo(() => {
     const items = detailQuery.data?.items ?? [];
@@ -1592,7 +1679,7 @@ function PurchaseOrderQueueMode({
 
   const updateStatus = trpc.purchaseOrders.updateStatus.useMutation({
     onSuccess: (_data, variables) => {
-      const label = PO_STATUS_LABELS[variables.status] ?? variables.status;
+      const label = getPoStatusLabel(variables.status);
       notifyToast("success", `Status updated to ${label}`);
       setShowStatusDialog(false);
       setPendingStatusChange(null);
@@ -1679,7 +1766,7 @@ function PurchaseOrderQueueMode({
     if (!allowed.includes(status)) {
       notifyToast(
         "error",
-        `Cannot transition from ${PO_STATUS_LABELS[currentStatus] ?? currentStatus} to ${PO_STATUS_LABELS[status] ?? status}`
+        `Cannot transition from ${getPoStatusLabel(currentStatus)} to ${getPoStatusLabel(status)}`
       );
       return;
     }
@@ -1752,9 +1839,6 @@ function PurchaseOrderQueueMode({
           const draft = createProductIntakeDraftFromPO({
             poId: targetRow.poId,
             poNumber: targetRow.poNumber,
-            expectedDeliveryDate: normalizeDraftDate(
-              targetRow.expectedDeliveryDate
-            ),
             vendorId: supplierData?.id ?? null,
             vendorName: targetRow.supplierName,
             warehouseId: null,
@@ -1807,7 +1891,7 @@ function PurchaseOrderQueueMode({
   // ---------------------------------------------------------------------------
 
   const queueColumnDefs = useMemo<ColDef<POQueueRow>[]>(() => {
-    return [
+    const cols: ColDef<POQueueRow>[] = [
       {
         field: "poNumber",
         headerName: "PO Number",
@@ -1821,14 +1905,6 @@ function PurchaseOrderQueueMode({
         flex: 1.5,
         minWidth: 180,
         cellClass: "powersheet-cell--locked",
-        cellRenderer: (params: ICellRendererParams<POQueueRow>) => (
-          <div className="flex flex-col">
-            <span>{params.data?.supplierName ?? "Unknown Supplier"}</span>
-            <span className="text-xs text-muted-foreground">
-              PO-linked receiving
-            </span>
-          </div>
-        ),
       },
       {
         field: "statusLabel",
@@ -1838,24 +1914,6 @@ function PurchaseOrderQueueMode({
         cellClass: "powersheet-cell--locked",
       },
       {
-        field: "receivingStatusLabel",
-        headerName: "Receiving",
-        minWidth: 130,
-        maxWidth: 150,
-        cellClass: "powersheet-cell--locked",
-        cellRenderer: (params: ICellRendererParams<POQueueRow>) => {
-          const row = params.data;
-          if (!row) return "Not Started";
-          return (
-            <span
-              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${row.receivingStatusClassName}`}
-            >
-              {row.receivingStatusLabel}
-            </span>
-          );
-        },
-      },
-      {
         field: "orderDate",
         headerName: "Order Date",
         minWidth: 120,
@@ -1863,17 +1921,6 @@ function PurchaseOrderQueueMode({
         cellClass: "powersheet-cell--locked",
         valueFormatter: params =>
           formatDate(params.value as Date | string | null | undefined),
-      },
-      {
-        field: "expectedDeliveryDate",
-        headerName: "Est. Delivery",
-        minWidth: 132,
-        maxWidth: 156,
-        cellClass: "powersheet-cell--locked",
-        valueFormatter: params => {
-          const value = params.value as Date | string | null | undefined;
-          return hasExpectedDeliveryDate(value) ? formatDate(value) : "Not set";
-        },
       },
       {
         field: "total",
@@ -1891,7 +1938,29 @@ function PurchaseOrderQueueMode({
         cellClass: "powersheet-cell--locked",
       },
     ];
-  }, []);
+
+    if (showExpectedDeliveryColumn) {
+      const orderDateColumnIndex = cols.findIndex(
+        column => column.field === "orderDate"
+      );
+      const insertIndex =
+        orderDateColumnIndex >= 0 ? orderDateColumnIndex + 1 : cols.length;
+
+      cols.splice(insertIndex, 0, {
+        field: "expectedDeliveryDate",
+        headerName: "Est. Delivery",
+        minWidth: 120,
+        maxWidth: 140,
+        cellClass: "powersheet-cell--locked",
+        valueFormatter: params => {
+          const value = params.value as Date | string | null | undefined;
+          return hasExpectedDeliveryDate(value) ? formatDate(value) : "Not set";
+        },
+      });
+    }
+
+    return cols;
+  }, [showExpectedDeliveryColumn]);
 
   const lineItemColumnDefs = useMemo<ColDef<POLineRow>[]>(
     () => [
@@ -1985,29 +2054,38 @@ function PurchaseOrderQueueMode({
   return (
     <div className="flex flex-col gap-2">
       {/* 1. Toolbar */}
-      <div className="flex items-center gap-2 py-1">
-        <h2 className="text-lg font-semibold">Purchase Orders</h2>
-        {draftCount > 0 && (
-          <Badge variant="outline" className="text-xs">
-            {draftCount} draft purchase orders
-          </Badge>
-        )}
-        {confirmedCount > 0 && (
-          <Badge variant="outline" className="text-xs">
-            {confirmedCount} confirmed purchase orders
-          </Badge>
-        )}
-        {receivingCount > 0 && (
-          <Badge variant="outline" className="text-xs">
-            {receivingCount} receiving purchase orders
-          </Badge>
-        )}
-        {supplierFilterName ? (
-          <Badge variant="secondary" className="text-xs">
-            Supplier: {supplierFilterName}
-          </Badge>
-        ) : null}
-        <div className="ml-auto flex items-center gap-2">
+      <div
+        className={`${surfacePanelClass} flex flex-wrap items-start gap-3 px-3 py-2`}
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-lg font-semibold">Purchase Orders</h2>
+            {draftCount > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {draftCount} draft purchase orders
+              </Badge>
+            )}
+            {confirmedCount > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {confirmedCount} confirmed purchase orders
+              </Badge>
+            )}
+            {receivingCount > 0 && (
+              <Badge variant="outline" className="text-xs">
+                {receivingCount} receiving purchase orders
+              </Badge>
+            )}
+            {supplierFilterName ? (
+              <Badge variant="secondary" className="text-xs">
+                Supplier: {supplierFilterName}
+              </Badge>
+            ) : null}
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.12em] text-muted-foreground">
+            Queue first, then receiving handoff
+          </p>
+        </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           <Button size="sm" onClick={handleNewPO}>
             <Plus className="mr-1 h-4 w-4" />
             New Purchase Order
@@ -2026,7 +2104,9 @@ function PurchaseOrderQueueMode({
       </div>
 
       {/* 2. Action Bar */}
-      <div className="flex items-center gap-2 py-0.5">
+      <div
+        className={`${surfacePanelClass} flex flex-wrap items-center gap-2 px-3 py-2`}
+      >
         <Input
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
@@ -2064,6 +2144,44 @@ function PurchaseOrderQueueMode({
         </span>
       </div>
 
+      {/* 2b. Supplier Pill Filter Bar */}
+      {supplierPills.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 pb-1">
+          <button
+            type="button"
+            onClick={() => setActiveSupplierFilter(null)}
+            className={cn(
+              "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
+              activeSupplierFilter === null
+                ? "border-sky-400 bg-sky-50 text-sky-700"
+                : "border-border bg-muted text-muted-foreground hover:bg-muted/70"
+            )}
+          >
+            All
+          </button>
+          {supplierPills.map(pill => (
+            <button
+              key={pill.id}
+              type="button"
+              onClick={() =>
+                setActiveSupplierFilter(
+                  activeSupplierFilter === pill.id ? null : pill.id
+                )
+              }
+              className={cn(
+                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors",
+                activeSupplierFilter === pill.id
+                  ? "border-sky-400 bg-sky-50 text-sky-700"
+                  : "border-border bg-muted text-muted-foreground hover:bg-muted/70"
+              )}
+            >
+              {pill.name}
+              <span className="ml-1 opacity-60">{pill.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* 3. PO Queue Grid */}
       <PowersheetGrid
         surfaceId="po-queue"
@@ -2090,11 +2208,6 @@ function PurchaseOrderQueueMode({
         onSelectionSummaryChange={setQueueSelectionSummary}
         isLoading={posQuery.isLoading}
         errorMessage={posQuery.error?.message ?? null}
-        getRowClass={params =>
-          params.data && isQueueRowOverdue(params.data)
-            ? "bg-red-50/60 border-l-2 border-red-300"
-            : undefined
-        }
         emptyTitle="No purchase orders match"
         emptyDescription="Adjust the search or status filter, or create a new PO."
         summary={
@@ -2110,8 +2223,26 @@ function PurchaseOrderQueueMode({
       {/* 4. Selected PO KPI Cards */}
       {selectedRow ? (
         <div className="grid gap-3 md:grid-cols-4">
+          {/* Status + age card */}
+          <div className="rounded-xl border border-sky-200 bg-sky-50/70 px-3 py-3 shadow-sm">
+            <div className="flex items-center gap-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              <Package className="h-3 w-3" />
+              Queue status
+            </div>
+            <div className="mt-1 text-sm font-medium">
+              {selectedRow.statusLabel} · created{" "}
+              {formatAgeLabel(selectedRow.orderDate)}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {getExpectedDeliveryLabel(
+                selectedRow.expectedDeliveryDate,
+                selectedRow.status
+              )}
+            </div>
+          </div>
+
           {/* Supplier card */}
-          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+          <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
             <div className="flex items-center gap-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
               <Building className="h-3 w-3" />
               Supplier
@@ -2131,26 +2262,8 @@ function PurchaseOrderQueueMode({
             ) : null}
           </div>
 
-          {/* Status + age card */}
-          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
-            <div className="flex items-center gap-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
-              <Package className="h-3 w-3" />
-              Status
-            </div>
-            <div className="mt-1 text-sm font-medium">
-              {selectedRow.statusLabel} · created{" "}
-              {formatAgeLabel(selectedRow.orderDate)}
-            </div>
-            <div className="text-xs text-muted-foreground">
-              {getExpectedDeliveryLabel(
-                selectedRow.expectedDeliveryDate,
-                selectedRow.status
-              )}
-            </div>
-          </div>
-
           {/* Total + line count card */}
-          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+          <div className="rounded-xl border border-border/70 bg-card px-3 py-3 shadow-sm">
             <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
               Total
             </div>
@@ -2161,9 +2274,9 @@ function PurchaseOrderQueueMode({
           </div>
 
           {/* Actions card */}
-          <div className="rounded-lg border border-border/70 bg-card px-3 py-3">
+          <div className="rounded-xl border border-border/70 bg-muted/30 px-3 py-3 shadow-sm">
             <div className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
-              Actions
+              Next step
             </div>
             <div className="mt-1 flex flex-wrap gap-1">
               {/* Draft actions */}
@@ -2194,7 +2307,7 @@ function PurchaseOrderQueueMode({
                         disabled={rowScopedActionsBlocked}
                         onClick={() => handleStatusTransition(status)}
                       >
-                        {PO_STATUS_LABELS[status]}
+                        {getPoStatusLabel(status)}
                       </Button>
                     ))}
                   <Button
@@ -2234,7 +2347,7 @@ function PurchaseOrderQueueMode({
                     disabled={rowScopedActionsBlocked}
                     onClick={() => handleStatusTransition(status)}
                   >
-                    {PO_STATUS_LABELS[status]}
+                    {getPoStatusLabel(status)}
                   </Button>
                 ))}
 
@@ -2308,34 +2421,26 @@ function PurchaseOrderQueueMode({
         trapFocus={false}
         headerActions={
           selectedRow ? (
-            <Badge variant="outline">{selectedRow.statusLabel}</Badge>
+            <span
+              className={cn(
+                "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                getPoStatusClass(selectedRow.status)
+              )}
+            >
+              {getPoStatusLabel(selectedRow.status)}
+            </span>
           ) : null
         }
       >
         {selectedRow ? (
           <div className="space-y-4">
+            <PoProgressStepper status={selectedRow.status} />
             <InspectorSection title="PO Details" defaultOpen>
               <InspectorField label="PO Number">
-                <p className="font-semibold">{selectedRow.poNumber}</p>
+                <MonoId value={selectedRow.poNumber} />
               </InspectorField>
               <InspectorField label="Supplier">
-                <div className="space-y-2">
-                  <p>{selectedRow.supplierName}</p>
-                  {typeof selectedSupplierClientId === "number" ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        setLocation(
-                          buildRelationshipProfilePath(selectedSupplierClientId)
-                        )
-                      }
-                    >
-                      Open supplier profile
-                    </Button>
-                  ) : null}
-                </div>
+                <p>{selectedRow.supplierName}</p>
                 {detailQuery.data?.supplier?.email ? (
                   <p className="text-xs text-muted-foreground">
                     {(detailQuery.data.supplier as { email?: string }).email}
@@ -2348,7 +2453,14 @@ function PurchaseOrderQueueMode({
                 ) : null}
               </InspectorField>
               <InspectorField label="Status">
-                <p>{selectedRow.statusLabel}</p>
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+                    getPoStatusClass(selectedRow.status)
+                  )}
+                >
+                  {getPoStatusLabel(selectedRow.status)}
+                </span>
               </InspectorField>
               <InspectorField label="Order Date">
                 <p>
@@ -2365,7 +2477,7 @@ function PurchaseOrderQueueMode({
                 </p>
               </InspectorField>
               <InspectorField label="Payment Terms">
-                <p>{selectedRow.paymentTerms}</p>
+                <p>{getPaymentTermLabel(selectedRow.paymentTerms)}</p>
               </InspectorField>
               <InspectorField label="Total">
                 <p className="text-lg font-semibold">
@@ -2419,7 +2531,7 @@ function PurchaseOrderQueueMode({
                       confirmPO.isPending
                     }
                   >
-                    {PO_STATUS_LABELS[status]}
+                    {getPoStatusLabel(status)}
                   </Button>
                 ))}
                 {availableTransitions.length === 0 && (
@@ -2458,13 +2570,13 @@ function PurchaseOrderQueueMode({
         title="Confirm Status Change"
         description={
           pendingStatusChange
-            ? `Change ${selectedRow?.poNumber ?? "this PO"} to ${PO_STATUS_LABELS[pendingStatusChange.status] ?? pendingStatusChange.status}?`
+            ? `Change ${selectedRow?.poNumber ?? "this PO"} to ${getPoStatusLabel(pendingStatusChange.status)}?`
             : "Confirm status change?"
         }
         confirmLabel={
           updateStatus.isPending || submitPO.isPending || confirmPO.isPending
             ? "Updating..."
-            : `Set to ${pendingStatusChange ? (PO_STATUS_LABELS[pendingStatusChange.status] ?? pendingStatusChange.status) : ""}`
+            : `Set to ${pendingStatusChange ? getPoStatusLabel(pendingStatusChange.status) : ""}`
         }
         onConfirm={handleStatusConfirm}
       />

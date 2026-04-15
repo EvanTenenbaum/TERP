@@ -20,7 +20,14 @@ export interface CogsCalculationInput {
   batch: BatchCogsSnapshot;
   client: {
     id: number;
-    cogsAdjustmentType: "NONE" | "PERCENTAGE" | "FIXED_AMOUNT";
+    cogsAdjustmentType:
+      | "NONE"
+      | "PERCENTAGE"
+      | "PERCENTAGE_DECREASE"
+      | "PERCENTAGE_INCREASE"
+      | "FIXED_AMOUNT"
+      | "FIXED_DECREASE"
+      | "FIXED_INCREASE";
     cogsAdjustmentValue: string;
   };
   context: {
@@ -149,7 +156,9 @@ export function resolveBatchCogs(
   };
 }
 
-export function calculateCogs(input: CogsCalculationInput): CogsCalculationResult {
+export function calculateCogs(
+  input: CogsCalculationInput
+): CogsCalculationResult {
   const { batch, client, context } = input;
 
   const resolved = resolveBatchCogs(batch, {
@@ -159,17 +168,34 @@ export function calculateCogs(input: CogsCalculationInput): CogsCalculationResul
   let finalCogs = resolved.unitCogs;
   let cogsSource = resolved.cogsSource;
 
-  if (client.cogsAdjustmentType === "PERCENTAGE") {
+  if (
+    client.cogsAdjustmentType === "PERCENTAGE" ||
+    client.cogsAdjustmentType === "PERCENTAGE_DECREASE"
+  ) {
     const adjustmentPercent = parseDecimal(client.cogsAdjustmentValue);
     finalCogs = finalCogs * (1 - adjustmentPercent / 100);
     cogsSource = "CLIENT_ADJUSTMENT";
-  } else if (client.cogsAdjustmentType === "FIXED_AMOUNT") {
+  } else if (client.cogsAdjustmentType === "PERCENTAGE_INCREASE") {
+    const adjustmentPercent = parseDecimal(client.cogsAdjustmentValue);
+    finalCogs = finalCogs * (1 + adjustmentPercent / 100);
+    cogsSource = "CLIENT_ADJUSTMENT";
+  } else if (
+    client.cogsAdjustmentType === "FIXED_AMOUNT" ||
+    client.cogsAdjustmentType === "FIXED_DECREASE"
+  ) {
     const adjustmentAmount = parseDecimal(client.cogsAdjustmentValue);
     finalCogs = finalCogs - adjustmentAmount;
     cogsSource = "CLIENT_ADJUSTMENT";
+  } else if (client.cogsAdjustmentType === "FIXED_INCREASE") {
+    const adjustmentAmount = parseDecimal(client.cogsAdjustmentValue);
+    finalCogs = finalCogs + adjustmentAmount;
+    cogsSource = "CLIENT_ADJUSTMENT";
   }
 
-  if (resolved.originalRangeMin !== null && resolved.originalRangeMax !== null) {
+  if (
+    resolved.originalRangeMin !== null &&
+    resolved.originalRangeMax !== null
+  ) {
     finalCogs = Math.max(
       resolved.originalRangeMin,
       Math.min(resolved.originalRangeMax, finalCogs)

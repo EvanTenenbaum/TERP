@@ -5,8 +5,8 @@
  * contextual information and keyboard shortcuts.
  */
 
-import React from 'react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { cn } from "@/lib/utils";
 
 interface WorkSurfaceStatusBarProps {
   /** Left-aligned content (e.g., context info) */
@@ -28,24 +28,17 @@ export function WorkSurfaceStatusBar({
   return (
     <div
       className={cn(
-        'flex items-center justify-between px-4 py-2 bg-muted/50 border-t text-xs text-muted-foreground',
+        "grid gap-2 border-t border-border/70 bg-card/90 px-3 py-2 text-[11px] leading-5 text-muted-foreground shadow-[0_-1px_0_rgba(0,0,0,0.03)] md:grid-cols-[minmax(0,1.2fr)_auto_minmax(0,1.2fr)] md:items-center md:gap-3 md:px-4",
         className
       )}
     >
-      {/* Left Section */}
-      <div className="flex-1 text-left truncate">
-        {left}
-      </div>
+      <div className="min-w-0 truncate text-left md:text-left">{left}</div>
 
-      {/* Center Section */}
-      <div className="flex-1 text-center">
+      <div className="min-w-0 text-left md:justify-self-center md:text-center">
         {center}
       </div>
 
-      {/* Right Section */}
-      <div className="flex-1 text-right truncate">
-        {right}
-      </div>
+      <div className="min-w-0 truncate text-left md:text-right">{right}</div>
     </div>
   );
 }

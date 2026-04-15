@@ -13,11 +13,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CellClickedEvent, ColDef } from "ag-grid-community";
 import {
   Copy,
-  ArrowRight,
   ExternalLink,
   FileText,
   Image as ImageIcon,
-  Link2,
   MoreHorizontal,
   Plus,
   Printer,
@@ -28,6 +26,11 @@ import {
 } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
+import { buildProductIdentityLines } from "@/lib/productIdentity";
+import {
+  adaptInventorySavedViewToSalesFilters,
+  shouldIncludeUnavailableInventory,
+} from "@/lib/portableInventoryViews";
 import { trpc } from "@/lib/trpc";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { Button } from "@/components/ui/button";
@@ -47,6 +50,7 @@ import { SaveViewDialog } from "@/components/sales/SaveViewDialog";
 import { AdvancedFilters } from "@/components/sales/AdvancedFilters";
 import { DraftDialog } from "@/components/sales/DraftDialog";
 import { SavedSheetsDialog } from "@/components/sales/SavedSheetsDialog";
+import { SavedViewsDropdown } from "@/components/inventory/SavedViewsDropdown";
 import { UnifiedExportMenu } from "@/components/common/UnifiedExportMenu";
 import {
   KeyboardHintBar,
@@ -67,17 +71,10 @@ import {
 import {
   clearPortableSalesCut,
   countActiveSalesFilters,
-  getPlainLanguageSalesStatus,
-  isSalesInventorySellable,
   matchesSalesInventoryFilters,
-  NON_SELLABLE_STATUS_NOTES,
   normalizeSalesFilters,
   writePortableSalesCut,
 } from "@/components/sales/filtering";
-import {
-  buildCatalogueOutboundDescriptor,
-  buildCatalogueOutboundNotes,
-} from "@/components/sales/outbound";
 import { useCatalogueDraft } from "@/hooks/useCatalogueDraft";
 
 // ── types ────────────────────────────────────────────────────────────────────
@@ -122,6 +119,12 @@ const formatCurrency = (value: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
     value
   );
+
+function isCatalogueItemSellable(item: PricedInventoryItem): boolean {
+  const availableUnits = Math.max(0, Math.floor(item.quantity || 0));
+  const statusAllowsSale = !item.status || item.status === "LIVE";
+  return statusAllowsSale && availableUnits > 0;
+}
 
 export const escapeCsvField = (value: string) =>
   value.replace(/\r\n|\n|\r/g, " ").replace(/"/g, '""');
@@ -192,17 +195,32 @@ export function buildCatalogueChatText(
     return "No inventory matches this cut right now.";
   }
 
-  const noteLines = buildCatalogueOutboundNotes(cleanedItems);
-
   return [
     `Available Now (${cleanedItems.length})`,
     ...cleanedItems.map(item => {
-      const descriptor = buildCatalogueOutboundDescriptor(item);
+      const descriptor = buildCatalogueDescriptor(item);
       return `• ${item.name}${descriptor ? ` — ${descriptor}` : ""} — ${item.quantity} @ ${formatCurrency(item.retailPrice)}`;
     }),
-    "",
-    ...noteLines,
   ].join("\n");
+}
+
+function buildCatalogueDescriptor(item: {
+  brand?: string | null;
+  vendor?: string | null;
+  category?: string | null;
+  subcategory?: string | null;
+  batchSku?: string | null;
+}) {
+  const identityLines = buildProductIdentityLines({
+    brand: item.brand,
+    vendor: item.vendor,
+    category: item.category,
+    subcategory: item.subcategory,
+  });
+
+  return [identityLines.secondary, identityLines.tertiary, item.batchSku]
+    .filter(value => Boolean(value) && value !== "-")
+    .join(" · ");
 }
 
 function downloadBlob(content: string, type: string, filename: string) {
@@ -228,10 +246,9 @@ function buildPrintableCatalogueHtml({
   includeImages: boolean;
   totalValue: number;
 }) {
-  const noteLines = buildCatalogueOutboundNotes(items);
   const itemMarkup = items
     .map(item => {
-      const descriptor = buildCatalogueOutboundDescriptor(item);
+      const descriptor = buildCatalogueDescriptor(item);
       return `
         <article class="catalogue-row">
           ${
@@ -303,9 +320,7 @@ function buildPrintableCatalogueHtml({
             <div class="catalogue-total">${formatCurrency(totalValue)}</div>
           </header>
           <section class="catalogue-list">${itemMarkup}</section>
-          ${noteLines
-            .map(note => `<p class="catalogue-note">${escapeHtml(note)}</p>`)
-            .join("")}
+          <p class="catalogue-note">Pricing and availability are subject to final confirmation.</p>
         </div>
         <script>
           window.onload = function () { window.print(); };
@@ -328,6 +343,8 @@ const keyboardHints: KeyboardHint[] = [
 ];
 
 const catalogueInventoryGridHeight = "clamp(30rem, calc(100vh - 14rem), 52rem)";
+const surfacePanelClass =
+  "rounded-xl border border-border/70 bg-card/80 shadow-sm";
 
 function mapInventoryToRows(
   items: PricedInventoryItem[],
@@ -496,10 +513,11 @@ export function SalesCatalogueSurface() {
   const [columnVisibility, setColumnVisibility] = useState<ColumnVisibility>(
     DEFAULT_COLUMN_VISIBILITY
   );
+  const [includeUnavailableInventory, setIncludeUnavailableInventory] =
+    useState(false);
   const [currentViewId, setCurrentViewId] = useState<number | null>(null);
   const [showSaveViewDialog, setShowSaveViewDialog] = useState(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const activeFilterCount = countActiveSalesFilters(filters);
 
   // ── dialogs ────────────────────────────────────────────────────────────
   const [showDeleteDraftDialog, setShowDeleteDraftDialog] = useState(false);
@@ -638,7 +656,7 @@ export function SalesCatalogueSurface() {
           return false;
         }
 
-        if (!filters.includeUnavailable && !isSalesInventorySellable(item)) {
+        if (!includeUnavailableInventory && !isCatalogueItemSellable(item)) {
           return false;
         }
 
@@ -691,6 +709,7 @@ export function SalesCatalogueSurface() {
     selectedItemIds,
     checkedInventoryIds,
     filters,
+    includeUnavailableInventory,
     sort,
   ]);
 
@@ -800,16 +819,6 @@ export function SalesCatalogueSurface() {
         headerName: "",
         maxWidth: 28,
         valueGetter: params => params.data?.status ?? "LIVE",
-        tooltipValueGetter: (params: { data?: InventoryBrowserRow }) => {
-          const status = params.data?.status;
-          if (!status || status === "LIVE") {
-            return null;
-          }
-
-          const label = getPlainLanguageSalesStatus(status);
-          const note = NON_SELLABLE_STATUS_NOTES[status];
-          return note ? `${label}: ${note}` : label;
-        },
         cellRenderer: (params: { data?: InventoryBrowserRow }) =>
           params.data &&
           (!params.data.quantity || params.data.status !== "LIVE")
@@ -834,44 +843,24 @@ export function SalesCatalogueSurface() {
             return "";
           }
 
-          const identityMeta = buildCatalogueOutboundDescriptor({
+          const identityLines = buildProductIdentityLines({
             brand: row.brand,
-            subcategory: row.subcategory,
+            vendor: row.vendor,
             category: row.category,
-            batchSku: row.batchSku,
+            subcategory: row.subcategory,
           });
-          const statusLabel = getPlainLanguageSalesStatus(row.status);
-          const statusNote =
-            row.status && row.status !== "LIVE"
-              ? NON_SELLABLE_STATUS_NOTES[row.status] ?? null
-              : null;
 
           return (
             <div className="flex min-w-0 flex-col py-0.5">
-              <div className="flex items-center gap-2">
-                <span className="truncate font-medium">{row.name}</span>
-                {statusNote ? (
-                  <Badge
-                    variant="outline"
-                    className="h-5 rounded-full px-1.5 text-[10px] text-amber-700"
-                  >
-                    {statusLabel}
-                  </Badge>
-                ) : null}
-              </div>
-              {identityMeta ? (
+              <span className="truncate font-medium">{row.name}</span>
+              {identityLines.secondary ? (
                 <span className="truncate text-[10px] text-muted-foreground">
-                  {identityMeta}
+                  {identityLines.secondary}
                 </span>
               ) : null}
-              {row.vendor && row.vendor !== "-" ? (
-                <span className="truncate text-[10px] text-muted-foreground">
-                  Supplier: {row.vendor}
-                </span>
-              ) : null}
-              {statusNote ? (
-                <span className="truncate text-[10px] text-amber-700">
-                  {statusNote}
+              {identityLines.tertiary ? (
+                <span className="truncate text-[10px] text-muted-foreground/80">
+                  {identityLines.tertiary}
                 </span>
               ) : null}
             </div>
@@ -1180,10 +1169,6 @@ export function SalesCatalogueSurface() {
     setCheckedInventoryIds(new Set());
   }, []);
 
-  const handleRefresh = useCallback(() => {
-    void inventoryQuery.refetch();
-  }, [inventoryQuery]);
-
   const handleLoadView = useCallback(
     (view: {
       id: number;
@@ -1195,6 +1180,27 @@ export function SalesCatalogueSurface() {
       setFilters(normalizeSalesFilters(view.filters));
       setSort(view.sort);
       setColumnVisibility(view.columnVisibility);
+    },
+    []
+  );
+
+  const handleApplyInventorySavedView = useCallback(
+    (savedFilters: { [key: string]: unknown }) => {
+      setFilters(
+        adaptInventorySavedViewToSalesFilters(
+          savedFilters as Parameters<
+            typeof adaptInventorySavedViewToSalesFilters
+          >[0]
+        )
+      );
+      setIncludeUnavailableInventory(
+        shouldIncludeUnavailableInventory(
+          savedFilters as Parameters<
+            typeof shouldIncludeUnavailableInventory
+          >[0]
+        )
+      );
+      setCurrentViewId(null);
     },
     []
   );
@@ -1446,118 +1452,125 @@ export function SalesCatalogueSurface() {
   return (
     <div className="flex flex-col gap-1">
       {/* ── TOOLBAR ──────────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-1.5 px-2 py-1 border-b border-border/70 bg-background">
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
-          onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
-        >
-          &larr; Orders
-        </Button>
-        <Badge
-          variant="secondary"
-          className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px]"
-        >
-          Sales Catalogue
-        </Badge>
-        <Input
-          value={draft.draftName}
-          onChange={e => draft.setDraftName(e.target.value)}
-          placeholder="Draft name..."
-          className="h-7 max-w-36 text-xs"
-          aria-invalid={draftNameMissingForSave}
-          disabled={!selectedClientId}
-        />
-        {draftNameMissingForSave && (
-          <span className="text-[10px] text-amber-700">
-            Draft name required to save
-          </span>
-        )}
-        <div className="w-48">
-          <ClientCombobox
-            value={selectedClientId}
-            onValueChange={handleClientChange}
-            clients={clientList}
-            isLoading={clientsQuery.isLoading}
-            placeholder="Client..."
-            emptyText="No clients"
-          />
-        </div>
-
-        <div className="ml-auto flex items-center gap-1.5">
-          {draft.hasUnsavedChanges && (
-            <Badge
-              variant="outline"
-              className="text-amber-600 border-amber-300 bg-amber-50 text-[10px] h-5"
-            >
-              Unsaved
-            </Badge>
-          )}
-          {draft.lastSaveTime && !draft.hasUnsavedChanges && (
-            <Badge
-              variant="outline"
-              className="text-emerald-600 border-emerald-300 bg-emerald-50 text-[10px] h-5"
-            >
-              Saved
-            </Badge>
-          )}
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={!selectedClientId || draft.isSaving}
-            onClick={draft.saveDraft}
-          >
-            <Save className="mr-1 h-3 w-3" />
-            {draft.isSaving ? "Saving..." : "Save Draft"}
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7 px-2 text-xs"
-            disabled={!selectedClientId}
-            onClick={handleRefresh}
-            aria-label="Refresh inventory"
-          >
-            <ArrowRight className="h-3 w-3 rotate-90" />
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+      <div className={`${surfacePanelClass} px-3 py-2`}>
+        <div className="flex flex-wrap items-start gap-3">
+          <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
                 variant="outline"
-                className="h-7 px-2"
-                disabled={!selectedClientId}
+                className="h-7 px-2 text-xs"
+                onClick={() => setLocation(buildSalesWorkspacePath("orders"))}
               >
-                <MoreHorizontal className="h-3 w-3" />
+                &larr; Orders
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setShowDraftDialog(true)}>
-                Load Draft
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowSavedSheetsDialog(true)}>
-                Load Saved Sheet
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                disabled={!draft.currentDraftId}
-                onClick={() => setShowDeleteDraftDialog(true)}
-                className="text-destructive"
+              <Badge
+                variant="secondary"
+                className="border-emerald-200 bg-emerald-50 text-[10px] text-emerald-700"
               >
-                <Trash2 className="mr-2 h-3 w-3" />
-                Delete Draft
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+                Sales Catalogue
+              </Badge>
+              <Badge
+                variant="outline"
+                className="text-[10px] text-muted-foreground"
+              >
+                {draft.hasUnsavedChanges
+                  ? "Unsaved edits"
+                  : draft.lastSaveTime
+                    ? "Saved draft"
+                    : "Draft ready"}
+              </Badge>
+              {selectedItems.length > 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-[10px] text-muted-foreground"
+                >
+                  {selectedItems.length} line
+                  {selectedItems.length === 1 ? "" : "s"}
+                </Badge>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                value={draft.draftName}
+                onChange={e => draft.setDraftName(e.target.value)}
+                placeholder="Draft name..."
+                className="h-7 max-w-44 text-xs"
+                aria-invalid={draftNameMissingForSave}
+                disabled={!selectedClientId}
+              />
+              <div className="w-56">
+                <ClientCombobox
+                  value={selectedClientId}
+                  onValueChange={handleClientChange}
+                  clients={clientList}
+                  isLoading={clientsQuery.isLoading}
+                  placeholder="Client..."
+                  emptyText="No clients"
+                />
+              </div>
+            </div>
+            {draftNameMissingForSave && (
+              <span className="text-[10px] text-amber-700">
+                Draft name required to save
+              </span>
+            )}
+          </div>
+
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              disabled={!selectedClientId || draft.isSaving}
+              onClick={draft.saveDraft}
+            >
+              <Save className="mr-1 h-3 w-3" />
+              {draft.isSaving ? "Saving..." : "Save Draft"}
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 px-2"
+                  disabled={!selectedClientId}
+                >
+                  <MoreHorizontal className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setShowDraftDialog(true)}>
+                  Load Draft
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => setShowSavedSheetsDialog(true)}
+                >
+                  Load Saved Sheet
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={!draft.currentDraftId}
+                  onClick={() => setShowDeleteDraftDialog(true)}
+                  className="text-destructive"
+                >
+                  <Trash2 className="mr-2 h-3 w-3" />
+                  Delete Draft
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
       {/* ── ACTION BAR ───────────────────────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-1.5 px-2 py-0.5 rounded-md border border-border/70 bg-muted/30 mx-1">
-        <span className="text-xs font-medium">View</span>
+      <div
+        className={`${surfacePanelClass} mx-0.5 flex flex-wrap items-center gap-2 px-3 py-2`}
+      >
+        <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+          View
+        </span>
 
-        {selectedClientId && (
+        {selectedClientId ? (
           <>
             <QuickViewSelector
               clientId={selectedClientId}
@@ -1568,32 +1581,31 @@ export function SalesCatalogueSurface() {
               size="sm"
               variant="outline"
               className="h-8 px-2.5 text-xs"
-              disabled={!selectedClientId || draft.isSaving}
-              onClick={draft.saveDraft}
+              onClick={() => setShowSaveViewDialog(true)}
+              disabled={countActiveSalesFilters(filters) === 0}
             >
-              <Save className="mr-1 h-3.5 w-3.5" />
-              {draft.isSaving ? "Saving..." : "Save Draft"}
+              Save View
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="h-8 px-2.5 text-xs"
-              disabled={!selectedClientId}
-              onClick={handleRefresh}
-              aria-label="Refresh inventory"
+              onClick={() => setShowAdvancedFilters(current => !current)}
             >
-              <ArrowRight className="h-3.5 w-3.5 rotate-90" />
+              Filters
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 px-2.5 text-xs"
-              disabled={!selectedClientId}
-              onClick={() => setShowAdvancedFilters(prev => !prev)}
-            >
-              Filters{activeFilterCount > 0 ? " •" : ""}
-            </Button>
+            <span className="ml-auto text-[10px] text-muted-foreground">
+              {checkedVisibleRows.length} checked · {inventoryRows.length}{" "}
+              visible
+              {selectedItems.length > 0
+                ? ` · ${selectedItems.length} items · ${formatCurrency(totalSheetValue)}`
+                : ""}
+            </span>
           </>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            Select a client to unlock view and inventory actions.
+          </span>
         )}
       </div>
 
@@ -1615,7 +1627,7 @@ export function SalesCatalogueSurface() {
         <div className="grid gap-1 lg:grid-cols-4 px-1">
           {/* Left: Inventory Browser (3/4) */}
           <div className="lg:col-span-3 flex flex-col gap-1">
-            <div className="flex flex-wrap items-center gap-1 rounded-md border border-border/70 bg-background px-2 py-1">
+            <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/70 bg-background px-2 py-1">
               <Input
                 value={filters.search}
                 onChange={e =>
@@ -1624,6 +1636,7 @@ export function SalesCatalogueSurface() {
                 placeholder="Search product, vendor, category..."
                 className="h-7 max-w-xs text-xs"
               />
+              <SavedViewsDropdown onApplyView={handleApplyInventorySavedView} />
               <Button
                 size="sm"
                 className="h-7 px-2 text-[10px]"
@@ -1686,13 +1699,10 @@ export function SalesCatalogueSurface() {
               </Button>
               <Button
                 size="sm"
-                variant={filters.includeUnavailable ? "default" : "outline"}
+                variant={includeUnavailableInventory ? "default" : "outline"}
                 className="h-7 px-2 text-[10px]"
                 onClick={() =>
-                  setFilters(current => ({
-                    ...current,
-                    includeUnavailable: !current.includeUnavailable,
-                  }))
+                  setIncludeUnavailableInventory(current => !current)
                 }
               >
                 Include unavailable
@@ -1789,7 +1799,7 @@ export function SalesCatalogueSurface() {
               contentClassName="px-4 pb-4 pt-0"
             />
 
-            <div className="rounded-md border border-border/70 bg-card/80 p-3">
+            <div className={`${surfacePanelClass} p-3`}>
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -1818,7 +1828,7 @@ export function SalesCatalogueSurface() {
                   {selectedItems.map(item => (
                     <div
                       key={item.id}
-                      className="flex min-w-[88px] flex-col gap-1 rounded-md border border-border/70 bg-background/80 p-1.5"
+                      className="flex min-w-[88px] flex-col gap-1 rounded-xl border border-border/70 bg-background/80 p-1.5"
                     >
                       <div className="h-16 w-full overflow-hidden rounded bg-muted/40">
                         {item.imageUrl ? (
@@ -1854,16 +1864,6 @@ export function SalesCatalogueSurface() {
                 >
                   <Save className="mr-1 h-3.5 w-3.5" />
                   {draft.isFinalizing ? "Saving..." : "Save Sheet"}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-[11px]"
-                  disabled={!draft.canShare}
-                  onClick={() => void draft.generateShareLink()}
-                >
-                  <Link2 className="mr-1 h-3.5 w-3.5" />
-                  Share Link
                 </Button>
                 <Button
                   size="sm"
@@ -1919,7 +1919,7 @@ export function SalesCatalogueSurface() {
                 ) : null}
               </div>
 
-              <div className="mt-3 rounded-md border border-border/70 bg-background/70 p-2.5">
+              <div className="mt-3 rounded-xl border border-border/70 bg-background/70 p-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
@@ -1978,7 +1978,7 @@ export function SalesCatalogueSurface() {
               Select a client to start building a catalogue
             </p>
           </div>
-          <div className="rounded-md border border-border/70 bg-card/80 p-3">
+          <div className="rounded-xl border border-border/70 bg-card/80 p-3 shadow-sm">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 Next Step
@@ -2032,16 +2032,27 @@ export function SalesCatalogueSurface() {
       )}
 
       {/* ── HANDOFF BAR ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-1.5 px-2 py-1 mx-1 rounded-md border border-border/70 bg-background">
-        {draft.hasUnsavedChanges && selectedItems.length > 0 && (
-          <Badge
-            variant="outline"
-            className="text-amber-700 border-amber-300 bg-amber-50 text-[10px]"
-          >
-            Save the sheet before sharing or converting
-          </Badge>
-        )}
-        <div className="ml-auto flex gap-1">
+      <div
+        className={`${surfacePanelClass} mx-0.5 flex flex-wrap items-center gap-2 px-3 py-2`}
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            Handoff
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Save first, then share the catalogue or convert it into another
+            sales workflow.
+          </p>
+          {draft.hasUnsavedChanges && selectedItems.length > 0 && (
+            <Badge
+              variant="outline"
+              className="w-fit border-amber-300 bg-amber-50 text-[10px] text-amber-700"
+            >
+              Save the sheet before sharing or converting
+            </Badge>
+          )}
+        </div>
+        <div className="ml-auto flex flex-wrap gap-1">
           <Button
             size="sm"
             variant="outline"

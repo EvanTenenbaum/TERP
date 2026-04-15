@@ -39,7 +39,7 @@ export const Layout = React.memo(function Layout({
           </>
         )}
         <main
-          className={cn("terp-main-shell flex-1 overflow-y-auto p-3 md:p-4")}
+          className={cn("terp-main-shell flex-1 overflow-y-auto p-2.5 md:p-4")}
         >
           {children}
         </main>

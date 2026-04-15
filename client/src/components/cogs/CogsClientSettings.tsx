@@ -55,12 +55,32 @@ export function CogsClientSettings() {
   const getAdjustmentBadge = (type: string, value: string) => {
     if (type === "NONE") {
       return <Badge variant="secondary">No Adjustment</Badge>;
-    } else if (type === "PERCENTAGE") {
-      return <Badge variant="default">{value}% Discount</Badge>;
-    } else if (type === "FIXED_AMOUNT") {
-      return <Badge variant="default">${value} Discount</Badge>;
     }
-    return null;
+    const numValue = parseFloat(value);
+    const displayValue = Math.abs(numValue);
+    // Legacy "PERCENTAGE"/"FIXED_AMOUNT" treated as decrease for backward compat
+    const isIncrease =
+      type === "PERCENTAGE_INCREASE" || type === "FIXED_INCREASE";
+    const direction = isIncrease ? "Increase" : "Decrease";
+    const badgeVariant: "default" | "destructive" = isIncrease
+      ? "destructive"
+      : "default";
+    const isPercent =
+      type === "PERCENTAGE" ||
+      type === "PERCENTAGE_DECREASE" ||
+      type === "PERCENTAGE_INCREASE";
+    if (isPercent) {
+      return (
+        <Badge variant={badgeVariant}>
+          {displayValue}% COGS {direction}
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant={badgeVariant}>
+        ${displayValue} COGS {direction}
+      </Badge>
+    );
   };
 
   return (
@@ -169,11 +189,17 @@ export function CogsClientSettings() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="NONE">No Adjustment</SelectItem>
-                  <SelectItem value="PERCENTAGE">
-                    Percentage Discount
+                  <SelectItem value="PERCENTAGE_DECREASE">
+                    Percentage — COGS Decrease
                   </SelectItem>
-                  <SelectItem value="FIXED_AMOUNT">
-                    Fixed Amount Discount
+                  <SelectItem value="PERCENTAGE_INCREASE">
+                    Percentage — COGS Increase
+                  </SelectItem>
+                  <SelectItem value="FIXED_DECREASE">
+                    Fixed Amount — COGS Decrease
+                  </SelectItem>
+                  <SelectItem value="FIXED_INCREASE">
+                    Fixed Amount — COGS Increase
                   </SelectItem>
                 </SelectContent>
               </Select>

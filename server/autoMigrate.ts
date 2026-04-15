@@ -699,7 +699,7 @@ export async function runAutoMigrations() {
     // Add cogsAdjustmentType column (enum)
     try {
       await db.execute(
-        sql`ALTER TABLE clients ADD COLUMN cogsAdjustmentType ENUM('NONE', 'PERCENTAGE', 'FIXED_AMOUNT') DEFAULT 'NONE'`
+        sql`ALTER TABLE clients ADD COLUMN cogsAdjustmentType ENUM('NONE', 'PERCENTAGE', 'PERCENTAGE_DECREASE', 'PERCENTAGE_INCREASE', 'FIXED_AMOUNT', 'FIXED_DECREASE', 'FIXED_INCREASE') DEFAULT 'NONE'`
       );
       console.info("  ✅ Added cogsAdjustmentType column to clients");
     } catch (error) {
@@ -724,6 +724,22 @@ export async function runAutoMigrations() {
       } else {
         console.info("  ⚠️  clients.cogs_adjustment_value:", errMsg);
       }
+    }
+
+    // Expand cogsAdjustmentType enum to support INCREASE variants
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients MODIFY COLUMN cogsAdjustmentType ENUM('NONE', 'PERCENTAGE', 'PERCENTAGE_DECREASE', 'PERCENTAGE_INCREASE', 'FIXED_AMOUNT', 'FIXED_DECREASE', 'FIXED_INCREASE') DEFAULT 'NONE'`
+      );
+      console.info(
+        "  ✅ Expanded cogsAdjustmentType enum with INCREASE variants"
+      );
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.info(
+        "  ℹ️  cogsAdjustmentType enum expand:",
+        errMsg.slice(0, 80)
+      );
     }
 
     // Add auto_defer_consignment column

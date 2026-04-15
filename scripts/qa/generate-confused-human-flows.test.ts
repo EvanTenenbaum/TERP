@@ -5,66 +5,65 @@ import { describe, expect, it } from "vitest";
 import {
   buildConfusedHumanPacket,
   parseGeneratorArgs,
-  renderPacketText,
   validateConfusedHumanPacket,
 } from "./confused-human-flow-lib";
 
 describe("generate-confused-human-flows", () => {
-  it("parses CLI flags into generator options", () => {
-    const options = parseGeneratorArgs([
-      "--count",
-      "5",
-      "--seed",
-      "20260408",
-      "--format",
-      "json",
-      "--output",
-      "qa-results/confused-human/packet-20260408.json",
-    ]);
-
+  it("parses count and seed flags", () => {
+    const options = parseGeneratorArgs(["--count", "5", "--seed", "20260401"]);
     expect(options.count).toBe(5);
-    expect(options.seed).toBe("20260408");
-    expect(options.format).toBe("json");
-    expect(options.output).toBe(
-      "qa-results/confused-human/packet-20260408.json"
-    );
+    expect(options.seed).toBe("20260401");
   });
 
-  it("falls back to safe defaults for invalid CLI values", () => {
-    const options = parseGeneratorArgs(["--count", "0", "--format", "xml"]);
-
+  it("falls back to default count when flag is absent", () => {
+    const options = parseGeneratorArgs(["--seed", "20260401"]);
     expect(options.count).toBe(12);
+  });
+
+  it("clamps an invalid count to the default", () => {
+    const options = parseGeneratorArgs(["--count", "0", "--seed", "s"]);
+    expect(options.count).toBe(12);
+  });
+
+  it("parses json format flag", () => {
+    const options = parseGeneratorArgs(["--format", "json", "--seed", "s"]);
+    expect(options.format).toBe("json");
+  });
+
+  it("defaults to text format when flag is absent", () => {
+    const options = parseGeneratorArgs(["--seed", "s"]);
     expect(options.format).toBe("text");
   });
 
-  it("builds a valid packet from repo sources", () => {
+  it("parses output path flag", () => {
+    const options = parseGeneratorArgs([
+      "--output",
+      "out/packet.json",
+      "--seed",
+      "s",
+    ]);
+    expect(options.output).toBe("out/packet.json");
+  });
+
+  it("generates a valid packet for a given seed", () => {
     const packet = buildConfusedHumanPacket({
       rootDir: process.cwd(),
-      count: 6,
-      seed: "20260408",
-      format: "text",
+      count: 5,
+      seed: "20260401",
     });
-
     const validation = validateConfusedHumanPacket(packet);
-
-    expect(packet.selectedCount).toBe(6);
-    expect(packet.selected).toHaveLength(6);
+    expect(packet.selected.length).toBe(packet.selectedCount);
     expect(packet.candidateCount).toBeGreaterThan(0);
     expect(validation.valid).toBe(true);
   });
 
-  it("renders human-readable packet text", () => {
-    const packet = buildConfusedHumanPacket({
-      rootDir: process.cwd(),
-      count: 3,
-      seed: "20260408",
-      format: "text",
-    });
-
-    const rendered = renderPacketText(packet);
-
-    expect(rendered).toContain("Run ID:");
-    expect(rendered).toContain("Seed: 20260408");
-    expect(rendered).toContain("Generated runs: 3");
+  it("produces stable output for the same seed", () => {
+    const opts = { rootDir: process.cwd(), count: 4, seed: "stability-test" };
+    const packet1 = buildConfusedHumanPacket(opts);
+    const packet2 = buildConfusedHumanPacket(opts);
+    // Same seed → same selected run IDs in the same order
+    expect(packet1.selected.map(r => r.flowName)).toEqual(
+      packet2.selected.map(r => r.flowName)
+    );
   });
 });

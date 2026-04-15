@@ -119,42 +119,14 @@ export default function InventoryWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={INVENTORY_WORKSPACE.title}
-      description={INVENTORY_WORKSPACE.description}
+      description="Inventory, intake, receiving, shipping, photography, and samples share one operational frame."
       section="Operations"
       activeTab={activeTab}
       tabs={INVENTORY_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
       meta={[
-        {
-          label: "Active lane",
-          value:
-            activeTab === "inventory"
-              ? "Sellable inventory"
-              : activeTab === "intake"
-                ? "Direct intake"
-                : activeTab === "receiving"
-                  ? "PO-linked receiving"
-                  : activeTab === "shipping"
-                    ? "Fulfillment queue"
-                    : activeTab === "samples"
-                      ? "Sample requests"
-                      : "Support operations",
-        },
-        {
-          label: "Mode",
-          value:
-            activeTab === "intake"
-              ? intakeSurfaceMode
-              : activeTab === "shipping"
-                ? fulfillmentSurfaceMode
-                : activeTab === "samples"
-                  ? samplesSurfaceMode
-                  : "workspace",
-        },
-        {
-          label: "Receiving split",
-          value: "Direct intake vs PO-linked queue",
-        },
+        { label: "Primary", value: "Inventory and intake" },
+        { label: "Handoffs", value: "Receiving and shipping" },
       ]}
       data-testid="inventory-header"
       commandStrip={

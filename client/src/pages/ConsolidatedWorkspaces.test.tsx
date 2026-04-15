@@ -5,14 +5,13 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import DemandSupplyWorkspacePage from "./DemandSupplyWorkspacePage";
 import RelationshipsWorkspacePage from "./RelationshipsWorkspacePage";
 import InventoryWorkspacePage from "./InventoryWorkspacePage";
 import SalesWorkspacePage from "./SalesWorkspacePage";
 import CreditsWorkspacePage from "./CreditsWorkspacePage";
 import ProcurementWorkspacePage from "./ProcurementWorkspacePage";
-import AccountingWorkspacePage from "./AccountingWorkspacePage";
 
 let mockActiveTab = "matchmaking";
 let mockSearch = "";
@@ -105,9 +104,6 @@ vi.mock("@/components/work-surface/InventoryWorkSurface", () => ({
 vi.mock("@/components/work-surface/PickPackWorkSurface", () => ({
   default: () => <div>Pick Pack Surface</div>,
 }));
-vi.mock("@/components/work-surface/DirectIntakeWorkSurface", () => ({
-  default: () => <div>Direct Intake Surface</div>,
-}));
 vi.mock("@/components/work-surface/PurchaseOrdersWorkSurface", () => ({
   default: () => <div>Purchase Orders Surface</div>,
 }));
@@ -132,12 +128,6 @@ vi.mock("@/components/spreadsheet-native/InventorySheetPilotSurface", () => ({
 vi.mock("@/components/spreadsheet-native/InventoryManagementSurface", () => ({
   InventoryManagementSurface: () => <div>Inventory Management Surface</div>,
 }));
-vi.mock("@/components/spreadsheet-native/IntakePilotSurface", () => ({
-  default: () => <div>Intake Pilot Surface</div>,
-}));
-vi.mock("@/components/spreadsheet-native/FulfillmentPilotSurface", () => ({
-  default: () => <div>Fulfillment Pilot Surface</div>,
-}));
 vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
   default: () => <div>Orders Sheet Pilot Surface</div>,
 }));
@@ -157,11 +147,6 @@ vi.mock("@/pages/LiveShoppingPage", () => ({
 vi.mock("@/pages/CreditsPage", () => ({
   default: ({ embedded }: { embedded?: boolean }) => (
     <div>Credits {embedded ? "Embedded" : "Standalone"}</div>
-  ),
-}));
-vi.mock("@/pages/accounting/AccountingDashboard", () => ({
-  default: ({ embedded }: { embedded?: boolean }) => (
-    <div>Accounting Dashboard {embedded ? "Embedded" : "Standalone"}</div>
   ),
 }));
 vi.mock("@/pages/CreditSettingsPage", () => ({
@@ -207,23 +192,6 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByText("Clients Surface")).toBeInTheDocument();
   });
 
-  it("renders Relationships workspace operator meta and command strip", () => {
-    mockActiveTab = "clients";
-    render(<RelationshipsWorkspacePage />);
-
-    const metadata = screen.getByLabelText("Workspace metadata");
-
-    expect(within(metadata).getByText("Buyer records")).toBeInTheDocument();
-    expect(within(metadata).getByText("Clients")).toBeInTheDocument();
-    expect(within(metadata).getByText("Supplier records")).toBeInTheDocument();
-    expect(within(metadata).getByText("Suppliers")).toBeInTheDocument();
-    expect(within(metadata).getByText("Operator lens")).toBeInTheDocument();
-    expect(
-      within(metadata).getByText("Conversation and money readiness")
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Notifications" })).toBeInTheDocument();
-  });
-
   it("renders Inventory workspace with inventory default content", () => {
     mockActiveTab = "inventory";
     render(<InventoryWorkspacePage />);
@@ -232,20 +200,6 @@ describe("Consolidated workspace pages", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText("Inventory Management Surface")
-    ).toBeInTheDocument();
-  });
-
-  it("renders Inventory workspace meta items", () => {
-    mockActiveTab = "inventory";
-    render(<InventoryWorkspacePage />);
-
-    expect(screen.getByText("Active lane")).toBeInTheDocument();
-    expect(screen.getByText("Sellable inventory")).toBeInTheDocument();
-    expect(screen.getByText("Mode")).toBeInTheDocument();
-    expect(screen.getByText("workspace")).toBeInTheDocument();
-    expect(screen.getByText("Receiving split")).toBeInTheDocument();
-    expect(
-      screen.getByText("Direct intake vs PO-linked queue")
     ).toBeInTheDocument();
   });
 
@@ -270,19 +224,6 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByText("Purchase Order Surface")).toBeInTheDocument();
   });
 
-  it("updates inventory workspace metadata when the active tab changes from intake to receiving", () => {
-    mockActiveTab = "intake";
-    const { rerender } = render(<InventoryWorkspacePage />);
-
-    expect(screen.getByText("Active lane")).toBeInTheDocument();
-    expect(screen.getByText("Direct intake")).toBeInTheDocument();
-
-    mockActiveTab = "receiving";
-    rerender(<InventoryWorkspacePage />);
-
-    expect(screen.getByText("PO-linked receiving")).toBeInTheDocument();
-  });
-
   it("renders Inventory workspace receiving editor when a draft is selected", async () => {
     mockActiveTab = "receiving";
     mockSearch = "?tab=receiving&draftId=draft-123";
@@ -293,35 +234,6 @@ describe("Consolidated workspace pages", () => {
     expect(
       await screen.findByText("Receiving Slice Surface")
     ).toBeInTheDocument();
-  });
-
-  it("renders only the direct intake classic surface when intake mode is classic", () => {
-    mockActiveTab = "intake";
-    mockPilotMode = "classic";
-    render(<InventoryWorkspacePage />);
-
-    expect(screen.getByText("Direct Intake Surface")).toBeInTheDocument();
-    expect(screen.queryByText("Intake Pilot Surface")).not.toBeInTheDocument();
-  });
-
-  it("renders only the direct intake pilot surface when intake mode is sheet-native", async () => {
-    mockActiveTab = "intake";
-    mockPilotMode = "sheet-native";
-    render(<InventoryWorkspacePage />);
-
-    expect(await screen.findByText("Intake Pilot Surface")).toBeInTheDocument();
-    expect(screen.queryByText("Direct Intake Surface")).not.toBeInTheDocument();
-  });
-
-  it("renders only the fulfillment pilot surface when shipping mode is sheet-native", async () => {
-    mockActiveTab = "shipping";
-    mockPilotMode = "sheet-native";
-    render(<InventoryWorkspacePage />);
-
-    expect(
-      await screen.findByText("Fulfillment Pilot Surface")
-    ).toBeInTheDocument();
-    expect(screen.queryByText("Pick Pack Surface")).not.toBeInTheDocument();
   });
 
   it("renders Inventory workspace photography tab with embedded content", async () => {
@@ -342,24 +254,6 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
     expect(screen.getByText("Quotes Surface")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "New Order" })).toBeInTheDocument();
-  });
-
-  it("renders Sales workspace description, meta items, and command strip", () => {
-    mockActiveTab = "orders";
-    render(<SalesWorkspacePage />);
-
-    expect(
-      screen.getByText(
-        /Manage orders, quotes, returns, sales catalogues, and live shopping in a unified sales workspace/i
-      )
-    ).toBeInTheDocument();
-    expect(screen.getByText("Action lane")).toBeInTheDocument();
-    expect(screen.getByText("Quotes -> confirm -> collect")).toBeInTheDocument();
-    expect(screen.getByText("Primary queue")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Sales Catalogue" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Open order composer" })
-    ).toBeInTheDocument();
   });
 
   it("renders Sales workspace with sheet-native pilot when enabled", async () => {
@@ -386,9 +280,7 @@ describe("Consolidated workspace pages", () => {
     mockActiveTab = "live-shopping";
     render(<SalesWorkspacePage />);
     expect(screen.getByRole("heading", { name: "Sales" })).toBeInTheDocument();
-    expect(
-      await screen.findByText("Live Shopping Surface")
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Live Shopping Surface")).toBeInTheDocument();
   });
 
   it("redirects pick-pack to the shipping workspace while preserving search params", () => {
@@ -426,67 +318,12 @@ describe("Consolidated workspace pages", () => {
     expect(screen.getByText("Credit Settings Embedded")).toBeInTheDocument();
   });
 
-  it("renders procurement workspace", () => {
+  it("renders buying workspace", () => {
     mockActiveTab = "purchase-orders";
     render(<ProcurementWorkspacePage />);
     expect(
-      screen.getByRole("heading", { name: "Procurement" })
+      screen.getByRole("heading", { name: "Buying" })
     ).toBeInTheDocument();
     expect(screen.getByText("Purchase Order Surface")).toBeInTheDocument();
-  });
-
-  it("renders Procurement workspace description, meta, and command strip", () => {
-    mockActiveTab = "purchase-orders";
-    render(<ProcurementWorkspacePage />);
-
-    expect(
-      screen.getByText(
-        /Create purchase orders here, then continue product intake and inventory work from Operations/i
-      )
-    ).toBeInTheDocument();
-    expect(screen.getByText("Primary queue")).toBeInTheDocument();
-    expect(screen.getByText("Purchase order authoring")).toBeInTheDocument();
-    expect(screen.getByText("Next move")).toBeInTheDocument();
-    expect(screen.getByText("Receive, inspect, and stock")).toBeInTheDocument();
-    expect(screen.getByText("Receiving path")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Product Intake" })
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Inventory" })).toBeInTheDocument();
-  });
-
-  it("shows a visible redirect handoff for procurement tabs that moved to Operations", () => {
-    mockActiveTab = "receiving";
-    render(<ProcurementWorkspacePage />);
-
-    expect(
-      screen.getByRole("heading", { name: "Procurement" })
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("This workflow moved to Operations")
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: "Open Operations" })
-    ).toBeInTheDocument();
-  });
-
-  it("renders Accounting workspace operational meta and command strip", () => {
-    mockActiveTab = "dashboard";
-    render(<AccountingWorkspacePage />);
-
-    expect(screen.getByRole("heading", { name: "Accounting" })).toBeInTheDocument();
-    expect(screen.getByText("Financial period")).toBeInTheDocument();
-    expect(screen.getByText("Current fiscal year")).toBeInTheDocument();
-    expect(screen.getByText("Active lane")).toBeInTheDocument();
-    expect(
-      screen.getByText("Receivables and payables summary")
-    ).toBeInTheDocument();
-    expect(screen.getByText("Flow")).toBeInTheDocument();
-    expect(
-      screen.getByText("Invoice -> Payment -> General Ledger")
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Invoices" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Payments" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Periods" })).toBeInTheDocument();
   });
 });

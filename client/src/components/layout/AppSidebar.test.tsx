@@ -192,7 +192,7 @@ describe("AppSidebar navigation", () => {
     );
 
     const operationsLink = screen.getByRole("link", {
-      name: /Manage inventory, product intake, shipping, photography, and samples/i,
+      name: /Manage inventory, intake, shipping/i,
     });
     expect(operationsLink).toHaveAttribute("aria-current", "page");
 
@@ -205,7 +205,7 @@ describe("AppSidebar navigation", () => {
 
     expect(
       screen.getByRole("link", {
-        name: /Manage inventory, product intake, shipping, photography, and samples/i,
+        name: /Manage inventory, intake, shipping/i,
       })
     ).toHaveAttribute("aria-current", "page");
 
@@ -218,7 +218,7 @@ describe("AppSidebar navigation", () => {
 
     expect(
       screen.getByRole("link", {
-        name: /Manage inventory, product intake, shipping, photography, and samples/i,
+        name: /Manage inventory, intake, shipping/i,
       })
     ).toHaveAttribute("aria-current", "page");
 
@@ -231,7 +231,7 @@ describe("AppSidebar navigation", () => {
 
     expect(
       screen.getByRole("link", {
-        name: /Manage inventory, product intake, shipping, photography, and samples/i,
+        name: /Manage inventory, intake, shipping/i,
       })
     ).toHaveAttribute("aria-current", "page");
   });

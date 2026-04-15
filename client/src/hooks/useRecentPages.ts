@@ -33,7 +33,7 @@ const PATH_LABELS: Record<string, string> = {
   "/inventory?tab=shipping": "Shipping",
   "/inventory?tab=photography": "Photography",
   "/inventory?tab=samples": "Samples",
-  "/procurement": "Procurement Workspace",
+  "/procurement": "Buying Workspace",
   "/purchase-orders": "Purchase Orders",
   "/accounting": "Accounting Workspace",
   "/accounting?tab=invoices": "Invoices",

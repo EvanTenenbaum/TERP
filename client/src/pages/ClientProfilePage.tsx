@@ -18,6 +18,7 @@ import { SupplierProfileSection } from "@/components/clients/SupplierProfileSect
 import { VIPPortalSettings } from "@/components/clients/VIPPortalSettings";
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { BackButton } from "@/components/common/BackButton";
+import { ConsignmentRangePanel } from "@/components/accounting/ConsignmentRangePanel";
 import { CreditStatusCard } from "@/components/credit/CreditStatusCard";
 import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
 import {
@@ -1195,6 +1196,10 @@ export default function ClientProfilePage() {
                     </div>
                   </CardContent>
                 </Card>
+
+                {isSupplier ? (
+                  <ConsignmentRangePanel vendorClientId={clientId} />
+                ) : null}
 
                 <div className="grid gap-4 xl:grid-cols-2">
                   <Card>

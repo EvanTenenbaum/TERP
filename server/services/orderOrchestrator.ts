@@ -1024,7 +1024,15 @@ export class OrderOrchestrator {
     items: CreateSaleOrderInput["items"],
     client: {
       id: number;
-      cogsAdjustmentType?: "NONE" | "PERCENTAGE" | "FIXED_AMOUNT" | null;
+      cogsAdjustmentType?:
+        | "NONE"
+        | "PERCENTAGE"
+        | "PERCENTAGE_DECREASE"
+        | "PERCENTAGE_INCREASE"
+        | "FIXED_AMOUNT"
+        | "FIXED_DECREASE"
+        | "FIXED_INCREASE"
+        | null;
       cogsAdjustmentValue?: string | null;
     },
     paymentTerms?: PaymentTerms,

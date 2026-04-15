@@ -1,9 +1,8 @@
-import { lazy, Suspense, useMemo } from "react";
+import { lazy, Suspense, useMemo, useState } from "react";
 import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
-import { Button } from "@/components/ui/button";
 
 const OrdersSheetPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/OrdersSheetPilotSurface")
@@ -40,9 +39,13 @@ import {
   LinearWorkspaceShell,
   type LinearWorkspaceTab,
 } from "@/components/layout/LinearWorkspaceShell";
-import { WorkspaceCommandStripLink } from "@/components/ui/operational-states";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { Redirect, useLocation, useSearch } from "wouter";
-import { Layers } from "lucide-react";
 
 type BaseSalesTab = (typeof SALES_WORKSPACE.tabs)[number]["value"];
 type SalesTab = BaseSalesTab | "create-order";
@@ -111,6 +114,7 @@ export default function SalesWorkspacePage() {
   const [, setLocation] = useLocation();
   const search = useSearch();
   const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const [showOrderDrawer, setShowOrderDrawer] = useState(false);
   const { activeTab, setActiveTab } = useQueryTabState<SalesQueryTab>({
     defaultTab: "orders",
     validTabs: [...SALES_TABS, "pick-pack"],
@@ -295,189 +299,179 @@ export default function SalesWorkspacePage() {
     );
   }
 
-  const commandStripToggle =
-    activeTab === "orders" ? (
-      <SheetModeToggle
-        enabled={sheetPilotEnabled}
-        surfaceMode={surfaceMode}
-        onSurfaceModeChange={setSurfaceMode}
-      />
-    ) : activeTab === "quotes" ? (
-      <SheetModeToggle
-        enabled={quotesPilotEnabled}
-        surfaceMode={quotesSurfaceMode}
-        onSurfaceModeChange={setQuotesSurfaceMode}
-      />
-    ) : activeTab === "returns" ? (
-      <SheetModeToggle
-        enabled={returnsPilotEnabled}
-        surfaceMode={returnsSurfaceMode}
-        onSurfaceModeChange={setReturnsSurfaceMode}
-      />
-    ) : null;
-  const shouldShowCommandStrip =
-    commandStripToggle !== null || activeTab !== "sales-sheets";
-
   return (
-    <LinearWorkspaceShell
-      title={SALES_WORKSPACE.title}
-      description={SALES_WORKSPACE.description}
-      section="Sell"
-      density="compact"
-      activeTab={activeTab}
-      tabs={SALES_TABS_CONFIG}
-      onTabChange={tab => setActiveTab(tab)}
-      meta={[
-        {
-          label: "Action lane",
-          value:
-            activeTab === "orders"
-              ? "Quotes -> confirm -> collect"
-              : activeTab === "returns"
-                ? "Returns and resolution"
-                : "Outbound sales coordination",
-        },
-        {
-          label: "Primary queue",
-          value:
-            activeTab === "orders"
-              ? "Confirmed orders"
-              : activeTab === "quotes"
-                ? "Quote follow-up"
-                : activeTab === "sales-sheets"
-                  ? "Shareable catalogue"
-                  : "Operator workspace",
-        },
-      ]}
-      commandStrip={
-        shouldShowCommandStrip ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {commandStripToggle}
-            <WorkspaceCommandStripLink
-              label="Sales Catalogue"
-              onClick={() => setActiveTab("sales-sheets")}
-              active={activeTab === "sales-sheets"}
+    <>
+      <LinearWorkspaceShell
+        title={SALES_WORKSPACE.title}
+        description="Keep queue, catalogue, quote, and order work in one place with fewer context switches."
+        section="Sell"
+        density="compact"
+        activeTab={activeTab}
+        tabs={SALES_TABS_CONFIG}
+        onTabChange={tab => setActiveTab(tab)}
+        meta={[
+          { label: "Primary", value: "Orders and quotes" },
+          { label: "Sheet-native", value: "Catalogue and order draft" },
+        ]}
+        commandStrip={
+          activeTab === "orders" ? (
+            <SheetModeToggle
+              enabled={sheetPilotEnabled}
+              surfaceMode={surfaceMode}
+              onSurfaceModeChange={setSurfaceMode}
             />
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 px-2.5 text-xs"
-              onClick={() => setActiveTab("create-order")}
-              disabled={activeTab === "create-order"}
-              aria-label="Open order composer"
+          ) : activeTab === "quotes" ? (
+            <SheetModeToggle
+              enabled={quotesPilotEnabled}
+              surfaceMode={quotesSurfaceMode}
+              onSurfaceModeChange={setQuotesSurfaceMode}
+            />
+          ) : activeTab === "returns" ? (
+            <SheetModeToggle
+              enabled={returnsPilotEnabled}
+              surfaceMode={returnsSurfaceMode}
+              onSurfaceModeChange={setReturnsSurfaceMode}
+            />
+          ) : null
+        }
+      >
+        <LinearWorkspacePanel value="orders">
+          {shouldShowOrdersPilotLoading ? (
+            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+              Loading orders document...
+            </div>
+          ) : shouldRenderPilotSurface(
+              ordersPilotReady,
+              surfaceMode,
+              shouldForceSheetNativeOrdersSurface
+            ) ? (
+            <Suspense
+              fallback={
+                <div className="p-4 text-sm text-muted-foreground">
+                  Loading orders...
+                </div>
+              }
             >
-              <Layers className="mr-1 h-3 w-3" />
-              Order Composer
-            </Button>
-          </div>
-        ) : null
-      }
-    >
-      <LinearWorkspacePanel value="orders">
-        {shouldShowOrdersPilotLoading ? (
-          <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
-            Loading orders document...
-          </div>
-        ) : shouldRenderPilotSurface(
-            ordersPilotReady,
-            surfaceMode,
-            shouldForceSheetNativeOrdersSurface
-          ) ? (
-          <Suspense
-            fallback={
-              <div className="p-4 text-sm text-muted-foreground">
-                Loading orders...
-              </div>
-            }
-          >
-            <PilotSurfaceBoundary fallback={<OrdersWorkSurface />}>
-              <OrdersSheetPilotSurface
-                onOpenClassic={orderId =>
-                  setLocation(
-                    buildSalesWorkspacePath("orders", {
-                      ...classicOrderContextParams,
-                      orderId: orderId ?? undefined,
-                    })
-                  )
+              <PilotSurfaceBoundary
+                fallback={
+                  <OrdersWorkSurface
+                    onNewOrder={() => setShowOrderDrawer(true)}
+                  />
                 }
-              />
-            </PilotSurfaceBoundary>
-          </Suspense>
-        ) : (
-          <OrdersWorkSurface />
-        )}
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="quotes">
-        {shouldRenderPilotSurface(quotesPilotReady, quotesSurfaceMode) ? (
+              >
+                <OrdersSheetPilotSurface
+                  onOpenClassic={orderId =>
+                    setLocation(
+                      buildSalesWorkspacePath("orders", {
+                        ...classicOrderContextParams,
+                        orderId: orderId ?? undefined,
+                      })
+                    )
+                  }
+                />
+              </PilotSurfaceBoundary>
+            </Suspense>
+          ) : (
+            <OrdersWorkSurface onNewOrder={() => setShowOrderDrawer(true)} />
+          )}
+        </LinearWorkspacePanel>
+        <LinearWorkspacePanel value="quotes">
+          {shouldRenderPilotSurface(quotesPilotReady, quotesSurfaceMode) ? (
+            <Suspense
+              fallback={
+                <div className="p-4 text-sm text-muted-foreground">
+                  Loading quotes...
+                </div>
+              }
+            >
+              <PilotSurfaceBoundary fallback={<QuotesWorkSurface />}>
+                <QuotesPilotSurface
+                  onOpenClassic={() => setQuotesSurfaceMode("classic")}
+                />
+              </PilotSurfaceBoundary>
+            </Suspense>
+          ) : (
+            <QuotesWorkSurface />
+          )}
+        </LinearWorkspacePanel>
+        <LinearWorkspacePanel value="returns">
+          {shouldRenderPilotSurface(returnsPilotReady, returnsSurfaceMode) ? (
+            <Suspense
+              fallback={
+                <div className="p-4 text-sm text-muted-foreground">
+                  Loading returns...
+                </div>
+              }
+            >
+              <PilotSurfaceBoundary fallback={returnsFallback}>
+                <ReturnsPilotSurface
+                  onOpenClassic={() => setReturnsSurfaceMode("classic")}
+                />
+              </PilotSurfaceBoundary>
+            </Suspense>
+          ) : (
+            returnsFallback
+          )}
+        </LinearWorkspacePanel>
+        <LinearWorkspacePanel value="sales-sheets">
           <Suspense
             fallback={
               <div className="p-4 text-sm text-muted-foreground">
-                Loading quotes...
+                Loading catalogue...
               </div>
             }
           >
-            <PilotSurfaceBoundary fallback={<QuotesWorkSurface />}>
-              <QuotesPilotSurface
-                onOpenClassic={() => setQuotesSurfaceMode("classic")}
-              />
-            </PilotSurfaceBoundary>
+            <SalesCatalogueSurface />
           </Suspense>
-        ) : (
-          <QuotesWorkSurface />
-        )}
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="returns">
-        {shouldRenderPilotSurface(returnsPilotReady, returnsSurfaceMode) ? (
+        </LinearWorkspacePanel>
+        <LinearWorkspacePanel value="live-shopping">
           <Suspense
             fallback={
               <div className="p-4 text-sm text-muted-foreground">
-                Loading returns...
+                Loading live shopping...
               </div>
             }
           >
-            <PilotSurfaceBoundary fallback={returnsFallback}>
-              <ReturnsPilotSurface
-                onOpenClassic={() => setReturnsSurfaceMode("classic")}
-              />
-            </PilotSurfaceBoundary>
+            <LiveShoppingPage />
           </Suspense>
-        ) : (
-          returnsFallback
-        )}
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="sales-sheets">
-        <Suspense
-          fallback={
-            <div className="p-4 text-sm text-muted-foreground">
-              Loading catalogue...
-            </div>
-          }
+        </LinearWorkspacePanel>
+        <LinearWorkspacePanel value="create-order">
+          <Suspense
+            fallback={
+              <div className="p-4 text-sm text-muted-foreground">
+                Loading order...
+              </div>
+            }
+          >
+            <SalesOrderSurface />
+          </Suspense>
+        </LinearWorkspacePanel>
+      </LinearWorkspaceShell>
+
+      {/* New Order right-side drawer — overlays the orders queue */}
+      <Sheet open={showOrderDrawer} onOpenChange={setShowOrderDrawer}>
+        <SheetContent
+          side="right"
+          className="w-[600px] sm:max-w-[600px] p-0 overflow-hidden flex flex-col"
         >
-          <SalesCatalogueSurface />
-        </Suspense>
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="live-shopping">
-        <Suspense
-          fallback={
-            <div className="p-4 text-sm text-muted-foreground">
-              Loading live shopping...
-            </div>
-          }
-        >
-          <LiveShoppingPage />
-        </Suspense>
-      </LinearWorkspacePanel>
-      <LinearWorkspacePanel value="create-order">
-        <Suspense
-          fallback={
-            <div className="p-4 text-sm text-muted-foreground">
-              Loading order...
-            </div>
-          }
-        >
-          <SalesOrderSurface />
-        </Suspense>
-      </LinearWorkspacePanel>
-    </LinearWorkspaceShell>
+          <SheetHeader className="px-5 py-4 border-b flex-shrink-0">
+            <SheetTitle className="text-base font-semibold">
+              New Order
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto">
+            <Suspense
+              fallback={
+                <div className="p-4 text-sm text-muted-foreground">
+                  Loading order form...
+                </div>
+              }
+            >
+              <SalesOrderSurface onComplete={() => setShowOrderDrawer(false)} />
+            </Suspense>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }

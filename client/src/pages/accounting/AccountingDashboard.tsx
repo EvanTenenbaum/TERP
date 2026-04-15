@@ -1,7 +1,6 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { useSearch } from "wouter";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -43,50 +42,6 @@ import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
 const RECEIVE_PAYMENT_LABEL_STORAGE_KEY =
   "accounting-dashboard-receive-payment-used";
 const OVERDUE_ALERT_THRESHOLD = 25;
-const INVOICE_FILTER_STATUSES = [
-  "DRAFT",
-  "SENT",
-  "VIEWED",
-  "PARTIAL",
-  "PAID",
-  "OVERDUE",
-  "VOID",
-] as const;
-const BILL_FILTER_STATUSES = [
-  "DRAFT",
-  "PENDING",
-  "APPROVED",
-  "PARTIAL",
-  "PAID",
-  "OVERDUE",
-  "VOID",
-] as const;
-
-function parseNumberParam(routeParams: URLSearchParams, key: string) {
-  const rawValue = routeParams.get(key);
-  if (!rawValue) return undefined;
-  const parsed = Number(rawValue);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function parseDateParam(routeParams: URLSearchParams, key: string) {
-  const rawValue = routeParams.get(key);
-  if (!rawValue) return undefined;
-  const parsed = new Date(rawValue);
-  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
-}
-
-function parseEnumParam<TValue extends readonly string[]>(
-  routeParams: URLSearchParams,
-  key: string,
-  validValues: TValue
-): TValue[number] | undefined {
-  const rawValue = routeParams.get(key);
-  if (!rawValue) return undefined;
-  return validValues.includes(rawValue as TValue[number])
-    ? (rawValue as TValue[number])
-    : undefined;
-}
 
 interface OverdueInvoice {
   id: number;
@@ -119,20 +74,16 @@ interface ExpenseBreakdownItem {
 interface RecentInvoice {
   id: number;
   invoiceNumber: string;
-  customerId?: number | null;
   invoiceDate?: string | Date | null;
   totalAmount: string | number;
-  amountDue?: string | number;
   status: string;
 }
 
 interface RecentBill {
   id: number;
   billNumber: string;
-  vendorId?: number | null;
   billDate?: string | Date | null;
   totalAmount: string | number;
-  amountDue?: string | number;
   status: string;
 }
 
@@ -147,8 +98,6 @@ interface RecentPayment {
 export default function AccountingDashboard({
   embedded,
 }: { embedded?: boolean } = {}) {
-  const routeSearch = useSearch();
-  const routeParams = useMemo(() => new URLSearchParams(routeSearch), [routeSearch]);
   // WS-001 & WS-002: Quick Action Modal State
   const [receivePaymentOpen, setReceivePaymentOpen] = useState(false);
   const [payVendorOpen, setPayVendorOpen] = useState(false);
@@ -160,46 +109,6 @@ export default function AccountingDashboard({
     }
   });
   const utils = trpc.useUtils();
-
-  const invoiceListInput = useMemo(
-    () => ({
-      customerId: parseNumberParam(routeParams, "clientId"),
-      status: parseEnumParam(routeParams, "status", INVOICE_FILTER_STATUSES),
-      startDate: parseDateParam(routeParams, "from"),
-      endDate: parseDateParam(routeParams, "to"),
-      searchTerm: routeParams.get("search") || undefined,
-      limit: 100,
-      offset: 0,
-    }),
-    [routeParams]
-  );
-
-  const billListInput = useMemo(
-    () => ({
-      vendorId: parseNumberParam(routeParams, "vendorId"),
-      status: parseEnumParam(routeParams, "status", BILL_FILTER_STATUSES),
-      startDate: parseDateParam(routeParams, "from"),
-      endDate: parseDateParam(routeParams, "to"),
-      searchTerm: routeParams.get("search") || undefined,
-      limit: 100,
-      offset: 0,
-    }),
-    [routeParams]
-  );
-
-  const paymentListInput = useMemo(
-    () => ({
-      customerId: parseNumberParam(routeParams, "clientId"),
-      vendorId: parseNumberParam(routeParams, "vendorId"),
-      invoiceId: parseNumberParam(routeParams, "invoiceId"),
-      billId: parseNumberParam(routeParams, "billId"),
-      startDate: parseDateParam(routeParams, "from"),
-      endDate: parseDateParam(routeParams, "to"),
-      limit: 100,
-      offset: 0,
-    }),
-    [routeParams]
-  );
 
   // Fetch dashboard data
   // BUG-092 fix: Add error handling to prevent widgets stuck on "Loading..."
@@ -219,11 +128,9 @@ export default function AccountingDashboard({
     retry: 2,
     retryDelay: 1000,
   });
-  const { data: recentInvoices } =
-    trpc.accounting.invoices.list.useQuery(invoiceListInput);
-  const { data: recentBills } = trpc.accounting.bills.list.useQuery(billListInput);
-  const { data: recentPayments } =
-    trpc.accounting.payments.list.useQuery(paymentListInput);
+  const { data: recentInvoices } = trpc.accounting.invoices.list.useQuery({});
+  const { data: recentBills } = trpc.accounting.bills.list.useQuery({});
+  const { data: recentPayments } = trpc.accounting.payments.list.useQuery({});
   const { data: expenseBreakdown } =
     trpc.accounting.expenses.getBreakdownByCategory.useQuery({});
 
@@ -270,82 +177,15 @@ export default function AccountingDashboard({
     }).format(num);
   };
 
-  const parseAmount = (amount: string | number | undefined) => {
-    if (amount === undefined) return 0;
-    const value = typeof amount === "string" ? Number.parseFloat(amount) : amount;
-    return Number.isFinite(value) ? value : 0;
-  };
-
   // Calculate totals - extract from paginated response objects { items: [], pagination: { total } }
-  const invoiceList = useMemo(() => recentInvoices?.items ?? [], [recentInvoices]);
-  const billList = useMemo(() => recentBills?.items ?? [], [recentBills]);
+  const invoiceList = recentInvoices?.items ?? [];
+  const billList = recentBills?.items ?? [];
   // Get recent items (last 5)
   const recentInvoicesList = invoiceList.slice(0, 5);
   const recentBillsList = billList.slice(0, 5);
   const recentPaymentsList = (recentPayments?.items ?? []).slice(0, 5);
   const overdueInvoiceCount = overdueInvoices?.pagination?.total || 0;
   const overdueBillCount = overdueBills?.pagination?.total || 0;
-  const activeDashboardFilters = useMemo(() => {
-    return [
-      "status",
-      "clientId",
-      "vendorId",
-      "orderId",
-      "invoiceId",
-      "billId",
-      "from",
-      "to",
-      "periodId",
-    ].filter(key => routeParams.has(key));
-  }, [routeParams]);
-  const hasArScopedFilters = useMemo(
-    () =>
-      Boolean(
-        invoiceListInput.customerId ??
-          invoiceListInput.status ??
-          invoiceListInput.startDate ??
-          invoiceListInput.endDate ??
-          invoiceListInput.searchTerm
-      ),
-    [invoiceListInput]
-  );
-  const hasApScopedFilters = useMemo(
-    () =>
-      Boolean(
-        billListInput.vendorId ??
-          billListInput.status ??
-          billListInput.startDate ??
-          billListInput.endDate ??
-          billListInput.searchTerm
-      ),
-    [billListInput]
-  );
-  const filteredArTotal = useMemo(
-    () =>
-      invoiceList.reduce(
-        (sum, invoice) =>
-          sum + parseAmount(invoice.amountDue ?? invoice.totalAmount),
-        0
-      ),
-    [invoiceList]
-  );
-  const filteredApTotal = useMemo(
-    () =>
-      billList.reduce(
-        (sum, bill) => sum + parseAmount(bill.amountDue ?? bill.totalAmount),
-        0
-      ),
-    [billList]
-  );
-  const displayArTotal = hasArScopedFilters ? filteredArTotal : arSummary?.totalAR;
-  const displayApTotal = hasApScopedFilters ? filteredApTotal : apSummary?.totalAP;
-  const displayOverdueInvoiceCount = hasArScopedFilters
-    ? invoiceList.filter(invoice => invoice.status === "OVERDUE").length
-    : overdueInvoiceCount;
-  const displayOverdueBillCount = hasApScopedFilters
-    ? billList.filter(bill => bill.status === "OVERDUE").length
-    : overdueBillCount;
-  const summaryCardsReflectFilters = hasArScopedFilters || hasApScopedFilters;
 
   const navigateTo = (path: string) => {
     window.location.href = path;
@@ -361,36 +201,98 @@ export default function AccountingDashboard({
   };
 
   return (
-    <div className="flex flex-col gap-3 p-3" data-testid="accounting-dashboard">
+    <div className="flex flex-col gap-4 p-3" data-testid="accounting-dashboard">
       {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
-      <div className="space-y-1">
-        <Badge variant="outline" className="w-fit text-[10px] uppercase tracking-[0.16em]">
-          {summaryCardsReflectFilters
-            ? "Filtered accounting activity"
-            : "All accounting activity"}
-        </Badge>
-        <h1 className="text-xl font-bold tracking-tight">
-          Accounting Dashboard
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Start with the two finance actions that move cash today, then work
-          through invoices, bills, and ledger detail.
-        </p>
-        {activeDashboardFilters.length > 0 ? (
-          <p className="text-xs text-muted-foreground">
-            Summary cards now reflect {activeDashboardFilters.join(", ")} so the
-            dashboard matches the active accounting filters.
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            Summary cards show all accounting activity until a route filter narrows
-            the working set.
-          </p>
-        )}
-      </div>
+      <Card className="overflow-hidden border-slate-200 bg-gradient-to-br from-slate-50 via-background to-amber-50/35 shadow-sm">
+        <CardContent className="space-y-4 p-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-1.5">
+              <Badge
+                variant="outline"
+                className="w-fit border-slate-300 bg-white/80 text-slate-700"
+              >
+                Finance control center
+              </Badge>
+              <div className="space-y-1">
+                <h1 className="text-xl font-semibold tracking-tight">
+                  Accounting Dashboard
+                </h1>
+                <p className="max-w-2xl text-sm text-muted-foreground">
+                  Start with the cash-moving work, then drop into invoices,
+                  bills, and ledger analysis only when you need it.
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                className="bg-green-600 hover:bg-green-700"
+                onClick={() => {
+                  markReceivePaymentUsed();
+                  setReceivePaymentOpen(true);
+                }}
+              >
+                {hasUsedReceivePayment ? "Quick Pay" : "Record Payment"}
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => setPayVendorOpen(true)}
+              >
+                Pay Supplier
+              </Button>
+            </div>
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-xl border border-emerald-200 bg-white/90 p-3 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                Receivables
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-emerald-700">
+                {formatCurrency(arSummary?.totalAR)}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                <span className={overdueInvoiceCount > 0 ? "text-red-600 font-bold" : ""}>
+                  {overdueInvoiceCount} overdue invoice
+                  {overdueInvoiceCount === 1 ? "" : "s"}
+                </span>{" "}
+                ready for follow-up
+              </p>
+            </div>
+            <div className="rounded-xl border border-red-200 bg-white/90 p-3 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                Payables
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-red-600">
+                {formatCurrency(apSummary?.totalAP)}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                <span className={overdueBillCount > 0 ? "text-red-600 font-bold" : ""}>
+                  {overdueBillCount} overdue bill
+                  {overdueBillCount === 1 ? "" : "s"}
+                </span>{" "}
+                need attention
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm">
+              <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                Queue pressure
+              </p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900">
+                {recentInvoicesList.length +
+                  recentBillsList.length +
+                  recentPaymentsList.length}
+              </p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Recent invoices, bills, and payments currently visible in the
+                dashboard.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {overdueInvoiceCount > OVERDUE_ALERT_THRESHOLD && (
-        <Card className="border-red-200 bg-red-50/70">
+        <Card className="border-red-200 bg-red-50/70 shadow-sm">
           <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 text-red-600" />
@@ -417,9 +319,9 @@ export default function AccountingDashboard({
         </Card>
       )}
 
-      <div className="grid gap-2 xl:grid-cols-[1.5fr_1fr]">
-        <Card className="border-green-200 bg-green-50/60">
-          <CardHeader className="space-y-1">
+      <div className="grid gap-3 xl:grid-cols-[1.5fr_1fr]">
+        <Card className="border-green-200 bg-green-50/60 shadow-sm">
+          <CardHeader className="space-y-2">
             <Badge
               variant="outline"
               className="w-fit border-green-300 bg-white/80 text-green-700"
@@ -438,24 +340,24 @@ export default function AccountingDashboard({
                   <ArrowDownCircle className="h-5 w-5 text-green-600" />
                 </div>
                 <div className="mt-2 space-y-1">
-                  <p className="text-lg font-semibold text-green-700">
-                    {formatCurrency(displayArTotal)}
+                  <p className="text-lg font-semibold text-emerald-700">
+                    {formatCurrency(arSummary?.totalAR)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {displayOverdueInvoiceCount} overdue invoice
-                    {displayOverdueInvoiceCount === 1 ? "" : "s"} ready for follow-up
+                    <span className={overdueInvoiceCount > 0 ? "text-red-600 font-bold" : ""}>
+                      {overdueInvoiceCount} overdue invoice
+                      {overdueInvoiceCount === 1 ? "" : "s"}
+                    </span>{" "}
+                    ready for follow-up
                   </p>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Button
-                    className="bg-green-600 hover:bg-green-700"
-                    onClick={() => {
-                      markReceivePaymentUsed();
-                      setReceivePaymentOpen(true);
-                    }}
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className="border-green-200 bg-green-50 text-green-700"
                   >
-                    {hasUsedReceivePayment ? "Quick Pay" : "Record Payment"}
-                  </Button>
+                    Primary action lives above
+                  </Badge>
                   <Button
                     variant="outline"
                     onClick={() => navigateTo("/accounting?tab=invoices")}
@@ -477,21 +379,24 @@ export default function AccountingDashboard({
                   <ArrowUpCircle className="h-5 w-5 text-amber-600" />
                 </div>
                 <div className="mt-2 space-y-1">
-                  <p className="text-lg font-semibold text-amber-700">
-                    {formatCurrency(displayApTotal)}
+                  <p className="text-lg font-semibold text-red-600">
+                    {formatCurrency(apSummary?.totalAP)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {displayOverdueBillCount} overdue bill
-                    {displayOverdueBillCount === 1 ? "" : "s"} need attention
+                    <span className={overdueBillCount > 0 ? "text-red-600 font-bold" : ""}>
+                      {overdueBillCount} overdue bill
+                      {overdueBillCount === 1 ? "" : "s"}
+                    </span>{" "}
+                    need attention
                   </p>
                 </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Button
-                    variant="destructive"
-                    onClick={() => setPayVendorOpen(true)}
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className="border-amber-200 bg-amber-50 text-amber-700"
                   >
-                    Pay Supplier
-                  </Button>
+                    Primary action lives above
+                  </Badge>
                   <Button
                     variant="outline"
                     onClick={() => navigateTo("/accounting?tab=bills")}
@@ -504,8 +409,8 @@ export default function AccountingDashboard({
           </CardHeader>
         </Card>
 
-        <Card>
-          <CardHeader>
+        <Card className="shadow-sm">
+          <CardHeader className="space-y-2">
             <CardTitle>More finance tasks</CardTitle>
             <CardDescription>
               Use these after the payment queues are under control.
@@ -726,7 +631,7 @@ export default function AccountingDashboard({
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-sm font-mono font-bold text-orange-600">
+                      <span className="text-sm font-mono font-bold text-red-600">
                         {formatCurrency(vendor.totalOwed)}
                       </span>
                       <p className="text-xs text-muted-foreground">
@@ -776,7 +681,7 @@ export default function AccountingDashboard({
           </Button>
         </div>
         <TabsContent value="overdue-invoices">
-          <Card>
+          <Card className="shadow-sm">
             <CardContent className="pt-6">
               {overdueInvoices?.items && overdueInvoices.items.length > 0 ? (
                 <Table>
@@ -878,7 +783,7 @@ export default function AccountingDashboard({
           </Card>
         </TabsContent>
         <TabsContent value="overdue-bills">
-          <Card>
+          <Card className="shadow-sm">
             <CardContent className="pt-6">
               {overdueBills?.items && overdueBills.items.length > 0 ? (
                 <Table>
@@ -914,7 +819,7 @@ export default function AccountingDashboard({
                             {bill.daysOverdue} days
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right font-mono font-bold text-orange-600">
+                        <TableCell className="text-right font-mono font-bold text-red-600">
                           {formatCurrency(bill.amountDue)}
                         </TableCell>
                       </TableRow>
@@ -963,7 +868,7 @@ export default function AccountingDashboard({
         </div>
 
         <TabsContent value="queue-focus">
-          <Card className="border-dashed">
+          <Card className="border-dashed shadow-sm">
             <CardHeader>
               <CardTitle>Queue-first landing</CardTitle>
               <CardDescription>
@@ -981,7 +886,7 @@ export default function AccountingDashboard({
           {expenseBreakdown &&
             Array.isArray(expenseBreakdown) &&
             expenseBreakdown.length > 0 && (
-              <Card>
+              <Card className="shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Expense Breakdown by Category</CardTitle>
                   <Button
@@ -1031,7 +936,7 @@ export default function AccountingDashboard({
       {/* Recent Activity */}
       <div className="grid gap-2 md:grid-cols-3">
         {/* Recent Invoices */}
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Invoices</CardTitle>
             <Button
@@ -1077,7 +982,7 @@ export default function AccountingDashboard({
         </Card>
 
         {/* Recent Bills */}
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Bills</CardTitle>
             <Button
@@ -1119,7 +1024,7 @@ export default function AccountingDashboard({
         </Card>
 
         {/* Recent Payments */}
-        <Card>
+        <Card className="shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Payments</CardTitle>
             <Button

@@ -61,7 +61,8 @@ export function PricingContextPanel({
 
     const { client } = context;
     const availableAfterOrder = client.availableCredit - orderTotal;
-    const exceedsCredit = client.creditLimit > 0 && orderTotal > client.availableCredit;
+    const exceedsCredit =
+      client.creditLimit > 0 && orderTotal > client.availableCredit;
     const utilizationPercent =
       client.creditLimit > 0
         ? ((client.totalOwed + orderTotal) / client.creditLimit) * 100
@@ -318,10 +319,20 @@ export function PricingContextPanel({
             {client.cogsAdjustmentType !== "NONE" && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">COGS Adjustment</span>
-                <Badge variant="secondary">
-                  {client.cogsAdjustmentType === "PERCENTAGE"
-                    ? `${client.cogsAdjustmentValue}%`
-                    : `$${client.cogsAdjustmentValue}`}
+                <Badge
+                  variant={
+                    client.cogsAdjustmentType === "PERCENTAGE_INCREASE" ||
+                    client.cogsAdjustmentType === "FIXED_INCREASE"
+                      ? "destructive"
+                      : "secondary"
+                  }
+                >
+                  {/* Legacy "PERCENTAGE"/"FIXED_AMOUNT" values treated as decrease */}
+                  {client.cogsAdjustmentType === "PERCENTAGE" ||
+                  client.cogsAdjustmentType === "PERCENTAGE_DECREASE" ||
+                  client.cogsAdjustmentType === "PERCENTAGE_INCREASE"
+                    ? `${client.cogsAdjustmentValue}% COGS ${client.cogsAdjustmentType === "PERCENTAGE_INCREASE" ? "Increase" : "Decrease"}`
+                    : `$${client.cogsAdjustmentValue} COGS ${client.cogsAdjustmentType === "FIXED_INCREASE" ? "Increase" : "Decrease"}`}
                 </Badge>
               </div>
             )}
@@ -358,8 +369,8 @@ export function PricingContextPanel({
               <Alert>
                 <AlertTriangle className="h-4 w-4 text-yellow-600" />
                 <AlertDescription>
-                  Oldest outstanding debt: <strong>{client.oldestDebtDays}</strong>{" "}
-                  days old
+                  Oldest outstanding debt:{" "}
+                  <strong>{client.oldestDebtDays}</strong> days old
                 </AlertDescription>
               </Alert>
             )}

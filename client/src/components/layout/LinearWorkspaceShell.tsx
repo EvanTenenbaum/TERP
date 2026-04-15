@@ -7,7 +7,6 @@ import {
   type ReactNode,
 } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { WorkspacePanelSkeleton } from "@/components/ui/operational-states";
 import { cn } from "@/lib/utils";
 
 export interface LinearWorkspaceTab<T extends string = string> {
@@ -42,11 +41,23 @@ const LinearWorkspaceTransitionContext = createContext<{
 
 function LinearWorkspaceTransitionSkeleton() {
   return (
-    <WorkspacePanelSkeleton
+    <div
       data-testid="workspace-transition-skeleton"
-      eyebrow="Loading workspace content"
-      title="Refreshing the active workspace surface"
-    />
+      className="space-y-4 rounded-2xl border border-border/60 bg-card/90 p-4 shadow-sm"
+      aria-live="polite"
+      aria-label="Loading workspace content"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="h-4 w-36 animate-pulse rounded-full bg-muted" />
+        <div className="h-8 w-28 animate-pulse rounded-full bg-muted/80" />
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        <div className="h-16 animate-pulse rounded-xl bg-muted/80" />
+        <div className="h-16 animate-pulse rounded-xl bg-muted/80" />
+        <div className="h-16 animate-pulse rounded-xl bg-muted/80" />
+      </div>
+      <div className="h-72 animate-pulse rounded-2xl bg-muted/70" />
+    </div>
   );
 }
 
@@ -120,41 +131,47 @@ export function LinearWorkspaceShell<T extends string>({
       data-density={density}
     >
       {showHeader && (
-        <div className="linear-workspace-strip">
-          <header className="linear-workspace-header linear-workspace-strip-main">
-            <div className="linear-workspace-heading">
+        <header className="linear-workspace-header">
+          <div className="linear-workspace-title-wrap">
+            <p className="linear-workspace-eyebrow">
               {section ? (
-                <span className="linear-workspace-section-pill">{section}</span>
+                <>
+                  <span className="linear-workspace-eyebrow-section">
+                    {section}
+                  </span>
+                  <span className="linear-workspace-eyebrow-sep" aria-hidden>
+                    {" "}
+                    /{" "}
+                  </span>
+                </>
               ) : null}
-              <div className="linear-workspace-heading-copy">
-                <div className="linear-workspace-title-line">
-                  <p className="linear-workspace-eyebrow">Workspace</p>
-                  <h1 className="linear-workspace-title">{title}</h1>
-                </div>
-                {description ? (
-                  <p className="linear-workspace-description">{description}</p>
-                ) : null}
-              </div>
+              Workspace
+            </p>
+            <div>
+              <h1 className="linear-workspace-title">{title}</h1>
+              {description ? (
+                <p className="linear-workspace-description">{description}</p>
+              ) : null}
             </div>
-            {showMeta ? (
-              <div
-                className="linear-workspace-meta linear-workspace-meta-cluster"
-                aria-label="Workspace metadata"
-              >
-                {meta.map(item => (
-                  <div key={item.label} className="linear-workspace-meta-item">
-                    <span className="linear-workspace-meta-label">
-                      {item.label}
-                    </span>
-                    <span className="linear-workspace-meta-value">
-                      {item.value}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </header>
-        </div>
+          </div>
+          {showMeta && (
+            <div
+              className="linear-workspace-meta"
+              aria-label="Workspace metadata"
+            >
+              {meta.map(item => (
+                <div key={item.label} className="linear-workspace-meta-item">
+                  <span className="linear-workspace-meta-label">
+                    {item.label}
+                  </span>
+                  <span className="linear-workspace-meta-value">
+                    {item.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </header>
       )}
 
       <LinearWorkspaceTransitionContext.Provider
@@ -166,10 +183,7 @@ export function LinearWorkspaceShell<T extends string>({
           className="linear-workspace-tabs"
         >
           {showTabRow ? (
-            <div
-              className="linear-workspace-tab-row"
-              data-has-context={showHeader || showMeta ? "true" : "false"}
-            >
+            <div className="linear-workspace-tab-row">
               {showTabs ? (
                 <div className="linear-workspace-tabs-stack">
                   <div

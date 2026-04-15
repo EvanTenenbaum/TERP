@@ -1647,7 +1647,11 @@ export const creditLimitSourceEnum = mysqlEnum("creditLimitSource", [
 export const cogsAdjustmentTypeEnum = mysqlEnum("cogsAdjustmentType", [
   "NONE",
   "PERCENTAGE",
+  "PERCENTAGE_DECREASE",
+  "PERCENTAGE_INCREASE",
   "FIXED_AMOUNT",
+  "FIXED_DECREASE",
+  "FIXED_INCREASE",
 ]);
 
 /**

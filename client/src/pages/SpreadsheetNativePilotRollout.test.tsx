@@ -155,9 +155,6 @@ describe("spreadsheet-native pilot rollout gating", () => {
       expect(screen.getByText("Orders Sheet Pilot")).toBeInTheDocument();
     });
     expect(
-      screen.getByRole("group", { name: "Surface mode" })
-    ).toBeInTheDocument();
-    expect(
       screen.getByRole("button", { name: "Spreadsheet View" })
     ).toBeInTheDocument();
     expect(

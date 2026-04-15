@@ -24,9 +24,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isMockCondition(value: unknown): value is MockCondition {
   return (
-    isRecord(value) &&
-    typeof value.op === "string" &&
-    isColumnLike(value.col)
+    isRecord(value) && typeof value.op === "string" && isColumnLike(value.col)
   );
 }
 
@@ -34,7 +32,9 @@ function isSqlLike(value: unknown): value is { queryChunks: unknown[] } {
   return isRecord(value) && Array.isArray(value.queryChunks);
 }
 
-function isColumnLike(value: unknown): value is { table?: unknown; name: string } {
+function isColumnLike(
+  value: unknown
+): value is { table?: unknown; name: string } {
   return isRecord(value) && typeof value.name === "string";
 }
 

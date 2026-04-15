@@ -8,10 +8,6 @@ import { ACCOUNTING_WORKSPACE } from "@/config/workspaces";
 import AccountingDashboard from "@/pages/accounting/AccountingDashboard";
 import { lazy } from "react";
 import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
-import {
-  WorkspaceCommandStripLink,
-  WorkspacePanelSkeleton,
-} from "@/components/ui/operational-states";
 
 // All unified surfaces
 const InvoicesSurface = lazy(
@@ -58,56 +54,25 @@ export default function AccountingWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={ACCOUNTING_WORKSPACE.title}
-      description={ACCOUNTING_WORKSPACE.description}
+      description="Keep invoices, bills, payments, and ledger work in one queue-first finance workspace."
       section="Finance"
       activeTab={activeTab}
       tabs={ACCOUNTING_WORKSPACE.tabs}
       onTabChange={setActiveTab}
       meta={[
         {
-          label: "Financial period",
-          value: activeTab === "fiscal-periods" ? "Period controls" : "Current fiscal year",
+          label: "Cash in",
+          value: "Select an invoice, then record payment",
         },
         {
-          label: "Active lane",
-          value:
-            activeTab === "dashboard"
-              ? "Receivables and payables summary"
-              : activeTab === "payments"
-                ? "Cash application"
-                : activeTab === "general-ledger"
-                  ? "Ledger review"
-                  : "Accounting operations",
+          label: "Cash out",
+          value: "Pay suppliers, then confirm the ledger",
         },
         {
-          label: "Flow",
+          label: "Ledger flow",
           value: "Invoice -> Payment -> General Ledger",
         },
       ]}
-      commandStrip={
-        <div className="flex flex-wrap items-center gap-2">
-          <WorkspaceCommandStripLink
-            label="Dashboard"
-            onClick={() => setActiveTab("dashboard")}
-            active={activeTab === "dashboard"}
-          />
-          <WorkspaceCommandStripLink
-            label="Invoices"
-            onClick={() => setActiveTab("invoices")}
-            active={activeTab === "invoices"}
-          />
-          <WorkspaceCommandStripLink
-            label="Payments"
-            onClick={() => setActiveTab("payments")}
-            active={activeTab === "payments"}
-          />
-          <WorkspaceCommandStripLink
-            label="Periods"
-            onClick={() => setActiveTab("fiscal-periods")}
-            active={activeTab === "fiscal-periods"}
-          />
-        </div>
-      }
     >
       <LinearWorkspacePanel value="dashboard">
         <AccountingDashboard embedded />
@@ -115,10 +80,7 @@ export default function AccountingWorkspacePage() {
       <LinearWorkspacePanel value="invoices">
         <PilotSurfaceBoundary
           fallback={
-            <WorkspacePanelSkeleton
-              title="Loading invoices"
-              data-testid="accounting-invoices-skeleton"
-            />
+            <div className="p-4 text-muted-foreground">Loading invoices...</div>
           }
         >
           <InvoicesSurface />
@@ -127,10 +89,7 @@ export default function AccountingWorkspacePage() {
       <LinearWorkspacePanel value="bills">
         <PilotSurfaceBoundary
           fallback={
-            <WorkspacePanelSkeleton
-              title="Loading bills"
-              data-testid="accounting-bills-skeleton"
-            />
+            <div className="p-4 text-muted-foreground">Loading bills...</div>
           }
         >
           <BillsSurface />
@@ -139,10 +98,7 @@ export default function AccountingWorkspacePage() {
       <LinearWorkspacePanel value="payments">
         <PilotSurfaceBoundary
           fallback={
-            <WorkspacePanelSkeleton
-              title="Loading payments"
-              data-testid="accounting-payments-skeleton"
-            />
+            <div className="p-4 text-muted-foreground">Loading payments...</div>
           }
         >
           <PaymentsSurface />
@@ -150,42 +106,64 @@ export default function AccountingWorkspacePage() {
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="general-ledger">
         <PilotSurfaceBoundary
-          fallback={<WorkspacePanelSkeleton title="Loading general ledger" />}
+          fallback={
+            <div className="p-4 text-muted-foreground">
+              Loading general ledger...
+            </div>
+          }
         >
           <GeneralLedgerSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="chart-of-accounts">
         <PilotSurfaceBoundary
-          fallback={<WorkspacePanelSkeleton title="Loading chart of accounts" />}
+          fallback={
+            <div className="p-4 text-muted-foreground">
+              Loading chart of accounts...
+            </div>
+          }
         >
           <ChartOfAccountsSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="expenses">
         <PilotSurfaceBoundary
-          fallback={<WorkspacePanelSkeleton title="Loading expenses" />}
+          fallback={
+            <div className="p-4 text-muted-foreground">Loading expenses...</div>
+          }
         >
           <ExpensesSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="bank-accounts">
         <PilotSurfaceBoundary
-          fallback={<WorkspacePanelSkeleton title="Loading bank accounts" />}
+          fallback={
+            <div className="p-4 text-muted-foreground">
+              Loading bank accounts...
+            </div>
+          }
         >
           <BankAccountsSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="bank-transactions">
         <PilotSurfaceBoundary
-          fallback={<WorkspacePanelSkeleton title="Loading bank transactions" />}
+          fallback={
+            <div className="p-4 text-muted-foreground">
+              Loading bank transactions...
+            </div>
+          }
         >
           <BankTransactionsSurface />
         </PilotSurfaceBoundary>
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="fiscal-periods">
         <PilotSurfaceBoundary
-          fallback={<WorkspacePanelSkeleton title="Loading fiscal periods" />}
+          fallback={
+            <div className="p-4 text-muted-foreground">
+              Loading fiscal periods...
+            </div>
+          }
         >
           <FiscalPeriodsSurface />
         </PilotSurfaceBoundary>

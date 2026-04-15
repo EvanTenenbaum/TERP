@@ -25,7 +25,7 @@ interface SavedView {
 }
 
 interface SavedViewsDropdownProps {
-  onApplyView: (filters: InventoryFilters) => void;
+  onApplyView: (filters: Partial<InventoryFilters>) => void;
 }
 
 export function SavedViewsDropdown({ onApplyView }: SavedViewsDropdownProps) {

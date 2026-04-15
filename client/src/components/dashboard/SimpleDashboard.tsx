@@ -4,15 +4,17 @@
  * Simplified fixed 6-card dashboard replacing the customizable widget system.
  * Cards: Today's Orders, Open Invoices, Inventory Alerts, Pending Intake,
  *        Calendar Today, Quick Stats
+ *
+ * Wave 4 (420-fork): Added WorkQueue as primary content above KPI cards,
+ * plus a compact quick stats strip.
  */
 
-import { memo, useEffect, useState } from "react";
+import { memo, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
-import { formatDistanceToNow } from "date-fns";
 import {
   ShoppingCart,
   FileText,
@@ -21,22 +23,12 @@ import {
   Calendar,
   TrendingUp,
   ArrowRight,
-  Clock3,
-  DollarSign,
-  Truck,
+  Clock,
+  TrendingDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  buildDashboardActivityFeed,
-  buildDashboardOperationalKpis,
-  DASHBOARD_ACTIVITY_STORAGE_KEY,
-  type DashboardActivityItem,
-  type DashboardAppointmentSummary,
-  type DashboardOrderSummary,
-  type DashboardPaymentSummary,
-  type DashboardPurchaseOrderSummary,
-} from "./dashboardActivity";
+import { WorkQueue, type WorkQueueItem } from "@/components/dashboard/WorkQueue";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -47,14 +39,6 @@ function formatCurrency(value: number): string {
   }).format(value);
 }
 
-function formatDate(): string {
-  return new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 // --- Today's Orders Card ---
 const TodaysOrdersCard = memo(function TodaysOrdersCard() {
@@ -212,16 +196,16 @@ const InventoryAlertsCard = memo(function InventoryAlertsCard() {
 });
 
 // --- Pending Intake Card ---
-const PendingIntakeCard = memo(function PendingIntakeCard({
-  purchaseOrders,
-  isLoading,
-}: {
-  purchaseOrders: DashboardPurchaseOrderSummary[];
-  isLoading: boolean;
-}) {
+const PendingIntakeCard = memo(function PendingIntakeCard() {
   const [, setLocation] = useLocation();
-  const pendingCount = purchaseOrders.filter(
-    po =>
+  const { data, isLoading } = trpc.purchaseOrders.getAll.useQuery(
+    { limit: 100, offset: 0 },
+    { refetchInterval: 60000 }
+  );
+
+  const items = Array.isArray(data) ? data : (data?.items ?? []);
+  const pendingCount = items.filter(
+    (po: { purchaseOrderStatus?: string }) =>
       po.purchaseOrderStatus === "SENT" ||
       po.purchaseOrderStatus === "CONFIRMED" ||
       po.purchaseOrderStatus === "RECEIVING"
@@ -263,24 +247,23 @@ const PendingIntakeCard = memo(function PendingIntakeCard({
 });
 
 // --- Calendar Today Card ---
-const CalendarTodayCard = memo(function CalendarTodayCard({
-  appointments,
-  isLoading,
-}: {
-  appointments: DashboardAppointmentSummary[];
-  isLoading: boolean;
-}) {
+const CalendarTodayCard = memo(function CalendarTodayCard() {
   const [, setLocation] = useLocation();
+  const { data, isLoading } = trpc.appointmentRequests.list.useQuery(
+    { limit: 20, offset: 0 },
+    { refetchInterval: 60000 }
+  );
+
   const now = new Date();
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
-  const todayAppts = appointments.filter(req => {
+  const todayAppts =
+    data?.requests.filter(req => {
       if (req.status === "rejected" || req.status === "cancelled") return false;
-      if (!req.requestedSlot) return false;
       const slot = new Date(req.requestedSlot);
       return slot >= todayStart && slot < todayEnd;
-    });
+    }) ?? [];
 
   const nextAppt = todayAppts[0];
 
@@ -303,7 +286,7 @@ const CalendarTodayCard = memo(function CalendarTodayCard({
             <div className="text-2xl font-bold">{todayAppts.length}</div>
             <p className="text-xs text-muted-foreground mt-1">
               {nextAppt
-                ? `Next: ${nextAppt.clientName ?? "Appointment"} at ${new Date(nextAppt.requestedSlot ?? Date.now()).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+                ? `Next: ${nextAppt.clientName ?? "Appointment"} at ${new Date(nextAppt.requestedSlot).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
                 : "No appointments today"}
             </p>
             <Button
@@ -321,29 +304,227 @@ const CalendarTodayCard = memo(function CalendarTodayCard({
   );
 });
 
-// --- Operational KPIs Card ---
-const OperationalKpisCard = memo(function OperationalKpisCard({
-  orders,
-  purchaseOrders,
-  appointments,
-  isLoading,
-}: {
-  orders: DashboardOrderSummary[];
-  purchaseOrders: DashboardPurchaseOrderSummary[];
-  appointments: DashboardAppointmentSummary[];
-  isLoading: boolean;
-}) {
-  const metrics = buildDashboardOperationalKpis({
-    orders,
-    purchaseOrders,
-    appointments,
-  });
+// --- Work Queue Section ---
+const WorkQueueSection = memo(function WorkQueueSection() {
+
+  const { data: draftOrdersData, isLoading: draftLoading } =
+    trpc.orders.getAll.useQuery(
+      { isDraft: true },
+      { refetchInterval: 60000 }
+    );
+
+  const { data: invoiceSummary, isLoading: invoiceLoading } =
+    trpc.invoices.getSummary.useQuery(undefined, { refetchInterval: 60000 });
+
+  const { data: inventoryStats, isLoading: inventoryLoading } =
+    trpc.inventory.dashboardStats.useQuery(undefined, { refetchInterval: 60000 });
+
+  const { data: posData, isLoading: posLoading } =
+    trpc.purchaseOrders.getAll.useQuery(
+      { limit: 100, offset: 0 },
+      { refetchInterval: 60000 }
+    );
+
+  const isLoading =
+    draftLoading || invoiceLoading || inventoryLoading || posLoading;
+
+  const items: WorkQueueItem[] = useMemo(() => {
+    const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const result: WorkQueueItem[] = [];
+
+    // 1. Stale draft orders (isDraft=true, createdAt >24h ago)
+    const allDrafts = Array.isArray(draftOrdersData)
+      ? draftOrdersData
+      : (draftOrdersData?.items ?? []);
+    const staleDrafts = allDrafts.filter((o: { createdAt?: string | Date | null }) => {
+      if (!o.createdAt) return false;
+      const created = new Date(o.createdAt);
+      return created < cutoff24h;
+    });
+    if (staleDrafts.length > 0) {
+      result.push({
+        id: "stale-drafts",
+        urgency: staleDrafts.length > 5 ? "critical" : "warning",
+        icon: Clock,
+        label: `${staleDrafts.length} order${staleDrafts.length !== 1 ? "s" : ""} awaiting confirmation — draft >24h`,
+        count: staleDrafts.length,
+        href: buildSalesWorkspacePath("orders"),
+      });
+    }
+
+    // 2. Overdue invoices (status=OVERDUE in invoice summary)
+    const overdueRow = invoiceSummary?.byStatus.find(r => r.status === "OVERDUE");
+    const overdueCount = overdueRow?.count ?? 0;
+    const overdueAmount = overdueRow?.amountDue ?? 0;
+    if (overdueCount > 0) {
+      result.push({
+        id: "overdue-invoices",
+        urgency: "critical",
+        icon: FileText,
+        label: `${overdueCount} invoice${overdueCount !== 1 ? "s" : ""} overdue`,
+        count: overdueCount,
+        value: overdueAmount > 0 ? `$${overdueAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : undefined,
+        href: "/accounting?tab=invoices",
+      });
+    }
+
+    // 3. Low stock / at-risk batches
+    const statusCounts: Record<string, number> =
+      inventoryStats?.statusCounts ?? {};
+    const lowStockCount =
+      (statusCounts["QUARANTINED"] ?? 0) + (statusCounts["ON_HOLD"] ?? 0);
+    if (lowStockCount > 0) {
+      result.push({
+        id: "low-stock",
+        urgency: "warning",
+        icon: TrendingDown,
+        label: `${lowStockCount} batch${lowStockCount !== 1 ? "es" : ""} on hold or quarantined — may block open orders`,
+        count: lowStockCount,
+        href: "/inventory",
+      });
+    }
+
+    // 4. POs ready for intake
+    const posItems = Array.isArray(posData)
+      ? posData
+      : (posData?.items ?? []);
+    const posForIntake = posItems.filter(
+      (po: { purchaseOrderStatus?: string }) =>
+        po.purchaseOrderStatus === "SENT" ||
+        po.purchaseOrderStatus === "CONFIRMED" ||
+        po.purchaseOrderStatus === "RECEIVING"
+    );
+    if (posForIntake.length > 0) {
+      result.push({
+        id: "po-intake",
+        urgency: "info",
+        icon: Package,
+        label: `${posForIntake.length} PO${posForIntake.length !== 1 ? "s" : ""} ready for intake`,
+        count: posForIntake.length,
+        href: "/purchase-orders",
+      });
+    }
+
+    return result;
+  }, [draftOrdersData, invoiceSummary, inventoryStats, posData]);
+
+  return (
+    <div className="mb-6">
+      <div className="flex items-baseline justify-between mb-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+          Today&apos;s Work
+        </h2>
+        <span className="text-xs text-muted-foreground">
+          {new Date().toLocaleDateString("en-US", {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+          })}
+        </span>
+      </div>
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {isLoading ? (
+          <div className="space-y-px p-1">
+            <Skeleton className="h-11 w-full rounded" />
+            <Skeleton className="h-11 w-full rounded" />
+            <Skeleton className="h-11 w-full rounded" />
+          </div>
+        ) : (
+          <WorkQueue items={items} />
+        )}
+      </div>
+    </div>
+  );
+});
+
+// --- Quick Stats Strip ---
+const QuickStatsStrip = memo(function QuickStatsStrip() {
+  const { data: snapshot, isLoading: snapshotLoading } =
+    trpc.dashboard.getTransactionSnapshot.useQuery(undefined, {
+      refetchInterval: 60000,
+    });
+  const { data: debtData, isLoading: debtLoading } =
+    trpc.dashboard.getTotalDebt.useQuery(undefined, {
+      refetchInterval: 60000,
+    });
+  const { data: inventoryStats, isLoading: inventoryLoading } =
+    trpc.inventory.dashboardStats.useQuery(undefined, { refetchInterval: 60000 });
+
+  // Count live/active batches as a proxy for "active orders" count
+  const statusCounts: Record<string, number> =
+    inventoryStats?.statusCounts ?? {};
+  const activeBatchCount = statusCounts["LIVE"] ?? 0;
+  const arTotal = debtData?.totalDebtOwedToMe ?? 0;
+
+  // Revenue MTD: use thisMonth if available, fall back to thisWeek
+  const revenueMtd =
+    (snapshot as { thisMonth?: { sales?: number } } | undefined)?.thisMonth
+      ?.sales ?? snapshot?.thisWeek.sales;
+
+  const inventoryValue =
+    (inventoryStats as { totalValue?: number } | undefined)?.totalValue;
+
+  const isLoading = snapshotLoading || debtLoading || inventoryLoading;
+
+  const stats = [
+    {
+      label: "Revenue MTD",
+      value: isLoading
+        ? null
+        : revenueMtd !== null && revenueMtd !== undefined
+          ? formatCurrency(revenueMtd)
+          : "—",
+    },
+    {
+      label: "Open AR",
+      value: isLoading ? null : formatCurrency(arTotal),
+    },
+    {
+      label: "Inventory Value",
+      value: isLoading
+        ? null
+        : inventoryValue !== null && inventoryValue !== undefined
+          ? formatCurrency(inventoryValue)
+          : "—",
+    },
+    {
+      label: "Live Batches",
+      value: isLoading ? null : String(activeBatchCount),
+    },
+  ];
+
+  return (
+    <div className="flex items-center gap-6 px-1 mb-6 text-sm">
+      {stats.map(stat => (
+        <div key={stat.label} className="flex flex-col">
+          <span className="text-[0.68rem] uppercase tracking-wide text-muted-foreground font-medium">
+            {stat.label}
+          </span>
+          {stat.value === null ? (
+            <Skeleton className="h-5 w-16 mt-0.5" />
+          ) : (
+            <span className="text-base font-semibold tabular-nums">
+              {stat.value}
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+});
+
+// --- Quick Stats Card ---
+const QuickStatsCard = memo(function QuickStatsCard() {
+  const { data: snapshot, isLoading } =
+    trpc.dashboard.getTransactionSnapshot.useQuery(undefined, {
+      refetchInterval: 60000,
+    });
 
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
-          Operational KPIs
+          Quick Stats
         </CardTitle>
         <TrendingUp className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
@@ -355,138 +536,28 @@ const OperationalKpisCard = memo(function OperationalKpisCard({
             <Skeleton className="h-4 w-full" />
           </div>
         ) : (
-          <div className="space-y-3">
-            <div className="flex justify-between text-sm">
-              <div>
-                <p className="text-muted-foreground">Expected deliveries</p>
-                <p className="text-xs text-muted-foreground">
-                  {metrics.nextExpectedDeliveryLabel}
-                </p>
-              </div>
-              <span className="font-medium tabular-nums">
-                {metrics.expectedDeliveries}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <div>
-                <p className="text-muted-foreground">Pending fulfillment</p>
-                <p className="text-xs text-muted-foreground">
-                  Ready to pick, pack, or ship
-                </p>
-              </div>
-              <span className="font-medium tabular-nums">
-                {metrics.pendingFulfillment}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <div>
-                <p className="text-muted-foreground">Appointments today</p>
-                <p className="text-xs text-muted-foreground">
-                  {metrics.nextAppointmentLabel}
-                </p>
-              </div>
-              <span className="font-medium tabular-nums">
-                {metrics.appointmentsToday}
-              </span>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-});
-
-function getActivityIcon(item: DashboardActivityItem) {
-  switch (item.kind) {
-    case "payment":
-      return DollarSign;
-    case "intake":
-      return Truck;
-    case "order":
-    default:
-      return ShoppingCart;
-  }
-}
-
-const RecentActivityCard = memo(function RecentActivityCard({
-  orders,
-  payments,
-  purchaseOrders,
-  lastVisitedAt,
-  isLoading,
-}: {
-  orders: DashboardOrderSummary[];
-  payments: DashboardPaymentSummary[];
-  purchaseOrders: DashboardPurchaseOrderSummary[];
-  lastVisitedAt: string | null;
-  isLoading: boolean;
-}) {
-  const activityItems = buildDashboardActivityFeed({
-    orders,
-    payments,
-    purchaseOrders,
-    lastVisitedAt,
-  });
-
-  return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
-        <div>
-          <CardTitle className="text-sm font-medium text-muted-foreground">
-            Recent Activity
-          </CardTitle>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {lastVisitedAt
-              ? "Since last dashboard visit"
-              : "Last 24 hours of orders, payments, and intake"}
-          </p>
-        </div>
-        <Clock3 className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
           <div className="space-y-2">
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <Skeleton className="h-12 w-full" />
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">
+                Cash collected today
+              </span>
+              <span className="font-medium tabular-nums">
+                {formatCurrency(snapshot?.today.cashCollected ?? 0)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">This week</span>
+              <span className="font-medium tabular-nums">
+                {formatCurrency(snapshot?.thisWeek.sales ?? 0)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Units sold today</span>
+              <span className="font-medium tabular-nums">
+                {snapshot?.today.unitsSold ?? 0}
+              </span>
+            </div>
           </div>
-        ) : activityItems.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No new orders, payments, or intake activity since your last
-            dashboard visit.
-          </p>
-        ) : (
-          <ol className="space-y-2">
-            {activityItems.map(item => {
-              const Icon = getActivityIcon(item);
-
-              return (
-                <li
-                  key={item.id}
-                  className="rounded border bg-muted/30 px-3 py-3"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="rounded-full border bg-background p-2">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm font-medium">{item.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(item.timestamp), {
-                            addSuffix: true,
-                          })}
-                        </p>
-                      </div>
-                      <p className="mt-1 text-sm text-muted-foreground">
-                        {item.detail}
-                      </p>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
         )}
       </CardContent>
     </Card>
@@ -495,88 +566,35 @@ const RecentActivityCard = memo(function RecentActivityCard({
 
 // --- Main SimpleDashboard ---
 export const SimpleDashboard = memo(function SimpleDashboard() {
-  const purchaseOrdersQuery = trpc.purchaseOrders.getAll.useQuery(
-    { limit: 100, offset: 0 },
-    { refetchInterval: 60000 }
-  );
-  const appointmentsQuery = trpc.appointmentRequests.list.useQuery(
-    { limit: 20, offset: 0 },
-    { refetchInterval: 60000 }
-  );
-  const ordersQuery = trpc.orders.getAll.useQuery(
-    { orderType: "SALE", isDraft: false, limit: 100, offset: 0 },
-    { refetchInterval: 60000 }
-  );
-  const paymentsQuery = trpc.accounting.payments.list.useQuery(
-    { limit: 25, offset: 0 },
-    { refetchInterval: 60000 }
-  );
-  const [lastVisitedAt, setLastVisitedAt] = useState<string | null>(null);
-
-  useEffect(() => {
-    const previousValue = window.localStorage.getItem(
-      DASHBOARD_ACTIVITY_STORAGE_KEY
-    );
-    setLastVisitedAt(previousValue);
-    window.localStorage.setItem(
-      DASHBOARD_ACTIVITY_STORAGE_KEY,
-      new Date().toISOString()
-    );
-  }, []);
-
-  const purchaseOrders = Array.isArray(purchaseOrdersQuery.data)
-    ? purchaseOrdersQuery.data
-    : (purchaseOrdersQuery.data?.items ?? []);
-  const appointments = appointmentsQuery.data?.requests ?? [];
-  const orders = (ordersQuery.data?.items ?? []) as DashboardOrderSummary[];
-  const payments = (paymentsQuery.data?.items ?? []) as DashboardPaymentSummary[];
-
   return (
-    <div className="space-y-6">
-      {/* TER-617: Simple header — title + current date only */}
-      <div>
+    <div className="space-y-2">
+      {/* TER-617: Simple header — title only (date moved to WorkQueue header) */}
+      <div className="mb-4">
         <h1 className="text-2xl font-semibold leading-tight text-foreground">
           Dashboard
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">{formatDate()}</p>
       </div>
 
-      {/* TER-615/616: Fixed 6-card grid — no customization */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <TodaysOrdersCard />
-        <OpenInvoicesCard />
-        <InventoryAlertsCard />
-        <PendingIntakeCard
-          purchaseOrders={purchaseOrders}
-          isLoading={purchaseOrdersQuery.isLoading}
-        />
-        <CalendarTodayCard
-          appointments={appointments}
-          isLoading={appointmentsQuery.isLoading}
-        />
-        <OperationalKpisCard
-          orders={orders}
-          purchaseOrders={purchaseOrders}
-          appointments={appointments}
-          isLoading={
-            purchaseOrdersQuery.isLoading ||
-            appointmentsQuery.isLoading ||
-            ordersQuery.isLoading
-          }
-        />
-      </div>
+      {/* Wave 4: Work queue — primary actionable content */}
+      <WorkQueueSection />
 
-      <RecentActivityCard
-        orders={orders}
-        payments={payments}
-        purchaseOrders={purchaseOrders}
-        lastVisitedAt={lastVisitedAt}
-        isLoading={
-          purchaseOrdersQuery.isLoading ||
-          ordersQuery.isLoading ||
-          paymentsQuery.isLoading
-        }
-      />
+      {/* Wave 4: Quick stats strip */}
+      <QuickStatsStrip />
+
+      {/* TER-615/616: Fixed KPI cards — secondary context */}
+      <div>
+        <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 px-0.5">
+          Overview
+        </h2>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <TodaysOrdersCard />
+          <OpenInvoicesCard />
+          <InventoryAlertsCard />
+          <PendingIntakeCard />
+          <CalendarTodayCard />
+          <QuickStatsCard />
+        </div>
+      </div>
     </div>
   );
 });

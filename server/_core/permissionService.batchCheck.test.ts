@@ -15,6 +15,9 @@ import { setupDbMock } from "../test-utils/testDb";
 
 // Mock dependencies BEFORE imports
 vi.mock("./db", () => setupDbMock());
+vi.mock("../services/permissionService", () => ({
+  isSuperAdmin: vi.fn().mockResolvedValue(false),
+}));
 vi.mock("./cache", () => ({
   default: {
     get: vi.fn().mockReturnValue(null),

@@ -22,14 +22,7 @@ import {
 import { useLocation, useSearch as useRouteSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
-import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
-import {
-  ORDER_FULFILLMENT_STATUS_TOKENS,
-  ORDER_PAYMENT_STATUS_TOKENS,
-  STATUS_DANGER_SUBTLE,
-  STATUS_WARNING_SUBTLE,
-} from "@/lib/statusTokens";
 import {
   getFulfillmentDisplayLabel,
   mapToFulfillmentDisplayStatus,
@@ -47,6 +40,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { MonoId } from "@/components/ui/mono-id";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -71,12 +65,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/ui/empty-state";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -115,7 +103,6 @@ import {
   Send,
   Download,
   ArrowUpDown,
-  MoreHorizontal,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 
@@ -146,7 +133,6 @@ interface Order {
   total: string;
   createdAt?: string;
   confirmedAt?: string;
-  dueDate?: string | null;
   version?: number;
   lineItems?: Array<{
     id: number;
@@ -267,7 +253,6 @@ const FULFILLMENT_STATUSES = [
 const ORDERS_VIEW_STATE_KEY = "terp-sales-orders-view-v2";
 
 type OrdersSortKey =
-  | "actionable"
   | "newest"
   | "oldest"
   | "client_asc"
@@ -276,7 +261,6 @@ type OrdersSortKey =
   | "total_asc";
 
 const ORDER_SORT_OPTIONS: Array<{ value: OrdersSortKey; label: string }> = [
-  { value: "actionable", label: "Most actionable" },
   { value: "newest", label: "Newest" },
   { value: "oldest", label: "Oldest" },
   { value: "client_asc", label: "Client A-Z" },
@@ -299,18 +283,18 @@ const STATUS_ICONS: Record<FulfillmentDisplayStatus, ReactNode> = {
   CANCELLED: <XCircle className="h-4 w-4" />,
 };
 
-// WSQA-003: Added return status colors
+// WSQA-003: Added return status colors — updated 420-fork Wave 1 to semantic tokens
 const STATUS_COLORS: Record<FulfillmentDisplayStatus, string> = {
-  DRAFT: "bg-gray-100 text-gray-800",
-  CONFIRMED: "bg-blue-100 text-blue-800",
-  PENDING: "bg-yellow-100 text-yellow-800",
-  READY: "bg-purple-100 text-purple-800",
-  SHIPPED: "bg-indigo-100 text-indigo-800",
-  DELIVERED: "bg-green-100 text-green-800",
-  RETURNED: "bg-orange-100 text-orange-800",
-  RESTOCKED: "bg-emerald-100 text-emerald-800",
-  RETURNED_TO_VENDOR: "bg-amber-100 text-amber-800",
-  CANCELLED: "bg-red-100 text-red-800",
+  DRAFT: "bg-amber-50 text-amber-700 border-amber-200",
+  CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  PENDING: "bg-amber-50 text-amber-700 border-amber-200",
+  READY: "bg-sky-50 text-sky-700 border-sky-200",
+  SHIPPED: "bg-sky-50 text-sky-700 border-sky-200",
+  DELIVERED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  RETURNED: "bg-neutral-100 text-neutral-500 border-neutral-200",
+  RESTOCKED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  RETURNED_TO_VENDOR: "bg-neutral-100 text-neutral-500 border-neutral-200",
+  CANCELLED: "bg-neutral-100 text-neutral-500 border-neutral-200",
 };
 
 // ============================================================================
@@ -381,50 +365,6 @@ const PAYMENT_STATUS_LABELS: Record<string, string> = {
 const formatPaymentStatus = (status?: string | null): string => {
   const normalized = normalizeStatus(status);
   return normalized ? (PAYMENT_STATUS_LABELS[normalized] ?? normalized) : "-";
-};
-
-const isPaymentComplete = (status?: string | null) =>
-  normalizeStatus(status) === "PAID";
-
-const isPaymentOverdue = (order: Pick<Order, "saleStatus" | "dueDate">) => {
-  if (normalizeStatus(order.saleStatus) === "OVERDUE") {
-    return true;
-  }
-  if (!order.dueDate || isPaymentComplete(order.saleStatus)) {
-    return false;
-  }
-
-  return new Date(order.dueDate).getTime() < Date.now();
-};
-
-const getActionableOrderPriority = (
-  order: Pick<Order, "isDraft" | "fulfillmentStatus" | "saleStatus" | "dueDate">
-) => {
-  if (order.isDraft) {
-    return 6;
-  }
-  if (isPaymentOverdue(order)) {
-    return 0;
-  }
-
-  const fulfillment = normalizeFulfillmentStatus(order.fulfillmentStatus);
-  if (fulfillment === "READY_FOR_PACKING") {
-    return 1;
-  }
-  if (fulfillment === "PACKED") {
-    return 2;
-  }
-  if (normalizeStatus(order.saleStatus) === "PARTIAL") {
-    return 3;
-  }
-  if (normalizeStatus(order.saleStatus) === "PENDING") {
-    return 4;
-  }
-  if (fulfillment === "SHIPPED") {
-    return 5;
-  }
-
-  return 7;
 };
 
 export const getDisplayOrderNumber = (
@@ -535,46 +475,10 @@ function OrderStatusBadge({
   return (
     <Badge
       variant="outline"
-      className={cn(
-        "gap-1",
-        ORDER_FULFILLMENT_STATUS_TOKENS[displayStatus] ??
-          STATUS_COLORS[displayStatus]
-      )}
+      className={cn("gap-1", STATUS_COLORS[displayStatus])}
     >
       {STATUS_ICONS[displayStatus]}
       {getFulfillmentDisplayLabel(displayStatus)}
-    </Badge>
-  );
-}
-
-function OrderPaymentBadge({
-  status,
-  dueDate,
-}: {
-  status?: string | null;
-  dueDate?: string | null;
-}) {
-  const normalizedStatus = normalizeStatus(status);
-  const displayStatus = isPaymentOverdue({
-    saleStatus: status ?? undefined,
-    dueDate,
-  })
-    ? "OVERDUE"
-    : normalizedStatus;
-
-  if (!displayStatus) {
-    return <span className="text-sm text-muted-foreground">-</span>;
-  }
-
-  return (
-    <Badge
-      variant="outline"
-      className={
-        ORDER_PAYMENT_STATUS_TOKENS[displayStatus] ??
-        ORDER_PAYMENT_STATUS_TOKENS.PENDING
-      }
-    >
-      {formatPaymentStatus(displayStatus)}
     </Badge>
   );
 }
@@ -606,7 +510,6 @@ interface OrderInspectorProps {
   generatingInvoice?: boolean;
   onDownloadInvoice?: (invoiceId: number) => void;
   downloadingInvoice?: boolean;
-  onOpenClientProfile?: (clientId: number) => void;
   onProcessReturn?: (orderId: number) => void;
   onProcessRestock?: (orderId: number) => void;
   onReturnToVendor?: (orderId: number) => void;
@@ -650,7 +553,6 @@ function OrderInspectorContent({
   generatingInvoice = false,
   onDownloadInvoice,
   downloadingInvoice = false,
-  onOpenClientProfile,
   onProcessReturn,
   onProcessRestock,
   onReturnToVendor,
@@ -676,188 +578,6 @@ function OrderInspectorContent({
     order.invoiceId ?? null,
     resolvedInvoiceId
   );
-  type QuickAction = {
-    key: string;
-    label: string;
-    icon: ReactNode;
-    priority: number;
-    onClick: () => void;
-    variant?: "default" | "outline";
-    disabled?: boolean;
-    testId?: string;
-    destructive?: boolean;
-  };
-
-  const quickActions: QuickAction[] = [];
-
-  if (order.isDraft) {
-    quickActions.push(
-      {
-        key: "confirm-order",
-        label: "Confirm Order",
-        icon: <Send className="h-4 w-4 mr-2" />,
-        priority: 1,
-        variant: "default",
-        onClick: () => onConfirm(order.id),
-        testId: "confirm-order-btn",
-      },
-      {
-        key: "edit-draft",
-        label: "Edit Draft",
-        icon: <Edit className="h-4 w-4 mr-2" />,
-        priority: 2,
-        variant: "outline",
-        onClick: () => onEdit(order.id),
-        testId: "edit-draft-btn",
-      },
-      {
-        key: "delete-draft",
-        label: "Delete Draft",
-        icon: <Trash2 className="h-4 w-4 mr-2" />,
-        priority: 4,
-        variant: "outline",
-        onClick: () => onDelete(order.id),
-        testId: "delete-draft-btn",
-        destructive: true,
-      }
-    );
-  } else {
-    if (
-      !shippingEnabled &&
-      order.orderType === "SALE" &&
-      canAccessAccounting &&
-      getMakePaymentRoute({ id: order.id, invoiceId })
-    ) {
-      quickActions.push({
-        key: "make-payment",
-        label: "Make Payment",
-        icon: <FileText className="h-4 w-4 mr-2" />,
-        priority: 1,
-        variant: "default",
-        onClick: () => onMakePayment(order.id),
-        testId: "make-payment-btn",
-      });
-    }
-
-    if (
-      fulfillmentStatus === "READY_FOR_PACKING" &&
-      onConfirmFulfillment &&
-      !order.confirmedAt &&
-      canManageShipping
-    ) {
-      quickActions.push({
-        key: "confirm-fulfillment",
-        label: "Confirm for Fulfillment",
-        icon: <CheckCircle2 className="h-4 w-4 mr-2" />,
-        priority: 2,
-        variant: "outline",
-        onClick: () => onConfirmFulfillment(order.id),
-        testId: "confirm-fulfillment-btn",
-      });
-    }
-
-    if (
-      (fulfillmentStatus === "READY_FOR_PACKING" ||
-        fulfillmentStatus === "PACKED") &&
-      shippingEnabled &&
-      canManageShipping
-    ) {
-      quickActions.push({
-        key: "ship-order",
-        label: "Ship Order",
-        icon: <Truck className="h-4 w-4 mr-2" />,
-        priority: 1,
-        variant: "default",
-        onClick: () => onShip(order.id),
-        testId: "ship-order-btn",
-      });
-    }
-
-    if (
-      canGenerateInvoice(
-        {
-          orderType: order.orderType,
-          invoiceId,
-          fulfillmentStatus,
-        },
-        canCreateAccounting
-      ) &&
-      onGenerateInvoice
-    ) {
-      quickActions.push({
-        key: "generate-invoice",
-        label: generatingInvoice ? "Generating..." : "Generate Invoice",
-        icon: <FileText className="h-4 w-4 mr-2" />,
-        priority: 1,
-        variant: "default",
-        onClick: () => onGenerateInvoice(order.id),
-        disabled: generatingInvoice,
-        testId: "generate-invoice-btn",
-      });
-    }
-
-    if (
-      (order.fulfillmentStatus === "SHIPPED" ||
-        order.fulfillmentStatus === "DELIVERED") &&
-      onProcessReturn &&
-      canProcessReturns
-    ) {
-      quickActions.push({
-        key: "process-return",
-        label: "Process Return",
-        icon: <RefreshCw className="h-4 w-4 mr-2" />,
-        priority: 2,
-        variant: "outline",
-        onClick: () => onProcessReturn(order.id),
-      });
-    }
-
-    if (order.fulfillmentStatus === "RETURNED" && canManageShipping) {
-      if (onProcessRestock) {
-        quickActions.push({
-          key: "restock",
-          label: "Restock Inventory",
-          icon: <Package className="h-4 w-4 mr-2" />,
-          priority: 1,
-          variant: "default",
-          onClick: () => onProcessRestock(order.id),
-        });
-      }
-
-      if (onReturnToVendor) {
-        quickActions.push({
-          key: "return-to-supplier",
-          label: "Return to Supplier",
-          icon: <Truck className="h-4 w-4 mr-2" />,
-          priority: 2,
-          variant: "outline",
-          onClick: () => onReturnToVendor(order.id),
-        });
-      }
-    }
-
-    if (
-      invoiceId !== null &&
-      canDownloadInvoice(invoiceId, canAccessAccounting) &&
-      onDownloadInvoice
-    ) {
-      quickActions.push({
-        key: "download-invoice",
-        label: downloadingInvoice ? "Preparing invoice..." : "Download Invoice",
-        icon: <Download className="h-4 w-4 mr-2" />,
-        priority: 3,
-        variant: "outline",
-        onClick: () => onDownloadInvoice(invoiceId),
-        disabled: downloadingInvoice,
-      });
-    }
-  }
-
-  const sortedQuickActions = [...quickActions].sort(
-    (actionA, actionB) => actionA.priority - actionB.priority
-  );
-  const primaryQuickActions = sortedQuickActions.slice(0, 2);
-  const overflowQuickActions = sortedQuickActions.slice(2);
 
   return (
     <div className="space-y-6">
@@ -877,20 +597,7 @@ function OrderInspectorContent({
         </div>
 
         <InspectorField label="Client">
-          <div className="space-y-2">
-            <p className="font-medium">{clientName}</p>
-            {order.clientId ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => onOpenClientProfile?.(order.clientId)}
-              >
-                Open client profile
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : null}
-          </div>
+          <p className="font-medium">{clientName}</p>
         </InspectorField>
 
         <div className="grid grid-cols-2 gap-4">
@@ -1030,69 +737,167 @@ function OrderInspectorContent({
 
       <InspectorSection title="Quick Actions">
         <div className="space-y-2">
-          {!order.isDraft ? (
-            <div className="pb-1">
-              <Badge variant="outline" className="text-xs">
-                {shippingEnabled
-                  ? "Fulfillment-enabled mode"
-                  : "Non-fulfillment mode"}
-              </Badge>
-            </div>
-          ) : null}
+          {order.isDraft ? (
+            <>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                data-testid="edit-draft-btn"
+                onClick={() => onEdit(order.id)}
+              >
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Draft
+              </Button>
+              <Button
+                variant="default"
+                className="w-full justify-start"
+                data-testid="confirm-order-btn"
+                onClick={() => onConfirm(order.id)}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                Confirm Order
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full justify-start text-red-600 hover:text-red-700"
+                data-testid="delete-draft-btn"
+                onClick={() => onDelete(order.id)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete Draft
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="pb-1">
+                <Badge variant="outline" className="text-xs">
+                  {shippingEnabled
+                    ? "Fulfillment-enabled mode"
+                    : "Non-fulfillment mode"}
+                </Badge>
+              </div>
 
-          {primaryQuickActions.map(action => (
-            <Button
-              key={action.key}
-              variant={action.variant ?? "outline"}
-              className={cn(
-                "w-full justify-start",
-                action.destructive && "text-red-600 hover:text-red-700"
-              )}
-              data-testid={action.testId}
-              onClick={action.onClick}
-              disabled={action.disabled}
-            >
-              {action.icon}
-              {action.label}
-            </Button>
-          ))}
-
-          {overflowQuickActions.length > 0 ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between"
-                  data-testid="order-more-actions-btn"
-                >
-                  <span className="inline-flex items-center">
-                    <MoreHorizontal className="h-4 w-4 mr-2" />
-                    More Actions
-                  </span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64">
-                {overflowQuickActions.map(action => (
-                  <DropdownMenuItem
-                    key={action.key}
-                    onClick={action.onClick}
-                    disabled={action.disabled}
-                    data-testid={action.testId}
-                    variant={action.destructive ? "destructive" : "default"}
+              {!shippingEnabled &&
+                order.orderType === "SALE" &&
+                canAccessAccounting &&
+                getMakePaymentRoute({ id: order.id, invoiceId }) && (
+                  <Button
+                    variant="default"
+                    className="w-full justify-start"
+                    data-testid="make-payment-btn"
+                    onClick={() => onMakePayment(order.id)}
+                    title="Open accounting payments context"
                   >
-                    {action.icon}
-                    {action.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : null}
+                    <FileText className="h-4 w-4 mr-2" />
+                    Make Payment
+                  </Button>
+                )}
 
-          {sortedQuickActions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No quick actions available for this order state.
-            </p>
-          ) : null}
+              {/* WSQA-003: Status-based actions */}
+              {fulfillmentStatus === "READY_FOR_PACKING" &&
+                onConfirmFulfillment &&
+                !order.confirmedAt &&
+                canManageShipping && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    data-testid="confirm-fulfillment-btn"
+                    onClick={() => onConfirmFulfillment(order.id)}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Confirm for Fulfillment
+                  </Button>
+                )}
+              {(fulfillmentStatus === "READY_FOR_PACKING" ||
+                fulfillmentStatus === "PACKED") &&
+                shippingEnabled &&
+                canManageShipping && (
+                  <Button
+                    variant="default"
+                    className="w-full justify-start"
+                    data-testid="ship-order-btn"
+                    onClick={() => onShip(order.id)}
+                  >
+                    <Truck className="h-4 w-4 mr-2" />
+                    Ship Order
+                  </Button>
+                )}
+              {canGenerateInvoice(
+                {
+                  orderType: order.orderType,
+                  invoiceId,
+                  fulfillmentStatus,
+                },
+                canCreateAccounting
+              ) &&
+                onGenerateInvoice && (
+                  <Button
+                    variant="default"
+                    className="w-full justify-start"
+                    data-testid="generate-invoice-btn"
+                    onClick={() => onGenerateInvoice(order.id)}
+                    disabled={generatingInvoice}
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    {generatingInvoice ? "Generating..." : "Generate Invoice"}
+                  </Button>
+                )}
+              {/* WSQA-003: Mark as Returned for SHIPPED or DELIVERED orders */}
+              {(order.fulfillmentStatus === "SHIPPED" ||
+                order.fulfillmentStatus === "DELIVERED") &&
+                onProcessReturn &&
+                canProcessReturns && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-orange-600 hover:text-orange-700"
+                    onClick={() => onProcessReturn(order.id)}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Process Return
+                  </Button>
+                )}
+              {/* WSQA-003: Processing paths for RETURNED orders */}
+              {order.fulfillmentStatus === "RETURNED" && canManageShipping && (
+                <>
+                  {onProcessRestock && (
+                    <Button
+                      variant="default"
+                      className="w-full justify-start"
+                      onClick={() => onProcessRestock(order.id)}
+                    >
+                      <Package className="h-4 w-4 mr-2" />
+                      Restock Inventory
+                    </Button>
+                  )}
+                  {onReturnToVendor && (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => onReturnToVendor(order.id)}
+                    >
+                      <Truck className="h-4 w-4 mr-2" />
+                      Return to Supplier
+                    </Button>
+                  )}
+                </>
+              )}
+              {invoiceId !== null &&
+                canDownloadInvoice(invoiceId, canAccessAccounting) &&
+                onDownloadInvoice && (
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => onDownloadInvoice(invoiceId)}
+                    disabled={downloadingInvoice}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    {downloadingInvoice
+                      ? "Preparing invoice..."
+                      : "Download Invoice"}
+                  </Button>
+                )}
+            </>
+          )}
         </div>
       </InspectorSection>
     </div>
@@ -1103,7 +908,11 @@ function OrderInspectorContent({
 // MAIN COMPONENT
 // ============================================================================
 
-export function OrdersWorkSurface() {
+export function OrdersWorkSurface({
+  onNewOrder,
+}: {
+  onNewOrder?: () => void;
+} = {}) {
   const [location, setLocation] = useLocation();
   const routeSearch = useRouteSearch();
   const trpcUtils = trpc.useUtils();
@@ -1163,7 +972,7 @@ export function OrdersWorkSurface() {
     () => savedViewState?.statusFilter ?? "ALL"
   );
   const [sortKey, setSortKey] = useState<OrdersSortKey>(
-    () => savedViewState?.sortKey ?? "actionable"
+    () => savedViewState?.sortKey ?? "newest"
   );
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -1380,25 +1189,8 @@ export function OrdersWorkSurface() {
       const clientB = getClientName(b.clientId).toLowerCase();
       const totalA = Number.parseFloat(String(a.total ?? 0)) || 0;
       const totalB = Number.parseFloat(String(b.total ?? 0)) || 0;
-      const dueA = a.dueDate
-        ? new Date(a.dueDate).getTime()
-        : Number.POSITIVE_INFINITY;
-      const dueB = b.dueDate
-        ? new Date(b.dueDate).getTime()
-        : Number.POSITIVE_INFINITY;
 
       switch (sortKey) {
-        case "actionable": {
-          const priorityA = getActionableOrderPriority(a);
-          const priorityB = getActionableOrderPriority(b);
-          if (priorityA !== priorityB) {
-            return priorityA - priorityB;
-          }
-          if (dueA !== dueB) {
-            return dueA - dueB;
-          }
-          return createdB - createdA;
-        }
         case "oldest":
           return createdA - createdB;
         case "client_asc":
@@ -1494,10 +1286,6 @@ export function OrdersWorkSurface() {
           ? detailOrder.confirmedAt
           : (detailOrder.confirmedAt?.toISOString() ??
             selectedOrderSummary.confirmedAt),
-      dueDate:
-        typeof detailOrder.dueDate === "string"
-          ? detailOrder.dueDate
-          : (detailOrder.dueDate?.toISOString() ?? selectedOrderSummary.dueDate),
       saleStatus: detailOrder.saleStatus ?? selectedOrderSummary.saleStatus,
       fulfillmentStatus: (detailOrder.fulfillmentStatus ??
         selectedOrderSummary.fulfillmentStatus) as Order["fulfillmentStatus"],
@@ -1810,11 +1598,19 @@ export function OrdersWorkSurface() {
       },
       "cmd+n": e => {
         e.preventDefault();
-        setLocation(buildSalesWorkspacePath("create-order"));
+        if (onNewOrder) {
+          onNewOrder();
+        } else {
+          setLocation(buildSalesWorkspacePath("create-order"));
+        }
       },
       "ctrl+n": e => {
         e.preventDefault();
-        setLocation(buildSalesWorkspacePath("create-order"));
+        if (onNewOrder) {
+          onNewOrder();
+        } else {
+          setLocation(buildSalesWorkspacePath("create-order"));
+        }
       },
       arrowdown: e => {
         e.preventDefault();
@@ -2038,7 +1834,9 @@ export function OrdersWorkSurface() {
               </Button>
               <Button
                 onClick={() =>
-                  setLocation(buildSalesWorkspacePath("create-order"))
+                  onNewOrder
+                    ? onNewOrder()
+                    : setLocation(buildSalesWorkspacePath("create-order"))
                 }
                 data-testid="new-order-button"
               >
@@ -2054,114 +1852,167 @@ export function OrdersWorkSurface() {
       <div className="flex-1 flex overflow-hidden">
         <div
           className={cn(
-            "flex-1 overflow-auto transition-all duration-200",
+            "flex-1 flex flex-col overflow-hidden transition-all duration-200",
             inspector.isOpen && "mr-96"
           )}
         >
-          <Table data-testid="orders-table" className="min-h-[420px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order #</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+          <div className="flex-1 overflow-auto">
+            <Table data-testid="orders-table" className="min-h-[420px]">
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={8} className="h-64 text-center">
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      <span>Loading orders…</span>
-                    </div>
-                  </TableCell>
+                  <TableHead>Order #</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ) : displayOrders.length === 0 ? (
-                <TableRow data-testid="orders-empty-state">
-                  <TableCell colSpan={8} className="h-64 text-center">
-                    <EmptyState
-                      variant="orders"
-                      title="No orders found"
-                      description={
-                        search
-                          ? "No orders match this search yet. Clear the filters and try a broader lookup."
-                          : statusFilter !== "ALL"
-                            ? `No ${statusFilter.toLowerCase()} orders match the current status filter.`
-                            : activeTab === "draft"
-                              ? "Create a sales order draft so pricing, review, and final confirmation can all happen from one place."
-                              : "Confirmed orders appear here once a draft is finalized."
-                      }
-                      action={orderEmptyStateAction}
-                    />
-                  </TableCell>
-                </TableRow>
-              ) : (
-                displayOrders.map((order: Order, index: number) => (
-                  <TableRow
-                    key={order.id}
-                    data-testid={`order-row-${order.id}`}
-                    data-orderid={order.id}
-                    className={cn(
-                      "cursor-pointer hover:bg-muted/50",
-                      selectedOrderId === order.id && "bg-muted",
-                      selectedIndex === index &&
-                        "ring-1 ring-inset ring-primary",
-                      isPaymentOverdue(order) &&
-                        cn(
-                          "border-l-2 border-l-destructive",
-                          STATUS_DANGER_SUBTLE
-                        ),
-                      !isPaymentOverdue(order) &&
-                        normalizeStatus(order.saleStatus) === "PARTIAL" &&
-                        cn(
-                          "border-l-2 border-l-amber-500",
-                          STATUS_WARNING_SUBTLE
-                        )
-                    )}
-                    onClick={() => {
-                      setSelectedOrderId(order.id);
-                      setSelectedIndex(index);
-                      inspector.open();
-                    }}
-                  >
-                    <TableCell className="font-medium">
-                      {getDisplayOrderNumber(order) || order.orderNumber}
-                    </TableCell>
-                    <TableCell>{getClientName(order.clientId)}</TableCell>
-                    <TableCell>{formatDate(order.createdAt)}</TableCell>
-                    <TableCell>
-                      {formatDate(order.dueDate)}
-                    </TableCell>
-                    <TableCell>
-                      <OrderPaymentBadge
-                        status={order.saleStatus}
-                        dueDate={order.dueDate}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <OrderStatusBadge
-                        status={order.fulfillmentStatus}
-                        isDraft={order.isDraft}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(order.total)}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-64 text-center">
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>Loading orders…</span>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))
+                ) : displayOrders.length === 0 ? (
+                  <TableRow data-testid="orders-empty-state">
+                    <TableCell colSpan={7} className="h-64 text-center">
+                      <EmptyState
+                        variant="orders"
+                        title="No orders found"
+                        description={
+                          search
+                            ? "No orders match this search yet. Clear the filters and try a broader lookup."
+                            : statusFilter !== "ALL"
+                              ? `No ${statusFilter.toLowerCase()} orders match the current status filter.`
+                              : activeTab === "draft"
+                                ? "Create a sales order draft so pricing, review, and final confirmation can all happen from one place."
+                                : "Confirmed orders appear here once a draft is finalized."
+                        }
+                        action={orderEmptyStateAction}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  displayOrders.map((order: Order, index: number) => (
+                    <TableRow
+                      key={order.id}
+                      data-testid={`order-row-${order.id}`}
+                      data-orderid={order.id}
+                      className={cn(
+                        "cursor-pointer hover:bg-muted/50",
+                        selectedOrderId === order.id && "bg-muted",
+                        selectedIndex === index &&
+                          "ring-1 ring-inset ring-primary"
+                      )}
+                      onClick={() => {
+                        setSelectedOrderId(order.id);
+                        setSelectedIndex(index);
+                        inspector.open();
+                      }}
+                    >
+                      <TableCell className="font-medium">
+                        <MonoId
+                          value={
+                            getDisplayOrderNumber(order) ||
+                            order.orderNumber ||
+                            `#${order.id}`
+                          }
+                          truncate={14}
+                        />
+                      </TableCell>
+                      <TableCell>{getClientName(order.clientId)}</TableCell>
+                      <TableCell>{formatDate(order.createdAt)}</TableCell>
+                      <TableCell>
+                        {formatPaymentStatus(order.saleStatus)}
+                      </TableCell>
+                      <TableCell>
+                        <OrderStatusBadge
+                          status={order.fulfillmentStatus}
+                          isDraft={order.isDraft}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right font-medium tabular-nums">
+                        {formatCurrency(order.total)}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Quick-action bottom panel — slides up when a row is selected */}
+          {selectedOrder && (
+            <div className="animate-in slide-in-from-bottom-2 duration-200 border-t bg-card px-4 py-3 flex items-center gap-4 flex-shrink-0">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-[15px] truncate">
+                  {getClientName(selectedOrder.clientId)}
+                </p>
+                {(selectedOrder.lineItems ?? []).length > 0 && (
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {(selectedOrder.lineItems ?? [])
+                      .slice(0, 3)
+                      .map(
+                        item =>
+                          `${item.productName} × ${item.quantity} @ ${formatCurrency(item.unitPrice)}`
+                      )
+                      .join(" · ")}
+                    {(selectedOrder.lineItems ?? []).length > 3 && " …"}
+                  </p>
+                )}
+              </div>
+              <p className="text-[18px] font-bold tabular-nums flex-shrink-0">
+                {formatCurrency(selectedOrder.total)}
+              </p>
+              {selectedOrder.isDraft && (
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white flex-shrink-0"
+                  onClick={() => handleConfirm(selectedOrder.id)}
+                >
+                  Confirm Order
+                </Button>
               )}
-            </TableBody>
-          </Table>
+              {!selectedOrder.isDraft &&
+                (selectedOrder.fulfillmentStatus === "CONFIRMED" ||
+                  selectedOrder.fulfillmentStatus === null) && (
+                  <Button
+                    className="bg-sky-600 hover:bg-sky-700 text-white flex-shrink-0"
+                    onClick={() => handleConfirmFulfillment(selectedOrder.id)}
+                  >
+                    Fulfill
+                  </Button>
+                )}
+              {!selectedOrder.isDraft &&
+                selectedOrder.fulfillmentStatus === "DELIVERED" && (
+                  <Button
+                    variant="default"
+                    className="flex-shrink-0"
+                    onClick={() => handleGenerateInvoice(selectedOrder.id)}
+                  >
+                    Create Invoice
+                  </Button>
+                )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-shrink-0 text-muted-foreground"
+                onClick={() => setSelectedOrderId(null)}
+              >
+                ×
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Inspector */}
@@ -2201,9 +2052,6 @@ export function OrdersWorkSurface() {
             generatingInvoice={generateInvoiceMutation.isPending}
             onDownloadInvoice={handleDownloadInvoice}
             downloadingInvoice={downloadInvoiceMutation.isPending}
-            onOpenClientProfile={clientId =>
-              setLocation(buildRelationshipProfilePath(clientId))
-            }
             onProcessReturn={handleProcessReturn}
             onProcessRestock={handleProcessRestock}
             onReturnToVendor={handleReturnToVendor}
