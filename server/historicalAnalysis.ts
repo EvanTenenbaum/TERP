@@ -1,7 +1,7 @@
 import { eq, and, desc } from "drizzle-orm";
 import { getDb } from "./db";
 import { orders, clients } from "../drizzle/schema";
-import type { Match } from "./matchingEngine";
+import type { Match } from "./matchingEngineEnhanced";
 import { logger } from "./_core/logger";
 
 /**
@@ -321,7 +321,12 @@ export async function getProactiveOpportunities(
     clientName: string;
     daysSinceLastPurchase: number;
     pattern: PurchasePattern;
-    availableInventory: Array<{ batchId: number; productName: string; quantity: number; unitCost: number }>;
+    availableInventory: Array<{
+      batchId: number;
+      productName: string;
+      quantity: number;
+      unitCost: number;
+    }>;
   }>
 > {
   const db = await getDb();

@@ -6,6 +6,8 @@ import {
   vendorSupply,
   batches,
   products,
+  clients,
+  vendors,
 } from "../drizzle/schema";
 import {
   getClientPricingRules,
@@ -16,7 +18,10 @@ import { findHistoricalBuyers } from "./historicalAnalysis";
 import { recordMatch } from "./matchRecordsDb";
 import { strainService } from "./services/strainService";
 import { logger } from "./_core/logger";
-import { calculateSubcategoryScore, getSubcategoryMatchReason } from "./utils/subcategoryMatcher";
+import {
+  calculateSubcategoryScore,
+  getSubcategoryMatchReason,
+} from "./utils/subcategoryMatcher";
 
 /**
  * Match types and confidence levels
@@ -29,7 +34,10 @@ export interface Match {
   reasons: string[];
   source: "INVENTORY" | "VENDOR" | "HISTORICAL";
   sourceId: number;
-  sourceData: EnhancedBatchSourceData | EnhancedVendorSourceData | EnhancedHistoricalSourceData;
+  sourceData:
+    | EnhancedBatchSourceData
+    | EnhancedVendorSourceData
+    | EnhancedHistoricalSourceData;
   calculatedPrice?: number; // For inventory matches with pricing
   availableQuantity?: number; // For inventory/vendor matches
 }
@@ -82,6 +90,19 @@ export interface EnhancedHistoricalSourceData {
   lastPurchaseDate?: Date;
   totalQuantity?: number;
   averageQuantity?: number;
+  // Pattern data for historical matches (used by historicalAnalysis.ts)
+  pattern?: {
+    clientId: number;
+    strain?: string;
+    category?: string;
+    subcategory?: string;
+    grade?: string;
+    purchaseCount: number;
+    totalQuantity: number;
+    avgPrice: number;
+    lastPurchaseDate: Date;
+    daysSinceLastPurchase: number;
+  };
 }
 
 export interface MatchResult {
@@ -165,17 +186,22 @@ async function calculateMatchConfidence(
   const reasons: string[] = [];
 
   // Product Name match for non-flower (25 points)
-  const isFlower = need.category?.toLowerCase() === 'flower' || need.category?.toLowerCase() === 'flowers';
-  
+  const isFlower =
+    need.category?.toLowerCase() === "flower" ||
+    need.category?.toLowerCase() === "flowers";
+
   if (!isFlower && (need.productName || candidate.productName)) {
     if (need.productName && candidate.productName) {
       const needProduct = need.productName.toLowerCase().trim();
       const candidateProduct = candidate.productName.toLowerCase().trim();
-      
+
       if (needProduct === candidateProduct) {
         confidence += 25;
         reasons.push("Exact product name match");
-      } else if (needProduct.includes(candidateProduct) || candidateProduct.includes(needProduct)) {
+      } else if (
+        needProduct.includes(candidateProduct) ||
+        candidateProduct.includes(needProduct)
+      ) {
         confidence += 15;
         reasons.push("Partial product name match");
       } else {
@@ -183,7 +209,7 @@ async function calculateMatchConfidence(
         const needWords = needProduct.split(/\s+/);
         const candidateWords = candidateProduct.split(/\s+/);
         const commonWords = needWords.filter(w => candidateWords.includes(w));
-        
+
         if (commonWords.length >= 2) {
           confidence += 10;
           reasons.push("Similar product name");
@@ -191,7 +217,7 @@ async function calculateMatchConfidence(
       }
     }
   }
-  
+
   // Strain match (40 points for flower, 20 points for non-flower) - Use strainId for family matching
   const strainWeight = isFlower ? 40 : 20;
   if (need.strainId && candidate.strainId) {
@@ -274,7 +300,10 @@ async function calculateMatchConfidence(
 
   // Subcategory match (15 points) - FEAT-020: Enhanced with related subcategory scoring
   if (need.subcategory && candidate.subcategory) {
-    const subcategoryScore = calculateSubcategoryScore(need.subcategory, candidate.subcategory);
+    const subcategoryScore = calculateSubcategoryScore(
+      need.subcategory,
+      candidate.subcategory
+    );
 
     if (subcategoryScore === 100) {
       // Exact match
@@ -283,12 +312,18 @@ async function calculateMatchConfidence(
     } else if (subcategoryScore === 50) {
       // Related subcategories (e.g., Smalls and Trim)
       confidence += 7.5; // Half points for related match
-      const reason = getSubcategoryMatchReason(need.subcategory, candidate.subcategory);
+      const reason = getSubcategoryMatchReason(
+        need.subcategory,
+        candidate.subcategory
+      );
       if (reason) reasons.push(reason);
     } else if (subcategoryScore === 30) {
       // Partial match
       confidence += 4.5; // Partial credit
-      const reason = getSubcategoryMatchReason(need.subcategory, candidate.subcategory);
+      const reason = getSubcategoryMatchReason(
+        need.subcategory,
+        candidate.subcategory
+      );
       if (reason) reasons.push(reason);
     }
   }
@@ -392,7 +427,10 @@ async function calculateMatchConfidence(
 /**
  * Get batch with product details for matching
  */
-async function getBatchWithProduct(db: MySql2Database<Record<string, unknown>>, batchId: number) {
+async function getBatchWithProduct(
+  db: MySql2Database<Record<string, unknown>>,
+  batchId: number
+) {
   const [batch] = await db
     .select({
       batch: matchingBatchSelection,
@@ -518,7 +556,7 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
           reasons,
           source: "INVENTORY",
           sourceId: batch.id,
-          sourceData: { 
+          sourceData: {
             batch: {
               id: batch.id,
               code: batch.code,
@@ -529,14 +567,16 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
               cogsMode: batch.cogsMode ?? undefined,
               unitCogsMin: batch.unitCogsMin ?? undefined,
               unitCogsMax: batch.unitCogsMax ?? undefined,
-            }, 
-            product: product ? {
-              id: product.id,
-              nameCanonical: product.nameCanonical,
-              category: product.category,
-              subcategory: product.subcategory ?? undefined,
-              strainId: product.strainId ?? undefined,
-            } : undefined,
+            },
+            product: product
+              ? {
+                  id: product.id,
+                  nameCanonical: product.nameCanonical,
+                  category: product.category,
+                  subcategory: product.subcategory ?? undefined,
+                  strainId: product.strainId ?? undefined,
+                }
+              : undefined,
           },
           calculatedPrice: calculatedPrice || undefined,
           availableQuantity,
@@ -611,13 +651,16 @@ export async function findMatchesForNeed(needId: number): Promise<MatchResult> {
     });
 
     // Helper to check if sourceData has client property (type guard)
-    const hasClient = (data: unknown): data is { client?: { id: number; name?: string } } => {
-      return typeof data === 'object' && data !== null && 'client' in data;
+    const hasClient = (
+      data: unknown
+    ): data is { client?: { id: number; name?: string } } => {
+      return typeof data === "object" && data !== null && "client" in data;
     };
 
     // Filter to only this client's historical patterns
     const clientHistoricalMatches = historicalMatches.filter(
-      hm => hasClient(hm.sourceData) && hm.sourceData?.client?.id === need.clientId
+      hm =>
+        hasClient(hm.sourceData) && hm.sourceData?.client?.id === need.clientId
     );
 
     for (const histMatch of clientHistoricalMatches) {
@@ -684,13 +727,15 @@ export async function findBuyersForInventory(
     let strainType: string | null = null;
     if (product?.strainId) {
       try {
-        const strainData = await strainService.getStrainWithFamily(product.strainId);
+        const strainData = await strainService.getStrainWithFamily(
+          product.strainId
+        );
         strainType = strainData?.category || null;
       } catch (error) {
         logger.warn({
           msg: "[MatchingEngine] Failed to lookup strain type",
           strainId: product.strainId,
-          error
+          error,
         });
         // Continue without strain type - not critical to matching
       }
@@ -730,7 +775,7 @@ export async function findBuyersForInventory(
           reasons,
           source: "INVENTORY",
           sourceId: batchId,
-          sourceData: { 
+          sourceData: {
             batch: {
               id: batch.id,
               code: batch.code,
@@ -741,14 +786,16 @@ export async function findBuyersForInventory(
               cogsMode: batch.cogsMode ?? undefined,
               unitCogsMin: batch.unitCogsMin ?? undefined,
               unitCogsMax: batch.unitCogsMax ?? undefined,
-            }, 
-            product: product ? {
-              id: product.id,
-              nameCanonical: product.nameCanonical,
-              category: product.category,
-              subcategory: product.subcategory ?? undefined,
-              strainId: product.strainId ?? undefined,
-            } : undefined,
+            },
+            product: product
+              ? {
+                  id: product.id,
+                  nameCanonical: product.nameCanonical,
+                  category: product.category,
+                  subcategory: product.subcategory ?? undefined,
+                  strainId: product.strainId ?? undefined,
+                }
+              : undefined,
           },
           calculatedPrice: calculatedPrice || undefined,
           availableQuantity,
@@ -781,12 +828,16 @@ export async function findBuyersForInventory(
     });
 
     // Helper to check if sourceData has client property (type guard)
-    const hasClientData = (data: unknown): data is { client?: { id: number; name?: string } } => {
-      return typeof data === 'object' && data !== null && 'client' in data;
+    const hasClientData = (
+      data: unknown
+    ): data is { client?: { id: number; name?: string } } => {
+      return typeof data === "object" && data !== null && "client" in data;
     };
 
     for (const histMatch of historicalBuyers) {
-      const clientId = hasClientData(histMatch.sourceData) ? histMatch.sourceData?.client?.id : undefined;
+      const clientId = hasClientData(histMatch.sourceData)
+        ? histMatch.sourceData?.client?.id
+        : undefined;
       if (!clientId) continue;
 
       // Skip if already matched via explicit need
@@ -964,8 +1015,353 @@ export async function getAllActiveNeedsWithMatches(): Promise<MatchResult[]> {
   }
 }
 
-// Export reverse matching functions (simplified version)
-export {
-  findClientNeedsForBatch,
-  findClientNeedsForVendorSupply,
-} from "./matchingEngineReverseSimplified";
+// Reverse matching functions (inlined from former matchingEngineReverseSimplified.ts)
+/**
+ * Find client needs that match a specific inventory batch
+ */
+export async function findClientNeedsForBatch(batchId: number) {
+  try {
+    const db = await getDb();
+    if (!db) {
+      console.warn("Database not available");
+      return [];
+    }
+
+    // Get batch with product details
+    const batchData = await db
+      .select({
+        batch: batches,
+        product: products,
+      })
+      .from(batches)
+      .leftJoin(products, eq(batches.productId, products.id))
+      .where(eq(batches.id, batchId))
+      .limit(1);
+
+    if (batchData.length === 0 || !batchData[0].product) {
+      return [];
+    }
+
+    const { batch, product } = batchData[0];
+
+    // Get all active client needs
+    const activeNeeds = await db
+      .select({
+        need: clientNeeds,
+        client: clients,
+      })
+      .from(clientNeeds)
+      .leftJoin(clients, eq(clientNeeds.clientId, clients.id))
+      .where(eq(clientNeeds.status, "ACTIVE"));
+
+    interface MatchResult {
+      clientId: number;
+      clientName: string;
+      clientNeedId: number;
+      needDescription: string;
+      matchType: string;
+      confidence: number;
+      reasons: string[];
+      priority: string | null;
+      quantityNeeded: string | null;
+      maxPrice: string | null;
+      neededBy: Date | null;
+      availableQuantity: number;
+      daysSinceCreated: number | undefined;
+    }
+
+    const matches: MatchResult[] = [];
+
+    for (const { need, client } of activeNeeds) {
+      if (!client) continue;
+
+      // Simple matching based on category and grade
+      let confidence = 0;
+      const reasons: string[] = [];
+
+      // Category match (50 points)
+      if (need.category && product.category) {
+        if (need.category.toLowerCase() === product.category.toLowerCase()) {
+          confidence += 50;
+          reasons.push("Category match");
+        }
+      }
+
+      // Subcategory match (30 points)
+      if (need.subcategory && product.subcategory) {
+        if (
+          need.subcategory.toLowerCase() === product.subcategory.toLowerCase()
+        ) {
+          confidence += 30;
+          reasons.push("Subcategory match");
+        }
+      }
+
+      // Grade match (20 points)
+      if (need.grade && batch.grade) {
+        if (need.grade.toLowerCase() === batch.grade.toLowerCase()) {
+          confidence += 20;
+          reasons.push("Grade match");
+        }
+      }
+
+      // Only include matches with confidence >= 50
+      if (confidence >= 50) {
+        const matchType = confidence >= 80 ? "EXACT" : "CLOSE";
+        const availableQty = parseFloat(batch.onHandQty || "0");
+
+        matches.push({
+          clientId: need.clientId,
+          clientName: client.name,
+          clientNeedId: need.id,
+          needDescription: [
+            need.strain,
+            need.category,
+            need.subcategory,
+            need.grade,
+          ]
+            .filter(Boolean)
+            .join(" • "),
+          matchType,
+          confidence,
+          reasons,
+          priority: need.priority,
+          quantityNeeded: need.quantityMin,
+          maxPrice: need.priceMax,
+          neededBy: need.neededBy,
+          availableQuantity: availableQty,
+          daysSinceCreated: need.createdAt
+            ? Math.floor(
+                (Date.now() - new Date(need.createdAt).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              )
+            : undefined,
+        });
+      }
+    }
+
+    // Sort by confidence (highest first) then by priority
+    const priorityOrder: Record<string, number> = {
+      URGENT: 4,
+      HIGH: 3,
+      MEDIUM: 2,
+      LOW: 1,
+    };
+    matches.sort((a, b) => {
+      if (b.confidence !== a.confidence) {
+        return b.confidence - a.confidence;
+      }
+      return (
+        (priorityOrder[b.priority || ""] || 0) -
+        (priorityOrder[a.priority || ""] || 0)
+      );
+    });
+
+    return matches;
+  } catch (error) {
+    logger.error({ error }, "Error finding client needs for batch");
+    return []; // Return empty array instead of throwing
+  }
+}
+
+/**
+ * Find client needs that match a specific vendor supply
+ */
+export async function findClientNeedsForVendorSupply(vendorSupplyId: number) {
+  try {
+    const db = await getDb();
+    if (!db) {
+      console.warn("Database not available");
+      return [];
+    }
+
+    // Get vendor supply with vendor details
+    const supplyData = await db
+      .select({
+        supply: vendorSupply,
+        vendor: vendors,
+      })
+      .from(vendorSupply)
+      .leftJoin(vendors, eq(vendorSupply.vendorId, vendors.id))
+      .where(eq(vendorSupply.id, vendorSupplyId))
+      .limit(1);
+
+    if (supplyData.length === 0 || !supplyData[0].supply) {
+      return [];
+    }
+
+    const { supply, vendor } = supplyData[0];
+
+    // Only match against AVAILABLE vendor supply
+    if (supply.status !== "AVAILABLE") {
+      return [];
+    }
+
+    // Get all active client needs
+    const activeNeeds = await db
+      .select({
+        need: clientNeeds,
+        client: clients,
+      })
+      .from(clientNeeds)
+      .leftJoin(clients, eq(clientNeeds.clientId, clients.id))
+      .where(eq(clientNeeds.status, "ACTIVE"));
+
+    interface MatchResult {
+      clientId: number;
+      clientName: string;
+      clientNeedId: number;
+      needDescription: string;
+      matchType: string;
+      confidence: number;
+      reasons: string[];
+      priority: string | null;
+      quantityNeeded: string | null;
+      maxPrice: string | null;
+      neededBy: Date | null;
+      availableQuantity: string;
+      vendorName: string;
+      unitPrice: string | null;
+      daysSinceCreated: number | undefined;
+    }
+
+    const matches: MatchResult[] = [];
+
+    for (const { need, client } of activeNeeds) {
+      if (!client) continue;
+
+      let confidence = 0;
+      const reasons: string[] = [];
+
+      // Category match (50 points)
+      if (need.category && supply.category) {
+        if (need.category.toLowerCase() === supply.category.toLowerCase()) {
+          confidence += 50;
+          reasons.push("Category match");
+        }
+      }
+
+      // Subcategory match (30 points)
+      if (need.subcategory && supply.subcategory) {
+        if (
+          need.subcategory.toLowerCase() === supply.subcategory.toLowerCase()
+        ) {
+          confidence += 30;
+          reasons.push("Subcategory match");
+        }
+      }
+
+      // Grade match (20 points)
+      if (need.grade && supply.grade) {
+        if (need.grade.toLowerCase() === supply.grade.toLowerCase()) {
+          confidence += 20;
+          reasons.push("Grade match");
+        }
+      }
+
+      // Strain match (bonus 15 points)
+      if (need.strain && supply.strain) {
+        if (need.strain.toLowerCase() === supply.strain.toLowerCase()) {
+          confidence += 15;
+          reasons.push("Strain match");
+        }
+      }
+
+      // Strain type match (bonus 10 points)
+      if (need.strainType && supply.strainType && need.strainType !== "ANY") {
+        if (need.strainType === supply.strainType) {
+          confidence += 10;
+          reasons.push("Strain type match");
+        }
+      }
+
+      // Price compatibility check (bonus 10 points if within budget)
+      if (need.priceMax && supply.unitPrice) {
+        const maxPrice = parseFloat(need.priceMax);
+        const unitPrice = parseFloat(supply.unitPrice);
+        if (!isNaN(maxPrice) && !isNaN(unitPrice)) {
+          if (unitPrice <= maxPrice) {
+            confidence += 10;
+            reasons.push("Within price budget");
+          } else {
+            // Price too high - deduct points
+            confidence -= 10;
+            reasons.push("Price exceeds budget");
+          }
+        }
+      }
+
+      // Quantity compatibility check (bonus 5 points if enough available)
+      if (need.quantityMin && supply.quantityAvailable) {
+        const minNeeded = parseFloat(need.quantityMin);
+        const available = parseFloat(supply.quantityAvailable);
+        if (!isNaN(minNeeded) && !isNaN(available)) {
+          if (available >= minNeeded) {
+            confidence += 5;
+            reasons.push("Sufficient quantity available");
+          } else {
+            // Not enough quantity - note but don't deduct
+            reasons.push("Partial quantity available");
+          }
+        }
+      }
+
+      // Only include matches with confidence >= 50
+      if (confidence >= 50) {
+        const matchType = confidence >= 80 ? "EXACT" : "CLOSE";
+
+        matches.push({
+          clientId: need.clientId,
+          clientName: client.name,
+          clientNeedId: need.id,
+          needDescription: [
+            need.strain,
+            need.category,
+            need.subcategory,
+            need.grade,
+          ]
+            .filter(Boolean)
+            .join(" • "),
+          matchType,
+          confidence,
+          reasons,
+          priority: need.priority,
+          quantityNeeded: need.quantityMin,
+          maxPrice: need.priceMax,
+          neededBy: need.neededBy,
+          availableQuantity: supply.quantityAvailable,
+          vendorName: vendor?.name || "Unknown",
+          unitPrice: supply.unitPrice,
+          daysSinceCreated: need.createdAt
+            ? Math.floor(
+                (Date.now() - new Date(need.createdAt).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              )
+            : undefined,
+        });
+      }
+    }
+
+    // Sort by confidence (highest first) then by priority
+    const priorityOrder: Record<string, number> = {
+      URGENT: 4,
+      HIGH: 3,
+      MEDIUM: 2,
+      LOW: 1,
+    };
+    matches.sort((a, b) => {
+      if (b.confidence !== a.confidence) {
+        return b.confidence - a.confidence;
+      }
+      return (
+        (priorityOrder[b.priority || ""] || 0) -
+        (priorityOrder[a.priority || ""] || 0)
+      );
+    });
+
+    return matches;
+  } catch (error) {
+    logger.error({ error }, "Error finding client needs for vendor supply");
+    return []; // Return empty array instead of throwing
+  }
+}
