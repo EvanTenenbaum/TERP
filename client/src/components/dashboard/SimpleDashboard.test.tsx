@@ -1,3 +1,4 @@
+import React from "react";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
@@ -7,6 +8,18 @@ const mockSetLocation = vi.fn();
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/", mockSetLocation] as const,
+  Link: ({
+    href,
+    children,
+    ...rest
+  }: {
+    href: string;
+    children: React.ReactNode;
+  } & React.ComponentProps<"a">) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
 }));
 
 vi.mock("@/lib/trpc", () => ({
@@ -59,6 +72,22 @@ vi.mock("@/lib/trpc", () => ({
               { purchaseOrderStatus: "SENT" },
             ],
           },
+          isLoading: false,
+        }),
+      },
+    },
+    orders: {
+      getAll: {
+        useQuery: () => ({
+          data: { items: [] },
+          isLoading: false,
+        }),
+      },
+    },
+    invoices: {
+      getSummary: {
+        useQuery: () => ({
+          data: { byStatus: [] },
           isLoading: false,
         }),
       },

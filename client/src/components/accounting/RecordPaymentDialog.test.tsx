@@ -50,6 +50,17 @@ vi.mock("@/lib/trpc", () => ({
                 amountDue: 10,
               });
             },
+            mutateAsync: async (input: unknown) => {
+              mockMutate(input);
+              const data = {
+                paymentNumber: "PAY-100",
+                amount: 125.5,
+                invoiceStatus: "PARTIALLY_PAID",
+                amountDue: 10,
+              };
+              config?.onSuccess?.(data);
+              return data;
+            },
             isPending: false,
           })
         ),
