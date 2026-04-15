@@ -10,6 +10,7 @@
  * Spec: docs/superpowers/plans/2026-03-27-sales-catalogue-unified-surface.md
  */
 
+import { useLocation } from "wouter";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CellValueChangedEvent, ColDef } from "ag-grid-community";
 import {
@@ -255,6 +256,7 @@ export function InventoryManagementSurface() {
     useState<AdjustDrawerState | null>(null);
 
   // Order from inventory drawer state
+  const [, setLocation] = useLocation();
   const [orderFromBatch, setOrderFromBatch] =
     useState<OrderFromBatchState | null>(null);
   const [orderClientId, setOrderClientId] = useState<number | null>(null);
@@ -434,11 +436,17 @@ export function InventoryManagementSurface() {
   });
 
   const createOrderMutation = trpc.orders.createDraftEnhanced.useMutation({
-    onSuccess: () => {
-      toast.success("Draft order created");
+    onSuccess: result => {
       setOrderFromBatch(null);
       setOrderClientId(null);
       setOrderQty("");
+      toast.success(`Draft order ${result.orderNumber} created`, {
+        action: {
+          label: "Go to Order →",
+          onClick: () => setLocation(`/sales?orderId=${result.orderId}`),
+        },
+        duration: 8000,
+      });
     },
     onError: error => {
       toast.error(error.message || "Failed to create order");
