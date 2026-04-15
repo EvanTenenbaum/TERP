@@ -5,7 +5,7 @@ import {
   getAuthenticatedUserId,
 } from "../_core/trpc";
 import * as vendorSupplyDb from "../vendorSupplyDb";
-import * as matchingEngine from "../matchingEngine";
+import * as matchingEngine from "../matchingEngineEnhanced";
 import { requirePermission } from "../_core/permissionMiddleware";
 
 /**
