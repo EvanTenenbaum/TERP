@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
+import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { trpc } from "@/lib/trpc";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { Button } from "@/components/ui/button";
@@ -834,19 +835,24 @@ export function SalesCatalogueSurface() {
             return "";
           }
 
-          const identityMeta = buildCatalogueDescriptor({
+          const identityLines = buildProductIdentityLines({
             brand: row.brand,
-            subcategory: row.subcategory,
+            vendor: row.vendor,
             category: row.category,
-            batchSku: row.batchSku,
+            subcategory: row.subcategory,
           });
 
           return (
             <div className="flex min-w-0 flex-col py-0.5">
               <span className="truncate font-medium">{row.name}</span>
-              {identityMeta ? (
+              {identityLines.secondary ? (
                 <span className="truncate text-[10px] text-muted-foreground">
-                  {identityMeta}
+                  {identityLines.secondary}
+                </span>
+              ) : null}
+              {identityLines.tertiary ? (
+                <span className="truncate text-[10px] text-muted-foreground/80">
+                  {identityLines.tertiary}
                 </span>
               ) : null}
             </div>

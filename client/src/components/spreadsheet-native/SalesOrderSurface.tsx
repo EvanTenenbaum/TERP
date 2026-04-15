@@ -10,6 +10,7 @@ import type { ColDef } from "ag-grid-community";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
+import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { trpc } from "@/lib/trpc";
 import { normalizePositiveIntegerWithin } from "@/lib/quantity";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
@@ -68,6 +69,8 @@ interface InventoryBrowserRow {
   name: string;
   batchLabel: string;
   category: string;
+  subcategory: string;
+  brand: string;
   vendor: string;
   retailPrice: number;
   quantity: number;
@@ -267,6 +270,8 @@ function mapInventoryToRows(
     name: item.name,
     batchLabel: getInventoryBatchLabel(item),
     category: item.category ?? "-",
+    subcategory: item.subcategory ?? "-",
+    brand: item.brand ?? "-",
     vendor: item.vendor ?? "-",
     retailPrice: item.retailPrice,
     quantity: item.quantity,
@@ -419,6 +424,21 @@ export function SalesOrderSurface({
   const inventoryRows = useMemo(
     () => mapInventoryToRows(filteredInventory, selectedBatchIds),
     [filteredInventory, selectedBatchIds]
+  );
+  const productIdentityByBatchId = useMemo(
+    () =>
+      Object.fromEntries(
+        (inventoryQuery.data ?? []).map(item => [
+          item.id,
+          buildProductIdentityLines({
+            brand: item.brand,
+            vendor: item.vendor,
+            category: item.category,
+            subcategory: item.subcategory,
+          }),
+        ])
+      ),
+    [inventoryQuery.data]
   );
 
   useEffect(() => {
@@ -680,6 +700,33 @@ export function SalesOrderSurface({
         headerName: "Product",
         flex: 1.3,
         minWidth: 180,
+        cellRenderer: (params: { data?: InventoryBrowserRow }) => {
+          const row = params.data;
+          if (!row) return "";
+
+          const identityLines = buildProductIdentityLines({
+            brand: row.brand,
+            vendor: row.vendor,
+            category: row.category,
+            subcategory: row.subcategory,
+          });
+
+          return (
+            <div className="flex min-w-0 flex-col py-0.5">
+              <span className="truncate font-medium">{row.name}</span>
+              {identityLines.secondary ? (
+                <span className="truncate text-[10px] text-muted-foreground">
+                  {identityLines.secondary}
+                </span>
+              ) : null}
+              {identityLines.tertiary ? (
+                <span className="truncate text-[10px] text-muted-foreground/80">
+                  {identityLines.tertiary}
+                </span>
+              ) : null}
+            </div>
+          );
+        },
         cellClass: "powersheet-cell--locked",
       },
       {
@@ -1018,6 +1065,7 @@ export function SalesOrderSurface({
         onChange={draft.setItems}
         showCogsColumn={showCogs}
         showMarginColumn={showMargin}
+        productIdentityByBatchId={productIdentityByBatchId}
       />
     </div>
   );

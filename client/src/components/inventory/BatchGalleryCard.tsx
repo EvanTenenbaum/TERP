@@ -17,15 +17,17 @@ import {
   getBatchStatusLabel,
   INVENTORY_STATUS_TOKENS,
 } from "@/lib/statusTokens";
+import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { cn } from "@/lib/utils";
 import { getBrandLabel } from "@/lib/nomenclature";
 
 interface BatchGalleryCardProps {
   sku: string;
   productName: string;
-  brandName: string;
-  vendorName: string;
+  brandName?: string;
+  vendorName?: string;
   category?: string;
+  subcategory?: string;
   status: string;
   onHandQty: string;
   reservedQty: string;
@@ -62,6 +64,7 @@ export const BatchGalleryCard = memo(function BatchGalleryCard({
   brandName,
   vendorName,
   category,
+  subcategory,
   status,
   onHandQty,
   reservedQty,
@@ -74,6 +77,12 @@ export const BatchGalleryCard = memo(function BatchGalleryCard({
   onOpen,
   onAdjustQuantity,
 }: BatchGalleryCardProps) {
+  const identityLines = buildProductIdentityLines({
+    brand: brandName,
+    vendor: vendorName,
+    category,
+    subcategory,
+  });
   const statusTone =
     INVENTORY_STATUS_TOKENS[status as keyof typeof INVENTORY_STATUS_TOKENS] ??
     "bg-slate-100 text-slate-700";
@@ -117,6 +126,16 @@ export const BatchGalleryCard = memo(function BatchGalleryCard({
             <h3 className="line-clamp-2 text-base font-semibold">
               {productName}
             </h3>
+            {identityLines.secondary ? (
+              <p className="line-clamp-1 text-sm text-muted-foreground">
+                {identityLines.secondary}
+              </p>
+            ) : null}
+            {identityLines.tertiary ? (
+              <p className="line-clamp-1 text-xs text-muted-foreground/80">
+                {identityLines.tertiary}
+              </p>
+            ) : null}
           </div>
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div>

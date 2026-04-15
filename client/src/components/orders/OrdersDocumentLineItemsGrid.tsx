@@ -46,6 +46,10 @@ interface OrdersDocumentLineItemsGridProps {
   onChange: (items: LineItem[]) => void;
   showCogsColumn?: boolean;
   showMarginColumn?: boolean;
+  productIdentityByBatchId?: Record<
+    number,
+    { secondary: string | null; tertiary: string | null }
+  >;
 }
 
 type OrdersDocumentEditableField =
@@ -594,6 +598,7 @@ export function OrdersDocumentLineItemsGrid({
   onChange,
   showCogsColumn = true,
   showMarginColumn = true,
+  productIdentityByBatchId = {},
 }: OrdersDocumentLineItemsGridProps) {
   const [selectionSet, setSelectionSet] =
     useState<PowersheetSelectionSet | null>(null);
@@ -642,6 +647,32 @@ export function OrdersDocumentLineItemsGrid({
         flex: 1.2,
         sortable: false,
         filter: false,
+        cellRenderer: (params: { data?: LineItem }) => {
+          const row = params.data;
+          if (!row) {
+            return "";
+          }
+
+          const identity = productIdentityByBatchId[row.batchId];
+
+          return (
+            <div className="flex min-w-0 flex-col py-0.5">
+              <span className="truncate font-medium">
+                {row.productDisplayName || "Unknown Product"}
+              </span>
+              {identity?.secondary ? (
+                <span className="truncate text-[10px] text-muted-foreground">
+                  {identity.secondary}
+                </span>
+              ) : null}
+              {identity?.tertiary ? (
+                <span className="truncate text-[10px] text-muted-foreground/80">
+                  {identity.tertiary}
+                </span>
+              ) : null}
+            </div>
+          );
+        },
         cellClass: buildDocumentCellClass("productDisplayName"),
         suppressPaste: true,
         suppressFillHandle: true,
@@ -737,7 +768,7 @@ export function OrdersDocumentLineItemsGrid({
         valueFormatter: params => (params.value ? "Yes" : "No"),
       },
     ],
-    [showCogsColumn, showMarginColumn]
+    [productIdentityByBatchId, showCogsColumn, showMarginColumn]
   );
 
   const notifyEditToast = (level: "warning" | "error", message: string) => {

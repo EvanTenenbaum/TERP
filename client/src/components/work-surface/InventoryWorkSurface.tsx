@@ -14,6 +14,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useLocation } from "wouter";
+import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -408,12 +409,29 @@ function BatchInspectorContent({
 
         <InspectorField label="Product">
           <p className="font-medium">{product?.nameCanonical || "Unknown"}</p>
-          {product?.category && (
-            <p className="text-sm text-muted-foreground">
-              {product.category}{" "}
-              {product.subcategory ? `/ ${product.subcategory}` : ""}
-            </p>
-          )}
+          {(() => {
+            const identityLines = buildProductIdentityLines({
+              brand: brand?.name,
+              vendor: vendor?.name,
+              category: product?.category,
+              subcategory: product?.subcategory,
+            });
+
+            return (
+              <>
+                {identityLines.secondary ? (
+                  <p className="text-sm text-muted-foreground">
+                    {identityLines.secondary}
+                  </p>
+                ) : null}
+                {identityLines.tertiary ? (
+                  <p className="text-sm text-muted-foreground/80">
+                    {identityLines.tertiary}
+                  </p>
+                ) : null}
+              </>
+            );
+          })()}
         </InspectorField>
 
         {batch.grade && (
@@ -2434,7 +2452,33 @@ export function InventoryWorkSurface() {
                                   {item.batch?.sku}
                                 </TableCell>
                                 <TableCell>
-                                  {item.product?.nameCanonical || "-"}
+                                  {(() => {
+                                    const identityLines =
+                                      buildProductIdentityLines({
+                                        brand: item.brand?.name,
+                                        vendor: item.vendor?.name,
+                                        category: item.product?.category,
+                                        subcategory: item.product?.subcategory,
+                                      });
+
+                                    return (
+                                      <div className="flex min-w-0 flex-col py-0.5">
+                                        <span className="truncate font-medium">
+                                          {item.product?.nameCanonical || "-"}
+                                        </span>
+                                        {identityLines.secondary ? (
+                                          <span className="truncate text-[10px] text-muted-foreground">
+                                            {identityLines.secondary}
+                                          </span>
+                                        ) : null}
+                                        {identityLines.tertiary ? (
+                                          <span className="truncate text-[10px] text-muted-foreground/80">
+                                            {identityLines.tertiary}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                    );
+                                  })()}
                                 </TableCell>
                                 <TableCell>{item.brand?.name || "-"}</TableCell>
                                 <TableCell>
@@ -2530,9 +2574,10 @@ export function InventoryWorkSurface() {
                             sku: item.batch.sku,
                             productName:
                               item.product?.nameCanonical || "Unknown",
-                            brandName: item.brand?.name || "Unknown",
-                            vendorName: item.vendor?.name || "Unknown",
+                            brandName: item.brand?.name,
+                            vendorName: item.vendor?.name,
                             category: item.product?.category,
+                            subcategory: item.product?.subcategory,
                             grade: item.batch.grade || "-",
                             status: item.batch.batchStatus,
                             onHandQty: item.batch.onHandQty,
@@ -2572,9 +2617,10 @@ export function InventoryWorkSurface() {
                         productName={
                           item.product?.nameCanonical || "Unknown Product"
                         }
-                        brandName={item.brand?.name || "-"}
-                        vendorName={item.vendor?.name || "-"}
+                        brandName={item.brand?.name}
+                        vendorName={item.vendor?.name}
                         category={item.product?.category}
+                        subcategory={item.product?.subcategory}
                         status={item.batch.batchStatus}
                         onHandQty={item.batch.onHandQty}
                         reservedQty={item.batch.reservedQty}
