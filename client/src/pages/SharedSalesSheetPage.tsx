@@ -164,76 +164,72 @@ export default function SharedSalesSheetPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sheet.items.map((item, index) => (
-                  <TableRow key={item.id}>
-                    <TableCell className="font-medium text-muted-foreground">
-                      {index + 1}
-                    </TableCell>
-                    {hasImages ? (
-                      <TableCell className="align-middle">
-                        {item.imageUrl ? (
-                          <div className="mx-auto h-14 w-14 overflow-hidden rounded-md border border-border/70 bg-muted/30">
-                            <img
-                              src={item.imageUrl}
-                              alt={item.name}
-                              className="h-full w-full object-cover"
-                              loading="lazy"
-                            />
-                          </div>
+                {sheet.items.map((item, index) => {
+                  const identityLines = buildProductIdentityLines({
+                    brand: item.brand,
+                    category: item.category,
+                    subcategory: item.subcategory,
+                  });
+
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium text-muted-foreground">
+                        {index + 1}
+                      </TableCell>
+                      {hasImages ? (
+                        <TableCell className="align-middle">
+                          {item.imageUrl ? (
+                            <div className="mx-auto h-14 w-14 overflow-hidden rounded-md border border-border/70 bg-muted/30">
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className="h-full w-full object-cover"
+                                loading="lazy"
+                              />
+                            </div>
+                          ) : (
+                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-border/70 text-[10px] text-muted-foreground">
+                              No image
+                            </div>
+                          )}
+                        </TableCell>
+                      ) : null}
+                      <TableCell>
+                        <div className="space-y-0.5">
+                          <p className="font-medium">{item.name}</p>
+                          {identityLines.secondary ? (
+                            <p className="text-xs text-muted-foreground">
+                              {identityLines.secondary}
+                            </p>
+                          ) : null}
+                          {identityLines.tertiary ? (
+                            <p className="text-xs text-muted-foreground/80">
+                              {identityLines.tertiary}
+                            </p>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {item.subcategory || item.category ? (
+                          <Badge variant="outline">
+                            {item.subcategory || item.category}
+                          </Badge>
                         ) : (
-                          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-md border border-dashed border-border/70 text-[10px] text-muted-foreground">
-                            No image
-                          </div>
+                          <span className="text-muted-foreground">-</span>
                         )}
                       </TableCell>
-                    ) : null}
-                    <TableCell>
-                      <div className="space-y-0.5">
-                        <p className="font-medium">{item.name}</p>
-                        {(() => {
-                          const { secondary, tertiary } =
-                            buildProductIdentityLines({
-                              brand: item.brand,
-                              category: item.category,
-                              subcategory: item.subcategory,
-                            });
-                          return (
-                            <>
-                              {secondary ? (
-                                <p className="text-xs text-muted-foreground">
-                                  {secondary}
-                                </p>
-                              ) : null}
-                              {tertiary ? (
-                                <p className="text-xs text-muted-foreground/80">
-                                  {tertiary}
-                                </p>
-                              ) : null}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      {item.subcategory || item.category ? (
-                        <Badge variant="outline">
-                          {item.subcategory || item.category}
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {item.quantity.toFixed(2)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(item.price)}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(item.price * item.quantity)}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      <TableCell className="text-right">
+                        {item.quantity.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(item.price)}
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatCurrency(item.price * item.quantity)}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
 

@@ -51,9 +51,8 @@ describe("SharedSalesSheetPage", () => {
     expect(screen.getByText("Sales Catalogue")).toBeInTheDocument();
     expect(screen.getByText("Prepared for Golden State")).toBeInTheDocument();
     expect(screen.getByText("Blue Dream")).toBeInTheDocument();
-    expect(
-      screen.getByText("Andy Rhan · Flower · Indoor · BT-42")
-    ).toBeInTheDocument();
+    expect(screen.getByText("Andy Rhan")).toBeInTheDocument();
+    expect(screen.getByText("Flower · Indoor")).toBeInTheDocument();
     expect(
       screen.getByText(
         "Pricing and availability are subject to final confirmation."
