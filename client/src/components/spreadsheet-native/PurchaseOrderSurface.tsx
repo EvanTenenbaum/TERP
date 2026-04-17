@@ -424,6 +424,8 @@ function mapLineItemsToRows(items: POLineItem[]): POLineRow[] {
 interface PurchaseOrderSurfaceProps {
   defaultStatusFilter?: string[];
   autoLaunchReceivingOnRowClick?: boolean;
+  // TER-1060: When true, pre-activates the "Expected Today" filter
+  initialShowExpectedToday?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -433,6 +435,7 @@ interface PurchaseOrderSurfaceProps {
 export function PurchaseOrderSurface({
   defaultStatusFilter,
   autoLaunchReceivingOnRowClick = false,
+  initialShowExpectedToday,
 }: PurchaseOrderSurfaceProps) {
   const [, setLocation] = useLocation();
   const routeSearch = useSearch();
@@ -450,6 +453,13 @@ export function PurchaseOrderSurface({
     [routeSearch]
   );
   const poView = searchParams.get("poView");
+
+  // TER-1060: read expectedToday URL param — "1" or "true" activates the filter
+  const expectedTodayParam = searchParams.get("expectedToday");
+  const showExpectedTodayFromUrl =
+    expectedTodayParam === "1" || expectedTodayParam === "true";
+  const resolvedShowExpectedToday =
+    initialShowExpectedToday ?? showExpectedTodayFromUrl;
 
   useEffect(() => {
     if (poView) return;
@@ -481,6 +491,7 @@ export function PurchaseOrderSurface({
       routeSearch={routeSearch}
       supplierFilterId={deepLink.supplierClientId}
       userId={user?.id ?? null}
+      initialShowExpectedToday={resolvedShowExpectedToday}
     />
   );
 }
@@ -1409,6 +1420,7 @@ function PurchaseOrderQueueMode({
   routeSearch,
   supplierFilterId,
   userId,
+  initialShowExpectedToday = false,
 }: {
   defaultStatusFilter?: string[];
   initialStatusFilter: string;
@@ -1419,6 +1431,8 @@ function PurchaseOrderQueueMode({
   routeSearch: string;
   supplierFilterId: number | null;
   userId: number | null;
+  // TER-1060: pre-activate the "Expected Today" filter via URL param or prop
+  initialShowExpectedToday?: boolean;
 }) {
   // Export hook
   const { exportCSV, state: exportState } =
@@ -1430,7 +1444,9 @@ function PurchaseOrderQueueMode({
   const [activeSupplierFilter, setActiveSupplierFilter] = useState<
     number | null
   >(null);
-  const [showExpectedTodayOnly, setShowExpectedTodayOnly] = useState(false);
+  const [showExpectedTodayOnly, setShowExpectedTodayOnly] = useState(
+    initialShowExpectedToday
+  );
 
   // Dialog state
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

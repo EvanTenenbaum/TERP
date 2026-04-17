@@ -198,6 +198,8 @@ interface IntakeGridRow extends IntakeRowData {
   locationName: string;
   // TER-222: Matched strain name for validation assistant
   matchedStrainName?: string;
+  // TER-1059: PO reference — null for direct intake rows (always direct in this surface)
+  poNumber?: string | null;
   status: "pending" | "submitted" | "error";
   errorMessage?: string;
   fieldErrors?: IntakeFieldErrorMap;
@@ -1224,6 +1226,19 @@ export function DirectIntakeWorkSurface() {
   // Column definitions
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
     () => [
+      {
+        // TER-1059: PO reference column — always em-dash for direct intake rows
+        headerName: "PO #",
+        colId: "poNumber",
+        width: 80,
+        editable: false,
+        sortable: false,
+        filter: false,
+        headerTooltip:
+          "Purchase Order reference. Shows \u2014 for direct intake (no PO).",
+        valueGetter: () => null,
+        valueFormatter: () => "\u2014",
+      },
       {
         headerName: "Supplier",
         field: "vendorName",
