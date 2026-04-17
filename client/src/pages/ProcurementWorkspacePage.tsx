@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import {
   LinearWorkspacePanel,
   LinearWorkspaceShell,
@@ -6,8 +7,13 @@ import {
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { PurchaseOrderSurface } from "@/components/spreadsheet-native/PurchaseOrderSurface";
-import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
-import { Redirect, useSearch } from "wouter";
+import {
+  buildOperationsWorkspacePath,
+  buildProcurementWorkspacePath,
+} from "@/lib/workspaceRoutes";
+import { Redirect, useSearch, useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Truck } from "lucide-react";
 
 type ProcurementTab = "purchase-orders";
 type ProcurementQueryTab =
@@ -22,6 +28,7 @@ const PROCUREMENT_TABS = [
 
 export default function ProcurementWorkspacePage() {
   const search = useSearch();
+  const [, setLocation] = useLocation();
   const { activeTab, setActiveTab } = useQueryTabState<ProcurementQueryTab>({
     defaultTab: "purchase-orders",
     validTabs: [
@@ -36,6 +43,12 @@ export default function ProcurementWorkspacePage() {
       ([key]) => key !== "tab"
     )
   );
+
+  // TER-1060: read expectedToday param to pre-activate the "Expected Today" filter
+  const searchParams = useMemo(() => new URLSearchParams(search), [search]);
+  const expectedTodayParam = searchParams.get("expectedToday");
+  const initialShowExpectedToday =
+    expectedTodayParam === "1" || expectedTodayParam === "true";
 
   useWorkspaceHomeTelemetry("procurement", activeTab);
 
@@ -67,9 +80,29 @@ export default function ProcurementWorkspacePage() {
         { label: "Primary", value: "Purchase orders" },
         { label: "Next handoff", value: "Receiving" },
       ]}
+      commandStrip={
+        // TER-1060: Quick-nav shortcut into the "Expected Deliveries Today" filtered view
+        <Button
+          size="sm"
+          variant={initialShowExpectedToday ? "default" : "outline"}
+          className="text-xs"
+          onClick={() =>
+            setLocation(
+              buildProcurementWorkspacePath(undefined, {
+                expectedToday: initialShowExpectedToday ? undefined : "1",
+              })
+            )
+          }
+        >
+          <Truck className="mr-1 h-3 w-3" />
+          Expected Today
+        </Button>
+      }
     >
       <LinearWorkspacePanel value="purchase-orders">
-        <PurchaseOrderSurface />
+        <PurchaseOrderSurface
+          initialShowExpectedToday={initialShowExpectedToday}
+        />
       </LinearWorkspacePanel>
     </LinearWorkspaceShell>
   );
