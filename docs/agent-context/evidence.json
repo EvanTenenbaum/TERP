@@ -1,7 +1,13 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-17T20:58:31.123Z",
+  "generatedAt": "2026-04-17T21:07:09.745Z",
   "commits": [
+    {
+      "sha": "48a98623",
+      "head": "48a98623442a4ffc5c715cfd4a88eeb03af7d5c6",
+      "date": "2026-04-17",
+      "subject": "fix(pm): declare MCP sdk and stabilize CI"
+    },
     {
       "sha": "3605e38e",
       "head": "3605e38e17923b86a68c95f72e84e3bba8ec63e1",
@@ -67,12 +73,6 @@
       "head": "7586564ebbf49fa94192500dc872ee337a7c4595",
       "date": "2026-04-08",
       "subject": "fix(ux): land TER-1067 recovery and canonical P2 packet (#570)"
-    },
-    {
-      "sha": "994bbee4",
-      "head": "994bbee489c3c5656540f01de93fc808e3f80279",
-      "date": "2026-04-07",
-      "subject": "test(surfaces): deepen behavioral coverage and polish inventory/po UX (#568)"
     }
   ],
   "recentIssues": [

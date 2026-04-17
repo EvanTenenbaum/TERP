@@ -341,7 +341,7 @@ export function getPmPaths(repoRoot = getRepoRoot()) {
     sharedBootstrapReadmePath: path.join(sharedBootstrapDir, "README.md"),
     productManagementPath: path.join(resolvedRepoRoot, "product-management", "START_HERE.md"),
     repoAgentsPath: path.join(resolvedRepoRoot, "AGENTS.md"),
-    repoClaudePath: path.join(resolvedRepoRoot, "CLAUDE.MD"),
+    repoClaudePath: path.join(resolvedRepoRoot, "CLAUDE.md"),
   };
 }
 
@@ -1195,7 +1195,7 @@ function buildState({
     startupContract: {
       readFirst: [
         "AGENTS.md",
-        "CLAUDE.MD",
+        "CLAUDE.md",
         `${paths.sharedOutputDir}/START_HERE.md`,
         `${paths.sharedOutputDir}/manifest.json`,
         "docs/agent-context/START_HERE.md",
@@ -1394,7 +1394,7 @@ function renderPrivateStartHere(state, work, clientsRegistry) {
 ## Start Here
 
 1. Read \`AGENTS.md\`.
-2. Read \`CLAUDE.MD\`.
+2. Read \`CLAUDE.md\`.
 3. If you are in any TERP worktree, prefer the shared live bundle under \`${state.startupContract.sharedLiveBundleDir}\`.
 4. Read this file or the shared entrypoint.
 5. Confirm freshness and hashes in the shared or repo-local \`manifest.json\`.
@@ -2281,7 +2281,7 @@ export async function validateContextBundle(options = {}) {
     problems.push("AGENTS.md no longer points to docs/agent-context/START_HERE.md as the TERP startup contract.");
   }
   if (!repoClaude.includes("docs/agent-context/START_HERE.md")) {
-    problems.push("CLAUDE.MD no longer points to docs/agent-context/START_HERE.md as the TERP startup contract.");
+    problems.push("CLAUDE.md no longer points to docs/agent-context/START_HERE.md as the TERP startup contract.");
   }
 
   if (readEnvValue("LINEAR_API_KEY") && state.linear?.latestIssueUpdatedAt && !options.skipLinear) {

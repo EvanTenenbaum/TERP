@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-04-17T20:58:31.123Z",
+  "generatedAt": "2026-04-17T21:07:09.745Z",
   "startupContract": {
     "entrypoint": "START_HERE.md",
     "manifest": "manifest.json",
@@ -16,10 +16,15 @@
   },
   "git": {
     "branch": "codex/persistent-pm-hardening-20260417",
-    "head": "3605e38e17923b86a68c95f72e84e3bba8ec63e1",
-    "shortHead": "3605e38e",
+    "head": "48a98623442a4ffc5c715cfd4a88eeb03af7d5c6",
+    "shortHead": "48a98623",
     "workingTreeDirty": true,
     "recentCommits": [
+      {
+        "date": "2026-04-17",
+        "sha": "48a98623",
+        "subject": "fix(pm): declare MCP sdk and stabilize CI"
+      },
       {
         "date": "2026-04-17",
         "sha": "3605e38e",
@@ -64,17 +69,12 @@
         "date": "2026-04-08",
         "sha": "db289932",
         "subject": "feat(sales): close TER-1069 retrieval continuity (#572)"
-      },
-      {
-        "date": "2026-04-08",
-        "sha": "8e019eb8",
-        "subject": "feat(ux): close TER-1068 tranche 1 (#571)"
       }
     ]
   },
   "linear": {
     "mode": "live",
-    "fetchedAt": "2026-04-17T20:58:32.946Z",
+    "fetchedAt": "2026-04-17T21:07:10.213Z",
     "latestIssueUpdatedAt": "2026-04-15T13:53:08.265Z",
     "activeProjects": [
       {
@@ -319,24 +319,24 @@
   },
   "direction": {
     "focusAreas": [
+      "persistent PM and handoff durability",
       "orders and order workflow",
       "QA, proof, and rollout hardening",
-      "persistent PM and handoff durability",
       "spreadsheet-native rollout"
     ],
-    "summary": "Current TERP direction centers on orders and order workflow and QA, proof, and rollout hardening; recent git activity is anchored at 3605e38e and led by `feat(pm): harden persistent PM runtime`, `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`, `fix(notifications): improve inline triage and empty states (#577)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "summary": "Current TERP direction centers on persistent PM and handoff durability and orders and order workflow; recent git activity is anchored at 48a98623 and led by `fix(pm): declare MCP sdk and stabilize CI`, `feat(pm): harden persistent PM runtime`, `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
     "themeEvidence": [
       {
+        "label": "persistent PM and handoff durability",
+        "count": 3
+      },
+      {
         "label": "orders and order workflow",
-        "count": 4
+        "count": 3
       },
       {
         "label": "QA, proof, and rollout hardening",
         "count": 3
-      },
-      {
-        "label": "persistent PM and handoff durability",
-        "count": 2
       },
       {
         "label": "spreadsheet-native rollout",

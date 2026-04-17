@@ -68,6 +68,6 @@ Rules:
 - If the manifest is stale, degraded, or points at an older git SHA than the work you need, stop and refresh or request refreshed state before authoritative actions.
 
 Current PM summary:
-Current TERP direction centers on orders and order workflow and QA, proof, and rollout hardening; recent git activity is anchored at 3605e38e and led by `feat(pm): harden persistent PM runtime`, `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`, `fix(notifications): improve inline triage and empty states (#577)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
+Current TERP direction centers on persistent PM and handoff durability and orders and order workflow; recent git activity is anchored at 48a98623 and led by `fix(pm): declare MCP sdk and stabilize CI`, `feat(pm): harden persistent PM runtime`, `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
 ```
 
