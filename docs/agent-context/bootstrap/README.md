@@ -25,4 +25,5 @@ Generated bootstrap files for each PM-capable surface. Use the matching file whe
 - `pnpm pm:launch:check` is the scoped launch gate for the persistent PM runtime.
 - It validates PM scripts, PM tests, refresh/check integrity, publish smoke, and service-install smoke only.
 - Broader TERP app failures can still be tracked and repaired through the PM system without blocking PM launch.
+- If the committed PM snapshot trails `HEAD`, rerun `pnpm pm:launch:check`; that refresh is the authoritative live gate.
 

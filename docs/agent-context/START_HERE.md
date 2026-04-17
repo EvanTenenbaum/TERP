@@ -4,13 +4,13 @@
 
 ## Snapshot
 
-- Generated: `2026-04-17T21:55:08.224Z`
+- Generated: `2026-04-17T21:57:31.930Z`
 - Freshness status: `fresh`
 - Manifest: `docs/agent-context/manifest.json`
 - Refresh command: `pnpm context:refresh`
 - Drift check: `pnpm context:check`
 - PM launch readiness: `pnpm pm:launch:check`
-- Git anchor: `250eba1c` on branch `codex/persistent-pm-hardening-20260417`
+- Git anchor: `f9fdb0cd` on branch `codex/persistent-pm-hardening-20260417`
 - Working tree dirty: `true`
 - Linear mode: `live`
 - Decision log count: `0`
@@ -48,7 +48,7 @@
 
 ## Current Direction
 
-Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 250eba1c and led by `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
+Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at f9fdb0cd and led by `docs(context): refresh PM bundle after launch activation`, `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
 
 - persistent PM and handoff durability
 - QA, proof, and rollout hardening
@@ -141,6 +141,7 @@ Current TERP direction centers on persistent PM and handoff durability and QA, p
 - Run `pnpm context:refresh` after meaningful checkpoints, before remote-agent handoff, and after merges to `main`.
 - Run `pnpm context:check` before claiming the PM bundle is fresh enough for authoritative work.
 - Run `pnpm pm:launch:check` to decide whether the persistent PM system itself is safe to launch or keep using.
+- If a committed PM snapshot trails `git HEAD`, rerun `pnpm pm:launch:check` or `pnpm context:refresh` before treating that lag as a PM outage.
 - Every refresh/checkpoint also updates the shared live bundle in `/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current` so other TERP worktrees can see the same PM state.
 - Never hand-edit `state.json`, `work.json`, `evidence.json`, or `manifest.json`.
 - First-class writers should mutate PM state only through the mediator (`pm.appendDecision` / `pm.checkpoint`) or an intentional PR append to `decisions.ndjson`.
@@ -150,3 +151,4 @@ Current TERP direction centers on persistent PM and handoff durability and QA, p
 - `pnpm pm:launch:check` is the scoped gate for PM availability and PM runtime launch.
 - Unrelated TERP product or UI failures in `pnpm test`, `pnpm build`, or other broad repo checks do not by themselves disable the PM system.
 - Full repo verification still matters when shipping TERP application changes, but it is not a prerequisite for using the PM system to coordinate or repair that work.
+- A committed PM bundle snapshot may temporarily lag one commit behind `HEAD`; live PM readiness comes from a fresh run of `pnpm pm:launch:check`, not from assuming the tracked snapshot is self-updating.

@@ -1453,6 +1453,7 @@ ${state.legacyWarnings.map(formatLegacyWarning).join("\n")}
 - Run \`${state.startupContract.refreshCommand}\` after meaningful checkpoints, before remote-agent handoff, and after merges to \`main\`.
 - Run \`${state.startupContract.checkCommand}\` before claiming the PM bundle is fresh enough for authoritative work.
 - Run \`${state.startupContract.launchReadinessCommand}\` to decide whether the persistent PM system itself is safe to launch or keep using.
+- If a committed PM snapshot trails \`git HEAD\`, rerun \`${state.startupContract.launchReadinessCommand}\` or \`${state.startupContract.refreshCommand}\` before treating that lag as a PM outage.
 - Every refresh/checkpoint also updates the shared live bundle in \`${state.startupContract.sharedLiveBundleDir}\` so other TERP worktrees can see the same PM state.
 - Never hand-edit \`state.json\`, \`work.json\`, \`evidence.json\`, or \`manifest.json\`.
 - First-class writers should mutate PM state only through the mediator (\`pm.appendDecision\` / \`pm.checkpoint\`) or an intentional PR append to \`decisions.ndjson\`.
@@ -1462,6 +1463,7 @@ ${state.legacyWarnings.map(formatLegacyWarning).join("\n")}
 - \`${state.startupContract.launchReadinessCommand}\` is the scoped gate for PM availability and PM runtime launch.
 - Unrelated TERP product or UI failures in \`pnpm test\`, \`pnpm build\`, or other broad repo checks do not by themselves disable the PM system.
 - Full repo verification still matters when shipping TERP application changes, but it is not a prerequisite for using the PM system to coordinate or repair that work.
+- A committed PM bundle snapshot may temporarily lag one commit behind \`HEAD\`; live PM readiness comes from a fresh run of \`${state.startupContract.launchReadinessCommand}\`, not from assuming the tracked snapshot is self-updating.
 `;
 }
 
@@ -1593,6 +1595,7 @@ ${writerInstructions.join("\n")}
 - If \`manifest.json\` or \`state.json\` shows a stale or degraded bundle, pause authoritative writes until a trusted writer refreshes it.
 - Use \`${state.startupContract.launchReadinessCommand}\` to check whether the PM system itself is safe to launch or keep using on this repo clone.
 - Unrelated TERP app test or build failures do not by themselves make the PM system unavailable; treat them as repair work the PM can help coordinate.
+- If the tracked PM snapshot is one commit behind \`HEAD\`, prefer the refreshed shared live bundle over assuming the PM is down.
 
 ## Paste-In Prompt
 
@@ -1614,6 +1617,7 @@ Rules:
 - Never hand-edit generated PM files.
 - If PM state changes, route them through the allowed path for this surface.
 - If the manifest is stale, degraded, or points at an older git SHA than the work you need, stop and refresh or request refreshed state before authoritative actions.
+- If a committed PM snapshot trails \`HEAD\`, rerun \`${state.startupContract.launchReadinessCommand}\` or refresh the shared live bundle before treating that lag as downtime.
 
 Current PM summary:
 ${state.direction.summary}
@@ -1639,6 +1643,7 @@ ${relativePathsForClients(clientsRegistry).map((entry) => `- \`${entry.path}\` -
 - \`pnpm pm:launch:check\` is the scoped launch gate for the persistent PM runtime.
 - It validates PM scripts, PM tests, refresh/check integrity, publish smoke, and service-install smoke only.
 - Broader TERP app failures can still be tracked and repaired through the PM system without blocking PM launch.
+- If the committed PM snapshot trails \`HEAD\`, rerun \`pnpm pm:launch:check\`; that refresh is the authoritative live gate.
 `;
 }
 

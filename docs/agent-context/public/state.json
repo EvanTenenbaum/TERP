@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-04-17T21:55:08.224Z",
+  "generatedAt": "2026-04-17T21:57:31.930Z",
   "startupContract": {
     "entrypoint": "START_HERE.md",
     "manifest": "manifest.json",
@@ -16,10 +16,15 @@
   },
   "git": {
     "branch": "codex/persistent-pm-hardening-20260417",
-    "head": "250eba1ca74b4e513f9a369d39f7962bd2a665e1",
-    "shortHead": "250eba1c",
+    "head": "f9fdb0cdacc29d488f2784f5aeeef86a86812d81",
+    "shortHead": "f9fdb0cd",
     "workingTreeDirty": true,
     "recentCommits": [
+      {
+        "date": "2026-04-17",
+        "sha": "f9fdb0cd",
+        "subject": "docs(context): refresh PM bundle after launch activation"
+      },
       {
         "date": "2026-04-17",
         "sha": "250eba1c",
@@ -64,17 +69,12 @@
         "date": "2026-04-09",
         "sha": "46d97388",
         "subject": "fix(notifications): improve inline triage and empty states (#577)"
-      },
-      {
-        "date": "2026-04-08",
-        "sha": "f1a1abb2",
-        "subject": "feat: payment follow-up + pick list + dashboard ops (#576)"
       }
     ]
   },
   "linear": {
     "mode": "live",
-    "fetchedAt": "2026-04-17T21:55:08.672Z",
+    "fetchedAt": "2026-04-17T21:57:32.325Z",
     "latestIssueUpdatedAt": "2026-04-15T13:53:08.265Z",
     "activeProjects": [
       {
@@ -324,11 +324,11 @@
       "spreadsheet-native rollout",
       "orders and order workflow"
     ],
-    "summary": "Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 250eba1c and led by `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "summary": "Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at f9fdb0cd and led by `docs(context): refresh PM bundle after launch activation`, `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
     "themeEvidence": [
       {
         "label": "persistent PM and handoff durability",
-        "count": 6
+        "count": 7
       },
       {
         "label": "QA, proof, and rollout hardening",

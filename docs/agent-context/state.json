@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-04-17T21:55:08.224Z",
+  "generatedAt": "2026-04-17T21:57:31.930Z",
   "generator": {
     "script": "scripts/agent-context/generate-agent-context.mjs",
     "reason": "publish",
@@ -70,10 +70,16 @@
   },
   "git": {
     "branch": "codex/persistent-pm-hardening-20260417",
-    "head": "250eba1ca74b4e513f9a369d39f7962bd2a665e1",
-    "shortHead": "250eba1c",
+    "head": "f9fdb0cdacc29d488f2784f5aeeef86a86812d81",
+    "shortHead": "f9fdb0cd",
     "workingTreeDirty": true,
     "recentCommits": [
+      {
+        "date": "2026-04-17",
+        "head": "f9fdb0cdacc29d488f2784f5aeeef86a86812d81",
+        "sha": "f9fdb0cd",
+        "subject": "docs(context): refresh PM bundle after launch activation"
+      },
       {
         "date": "2026-04-17",
         "head": "250eba1ca74b4e513f9a369d39f7962bd2a665e1",
@@ -217,18 +223,12 @@
         "head": "19011c099e485581ce003135bcb5ad65f53ed8d4",
         "sha": "19011c09",
         "subject": "build(ci): upgrade active actions to node 24 (#559)"
-      },
-      {
-        "date": "2026-04-01",
-        "head": "2e7bbab7beffc42c19a954ff156bd98620c9cae4",
-        "sha": "2e7bbab7",
-        "subject": "fix(sales-catalogue): keep shared links working without clipboard (#561)"
       }
     ]
   },
   "linear": {
     "mode": "live",
-    "fetchedAt": "2026-04-17T21:55:08.672Z",
+    "fetchedAt": "2026-04-17T21:57:32.325Z",
     "latestIssueUpdatedAt": "2026-04-15T13:53:08.265Z",
     "activeProjects": [
       {
@@ -559,11 +559,11 @@
       "spreadsheet-native rollout",
       "orders and order workflow"
     ],
-    "summary": "Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 250eba1c and led by `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "summary": "Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at f9fdb0cd and led by `docs(context): refresh PM bundle after launch activation`, `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
     "themeEvidence": [
       {
         "label": "persistent PM and handoff durability",
-        "count": 6
+        "count": 7
       },
       {
         "label": "QA, proof, and rollout hardening",

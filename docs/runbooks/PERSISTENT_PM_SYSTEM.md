@@ -126,6 +126,7 @@ When changing or launching the PM system:
 1. Run `pnpm pm:launch:check`.
 2. Treat that as the scoped PM launch gate.
 3. Use broader repo validation after that when you are shipping TERP app changes.
+4. If a committed PM snapshot trails `HEAD`, rerun `pnpm pm:launch:check` or `pnpm context:refresh` before treating the lag as a PM outage.
 
 ## Launch Scope
 
@@ -133,3 +134,4 @@ When changing or launching the PM system:
 - Persistent PM launch depends on PM-specific integrity: PM runtime script lint, PM test suite, context refresh/check, publish smoke, and launchd/service install smoke.
 - Unrelated TERP webapp regressions do not block PM launch. The PM system is allowed to launch so it can help coordinate and repair that broader repo work.
 - Full repo verification remains the ship gate for TERP application changes and merge readiness.
+- A tracked PM snapshot can sit one commit behind `HEAD` immediately after a refresh-only commit. In that case, the authoritative live signal is a fresh run of `pnpm pm:launch:check`, not the older tracked snapshot alone.

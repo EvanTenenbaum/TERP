@@ -1,7 +1,13 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-17T21:55:08.224Z",
+  "generatedAt": "2026-04-17T21:57:31.930Z",
   "commits": [
+    {
+      "sha": "f9fdb0cd",
+      "head": "f9fdb0cdacc29d488f2784f5aeeef86a86812d81",
+      "date": "2026-04-17",
+      "subject": "docs(context): refresh PM bundle after launch activation"
+    },
     {
       "sha": "250eba1c",
       "head": "250eba1ca74b4e513f9a369d39f7962bd2a665e1",
@@ -67,12 +73,6 @@
       "head": "8e73fc6a8fd216e5daf08faea3518d5e103b143b",
       "date": "2026-04-08",
       "subject": "docs(context): refresh startup truth after P2 closeout (#575)"
-    },
-    {
-      "sha": "e760614b",
-      "head": "e760614b08f2e642a13c18e63b3e8b749820e4b3",
-      "date": "2026-04-08",
-      "subject": "docs(p2): close TER-1071 deferred pass (#574)"
     }
   ],
   "recentIssues": [
