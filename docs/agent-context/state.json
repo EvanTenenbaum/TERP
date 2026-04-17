@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-08T03:11:06.963Z",
+  "generatedAt": "2026-04-17T20:58:10.890Z",
   "generator": {
     "script": "scripts/agent-context/generate-agent-context.mjs",
     "maxAgeHours": 72,
@@ -25,148 +25,149 @@
     ]
   },
   "freshness": {
-    "status": "fresh",
+    "status": "partial",
     "maxAgeHours": 72,
     "snapshotAgeHours": 0,
     "notes": [
-      "Tracker data was refreshed live from Linear."
+      "Linear could not be refreshed live, so the tracker section fell back to the last known snapshot (2026-04-08T03:11:06.962Z).",
+      "Working tree contains local edits. This bundle captures committed truth at HEAD and reports that local diffs exist."
     ]
   },
   "git": {
-    "branch": "codex/p2-context-refresh-20260408",
-    "head": "e760614b08f2e642a13c18e63b3e8b749820e4b3",
-    "shortHead": "e760614b",
-    "workingTreeDirty": false,
+    "branch": "claude/terp-status-review-Av2Wq",
+    "head": "328edd743239ea65d4c2ccd260554b2725244235",
+    "shortHead": "328edd7",
+    "workingTreeDirty": true,
     "recentCommits": [
       {
+        "date": "2026-04-15",
+        "sha": "328edd7",
+        "subject": "feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)"
+      },
+      {
+        "date": "2026-04-10",
+        "sha": "d970ebe",
+        "subject": "feat(ui): advance april 9 ticket train remediation (#578)"
+      },
+      {
+        "date": "2026-04-09",
+        "sha": "46d9738",
+        "subject": "fix(notifications): improve inline triage and empty states (#577)"
+      },
+      {
         "date": "2026-04-08",
-        "sha": "e760614b",
+        "sha": "f1a1abb",
+        "subject": "feat: payment follow-up + pick list + dashboard ops (#576)"
+      },
+      {
+        "date": "2026-04-08",
+        "sha": "8e73fc6",
+        "subject": "docs(context): refresh startup truth after P2 closeout (#575)"
+      },
+      {
+        "date": "2026-04-08",
+        "sha": "e760614",
         "subject": "docs(p2): close TER-1071 deferred pass (#574)"
       },
       {
         "date": "2026-04-08",
-        "sha": "1b7e493a",
+        "sha": "1b7e493",
         "subject": "feat(po): close TER-1070 tranche 3 continuity (#573)"
       },
       {
         "date": "2026-04-08",
-        "sha": "db289932",
+        "sha": "db28993",
         "subject": "feat(sales): close TER-1069 retrieval continuity (#572)"
       },
       {
         "date": "2026-04-08",
-        "sha": "8e019eb8",
+        "sha": "8e019eb",
         "subject": "feat(ux): close TER-1068 tranche 1 (#571)"
       },
       {
         "date": "2026-04-08",
-        "sha": "7586564e",
+        "sha": "7586564",
         "subject": "fix(ux): land TER-1067 recovery and canonical P2 packet (#570)"
       },
       {
         "date": "2026-04-07",
-        "sha": "994bbee4",
+        "sha": "994bbee",
         "subject": "test(surfaces): deepen behavioral coverage and polish inventory/po UX (#568)"
       },
       {
         "date": "2026-04-07",
-        "sha": "3d68f93c",
+        "sha": "3d68f93",
         "subject": "feat: land spreadsheet-native continuity and QA hardening (#567)"
       },
       {
         "date": "2026-04-06",
-        "sha": "730d1223",
+        "sha": "730d122",
         "subject": "fix(ux): Waves 0-5 — 46 UX improvements across all surfaces (#566)"
       },
       {
         "date": "2026-04-02",
-        "sha": "d92fc165",
+        "sha": "d92fc16",
         "subject": "chore(ci): remove temporary runner key recovery workflow (#565)"
       },
       {
         "date": "2026-04-02",
-        "sha": "72868eae",
+        "sha": "72868ea",
         "subject": "chore(ci): add temporary runner key recovery workflow (#564)"
       },
       {
         "date": "2026-04-02",
-        "sha": "e8445515",
+        "sha": "e844551",
         "subject": "[codex] Harden sales catalogue adversarial follow-ups (#563)"
       },
       {
         "date": "2026-04-02",
-        "sha": "5019156f",
+        "sha": "5019156",
         "subject": "build(ci): harden ops ssh and nightly e2e output (#562)"
       },
       {
         "date": "2026-04-01",
-        "sha": "19011c09",
+        "sha": "19011c0",
         "subject": "build(ci): upgrade active actions to node 24 (#559)"
       },
       {
         "date": "2026-04-01",
-        "sha": "2e7bbab7",
+        "sha": "2e7bbab",
         "subject": "fix(sales-catalogue): keep shared links working without clipboard (#561)"
       },
       {
         "date": "2026-04-01",
-        "sha": "0bc2475d",
+        "sha": "0bc2475",
         "subject": "fix(sales-catalogue): preserve shared view popup gesture (#558)"
       },
       {
         "date": "2026-04-01",
-        "sha": "79bff4a2",
+        "sha": "79bff4a",
         "subject": "fix(sales-catalogue): harden catalogue handoff flows (#557)"
       },
       {
         "date": "2026-04-01",
-        "sha": "871ca702",
+        "sha": "871ca70",
         "subject": "fix(health): reduce noisy disk degradation warnings (#556)"
       },
       {
         "date": "2026-04-01",
-        "sha": "b90edd4b",
+        "sha": "b90edd4",
         "subject": "fix: persist create-order client selection in the URL (#555)"
       },
       {
         "date": "2026-04-01",
-        "sha": "a93d440f",
+        "sha": "a93d440",
         "subject": "fix: keep create-order client picker on the create-order route (#554)"
       },
       {
         "date": "2026-04-01",
-        "sha": "235fbe88",
+        "sha": "235fbe8",
         "subject": "fix(orders): dedupe sheet-native order actions (#553)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "b4fed659",
-        "subject": "feat(shell): standardize nav chrome and worktree QA prep (#552)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "57e66d65",
-        "subject": "fix(sales): clarify new-order entry and document redirects (#551)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "804448de",
-        "subject": "Fix unavailable sales-order client routes and harden inline-controls coverage (#550)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "02c28b90",
-        "subject": "fix(orders): hydrate sheet-native client labels (#549)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "42ff1636",
-        "subject": "feat(orders): add inline row controls to po and so (#548)"
       }
     ]
   },
   "linear": {
-    "mode": "live",
+    "mode": "last-known",
     "fetchedAt": "2026-04-08T03:11:06.962Z",
     "latestIssueUpdatedAt": "2026-04-08T03:10:07.816Z",
     "activeProjects": [
@@ -323,40 +324,40 @@
         "project": null
       }
     ],
-    "error": null
+    "error": "LINEAR_API_KEY is not configured."
   },
   "direction": {
     "focusAreas": [
-      "orders and order workflow",
       "inventory, intake, and purchase operations",
-      "QA, parity proof, and rollout hardening",
+      "orders and order workflow",
+      "operator workflow polish",
       "spreadsheet-native rollout"
     ],
-    "summary": "Current TERP direction centers on orders and order workflow and inventory, intake, and purchase operations; recent git activity is anchored at e760614b and is dominated by `docs(p2): close TER-1071 deferred pass (#574)`, `feat(po): close TER-1070 tranche 3 continuity (#573)`, `feat(sales): close TER-1069 retrieval continuity (#572)`, `feat(ux): close TER-1068 tranche 1 (#571)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "summary": "Current TERP direction centers on inventory, intake, and purchase operations and orders and order workflow; recent git activity is anchored at 328edd7 and is dominated by `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`, `fix(notifications): improve inline triage and empty states (#577)`, `feat: payment follow-up + pick list + dashboard ops (#576)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
     "themeEvidence": [
       {
-        "label": "orders and order workflow",
-        "count": 12
-      },
-      {
         "label": "inventory, intake, and purchase operations",
-        "count": 10
+        "count": 9
       },
       {
-        "label": "QA, parity proof, and rollout hardening",
+        "label": "orders and order workflow",
+        "count": 8
+      },
+      {
+        "label": "operator workflow polish",
         "count": 5
       },
       {
         "label": "spreadsheet-native rollout",
-        "count": 4
+        "count": 3
       },
       {
-        "label": "operator workflow polish",
-        "count": 4
+        "label": "accounting, payments, and ledger work",
+        "count": 3
       },
       {
-        "label": "unified operational surfaces",
-        "count": 2
+        "label": "QA, parity proof, and rollout hardening",
+        "count": 3
       }
     ]
   },
