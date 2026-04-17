@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-04-17T21:07:09.745Z",
+  "generatedAt": "2026-04-17T21:47:10.324Z",
   "startupContract": {
     "entrypoint": "START_HERE.md",
     "manifest": "manifest.json",
@@ -16,10 +16,20 @@
   },
   "git": {
     "branch": "codex/persistent-pm-hardening-20260417",
-    "head": "48a98623442a4ffc5c715cfd4a88eeb03af7d5c6",
-    "shortHead": "48a98623",
+    "head": "64774ca3d1fb290a93e7a8090bf29a1a65397d9e",
+    "shortHead": "64774ca3",
     "workingTreeDirty": true,
     "recentCommits": [
+      {
+        "date": "2026-04-17",
+        "sha": "64774ca3",
+        "subject": "test(pm): align fixtures with Claude protocol"
+      },
+      {
+        "date": "2026-04-17",
+        "sha": "c155897e",
+        "subject": "fix(pm): normalize Claude protocol casing"
+      },
       {
         "date": "2026-04-17",
         "sha": "48a98623",
@@ -59,22 +69,12 @@
         "date": "2026-04-08",
         "sha": "e760614b",
         "subject": "docs(p2): close TER-1071 deferred pass (#574)"
-      },
-      {
-        "date": "2026-04-08",
-        "sha": "1b7e493a",
-        "subject": "feat(po): close TER-1070 tranche 3 continuity (#573)"
-      },
-      {
-        "date": "2026-04-08",
-        "sha": "db289932",
-        "subject": "feat(sales): close TER-1069 retrieval continuity (#572)"
       }
     ]
   },
   "linear": {
     "mode": "live",
-    "fetchedAt": "2026-04-17T21:07:10.213Z",
+    "fetchedAt": "2026-04-17T21:47:11.097Z",
     "latestIssueUpdatedAt": "2026-04-15T13:53:08.265Z",
     "activeProjects": [
       {
@@ -320,26 +320,26 @@
   "direction": {
     "focusAreas": [
       "persistent PM and handoff durability",
-      "orders and order workflow",
       "QA, proof, and rollout hardening",
-      "spreadsheet-native rollout"
+      "spreadsheet-native rollout",
+      "orders and order workflow"
     ],
-    "summary": "Current TERP direction centers on persistent PM and handoff durability and orders and order workflow; recent git activity is anchored at 48a98623 and led by `fix(pm): declare MCP sdk and stabilize CI`, `feat(pm): harden persistent PM runtime`, `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "summary": "Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 64774ca3 and led by `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`, `fix(pm): declare MCP sdk and stabilize CI`, `feat(pm): harden persistent PM runtime`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
     "themeEvidence": [
       {
         "label": "persistent PM and handoff durability",
-        "count": 3
-      },
-      {
-        "label": "orders and order workflow",
-        "count": 3
+        "count": 5
       },
       {
         "label": "QA, proof, and rollout hardening",
-        "count": 3
+        "count": 4
       },
       {
         "label": "spreadsheet-native rollout",
+        "count": 2
+      },
+      {
+        "label": "orders and order workflow",
         "count": 2
       },
       {

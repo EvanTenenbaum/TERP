@@ -1,7 +1,19 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-17T21:07:09.745Z",
+  "generatedAt": "2026-04-17T21:47:10.324Z",
   "commits": [
+    {
+      "sha": "64774ca3",
+      "head": "64774ca3d1fb290a93e7a8090bf29a1a65397d9e",
+      "date": "2026-04-17",
+      "subject": "test(pm): align fixtures with Claude protocol"
+    },
+    {
+      "sha": "c155897e",
+      "head": "c155897e2f28bee225bbd344031535702c97996c",
+      "date": "2026-04-17",
+      "subject": "fix(pm): normalize Claude protocol casing"
+    },
     {
       "sha": "48a98623",
       "head": "48a98623442a4ffc5c715cfd4a88eeb03af7d5c6",
@@ -61,18 +73,6 @@
       "head": "db289932c7f8e4a4db4c0ccac02790d45cd5b2c4",
       "date": "2026-04-08",
       "subject": "feat(sales): close TER-1069 retrieval continuity (#572)"
-    },
-    {
-      "sha": "8e019eb8",
-      "head": "8e019eb8a81a25e0f6169cc080cc8d575c57fbf3",
-      "date": "2026-04-08",
-      "subject": "feat(ux): close TER-1068 tranche 1 (#571)"
-    },
-    {
-      "sha": "7586564e",
-      "head": "7586564ebbf49fa94192500dc872ee337a7c4595",
-      "date": "2026-04-08",
-      "subject": "fix(ux): land TER-1067 recovery and canonical P2 packet (#570)"
     }
   ],
   "recentIssues": [

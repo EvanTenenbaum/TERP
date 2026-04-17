@@ -38,6 +38,7 @@ That shared directory mirrors the current PM bundle for all TERP worktrees. Loca
 ```bash
 pnpm context:refresh
 pnpm context:check
+pnpm pm:launch:check
 pnpm pm:checkpoint -- --client-id codex-cli-local --skip-linear-writeback
 pnpm pm:publish -- --output-dir /tmp/terp-pm-public
 pnpm pm:mcp:http -- --host 127.0.0.1 --port 4317
@@ -73,6 +74,7 @@ pnpm pm:onboard -- "Internal QA bot" --trust read-only --read-path git-clone --r
 The Mac mini is the execution/orchestration host, not the PM authority. Install the launchd services from the repo checkout that should own PM orchestration:
 
 ```bash
+pnpm pm:launch:check
 pnpm pm:services:install -- --repo-root "$PWD"
 ```
 
@@ -92,6 +94,7 @@ pnpm pm:services:install -- --dry-run --output-dir /tmp/terp-pm-launchd
 To load immediately on the current machine:
 
 ```bash
+pnpm pm:launch:check
 pnpm pm:services:install -- --load
 ```
 
@@ -116,10 +119,15 @@ pnpm pm:services:install -- --load
 
 ## Verification Floor
 
-When changing the PM system:
+When changing or launching the PM system:
 
-1. Run the targeted PM tests.
-2. Run `pnpm context:refresh`.
-3. Run `pnpm context:check`.
-4. Smoke-check any script you changed.
-5. Only then move on to broader repo validation.
+1. Run `pnpm pm:launch:check`.
+2. Treat that as the scoped PM launch gate.
+3. Use broader repo validation after that when you are shipping TERP app changes.
+
+## Launch Scope
+
+- `pnpm pm:launch:check` is intentionally narrower than `pnpm check`, `pnpm test`, and `pnpm build`.
+- Persistent PM launch depends on PM-specific integrity: PM runtime script lint, PM test suite, context refresh/check, publish smoke, and launchd/service install smoke.
+- Unrelated TERP webapp regressions do not block PM launch. The PM system is allowed to launch so it can help coordinate and repair that broader repo work.
+- Full repo verification remains the ship gate for TERP application changes and merge readiness.
