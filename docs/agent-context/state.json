@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-04-17T20:53:00.961Z",
+  "generatedAt": "2026-04-17T20:58:31.123Z",
   "generator": {
     "script": "scripts/agent-context/generate-agent-context.mjs",
-    "reason": "publish",
+    "reason": "manual-refresh",
     "linearLookbackDays": 21,
     "artifactTtls": {
       "START_HERE.md": 3600,
@@ -69,10 +69,16 @@
   },
   "git": {
     "branch": "codex/persistent-pm-hardening-20260417",
-    "head": "328edd743239ea65d4c2ccd260554b2725244235",
-    "shortHead": "328edd74",
+    "head": "3605e38e17923b86a68c95f72e84e3bba8ec63e1",
+    "shortHead": "3605e38e",
     "workingTreeDirty": true,
     "recentCommits": [
+      {
+        "date": "2026-04-17",
+        "head": "3605e38e17923b86a68c95f72e84e3bba8ec63e1",
+        "sha": "3605e38e",
+        "subject": "feat(pm): harden persistent PM runtime"
+      },
       {
         "date": "2026-04-15",
         "head": "328edd743239ea65d4c2ccd260554b2725244235",
@@ -216,18 +222,12 @@
         "head": "a93d440f80b9f09c8014105ac87a6d9f6dc175a4",
         "sha": "a93d440f",
         "subject": "fix: keep create-order client picker on the create-order route (#554)"
-      },
-      {
-        "date": "2026-04-01",
-        "head": "235fbe8865b1a07571134d380e305ce7c43c1cb9",
-        "sha": "235fbe88",
-        "subject": "fix(orders): dedupe sheet-native order actions (#553)"
       }
     ]
   },
   "linear": {
     "mode": "live",
-    "fetchedAt": "2026-04-17T20:53:01.606Z",
+    "fetchedAt": "2026-04-17T20:58:32.946Z",
     "latestIssueUpdatedAt": "2026-04-15T13:53:08.265Z",
     "activeProjects": [
       {
@@ -554,19 +554,15 @@
   "direction": {
     "focusAreas": [
       "orders and order workflow",
-      "spreadsheet-native rollout",
       "QA, proof, and rollout hardening",
-      "persistent PM and handoff durability"
+      "persistent PM and handoff durability",
+      "spreadsheet-native rollout"
     ],
-    "summary": "Current TERP direction centers on orders and order workflow and spreadsheet-native rollout; recent git activity is anchored at 328edd74 and led by `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`, `fix(notifications): improve inline triage and empty states (#577)`, `feat: payment follow-up + pick list + dashboard ops (#576)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "summary": "Current TERP direction centers on orders and order workflow and QA, proof, and rollout hardening; recent git activity is anchored at 3605e38e and led by `feat(pm): harden persistent PM runtime`, `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`, `fix(notifications): improve inline triage and empty states (#577)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
     "themeEvidence": [
       {
         "label": "orders and order workflow",
-        "count": 5
-      },
-      {
-        "label": "spreadsheet-native rollout",
-        "count": 3
+        "count": 4
       },
       {
         "label": "QA, proof, and rollout hardening",
@@ -574,7 +570,11 @@
       },
       {
         "label": "persistent PM and handoff durability",
-        "count": 1
+        "count": 2
+      },
+      {
+        "label": "spreadsheet-native rollout",
+        "count": 2
       },
       {
         "label": "inventory, intake, and purchase operations",

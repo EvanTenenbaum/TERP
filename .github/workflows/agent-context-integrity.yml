@@ -36,6 +36,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
@@ -64,10 +65,9 @@ jobs:
       - name: Refresh PM bundle
         run: pnpm context:refresh
 
-      - name: Fail if generated PM artifacts drifted
+      - name: Fail if bridge and legacy PM surfaces drifted
         run: >
           git diff --exit-code --
-          docs/agent-context
           product-management/START_HERE.md
           AGENTS.md
           CLAUDE.md

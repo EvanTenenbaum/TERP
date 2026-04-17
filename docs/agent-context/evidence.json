@@ -1,7 +1,13 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-17T20:53:00.961Z",
+  "generatedAt": "2026-04-17T20:58:31.123Z",
   "commits": [
+    {
+      "sha": "3605e38e",
+      "head": "3605e38e17923b86a68c95f72e84e3bba8ec63e1",
+      "date": "2026-04-17",
+      "subject": "feat(pm): harden persistent PM runtime"
+    },
     {
       "sha": "328edd74",
       "head": "328edd743239ea65d4c2ccd260554b2725244235",
@@ -67,12 +73,6 @@
       "head": "994bbee489c3c5656540f01de93fc808e3f80279",
       "date": "2026-04-07",
       "subject": "test(surfaces): deepen behavioral coverage and polish inventory/po UX (#568)"
-    },
-    {
-      "sha": "3d68f93c",
-      "head": "3d68f93c09b10455f2070d1e91ce4fdeecf66fa4",
-      "date": "2026-04-07",
-      "subject": "feat: land spreadsheet-native continuity and QA hardening (#567)"
     }
   ],
   "recentIssues": [

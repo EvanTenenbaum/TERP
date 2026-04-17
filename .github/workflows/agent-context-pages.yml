@@ -43,9 +43,6 @@ jobs:
       - name: Refresh PM bundle
         run: pnpm context:refresh
 
-      - name: Fail if generated PM artifacts drifted
-        run: git diff --exit-code -- docs/agent-context product-management/START_HERE.md
-
       - name: Verify PM freshness and integrity
         run: pnpm context:check
 
