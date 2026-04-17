@@ -34,7 +34,7 @@ function createFixtureRepo() {
     "# Fixture AGENTS\n\nStart with `docs/agent-context/START_HERE.md`.\n",
   );
   writeFile(
-    path.join(repoRoot, "CLAUDE.MD"),
+    path.join(repoRoot, "CLAUDE.md"),
     "# Fixture CLAUDE\n\nStart with `docs/agent-context/START_HERE.md`.\n",
   );
   writeFile(

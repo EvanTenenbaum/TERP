@@ -23,7 +23,7 @@ function createFixtureRepo() {
   execFileSync("git", ["-C", repoRoot, "config", "user.name", "PM Fixture"]);
 
   writeFile(path.join(repoRoot, "AGENTS.md"), "# Fixture AGENTS\n\nStart with `docs/agent-context/START_HERE.md`.\n");
-  writeFile(path.join(repoRoot, "CLAUDE.MD"), "# Fixture CLAUDE\n\nStart with `docs/agent-context/START_HERE.md`.\n");
+  writeFile(path.join(repoRoot, "CLAUDE.md"), "# Fixture CLAUDE\n\nStart with `docs/agent-context/START_HERE.md`.\n");
   writeFile(path.join(repoRoot, "docs/ACTIVE_SESSIONS.md"), "# Active Sessions\n\nStart with `docs/agent-context/START_HERE.md`.\n");
   writeFile(path.join(repoRoot, "docs/PROJECT_CONTEXT.md"), "# Project Context\n\nStart with `docs/agent-context/START_HERE.md`.\n");
   writeFile(path.join(repoRoot, "docs/TERP_AGENT_INSTRUCTIONS.md"), "# Agent Instructions\n\nStart with `docs/agent-context/START_HERE.md`.\n");
