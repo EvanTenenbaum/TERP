@@ -7,7 +7,7 @@ description: "Roadmap management protocol — Linear integration, task IDs, stat
 
 ## Source of Truth
 
-> Status note (2026-04-06): Before using this skill for tracker work, read `docs/agent-context/START_HERE.md`. Use `docs/agent-context/state.json` for machine-readable startup truth and freshness.
+> Status note (2026-04-17): Before using this skill for tracker work, read `docs/agent-context/START_HERE.md`, confirm freshness in `docs/agent-context/manifest.json`, then use `docs/agent-context/state.json` and `docs/agent-context/work.json` for machine-readable startup truth and remaining-work order.
 
 **Linear** is the primary source of truth. GitHub roadmap (`docs/roadmaps/GOLDEN_FLOWS_BETA_ROADMAP.md`) is a backup.
 
@@ -17,12 +17,13 @@ description: "Roadmap management protocol — Linear integration, task IDs, stat
 
 ## Before Starting ANY Work
 
-1. Read `docs/agent-context/START_HERE.md` — confirm current direction, freshness, and what not to trust
-2. Use `docs/agent-context/state.json` if you need machine-readable startup truth
-3. Use Linear as the live tracker and treat `docs/roadmaps/MASTER_ROADMAP.md` as backup/historical context only
-4. Do not rely on `docs/ACTIVE_SESSIONS.md` for live conflict truth; it is a legacy snapshot
-5. Create session file in `docs/sessions/active/` only if the active lane still uses that workflow
-6. Select autonomy mode (SAFE/STRICT/RED)
+1. Read `docs/agent-context/START_HERE.md` — confirm current direction and what not to trust
+2. Confirm freshness in `docs/agent-context/manifest.json`
+3. Use `docs/agent-context/state.json` for machine-readable PM state and `docs/agent-context/work.json` for remaining-work order
+4. Use Linear as the live tracker and treat `docs/roadmaps/MASTER_ROADMAP.md` as backup/historical context only
+5. Do not rely on `docs/ACTIVE_SESSIONS.md` for live conflict truth; it is a legacy snapshot
+6. Create session file in `docs/sessions/active/` only if the active lane still uses that workflow
+7. Select autonomy mode (SAFE/STRICT/RED)
 
 ## Task ID Formats
 

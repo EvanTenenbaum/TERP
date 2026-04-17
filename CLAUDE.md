@@ -10,7 +10,7 @@ TERP is a specialized ERP for THCA wholesale cannabis operations. React 19 + Tai
 
 ## Startup Contract
 
-Before scanning old docs or commit history for broad orientation, read `docs/agent-context/START_HERE.md`. Use `docs/agent-context/state.json` for machine-readable startup truth and freshness. Treat `docs/ACTIVE_SESSIONS.md`, `docs/PROJECT_CONTEXT.md`, `docs/TERP_AGENT_INSTRUCTIONS.md`, and `docs/ROADMAP_AGENT_GUIDE.md` as legacy/background unless the agent-context bundle tells you otherwise.
+Before scanning old docs or commit history for broad orientation, read `docs/agent-context/START_HERE.md`. Confirm freshness in `docs/agent-context/manifest.json`, then use `docs/agent-context/state.json` and `docs/agent-context/work.json` for machine-readable startup truth and remaining-work ordering. Treat `docs/ACTIVE_SESSIONS.md`, `docs/PROJECT_CONTEXT.md`, `docs/TERP_AGENT_INSTRUCTIONS.md`, `docs/ROADMAP_AGENT_GUIDE.md`, and `product-management/START_HERE.md` as legacy/background unless the agent-context bundle tells you otherwise.
 
 ## Commands (Run Before Every Commit)
 

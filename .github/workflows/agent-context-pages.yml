@@ -1,0 +1,69 @@
+name: Agent Context Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: agent-context-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.4.1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Refresh PM bundle
+        run: pnpm context:refresh
+
+      - name: Fail if generated PM artifacts drifted
+        run: git diff --exit-code -- docs/agent-context product-management/START_HERE.md
+
+      - name: Verify PM freshness and integrity
+        run: pnpm context:check
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload public PM mirror
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/agent-context/public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy public PM mirror
+        id: deployment
+        uses: actions/deploy-pages@v4

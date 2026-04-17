@@ -7,7 +7,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 export default [
   js.configs.recommended,
   {
-    files: ['**/*.{ts,tsx,js,jsx}'],
+    files: ['**/*.{ts,tsx,js,jsx,mjs}'],
     plugins: {
       '@typescript-eslint': typescript,
       'react': react,
@@ -204,4 +204,3 @@ export default [
     ],
   },
 ];
-

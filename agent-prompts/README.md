@@ -6,17 +6,18 @@ Each prompt contains everything an AI agent needs to understand their role - cre
 
 ---
 
-## 🚨 MANDATORY: READ CLAUDE.md FIRST
+## 🚨 MANDATORY: READ THE PM BUNDLE FIRST
 
 > **BEFORE using any agent prompt in this directory:**
 >
-> **ALL agents MUST first read `/CLAUDE.md`** in the repository root.
+> 1. Read `docs/agent-context/START_HERE.md`
+> 2. Confirm freshness in `docs/agent-context/manifest.json`
+> 3. Use `docs/agent-context/state.json` and `docs/agent-context/work.json` for machine-readable PM truth
+> 4. Then read `/CLAUDE.md` in the repository root for repo protocol details
 >
-> Then read `docs/agent-context/START_HERE.md` for the current TERP direction, freshness status, and startup contract.
+> The repo-backed PM bundle under `docs/agent-context/` is the TERP startup contract and current-truth system. `CLAUDE.md` provides agent protocol and verification rules, but it does not replace the PM bundle.
 >
-> CLAUDE.md is the **single source of truth** for agent protocols, and `docs/agent-context/START_HERE.md` is the current-truth bundle for project direction and tracker freshness. The prompts in this directory supplement those files but do NOT override them.
->
-> **If there are ANY conflicts between CLAUDE.md, the agent-context bundle, and files in this directory, CLAUDE.md and the agent-context bundle take precedence.**
+> **If there are ANY conflicts between prompt files in this directory and the agent-context bundle, the agent-context bundle takes precedence for PM state and freshness.**
 
 ---
 

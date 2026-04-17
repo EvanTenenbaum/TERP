@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-04-17T20:53:00.961Z",
+  "git_sha": "328edd743239ea65d4c2ccd260554b2725244235",
+  "git_branch": "codex/persistent-pm-hardening-20260417",
+  "inputs_hash": "591de8fb3089d02f7ca4c07073e9105ed884743014fe26d6c0105c2c738728c3",
+  "linear_mode": "live",
+  "linear_latest_issue_updated_at": "2026-04-15T13:53:08.265Z",
+  "artifacts": {
+    "START_HERE.md": {
+      "generated_at": "2026-04-17T20:53:00.961Z",
+      "git_sha": "328edd743239ea65d4c2ccd260554b2725244235",
+      "inputs_hash": "591de8fb3089d02f7ca4c07073e9105ed884743014fe26d6c0105c2c738728c3",
+      "schema_version": 2,
+      "ttl_seconds": 3600,
+      "content_hash": "1b01c2898a5088fde4000fbce8a8024151ba408f6e485e55a1b45ce20a8845f2",
+      "visibility": "public",
+      "self_hash_strategy": null
+    },
+    "state.json": {
+      "generated_at": "2026-04-17T20:53:00.961Z",
+      "git_sha": "328edd743239ea65d4c2ccd260554b2725244235",
+      "inputs_hash": "591de8fb3089d02f7ca4c07073e9105ed884743014fe26d6c0105c2c738728c3",
+      "schema_version": 2,
+      "ttl_seconds": 900,
+      "content_hash": "a30bed9c8e7c4f137f8137f399e5dcaf134a548c0247bb98d598891ae97ca15d",
+      "visibility": "public",
+      "self_hash_strategy": null
+    },
+    "work.json": {
+      "generated_at": "2026-04-17T20:53:00.961Z",
+      "git_sha": "328edd743239ea65d4c2ccd260554b2725244235",
+      "inputs_hash": "591de8fb3089d02f7ca4c07073e9105ed884743014fe26d6c0105c2c738728c3",
+      "schema_version": 1,
+      "ttl_seconds": 3600,
+      "content_hash": "da9d302fc7616274ee1fd925834483a41b26f73f89157462a64ebc7cb30586b8",
+      "visibility": "public",
+      "self_hash_strategy": null
+    },
+    "health.json": {
+      "generated_at": "2026-04-17T20:53:00.961Z",
+      "git_sha": "328edd743239ea65d4c2ccd260554b2725244235",
+      "inputs_hash": "591de8fb3089d02f7ca4c07073e9105ed884743014fe26d6c0105c2c738728c3",
+      "schema_version": 1,
+      "ttl_seconds": 300,
+      "content_hash": "ca94e90b4f23c5becc3883735355064204f517f05d1e570cdc96506dce46da18",
+      "visibility": "public",
+      "self_hash_strategy": null
+    },
+    "manifest.json": {
+      "generated_at": "2026-04-17T20:53:00.961Z",
+      "git_sha": "328edd743239ea65d4c2ccd260554b2725244235",
+      "inputs_hash": "591de8fb3089d02f7ca4c07073e9105ed884743014fe26d6c0105c2c738728c3",
+      "schema_version": 1,
+      "ttl_seconds": 900,
+      "content_hash": "74519d4d8f96560e87bb0a6c91225a1bedd86317df244c23df29f397e30bdb64",
+      "visibility": "public",
+      "self_hash_strategy": "content-hash-null-placeholder"
+    }
+  }
+}

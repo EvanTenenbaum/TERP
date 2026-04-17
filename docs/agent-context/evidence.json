@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-04-17T20:53:00.961Z",
+  "commits": [
+    {
+      "sha": "328edd74",
+      "head": "328edd743239ea65d4c2ccd260554b2725244235",
+      "date": "2026-04-15",
+      "subject": "feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)"
+    },
+    {
+      "sha": "d970ebe2",
+      "head": "d970ebe2c75839979d0da7a7da49a64cd796877b",
+      "date": "2026-04-10",
+      "subject": "feat(ui): advance april 9 ticket train remediation (#578)"
+    },
+    {
+      "sha": "46d97388",
+      "head": "46d97388dd97bbd0fedaae479dafbe394a600b16",
+      "date": "2026-04-09",
+      "subject": "fix(notifications): improve inline triage and empty states (#577)"
+    },
+    {
+      "sha": "f1a1abb2",
+      "head": "f1a1abb2402cd8862f2419c05371dfcd7f92b920",
+      "date": "2026-04-08",
+      "subject": "feat: payment follow-up + pick list + dashboard ops (#576)"
+    },
+    {
+      "sha": "8e73fc6a",
+      "head": "8e73fc6a8fd216e5daf08faea3518d5e103b143b",
+      "date": "2026-04-08",
+      "subject": "docs(context): refresh startup truth after P2 closeout (#575)"
+    },
+    {
+      "sha": "e760614b",
+      "head": "e760614b08f2e642a13c18e63b3e8b749820e4b3",
+      "date": "2026-04-08",
+      "subject": "docs(p2): close TER-1071 deferred pass (#574)"
+    },
+    {
+      "sha": "1b7e493a",
+      "head": "1b7e493a96f16387ce8bda93fc3829c67c12834b",
+      "date": "2026-04-08",
+      "subject": "feat(po): close TER-1070 tranche 3 continuity (#573)"
+    },
+    {
+      "sha": "db289932",
+      "head": "db289932c7f8e4a4db4c0ccac02790d45cd5b2c4",
+      "date": "2026-04-08",
+      "subject": "feat(sales): close TER-1069 retrieval continuity (#572)"
+    },
+    {
+      "sha": "8e019eb8",
+      "head": "8e019eb8a81a25e0f6169cc080cc8d575c57fbf3",
+      "date": "2026-04-08",
+      "subject": "feat(ux): close TER-1068 tranche 1 (#571)"
+    },
+    {
+      "sha": "7586564e",
+      "head": "7586564ebbf49fa94192500dc872ee337a7c4595",
+      "date": "2026-04-08",
+      "subject": "fix(ux): land TER-1067 recovery and canonical P2 packet (#570)"
+    },
+    {
+      "sha": "994bbee4",
+      "head": "994bbee489c3c5656540f01de93fc808e3f80279",
+      "date": "2026-04-07",
+      "subject": "test(surfaces): deepen behavioral coverage and polish inventory/po UX (#568)"
+    },
+    {
+      "sha": "3d68f93c",
+      "head": "3d68f93c09b10455f2070d1e91ce4fdeecf66fa4",
+      "date": "2026-04-07",
+      "subject": "feat: land spreadsheet-native continuity and QA hardening (#567)"
+    }
+  ],
+  "recentIssues": [
+    {
+      "id": "ffd2ae42-f08e-4e12-9158-bc3bfbb1cac7",
+      "identifier": "TER-1073",
+      "title": "[P2-22B] Portable cuts and saved-cut continuity across selling surfaces",
+      "updatedAt": "2026-04-15T13:53:08.265Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1073/p2-22b-portable-cuts-and-saved-cut-continuity-across-selling-surfaces",
+      "state": "In Review"
+    },
+    {
+      "id": "df3a2a83-547c-4373-ab7e-62a1426fdd11",
+      "identifier": "TER-1052",
+      "title": "[P2-06] Order creator: show client credit, balance, and recent order history before adding items",
+      "updatedAt": "2026-04-15T13:53:08.263Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1052/p2-06-order-creator-show-client-credit-balance-and-recent-order",
+      "state": "In Review"
+    },
+    {
+      "id": "0bd074f7-525c-4fed-9308-d4dcec7d1c9c",
+      "identifier": "TER-1139",
+      "title": "[UI-XA6] Verify workflow confirmations exist for destructive/creation actions",
+      "updatedAt": "2026-04-09T19:27:35.233Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1139/ui-xa6-verify-workflow-confirmations-exist-for-destructivecreation",
+      "state": "Backlog"
+    },
+    {
+      "id": "f149f07d-e952-4084-821d-32881876b587",
+      "identifier": "TER-1138",
+      "title": "[UI-XA5] Verify key workflows reachable in ≤3 clicks",
+      "updatedAt": "2026-04-09T19:27:28.613Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1138/ui-xa5-verify-key-workflows-reachable-in-3-clicks",
+      "state": "Backlog"
+    },
+    {
+      "id": "895724f7-f70a-4742-afb5-a6941f36ab45",
+      "identifier": "TER-1137",
+      "title": "[UI-XA4] Verify cross-module contextual links exist",
+      "updatedAt": "2026-04-09T19:27:22.923Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1137/ui-xa4-verify-cross-module-contextual-links-exist",
+      "state": "Backlog"
+    },
+    {
+      "id": "1ea7b4ae-8030-4bb0-9838-373d13228283",
+      "identifier": "TER-1136",
+      "title": "[UI-XA3] Verify primary action columns visible at 1280px on all tables",
+      "updatedAt": "2026-04-09T19:27:13.141Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1136/ui-xa3-verify-primary-action-columns-visible-at-1280px-on-all-tables",
+      "state": "Backlog"
+    },
+    {
+      "id": "22b582e0-7ecc-4fe3-bb36-6b0bbf5129b2",
+      "identifier": "TER-1135",
+      "title": "[UI-XA2] Verify page title is visually dominant on all workspace pages",
+      "updatedAt": "2026-04-09T19:27:06.029Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1135/ui-xa2-verify-page-title-is-visually-dominant-on-all-workspace-pages",
+      "state": "Backlog"
+    },
+    {
+      "id": "29d91b1d-2a17-43b6-8b3b-852d3137b3f8",
+      "identifier": "TER-1134",
+      "title": "[UI-XA1] Audit column header / row prefix duplication",
+      "updatedAt": "2026-04-09T19:26:59.113Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1134/ui-xa1-audit-column-header-row-prefix-duplication",
+      "state": "Backlog"
+    },
+    {
+      "id": "16bfbe04-42fe-4c89-b583-691dc3abb898",
+      "identifier": "TER-1133",
+      "title": "[UI-NT5] Add contextual empty states per notification category",
+      "updatedAt": "2026-04-09T19:26:52.454Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1133/ui-nt5-add-contextual-empty-states-per-notification-category",
+      "state": "Backlog"
+    },
+    {
+      "id": "143768d2-2808-4d58-ae24-004462d72e1e",
+      "identifier": "TER-1132",
+      "title": "[UI-NT4] Add inline \"mark read\" button per notification row",
+      "updatedAt": "2026-04-09T19:26:46.985Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1132/ui-nt4-add-inline-mark-read-button-per-notification-row",
+      "state": "Backlog"
+    },
+    {
+      "id": "8ce5ae2f-f9b4-49ad-9fb1-4fb29dbdf08f",
+      "identifier": "TER-1131",
+      "title": "[UI-NT3] Differentiate urgent/exception notifications visually",
+      "updatedAt": "2026-04-09T19:26:27.712Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1131/ui-nt3-differentiate-urgentexception-notifications-visually",
+      "state": "Backlog"
+    },
+    {
+      "id": "32ec412e-2e9c-4d03-8dab-28147845bf15",
+      "identifier": "TER-1130",
+      "title": "[UI-NT2] Strengthen unread notification row visual distinction",
+      "updatedAt": "2026-04-09T19:26:21.191Z",
+      "url": "https://linear.app/terpcorp/issue/TER-1130/ui-nt2-strengthen-unread-notification-row-visual-distinction",
+      "state": "Backlog"
+    }
+  ],
+  "decisions": [],
+  "laneSignals": [
+    {
+      "path": "docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json",
+      "gate": "G2",
+      "gateVerdict": "closed with evidence",
+      "updatedAt": "2026-03-20",
+      "nextMove": "TER-795 is closed with evidence. Keep G2 sealed and follow the reopened G6 rollout verdict for the remaining retirement remediation work."
+    }
+  ],
+  "sources": [
+    "git HEAD and recent commits",
+    "Linear active projects and recent issues",
+    "append-only PM decision log"
+  ]
+}

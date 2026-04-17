@@ -92,6 +92,23 @@ export const LEDGER_TYPE_TOKENS: Record<string, string> = {
   REFUND: STATUS_DANGER,
 };
 
+/** Relationship role badge tone → token */
+export const RELATIONSHIP_ROLE_TOKENS: Record<string, string> = {
+  Customer: STATUS_INFO,
+  Supplier: STATUS_SUCCESS,
+  Brand: STATUS_COMPLETE,
+  Referee: STATUS_WARNING,
+  Contractor: STATUS_NEUTRAL,
+};
+
+/** Relationship health/status tone → token */
+export const RELATIONSHIP_STATUS_TOKENS: Record<string, string> = {
+  ACTIVE: STATUS_SUCCESS,
+  WATCH: STATUS_WARNING,
+  DORMANT: STATUS_NEUTRAL,
+  "NEEDS-ATTENTION": STATUS_DANGER,
+};
+
 // ─── Order Status Tokens (420-fork Wave 1) ─────────────────────────
 
 export const ORDER_STATUS_LABELS: Record<string, string> = {

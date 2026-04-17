@@ -1,64 +1,11 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-04-17T20:53:00.961Z",
-  "generator": {
-    "script": "scripts/agent-context/generate-agent-context.mjs",
-    "reason": "publish",
-    "linearLookbackDays": 21,
-    "artifactTtls": {
-      "START_HERE.md": 3600,
-      "state.json": 900,
-      "work.json": 3600,
-      "evidence.json": 86400,
-      "manifest.json": 900,
-      "health.json": 300,
-      "bootstrap/README.md": 3600,
-      "bootstrap/any-llm.md": 3600,
-      "public/START_HERE.md": 3600,
-      "public/state.json": 900,
-      "public/work.json": 3600,
-      "public/manifest.json": 900,
-      "public/health.json": 300
-    }
-  },
   "startupContract": {
-    "readFirst": [
-      "AGENTS.md",
-      "CLAUDE.MD",
-      "/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current/START_HERE.md",
-      "/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current/manifest.json",
-      "docs/agent-context/START_HERE.md",
-      "docs/agent-context/manifest.json"
-    ],
-    "entrypoint": "docs/agent-context/START_HERE.md",
-    "manifest": "docs/agent-context/manifest.json",
-    "machineState": "docs/agent-context/state.json",
-    "workMap": "docs/agent-context/work.json",
-    "decisionLog": "docs/agent-context/decisions.ndjson",
-    "clientsRegistry": "docs/agent-context/clients.json",
-    "evidenceIndex": "docs/agent-context/evidence.json",
-    "proposalsDir": "docs/agent-context/proposals",
-    "bootstrapsDir": "docs/agent-context/bootstrap",
-    "runbook": "docs/runbooks/PERSISTENT_PM_SYSTEM.md",
-    "sharedLiveBundleDir": "/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current",
-    "sharedManifest": "/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current/manifest.json",
-    "sharedEntryPoint": "/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current/START_HERE.md",
-    "sharedState": "/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current/state.json",
-    "sharedWorkMap": "/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current/work.json",
-    "sharedLocatorCommand": "git rev-parse --git-common-dir",
-    "refreshCommand": "pnpm context:refresh",
-    "checkCommand": "pnpm context:check",
-    "checkpointCommand": "pnpm pm:checkpoint",
-    "onboardCommand": "pnpm pm:onboard -- <client-name>",
-    "servicesInstallCommand": "pnpm pm:services:install",
-    "doNotTreatAsCurrentTruth": [
-      "docs/ACTIVE_SESSIONS.md",
-      "docs/PROJECT_CONTEXT.md",
-      "docs/TERP_AGENT_INSTRUCTIONS.md",
-      "docs/ROADMAP_AGENT_GUIDE.md",
-      "product-management/START_HERE.md",
-      "agent-prompts/README.md"
-    ]
+    "entrypoint": "START_HERE.md",
+    "manifest": "manifest.json",
+    "machineState": "state.json",
+    "workMap": "work.json"
   },
   "freshness": {
     "status": "fresh",
@@ -75,153 +22,53 @@
     "recentCommits": [
       {
         "date": "2026-04-15",
-        "head": "328edd743239ea65d4c2ccd260554b2725244235",
         "sha": "328edd74",
         "subject": "feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)"
       },
       {
         "date": "2026-04-10",
-        "head": "d970ebe2c75839979d0da7a7da49a64cd796877b",
         "sha": "d970ebe2",
         "subject": "feat(ui): advance april 9 ticket train remediation (#578)"
       },
       {
         "date": "2026-04-09",
-        "head": "46d97388dd97bbd0fedaae479dafbe394a600b16",
         "sha": "46d97388",
         "subject": "fix(notifications): improve inline triage and empty states (#577)"
       },
       {
         "date": "2026-04-08",
-        "head": "f1a1abb2402cd8862f2419c05371dfcd7f92b920",
         "sha": "f1a1abb2",
         "subject": "feat: payment follow-up + pick list + dashboard ops (#576)"
       },
       {
         "date": "2026-04-08",
-        "head": "8e73fc6a8fd216e5daf08faea3518d5e103b143b",
         "sha": "8e73fc6a",
         "subject": "docs(context): refresh startup truth after P2 closeout (#575)"
       },
       {
         "date": "2026-04-08",
-        "head": "e760614b08f2e642a13c18e63b3e8b749820e4b3",
         "sha": "e760614b",
         "subject": "docs(p2): close TER-1071 deferred pass (#574)"
       },
       {
         "date": "2026-04-08",
-        "head": "1b7e493a96f16387ce8bda93fc3829c67c12834b",
         "sha": "1b7e493a",
         "subject": "feat(po): close TER-1070 tranche 3 continuity (#573)"
       },
       {
         "date": "2026-04-08",
-        "head": "db289932c7f8e4a4db4c0ccac02790d45cd5b2c4",
         "sha": "db289932",
         "subject": "feat(sales): close TER-1069 retrieval continuity (#572)"
       },
       {
         "date": "2026-04-08",
-        "head": "8e019eb8a81a25e0f6169cc080cc8d575c57fbf3",
         "sha": "8e019eb8",
         "subject": "feat(ux): close TER-1068 tranche 1 (#571)"
       },
       {
         "date": "2026-04-08",
-        "head": "7586564ebbf49fa94192500dc872ee337a7c4595",
         "sha": "7586564e",
         "subject": "fix(ux): land TER-1067 recovery and canonical P2 packet (#570)"
-      },
-      {
-        "date": "2026-04-07",
-        "head": "994bbee489c3c5656540f01de93fc808e3f80279",
-        "sha": "994bbee4",
-        "subject": "test(surfaces): deepen behavioral coverage and polish inventory/po UX (#568)"
-      },
-      {
-        "date": "2026-04-07",
-        "head": "3d68f93c09b10455f2070d1e91ce4fdeecf66fa4",
-        "sha": "3d68f93c",
-        "subject": "feat: land spreadsheet-native continuity and QA hardening (#567)"
-      },
-      {
-        "date": "2026-04-06",
-        "head": "730d1223e20b05b729cd066e5a1655bf9eba7337",
-        "sha": "730d1223",
-        "subject": "fix(ux): Waves 0-5 — 46 UX improvements across all surfaces (#566)"
-      },
-      {
-        "date": "2026-04-02",
-        "head": "d92fc165e351d78355689f369c315dfc9fbdbb44",
-        "sha": "d92fc165",
-        "subject": "chore(ci): remove temporary runner key recovery workflow (#565)"
-      },
-      {
-        "date": "2026-04-02",
-        "head": "72868eae390efcfa18af9c17afb220f9362584e4",
-        "sha": "72868eae",
-        "subject": "chore(ci): add temporary runner key recovery workflow (#564)"
-      },
-      {
-        "date": "2026-04-02",
-        "head": "e84455153a2da1d6cc95c03ed3d1f6d65b318548",
-        "sha": "e8445515",
-        "subject": "[codex] Harden sales catalogue adversarial follow-ups (#563)"
-      },
-      {
-        "date": "2026-04-02",
-        "head": "5019156f209a09841440d8f18302a0bb50a8f5ab",
-        "sha": "5019156f",
-        "subject": "build(ci): harden ops ssh and nightly e2e output (#562)"
-      },
-      {
-        "date": "2026-04-01",
-        "head": "19011c099e485581ce003135bcb5ad65f53ed8d4",
-        "sha": "19011c09",
-        "subject": "build(ci): upgrade active actions to node 24 (#559)"
-      },
-      {
-        "date": "2026-04-01",
-        "head": "2e7bbab7beffc42c19a954ff156bd98620c9cae4",
-        "sha": "2e7bbab7",
-        "subject": "fix(sales-catalogue): keep shared links working without clipboard (#561)"
-      },
-      {
-        "date": "2026-04-01",
-        "head": "0bc2475dc25470e11a2d843f094c34996da501bd",
-        "sha": "0bc2475d",
-        "subject": "fix(sales-catalogue): preserve shared view popup gesture (#558)"
-      },
-      {
-        "date": "2026-04-01",
-        "head": "79bff4a21494d304edc21997a8757004f97dd461",
-        "sha": "79bff4a2",
-        "subject": "fix(sales-catalogue): harden catalogue handoff flows (#557)"
-      },
-      {
-        "date": "2026-04-01",
-        "head": "871ca702ec98152709b9a20c492de0bee1470382",
-        "sha": "871ca702",
-        "subject": "fix(health): reduce noisy disk degradation warnings (#556)"
-      },
-      {
-        "date": "2026-04-01",
-        "head": "b90edd4b8c02ac6de83f7fdc084e9ab63a291999",
-        "sha": "b90edd4b",
-        "subject": "fix: persist create-order client selection in the URL (#555)"
-      },
-      {
-        "date": "2026-04-01",
-        "head": "a93d440f80b9f09c8014105ac87a6d9f6dc175a4",
-        "sha": "a93d440f",
-        "subject": "fix: keep create-order client picker on the create-order route (#554)"
-      },
-      {
-        "date": "2026-04-01",
-        "head": "235fbe8865b1a07571134d380e305ce7c43c1cb9",
-        "sha": "235fbe88",
-        "subject": "fix(orders): dedupe sheet-native order actions (#553)"
       }
     ]
   },
@@ -289,267 +136,186 @@
     ],
     "recentIssues": [
       {
-        "id": "ffd2ae42-f08e-4e12-9158-bc3bfbb1cac7",
         "identifier": "TER-1073",
         "title": "[P2-22B] Portable cuts and saved-cut continuity across selling surfaces",
-        "number": 1073,
-        "teamKey": "TER",
         "priority": "high",
         "updatedAt": "2026-04-15T13:53:08.265Z",
         "url": "https://linear.app/terpcorp/issue/TER-1073/p2-22b-portable-cuts-and-saved-cut-continuity-across-selling-surfaces",
         "state": "In Review",
-        "stateType": "started",
         "project": "Spreadsheet-Native Full Rollout"
       },
       {
-        "id": "df3a2a83-547c-4373-ab7e-62a1426fdd11",
         "identifier": "TER-1052",
         "title": "[P2-06] Order creator: show client credit, balance, and recent order history before adding items",
-        "number": 1052,
-        "teamKey": "TER",
         "priority": "high",
         "updatedAt": "2026-04-15T13:53:08.263Z",
         "url": "https://linear.app/terpcorp/issue/TER-1052/p2-06-order-creator-show-client-credit-balance-and-recent-order",
         "state": "In Review",
-        "stateType": "started",
         "project": null
       },
       {
-        "id": "0bd074f7-525c-4fed-9308-d4dcec7d1c9c",
         "identifier": "TER-1139",
         "title": "[UI-XA6] Verify workflow confirmations exist for destructive/creation actions",
-        "number": 1139,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:27:35.233Z",
         "url": "https://linear.app/terpcorp/issue/TER-1139/ui-xa6-verify-workflow-confirmations-exist-for-destructivecreation",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "f149f07d-e952-4084-821d-32881876b587",
         "identifier": "TER-1138",
         "title": "[UI-XA5] Verify key workflows reachable in ≤3 clicks",
-        "number": 1138,
-        "teamKey": "TER",
         "priority": "low",
         "updatedAt": "2026-04-09T19:27:28.613Z",
         "url": "https://linear.app/terpcorp/issue/TER-1138/ui-xa5-verify-key-workflows-reachable-in-3-clicks",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "895724f7-f70a-4742-afb5-a6941f36ab45",
         "identifier": "TER-1137",
         "title": "[UI-XA4] Verify cross-module contextual links exist",
-        "number": 1137,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:27:22.923Z",
         "url": "https://linear.app/terpcorp/issue/TER-1137/ui-xa4-verify-cross-module-contextual-links-exist",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "1ea7b4ae-8030-4bb0-9838-373d13228283",
         "identifier": "TER-1136",
         "title": "[UI-XA3] Verify primary action columns visible at 1280px on all tables",
-        "number": 1136,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:27:13.141Z",
         "url": "https://linear.app/terpcorp/issue/TER-1136/ui-xa3-verify-primary-action-columns-visible-at-1280px-on-all-tables",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "22b582e0-7ecc-4fe3-bb36-6b0bbf5129b2",
         "identifier": "TER-1135",
         "title": "[UI-XA2] Verify page title is visually dominant on all workspace pages",
-        "number": 1135,
-        "teamKey": "TER",
         "priority": "low",
         "updatedAt": "2026-04-09T19:27:06.029Z",
         "url": "https://linear.app/terpcorp/issue/TER-1135/ui-xa2-verify-page-title-is-visually-dominant-on-all-workspace-pages",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "29d91b1d-2a17-43b6-8b3b-852d3137b3f8",
         "identifier": "TER-1134",
         "title": "[UI-XA1] Audit column header / row prefix duplication",
-        "number": 1134,
-        "teamKey": "TER",
         "priority": "low",
         "updatedAt": "2026-04-09T19:26:59.113Z",
         "url": "https://linear.app/terpcorp/issue/TER-1134/ui-xa1-audit-column-header-row-prefix-duplication",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "16bfbe04-42fe-4c89-b583-691dc3abb898",
         "identifier": "TER-1133",
         "title": "[UI-NT5] Add contextual empty states per notification category",
-        "number": 1133,
-        "teamKey": "TER",
         "priority": "low",
         "updatedAt": "2026-04-09T19:26:52.454Z",
         "url": "https://linear.app/terpcorp/issue/TER-1133/ui-nt5-add-contextual-empty-states-per-notification-category",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "143768d2-2808-4d58-ae24-004462d72e1e",
         "identifier": "TER-1132",
         "title": "[UI-NT4] Add inline \"mark read\" button per notification row",
-        "number": 1132,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:26:46.985Z",
         "url": "https://linear.app/terpcorp/issue/TER-1132/ui-nt4-add-inline-mark-read-button-per-notification-row",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "8ce5ae2f-f9b4-49ad-9fb1-4fb29dbdf08f",
         "identifier": "TER-1131",
         "title": "[UI-NT3] Differentiate urgent/exception notifications visually",
-        "number": 1131,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:26:27.712Z",
         "url": "https://linear.app/terpcorp/issue/TER-1131/ui-nt3-differentiate-urgentexception-notifications-visually",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "32ec412e-2e9c-4d03-8dab-28147845bf15",
         "identifier": "TER-1130",
         "title": "[UI-NT2] Strengthen unread notification row visual distinction",
-        "number": 1130,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:26:21.191Z",
         "url": "https://linear.app/terpcorp/issue/TER-1130/ui-nt2-strengthen-unread-notification-row-visual-distinction",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "a48666dc-76c8-4e27-b24d-09b742ee38fc",
         "identifier": "TER-1129",
         "title": "[UI-NT1] Split notifications into FYI vs needs-action categories",
-        "number": 1129,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:26:15.798Z",
         "url": "https://linear.app/terpcorp/issue/TER-1129/ui-nt1-split-notifications-into-fyi-vs-needs-action-categories",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "be557d95-3d02-4594-8bbf-92e092915f11",
         "identifier": "TER-1128",
         "title": "[UI-AC3] Verify summary dashboard cards reflect active filters",
-        "number": 1128,
-        "teamKey": "TER",
         "priority": "low",
         "updatedAt": "2026-04-09T19:26:06.893Z",
         "url": "https://linear.app/terpcorp/issue/TER-1128/ui-ac3-verify-summary-dashboard-cards-reflect-active-filters",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "6d8fb350-3c1d-46a7-8ac4-563dfc4de9c9",
         "identifier": "TER-1127",
         "title": "[UI-AC2] Replace plain-text loading states with table-shaped skeletons",
-        "number": 1127,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:25:59.747Z",
         "url": "https://linear.app/terpcorp/issue/TER-1127/ui-ac2-replace-plain-text-loading-states-with-table-shaped-skeletons",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "a16b5da5-e1b5-44b9-89ee-3de55d6d60fe",
         "identifier": "TER-1126",
         "title": "[UI-AC1] Add financial period to workspace header meta",
-        "number": 1126,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:25:52.457Z",
         "url": "https://linear.app/terpcorp/issue/TER-1126/ui-ac1-add-financial-period-to-workspace-header-meta",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "3c779597-a19c-4d78-94cf-ae1ce164c857",
         "identifier": "TER-1125",
         "title": "[UI-RP4] Verify scroll/filter preservation on table→profile navigation",
-        "number": 1125,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:25:46.465Z",
         "url": "https://linear.app/terpcorp/issue/TER-1125/ui-rp4-verify-scrollfilter-preservation-on-tableprofile-navigation",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "0a2dc9a0-358a-467e-9501-7954c89eb0e4",
         "identifier": "TER-1124",
         "title": "[UI-RP3] Add \"status\" column to client table",
-        "number": 1124,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:25:39.097Z",
         "url": "https://linear.app/terpcorp/issue/TER-1124/ui-rp3-add-status-column-to-client-table",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "92257948-a8c0-4b99-84c7-0fcd444d559a",
         "identifier": "TER-1123",
         "title": "[UI-RP2] Add \"last activity\" column to client table",
-        "number": 1123,
-        "teamKey": "TER",
         "priority": "normal",
         "updatedAt": "2026-04-09T19:25:35.131Z",
         "url": "https://linear.app/terpcorp/issue/TER-1123/ui-rp2-add-last-activity-column-to-client-table",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       },
       {
-        "id": "d6fc4ecc-6725-47c2-ab6b-046938671cb5",
         "identifier": "TER-1122",
         "title": "[UI-RP1] Fix ClientProfilePage role badges to use semantic colors",
-        "number": 1122,
-        "teamKey": "TER",
         "priority": "high",
         "updatedAt": "2026-04-09T19:25:28.108Z",
         "url": "https://linear.app/terpcorp/issue/TER-1122/ui-rp1-fix-clientprofilepage-role-badges-to-use-semantic-colors",
         "state": "Backlog",
-        "stateType": "backlog",
         "project": null
       }
-    ],
-    "error": null
+    ]
   },
   "direction": {
     "focusAreas": [
@@ -610,9 +376,7 @@
   },
   "decisions": {
     "total": 0,
-    "latest": [],
-    "latestAt": null,
-    "latestByClient": null
+    "latestAt": null
   },
   "work": {
     "path": "docs/agent-context/work.json",
@@ -639,12 +403,6 @@
       ]
     }
   },
-  "evidence": {
-    "path": "docs/agent-context/evidence.json",
-    "commits": 12,
-    "decisions": 0,
-    "issues": 12
-  },
   "publicMirror": {
     "path": "docs/agent-context/public",
     "artifacts": [
@@ -656,95 +414,5 @@
     ],
     "workflow": ".github/workflows/agent-context-pages.yml"
   },
-  "mediator": {
-    "mcpServer": "scripts/agent-context/pm-mcp-server.mjs",
-    "linearReconciler": "scripts/agent-context/pm-linear-reconciler.mjs",
-    "publisher": "scripts/agent-context/pm-publisher.mjs",
-    "checkpointCli": "scripts/agent-context/pm-checkpoint.mjs"
-  },
-  "repoTruthHierarchy": [
-    "`docs/agent-context/manifest.json` for freshness and artifact integrity.",
-    "`docs/agent-context/state.json` for machine-readable PM state and trust rules.",
-    "`docs/agent-context/work.json` for remaining work order and blockers.",
-    "`docs/agent-context/decisions.ndjson` for settled PM decisions and rationale.",
-    "Current code, tests, git history, and runtime evidence when docs and tracker narratives disagree.",
-    "Linear issue and project state for live execution direction.",
-    "Legacy docs only as background, never as silent current truth."
-  ],
-  "attentionRequired": [],
-  "activeLaneSignals": [
-    {
-      "path": "docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json",
-      "gate": "G2",
-      "gateVerdict": "closed with evidence",
-      "updatedAt": "2026-03-20",
-      "nextMove": "TER-795 is closed with evidence. Keep G2 sealed and follow the reopened G6 rollout verdict for the remaining retirement remediation work."
-    }
-  ],
-  "deepDiveDocs": [
-    {
-      "path": "docs/agent-context/manifest.json",
-      "reason": "per-artifact freshness, hashes, schema versions, and TTLs"
-    },
-    {
-      "path": "docs/agent-context/work.json",
-      "reason": "remaining work queue, readiness, and issue ordering"
-    },
-    {
-      "path": "docs/agent-context/evidence.json",
-      "reason": "commits, issues, and decisions backing current PM claims"
-    },
-    {
-      "path": "docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json",
-      "reason": "machine-readable Orders runtime verdicts and next move"
-    },
-    {
-      "path": "docs/TESTING.md",
-      "reason": "canonical verification commands and E2E guidance"
-    }
-  ],
-  "legacyWarnings": [
-    {
-      "path": "docs/ACTIVE_SESSIONS.md",
-      "reason": "legacy session registry snapshot",
-      "lastUpdated": "2026-02-04",
-      "pointsToStartupContract": true,
-      "substantivePmContent": false
-    },
-    {
-      "path": "docs/PROJECT_CONTEXT.md",
-      "reason": "historical orientation packet",
-      "lastUpdated": "October 27, 2025",
-      "pointsToStartupContract": true,
-      "substantivePmContent": false
-    },
-    {
-      "path": "docs/TERP_AGENT_INSTRUCTIONS.md",
-      "reason": "legacy onboarding prompt-pack file",
-      "lastUpdated": "2026-02-01",
-      "pointsToStartupContract": true,
-      "substantivePmContent": false
-    },
-    {
-      "path": "docs/ROADMAP_AGENT_GUIDE.md",
-      "reason": "legacy roadmap guide",
-      "lastUpdated": null,
-      "pointsToStartupContract": true,
-      "substantivePmContent": false
-    },
-    {
-      "path": "product-management/START_HERE.md",
-      "reason": "legacy PM entrypoint",
-      "lastUpdated": null,
-      "pointsToStartupContract": true,
-      "substantivePmContent": false
-    },
-    {
-      "path": "agent-prompts/README.md",
-      "reason": "legacy prompt-pack entrypoint",
-      "lastUpdated": null,
-      "pointsToStartupContract": true,
-      "substantivePmContent": false
-    }
-  ]
+  "attentionRequired": []
 }
