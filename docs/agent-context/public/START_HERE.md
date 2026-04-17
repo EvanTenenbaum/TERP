@@ -4,9 +4,9 @@
 
 ## Snapshot
 
-- Generated: `2026-04-17T21:47:10.324Z`
+- Generated: `2026-04-17T21:50:54.570Z`
 - Freshness status: `fresh`
-- Git anchor: `64774ca3`
+- Git anchor: `65e34559`
 - Linear mode: `live`
 
 ## Public Read Order
@@ -19,7 +19,7 @@
 
 ## Current Direction
 
-Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 64774ca3 and led by `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`, `fix(pm): declare MCP sdk and stabilize CI`, `feat(pm): harden persistent PM runtime`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
+Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 65e34559 and led by `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`, `fix(pm): declare MCP sdk and stabilize CI`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
 
 - persistent PM and handoff durability
 - QA, proof, and rollout hardening

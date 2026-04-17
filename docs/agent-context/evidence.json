@@ -1,7 +1,13 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-17T21:47:10.324Z",
+  "generatedAt": "2026-04-17T21:50:54.570Z",
   "commits": [
+    {
+      "sha": "65e34559",
+      "head": "65e345591ab7a2bb6ccfee5dc3a38adee37a28bd",
+      "date": "2026-04-17",
+      "subject": "feat(pm): add scoped launch readiness gate"
+    },
     {
       "sha": "64774ca3",
       "head": "64774ca3d1fb290a93e7a8090bf29a1a65397d9e",
@@ -67,12 +73,6 @@
       "head": "1b7e493a96f16387ce8bda93fc3829c67c12834b",
       "date": "2026-04-08",
       "subject": "feat(po): close TER-1070 tranche 3 continuity (#573)"
-    },
-    {
-      "sha": "db289932",
-      "head": "db289932c7f8e4a4db4c0ccac02790d45cd5b2c4",
-      "date": "2026-04-08",
-      "subject": "feat(sales): close TER-1069 retrieval continuity (#572)"
     }
   ],
   "recentIssues": [

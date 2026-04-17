@@ -98,6 +98,8 @@ pnpm pm:launch:check
 pnpm pm:services:install -- --load
 ```
 
+If `launchctl` is running from a remote or non-GUI session, the installer will automatically fall back from `gui/<uid>` to `user/<uid>` so the PM runtime can still come online.
+
 ## Hosted Surface Rules
 
 - Hosted surfaces read from pushed git state and/or the public mirror.

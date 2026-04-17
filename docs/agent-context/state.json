@@ -1,9 +1,9 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-04-17T21:47:10.324Z",
+  "generatedAt": "2026-04-17T21:50:54.570Z",
   "generator": {
     "script": "scripts/agent-context/generate-agent-context.mjs",
-    "reason": "launchd-backstop",
+    "reason": "publish",
     "linearLookbackDays": 21,
     "artifactTtls": {
       "START_HERE.md": 3600,
@@ -70,10 +70,16 @@
   },
   "git": {
     "branch": "codex/persistent-pm-hardening-20260417",
-    "head": "64774ca3d1fb290a93e7a8090bf29a1a65397d9e",
-    "shortHead": "64774ca3",
+    "head": "65e345591ab7a2bb6ccfee5dc3a38adee37a28bd",
+    "shortHead": "65e34559",
     "workingTreeDirty": true,
     "recentCommits": [
+      {
+        "date": "2026-04-17",
+        "head": "65e345591ab7a2bb6ccfee5dc3a38adee37a28bd",
+        "sha": "65e34559",
+        "subject": "feat(pm): add scoped launch readiness gate"
+      },
       {
         "date": "2026-04-17",
         "head": "64774ca3d1fb290a93e7a8090bf29a1a65397d9e",
@@ -217,18 +223,12 @@
         "head": "0bc2475dc25470e11a2d843f094c34996da501bd",
         "sha": "0bc2475d",
         "subject": "fix(sales-catalogue): preserve shared view popup gesture (#558)"
-      },
-      {
-        "date": "2026-04-01",
-        "head": "79bff4a21494d304edc21997a8757004f97dd461",
-        "sha": "79bff4a2",
-        "subject": "fix(sales-catalogue): harden catalogue handoff flows (#557)"
       }
     ]
   },
   "linear": {
     "mode": "live",
-    "fetchedAt": "2026-04-17T21:47:11.097Z",
+    "fetchedAt": "2026-04-17T21:50:56.036Z",
     "latestIssueUpdatedAt": "2026-04-15T13:53:08.265Z",
     "activeProjects": [
       {
@@ -559,7 +559,7 @@
       "spreadsheet-native rollout",
       "orders and order workflow"
     ],
-    "summary": "Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 64774ca3 and led by `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`, `fix(pm): declare MCP sdk and stabilize CI`, `feat(pm): harden persistent PM runtime`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "summary": "Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 65e34559 and led by `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`, `fix(pm): declare MCP sdk and stabilize CI`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
     "themeEvidence": [
       {
         "label": "persistent PM and handoff durability",

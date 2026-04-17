@@ -88,8 +88,14 @@ ${startIntervalSection}  <key>StandardOutPath</key>
 `;
 }
 
-function loadService(plistPath, label) {
-  const domain = `gui/${process.getuid()}`;
+function isDomainUnsupportedError(error) {
+  return (
+    Number(error?.status) === 125 ||
+    String(error?.message || "").includes("Domain does not support specified action")
+  );
+}
+
+function tryLoadIntoDomain(domain, plistPath, label) {
   try {
     execFileSync("launchctl", ["bootout", domain, plistPath], {
       stdio: ["ignore", "ignore", "ignore"],
@@ -104,6 +110,28 @@ function loadService(plistPath, label) {
   execFileSync("launchctl", ["kickstart", "-k", `${domain}/${label}`], {
     stdio: "inherit",
   });
+
+  return domain;
+}
+
+function loadService(plistPath, label) {
+  const uid = process.getuid();
+  const candidateDomains = [`gui/${uid}`, `user/${uid}`];
+  let lastError;
+
+  for (const domain of candidateDomains) {
+    try {
+      return tryLoadIntoDomain(domain, plistPath, label);
+    } catch (error) {
+      lastError = error;
+      if (domain === candidateDomains[0] && isDomainUnsupportedError(error)) {
+        continue;
+      }
+      throw error;
+    }
+  }
+
+  throw lastError;
 }
 
 function buildServices({ repoRoot, host, port, labelPrefix, logDir, nodeBin }) {
@@ -228,7 +256,8 @@ function main() {
       plistPath,
     });
     if (options.load) {
-      loadService(plistPath, service.label);
+      const domain = loadService(plistPath, service.label);
+      written[written.length - 1].domain = domain;
     }
   }
 
