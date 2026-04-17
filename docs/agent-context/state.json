@@ -1,17 +1,13 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-17T20:58:10.890Z",
+  "generatedAt": "2026-04-17T21:34:42.792Z",
   "generator": {
     "script": "scripts/agent-context/generate-agent-context.mjs",
     "maxAgeHours": 72,
     "linearLookbackDays": 21
   },
   "startupContract": {
-    "readFirst": [
-      "AGENTS.md",
-      "CLAUDE.md",
-      "docs/agent-context/START_HERE.md"
-    ],
+    "readFirst": ["AGENTS.md", "CLAUDE.md", "docs/agent-context/START_HERE.md"],
     "entrypoint": "docs/agent-context/START_HERE.md",
     "machineState": "docs/agent-context/state.json",
     "refreshCommand": "pnpm context:refresh",
@@ -29,16 +25,25 @@
     "maxAgeHours": 72,
     "snapshotAgeHours": 0,
     "notes": [
-      "Linear could not be refreshed live, so the tracker section fell back to the last known snapshot (2026-04-08T03:11:06.962Z).",
-      "Working tree contains local edits. This bundle captures committed truth at HEAD and reports that local diffs exist."
+      "Linear could not be refreshed live, so the tracker section fell back to the last known snapshot (2026-04-08T03:11:06.962Z)."
     ]
   },
   "git": {
     "branch": "claude/terp-status-review-Av2Wq",
-    "head": "328edd743239ea65d4c2ccd260554b2725244235",
-    "shortHead": "328edd7",
-    "workingTreeDirty": true,
+    "head": "4f23376443890f71caa0e2b74ff6452a810da8da",
+    "shortHead": "4f23376",
+    "workingTreeDirty": false,
     "recentCommits": [
+      {
+        "date": "2026-04-17",
+        "sha": "4f23376",
+        "subject": "docs(context): refresh agent-context after 420-fork merge"
+      },
+      {
+        "date": "2026-04-17",
+        "sha": "6744922",
+        "subject": "chore(hooks): make closeout-guard path portable"
+      },
       {
         "date": "2026-04-15",
         "sha": "328edd7",
@@ -153,16 +158,6 @@
         "date": "2026-04-01",
         "sha": "b90edd4",
         "subject": "fix: persist create-order client selection in the URL (#555)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "a93d440",
-        "subject": "fix: keep create-order client picker on the create-order route (#554)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "235fbe8",
-        "subject": "fix(orders): dedupe sheet-native order actions (#553)"
       }
     ]
   },
@@ -331,9 +326,9 @@
       "inventory, intake, and purchase operations",
       "orders and order workflow",
       "operator workflow polish",
-      "spreadsheet-native rollout"
+      "accounting, payments, and ledger work"
     ],
-    "summary": "Current TERP direction centers on inventory, intake, and purchase operations and orders and order workflow; recent git activity is anchored at 328edd7 and is dominated by `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`, `fix(notifications): improve inline triage and empty states (#577)`, `feat: payment follow-up + pick list + dashboard ops (#576)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "summary": "Current TERP direction centers on inventory, intake, and purchase operations and orders and order workflow; recent git activity is anchored at 4f23376 and is dominated by `docs(context): refresh agent-context after 420-fork merge`, `chore(hooks): make closeout-guard path portable`, `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
     "themeEvidence": [
       {
         "label": "inventory, intake, and purchase operations",
@@ -341,15 +336,11 @@
       },
       {
         "label": "orders and order workflow",
-        "count": 8
+        "count": 6
       },
       {
         "label": "operator workflow polish",
         "count": 5
-      },
-      {
-        "label": "spreadsheet-native rollout",
-        "count": 3
       },
       {
         "label": "accounting, payments, and ledger work",
@@ -358,6 +349,10 @@
       {
         "label": "QA, parity proof, and rollout hardening",
         "count": 3
+      },
+      {
+        "label": "spreadsheet-native rollout",
+        "count": 2
       }
     ]
   },

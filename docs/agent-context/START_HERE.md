@@ -4,12 +4,12 @@
 
 ## Snapshot
 
-- Generated: `2026-04-17T20:58:10.890Z`
+- Generated: `2026-04-17T21:34:42.792Z`
 - Freshness status: `partial`
 - Refresh command: `pnpm context:refresh`
 - Drift check: `pnpm context:check`
-- Git anchor: `328edd7` on branch `claude/terp-status-review-Av2Wq`
-- Working tree dirty: `true`
+- Git anchor: `4f23376` on branch `claude/terp-status-review-Av2Wq`
+- Working tree dirty: `false`
 - Linear mode: `last-known`
 
 ## Start Here
@@ -22,17 +22,16 @@
 
 ## Current Direction
 
-Current TERP direction centers on inventory, intake, and purchase operations and orders and order workflow; recent git activity is anchored at 328edd7 and is dominated by `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`, `fix(notifications): improve inline triage and empty states (#577)`, `feat: payment follow-up + pick list + dashboard ops (#576)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
+Current TERP direction centers on inventory, intake, and purchase operations and orders and order workflow; recent git activity is anchored at 4f23376 and is dominated by `docs(context): refresh agent-context after 420-fork merge`, `chore(hooks): make closeout-guard path portable`, `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
 
 - inventory, intake, and purchase operations
 - orders and order workflow
 - operator workflow polish
-- spreadsheet-native rollout
+- accounting, payments, and ledger work
 
 ## Freshness Notes
 
 - Linear could not be refreshed live, so the tracker section fell back to the last known snapshot (2026-04-08T03:11:06.962Z).
-- Working tree contains local edits. This bundle captures committed truth at HEAD and reports that local diffs exist.
 
 ## Active Projects
 
@@ -64,6 +63,8 @@ Current TERP direction centers on inventory, intake, and purchase operations and
 
 ## Recent Commits
 
+- 2026-04-17 `4f23376` docs(context): refresh agent-context after 420-fork merge
+- 2026-04-17 `6744922` chore(hooks): make closeout-guard path portable
 - 2026-04-15 `328edd7` feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)
 - 2026-04-10 `d970ebe` feat(ui): advance april 9 ticket train remediation (#578)
 - 2026-04-09 `46d9738` fix(notifications): improve inline triage and empty states (#577)
@@ -72,8 +73,6 @@ Current TERP direction centers on inventory, intake, and purchase operations and
 - 2026-04-08 `e760614` docs(p2): close TER-1071 deferred pass (#574)
 - 2026-04-08 `1b7e493` feat(po): close TER-1070 tranche 3 continuity (#573)
 - 2026-04-08 `db28993` feat(sales): close TER-1069 retrieval continuity (#572)
-- 2026-04-08 `8e019eb` feat(ux): close TER-1068 tranche 1 (#571)
-- 2026-04-08 `7586564` fix(ux): land TER-1067 recovery and canonical P2 packet (#570)
 
 ## What Not To Trust As Current Startup Truth
 
@@ -95,4 +94,3 @@ Current TERP direction centers on inventory, intake, and purchase operations and
 - Run `pnpm context:refresh` after meaningful tracker checkpoints, before remote-agent handoff, and after merges to `main`.
 - Run `pnpm context:check` when you want to know if this bundle has fallen behind git or Linear.
 - If Linear cannot be refreshed, this file should say so explicitly instead of pretending the tracker snapshot is current.
-
