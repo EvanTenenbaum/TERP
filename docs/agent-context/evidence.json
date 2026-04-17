@@ -1,7 +1,13 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-04-17T21:50:54.570Z",
+  "generatedAt": "2026-04-17T21:55:08.224Z",
   "commits": [
+    {
+      "sha": "250eba1c",
+      "head": "250eba1ca74b4e513f9a369d39f7962bd2a665e1",
+      "date": "2026-04-17",
+      "subject": "fix(pm): fall back to user launchctl domain"
+    },
     {
       "sha": "65e34559",
       "head": "65e345591ab7a2bb6ccfee5dc3a38adee37a28bd",
@@ -67,12 +73,6 @@
       "head": "e760614b08f2e642a13c18e63b3e8b749820e4b3",
       "date": "2026-04-08",
       "subject": "docs(p2): close TER-1071 deferred pass (#574)"
-    },
-    {
-      "sha": "1b7e493a",
-      "head": "1b7e493a96f16387ce8bda93fc3829c67c12834b",
-      "date": "2026-04-08",
-      "subject": "feat(po): close TER-1070 tranche 3 continuity (#573)"
     }
   ],
   "recentIssues": [

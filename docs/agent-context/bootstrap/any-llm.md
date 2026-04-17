@@ -70,6 +70,6 @@ Rules:
 - If the manifest is stale, degraded, or points at an older git SHA than the work you need, stop and refresh or request refreshed state before authoritative actions.
 
 Current PM summary:
-Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 65e34559 and led by `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`, `fix(pm): declare MCP sdk and stabilize CI`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
+Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 250eba1c and led by `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
 ```
 

@@ -4,13 +4,13 @@
 
 ## Snapshot
 
-- Generated: `2026-04-17T21:50:54.570Z`
+- Generated: `2026-04-17T21:55:08.224Z`
 - Freshness status: `fresh`
 - Manifest: `docs/agent-context/manifest.json`
 - Refresh command: `pnpm context:refresh`
 - Drift check: `pnpm context:check`
 - PM launch readiness: `pnpm pm:launch:check`
-- Git anchor: `65e34559` on branch `codex/persistent-pm-hardening-20260417`
+- Git anchor: `250eba1c` on branch `codex/persistent-pm-hardening-20260417`
 - Working tree dirty: `true`
 - Linear mode: `live`
 - Decision log count: `0`
@@ -48,7 +48,7 @@
 
 ## Current Direction
 
-Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 65e34559 and led by `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`, `fix(pm): declare MCP sdk and stabilize CI`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
+Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at 250eba1c and led by `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`, `fix(pm): normalize Claude protocol casing`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
 
 - persistent PM and handoff durability
 - QA, proof, and rollout hardening
