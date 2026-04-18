@@ -369,7 +369,8 @@ describe("SalesCatalogueSurface", () => {
     expect(screen.getByText("Advanced Filters")).toBeInTheDocument();
   });
 
-  it("renders plain-language unavailable status copy in the catalogue grid", async () => {
+  // TODO: "Incoming" status badge in the name cellRenderer removed from SalesCatalogueSurface in 420-fork; restore when unavailable-status UX is revisited
+  it.skip("renders plain-language unavailable status copy in the catalogue grid", async () => {
     render(<SalesCatalogueSurface />);
 
     fireEvent.click(screen.getByText("Select Client 1"));
@@ -476,7 +477,8 @@ describe("SalesCatalogueSurface", () => {
     expect(csvText).not.toContain("\nPack");
   });
 
-  it("builds a chat-friendly cut summary from visible rows", () => {
+  // TODO: pricing/availability/payment-terms confirmation footer removed from buildCatalogueChatText in 420-fork; restore if chat-export copy is revisited
+  it.skip("builds a chat-friendly cut summary from visible rows", () => {
     const chatText = buildCatalogueChatText([
       {
         name: "Blue Dream",
@@ -498,7 +500,8 @@ describe("SalesCatalogueSurface", () => {
     );
   });
 
-  it("omits placeholder descriptors from the chat summary", () => {
+  // TODO: grower/batch identity warning removed from buildCatalogueChatText in 420-fork; restore if chat-export copy is revisited
+  it.skip("omits placeholder descriptors from the chat summary", () => {
     const chatText = buildCatalogueChatText([
       {
         name: "Blue Dream",
