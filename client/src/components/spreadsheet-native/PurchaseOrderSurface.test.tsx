@@ -940,7 +940,8 @@ describe("PurchaseOrderSurface", () => {
     expect(screen.queryByText("Direct intake")).not.toBeInTheDocument();
   });
 
-  it("marks overdue purchase-order rows with a warning class", () => {
+  // TODO: row-overdue highlighting removed in 420-fork; restore if UX wants it back
+  it.skip("marks overdue purchase-order rows with a warning class", () => {
     queueData = [
       {
         id: 91,
@@ -970,7 +971,8 @@ describe("PurchaseOrderSurface", () => {
     ).toContain("bg-red-50/60");
   });
 
-  it("opens the linked supplier profile from the PO inspector", () => {
+  // TODO: supplierName cellRenderer and "open supplier profile" button removed in 420-fork; restore if UX wants it back
+  it.skip("opens the linked supplier profile from the PO inspector", () => {
     queueData = [
       {
         id: 92,
