@@ -3,6 +3,7 @@ import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const OrdersSheetPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/OrdersSheetPilotSurface")
@@ -379,15 +380,17 @@ export default function SalesWorkspacePage() {
           )}
         </LinearWorkspacePanel>
         <LinearWorkspacePanel value="pick-list">
-          <Suspense
-            fallback={
-              <div className="p-4 text-sm text-muted-foreground">
-                Loading pick list...
-              </div>
-            }
-          >
-            <ShippingPickListPage />
-          </Suspense>
+          <ErrorBoundary variant="compact" name="Shipping Pick List">
+            <Suspense
+              fallback={
+                <div className="p-4 text-sm text-muted-foreground">
+                  Loading pick list...
+                </div>
+              }
+            >
+              <ShippingPickListPage />
+            </Suspense>
+          </ErrorBoundary>
         </LinearWorkspacePanel>
         <LinearWorkspacePanel value="quotes">
           {shouldRenderPilotSurface(quotesPilotReady, quotesSurfaceMode) ? (
