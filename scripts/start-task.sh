@@ -291,4 +291,15 @@ trap - ERR
 # Clean up lock file
 rm -rf "$LOCK_FILE"
 
+
+# Write initial handoff.json
+if [ -f "scripts/handoff-write.sh" ]; then
+  TASK_ID="$TASK_ID" SESSION_ID="$SESSION_ID" STATUS="ACTIVE" \
+  BRANCH="$BRANCH_NAME" WHAT_DONE="" \
+  WHAT_NEXT="${ISSUE_TITLE:-See Linear task $TASK_ID}" \
+  DO_NOT_TOUCH="" BLOCKERS="" \
+  STARTED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  bash -c 'source scripts/handoff-write.sh && write_handoff' 2>/dev/null || true
+fi
+
 echo -e "${GREEN}🎉 Task startup complete! You are now on branch ${BRANCH_NAME}.${NC}"

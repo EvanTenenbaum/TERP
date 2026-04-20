@@ -55,4 +55,33 @@ if [ -n "$TASK_ID" ]; then
   echo "{\"taskId\":\"${TASK_ID}\",\"branch\":\"${CURRENT_BRANCH}\",\"completedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"type\":\"fast\"}" > "$FAST_COMPLETE_FILE"
 fi
 
+
+# Update handoff.json to COMPLETE
+if [ -f "scripts/handoff-write.sh" ]; then
+  # Get last 5 commit messages on this branch vs main
+  RECENT_COMMITS=$(git log main..HEAD --oneline --no-merges 2>/dev/null | head -5 | awk '{$1=""; print substr($0,2)}' | tr '\n' '|' | sed 's/|$//' || echo '')
+
+  # Read existing handoff for session continuity
+  EXISTING_SESSION_ID=''
+  EXISTING_STARTED_AT=''
+  if [ -f "docs/agent-handoff/handoff.json" ]; then
+    EXISTING_SESSION_ID=$(python3 -c "import json; d=json.load(open('docs/agent-handoff/handoff.json')); print(d.get('sessionId',''))" 2>/dev/null || echo '')
+    EXISTING_STARTED_AT=$(python3 -c "import json; d=json.load(open('docs/agent-handoff/handoff.json')); print(d.get('startedAt',''))" 2>/dev/null || echo '')
+  fi
+
+  TASK_ID="${TASK_ID:-$(echo $(git branch --show-current) | grep -oE 'TER-[0-9]+' | head -1)}" \
+  SESSION_ID="${EXISTING_SESSION_ID:-$(date +%Y%m%d)-$(openssl rand -hex 4)}" \
+  STATUS="COMPLETE" \
+  BRANCH="$(git branch --show-current)" \
+  WHAT_DONE="$RECENT_COMMITS" \
+  WHAT_NEXT="" \
+  DO_NOT_TOUCH="" \
+  BLOCKERS="" \
+  STARTED_AT="${EXISTING_STARTED_AT:-}" \
+  bash -c 'source scripts/handoff-write.sh && write_handoff' 2>/dev/null || true
+
+  echo ""
+  echo -e "${BLUE}📋 Handoff state written to docs/agent-handoff/handoff.json${NC}"
+fi
+
 exit 0
