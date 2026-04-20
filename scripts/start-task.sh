@@ -302,4 +302,17 @@ if [ -f "scripts/handoff-write.sh" ]; then
   bash -c 'source scripts/handoff-write.sh && write_handoff' 2>/dev/null || true
 fi
 
+# Post Linear comment on session start
+SESSION_COMMENT="🤖 Agent session started
+
+Tool: ${AGENT_PREFIX:-unknown}
+Branch: \`${BRANCH_NAME}\`
+Started: $(date -u '+%Y-%m-%d %H:%M UTC')
+
+Next: ${ISSUE_TITLE:-See Linear task}"
+LINEAR_COMMENT_ID=$(bash scripts/linear-comment.sh "$TASK_ID" "$SESSION_COMMENT" 2>/dev/null || echo '')
+if [ -n "$LINEAR_COMMENT_ID" ]; then
+  echo -e "${GREEN}💬 Linear comment posted (${LINEAR_COMMENT_ID})${NC}"
+fi
+
 echo -e "${GREEN}🎉 Task startup complete! You are now on branch ${BRANCH_NAME}.${NC}"

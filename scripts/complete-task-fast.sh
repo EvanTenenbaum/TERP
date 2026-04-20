@@ -84,4 +84,19 @@ if [ -f "scripts/handoff-write.sh" ]; then
   echo -e "${BLUE}📋 Handoff state written to docs/agent-handoff/handoff.json${NC}"
 fi
 
+# Post Linear completion comment
+if [ -n "${TASK_ID:-}" ]; then
+  PR_URL=$(gh pr view --json url -q .url 2>/dev/null || echo 'No PR yet')
+  COMPLETE_COMMENT="✅ Session complete
+
+Tool: ${AGENT_PREFIX:-unknown}
+Branch: \`$(git branch --show-current)\`
+Completed: $(date -u '+%Y-%m-%d %H:%M UTC')
+PR: ${PR_URL}
+
+What was done:
+$(git log main..HEAD --oneline --no-merges 2>/dev/null | head -5 | sed 's/^/- /')"
+  bash scripts/linear-comment.sh "$TASK_ID" "$COMPLETE_COMMENT" 2>/dev/null || true
+fi
+
 exit 0
