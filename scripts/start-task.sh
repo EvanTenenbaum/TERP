@@ -23,17 +23,24 @@ LOCK_FILE="/tmp/start-task.lock"
 error_exit() {
   echo -e "${RED}❌ ERROR: $1${NC}"
   # Clean up lock file on error
-  rm -f "$LOCK_FILE"
+  rm -rf "$LOCK_FILE"
   exit 1
 }
 
 # --- Main Script ---
 
 # Acquire lock to prevent race conditions
-if [ -e "$LOCK_FILE" ]; then
-  error_exit "Another start-task process is running. Please wait."
+if ! mkdir "$LOCK_FILE" 2>/dev/null; then
+  LOCK_PID=$(cat "$LOCK_FILE/pid" 2>/dev/null || echo "")
+  if [ -n "$LOCK_PID" ] && kill -0 "$LOCK_PID" 2>/dev/null; then
+    error_exit "Another start-task process is running (PID: $LOCK_PID). Wait for it to finish or delete $LOCK_FILE manually."
+  else
+    echo "⚠️  Removing stale lock from dead PID ${LOCK_PID:-unknown}"
+    rm -rf "$LOCK_FILE"
+    mkdir "$LOCK_FILE"
+  fi
 fi
-touch "$LOCK_FILE"
+echo $$ > "$LOCK_FILE/pid"
 
 # Ensure we are in the root of the TERP repository
 if [ ! -f "package.json" ] || [ ! -d ".git" ]; then
@@ -126,9 +133,42 @@ SESSION_FILE="${SESSION_DIR}/Session-${SESSION_ID}.md"
 echo -e "${GREEN}🚀 Starting task: ${TASK_ID}${NC}"
 
 # 1. Validate task exists
-if [ "$ADHOC_MODE" = false ]; then
-  if ! grep -q "${TASK_ID}" "$MASTER_ROADMAP" && ! grep -q "${TASK_ID}" "$TESTING_ROADMAP"; then
-    error_exit "Task ${TASK_ID} not found in any roadmap. Use --adhoc mode to create it."
+# Validate task in Linear (source of truth)
+LINEAR_KEY=$(grep 'LINEAR_API_KEY' ~/.codex/.env 2>/dev/null | cut -d= -f2 | tr -d '\r' || true)
+if [ -n "$LINEAR_KEY" ]; then
+  echo -e "${BLUE}🔍 Validating task in Linear...${NC}"
+  LINEAR_RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
+    -H 'Content-Type: application/json' \
+    -H "Authorization: $LINEAR_KEY" \
+    --max-time 10 \
+    -d "{\"query\":\"{issue(id:\\\"${TASK_ID}\\\"){id title state{name type}}}\"}"\
+    2>/dev/null || echo '{}')
+  ISSUE_STATE_TYPE=$(echo "$LINEAR_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('issue',{}).get('state',{}).get('type','unknown'))" 2>/dev/null || echo 'unknown')
+  ISSUE_TITLE=$(echo "$LINEAR_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('issue',{}).get('title',''))" 2>/dev/null || echo '')
+
+  if [ "$ISSUE_STATE_TYPE" = 'completed' ] || [ "$ISSUE_STATE_TYPE" = 'cancelled' ]; then
+    rm -rf "$LOCK_FILE"
+    error_exit "Task ${TASK_ID} is ${ISSUE_STATE_TYPE} in Linear. Cannot start. Use --adhoc for untracked work."
+  fi
+
+  if [ "$ISSUE_STATE_TYPE" = 'unknown' ] || [ -z "$ISSUE_STATE_TYPE" ]; then
+    echo -e "${YELLOW}⚠️  Could not validate ${TASK_ID} in Linear (API unreachable or task not found). Falling back to MASTER_ROADMAP.md check.${NC}"
+    if [ "$ADHOC_MODE" = false ]; then
+      if ! grep -q "${TASK_ID}" "$MASTER_ROADMAP" && ! grep -q "${TASK_ID}" "$TESTING_ROADMAP"; then
+        rm -rf "$LOCK_FILE"
+        error_exit "Task ${TASK_ID} not found in Linear or MASTER_ROADMAP.md. Use --adhoc mode to create it."
+      fi
+    fi
+  else
+    echo -e "${GREEN}✓ Linear: ${TASK_ID} — ${ISSUE_TITLE} [${ISSUE_STATE_TYPE}]${NC}"
+  fi
+else
+  echo -e "${YELLOW}⚠️  No LINEAR_API_KEY found. Falling back to MASTER_ROADMAP.md check.${NC}"
+  if [ "$ADHOC_MODE" = false ]; then
+    if ! grep -q "${TASK_ID}" "$MASTER_ROADMAP" && ! grep -q "${TASK_ID}" "$TESTING_ROADMAP"; then
+      rm -rf "$LOCK_FILE"
+      error_exit "Task ${TASK_ID} not found in any roadmap. Use --adhoc mode to create it."
+    fi
   fi
 fi
 
@@ -139,8 +179,30 @@ if ! grep -q "${TASK_ID}" "$MASTER_ROADMAP"; then
 fi
 
 TASK_STATUS=$(grep "${TASK_ID}" "$ROADMAP_FILE" | grep -o "\[.\]" | head -1 || echo "")
-if [ "$TASK_STATUS" == "[~]" ] || [ "$TASK_STATUS" == "[x]" ]; then
-  error_exit "Task ${TASK_ID} is already in progress or completed."
+if [ "$TASK_STATUS" == "[x]" ]; then
+  rm -rf "$LOCK_FILE"
+  error_exit "Task ${TASK_ID} is already completed."
+fi
+
+if [ "$TASK_STATUS" == "[~]" ]; then
+  # Task in progress — look for existing session file to resume
+  EXISTING_SESSION=$(grep -rl "Task ID.*${TASK_ID}" "$SESSION_DIR/" 2>/dev/null | head -1 || true)
+  if [ -n "$EXISTING_SESSION" ]; then
+    echo -e "${BLUE}🔄 Resuming existing session for ${TASK_ID}${NC}"
+    echo ""
+    cat "$EXISTING_SESSION"
+    echo ""
+    EXISTING_BRANCH=$(grep 'Branch:' "$EXISTING_SESSION" | sed "s/.*\`//;s/\`.*//" | tr -d ' ' | head -1)
+    if [ -n "$EXISTING_BRANCH" ]; then
+      echo -e "${BLUE}🌿 Switching to branch: ${EXISTING_BRANCH}${NC}"
+      git checkout "$EXISTING_BRANCH" 2>/dev/null || echo -e "${YELLOW}⚠️  Could not switch to branch ${EXISTING_BRANCH} — may already be on it${NC}"
+    fi
+    rm -rf "$LOCK_FILE"
+    exit 0
+  else
+    rm -rf "$LOCK_FILE"
+    error_exit "Task ${TASK_ID} is marked in-progress [~] but no session file found. Run: bash scripts/force-close-session.sh ${TASK_ID} 'reason' to recover."
+  fi
 fi
 
 # 3. Check for conflicts
@@ -227,6 +289,6 @@ git push -u origin "$BRANCH_NAME" || error_exit "Failed to push to GitHub."
 trap - ERR
 
 # Clean up lock file
-rm -f "$LOCK_FILE"
+rm -rf "$LOCK_FILE"
 
 echo -e "${GREEN}🎉 Task startup complete! You are now on branch ${BRANCH_NAME}.${NC}"
