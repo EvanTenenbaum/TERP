@@ -1,6 +1,7 @@
 import {
   InventorySnapshotWidget,
   AgingInventoryWidget,
+  ActivityFeedWidget,
 } from "@/components/dashboard/widgets-v2";
 import { OwnerCashDecisionPanel } from "@/components/dashboard/owner/OwnerCashDecisionPanel";
 import { OwnerDebtPositionWidget } from "@/components/dashboard/owner/OwnerDebtPositionWidget";
@@ -97,6 +98,13 @@ export default function OwnerCommandCenterDashboard() {
       <div>
         <ComponentErrorBoundary name="SKU Status Browser">
           <OwnerSkuStatusBrowserWidget />
+        </ComponentErrorBoundary>
+      </div>
+
+      {/* Row 5: Recent Activity Feed (TER-1056) */}
+      <div>
+        <ComponentErrorBoundary name="Activity Feed">
+          <ActivityFeedWidget />
         </ComponentErrorBoundary>
       </div>
     </div>

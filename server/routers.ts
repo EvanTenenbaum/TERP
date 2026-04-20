@@ -25,6 +25,7 @@ import { quotesRouter } from "./routers/quotes";
 import { invoicesRouter } from "./routers/invoices";
 import { paymentsRouter } from "./routers/payments";
 import { auditLogsRouter } from "./routers/auditLogs";
+import { activityRouter } from "./routers/activity";
 import { configurationRouter } from "./routers/configuration";
 import { accountingHooksRouter } from "./routers/accountingHooks";
 import { samplesRouter } from "./routers/samples";
@@ -155,6 +156,7 @@ export const appRouter = router({
   cogs: cogsRouter,
   scratchPad: scratchPadRouter,
   dashboard: dashboardRouter,
+  activity: activityRouter, // TER-1056: Dashboard activity feed
   accounting: accountingRouter,
   freeformNotes: freeformNotesRouter,
   clients: clientsRouter,

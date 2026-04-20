@@ -18,3 +18,5 @@ export { AvailableCashWidget } from "./AvailableCashWidget";
 export { AgingInventoryWidget } from "./AgingInventoryWidget";
 // FE-QA-011: Smart Opportunities Widget
 export { SmartOpportunitiesWidget } from "./SmartOpportunitiesWidget";
+// TER-1056: Dashboard activity feed
+export { ActivityFeedWidget } from "./ActivityFeedWidget";
