@@ -50,6 +50,7 @@ describe("ordersDb.getAllOrders", () => {
 
   it("returns an empty array when no orders match (never 500)", async () => {
     const db = await dbModule.getDb();
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     (db!.select as ReturnType<typeof vi.fn>).mockReturnValue(
       buildChainResolvingTo([])
     );
@@ -97,6 +98,7 @@ describe("ordersDb.getAllOrders", () => {
       clients: { id: 11, name: "Beta Co" },
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     (db!.select as ReturnType<typeof vi.fn>).mockReturnValue(
       buildChainResolvingTo([healthyRow, corruptedRow])
     );
@@ -127,6 +129,7 @@ describe("ordersDb.getAllOrders", () => {
       clients: { id: 12, name: "Gamma" },
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     (db!.select as ReturnType<typeof vi.fn>).mockReturnValue(
       buildChainResolvingTo([rowEmpty])
     );
