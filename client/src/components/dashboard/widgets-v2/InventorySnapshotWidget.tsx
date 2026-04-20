@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, DatabaseErrorState } from "@/components/ui/empty-state";
 import { ChevronRight, ChevronDown, ExternalLink } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useLocation } from "wouter";
@@ -72,7 +72,7 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
   );
   const [viewMode, setViewMode] = useState<ViewMode>("category");
 
-  const { data, isLoading, error } =
+  const { data, isLoading, error, refetch } =
     trpc.dashboard.getInventorySnapshot.useQuery(undefined, {
       refetchInterval: 60000,
     });
@@ -158,14 +158,10 @@ export const InventorySnapshotWidget = memo(function InventorySnapshotWidget() {
       </CardHeader>
       <CardContent>
         {error ? (
-          <EmptyState
-            variant="generic"
-            size="sm"
-            title="Failed to load inventory data"
-            description={
-              error.message ||
-              "An error occurred while fetching inventory snapshot"
-            }
+          <DatabaseErrorState
+            entity="inventory snapshot"
+            errorMessage={error.message}
+            onRetry={() => void refetch()}
           />
         ) : isLoading ? (
           <div className="space-y-2">

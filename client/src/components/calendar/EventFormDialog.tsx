@@ -206,12 +206,13 @@ export default function EventFormDialog({
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
 
-    // BUG-099: Explicit required-field validation before submission
+    // Explicit required-field validation before submission.
+    // Calendar is optional — server does not require it, and blocking submission
+    // here left users with no calendar access unable to create events at all (TER-1154).
     const missing: string[] = [];
     if (!title.trim()) missing.push("Title");
     if (!startDate) missing.push("Start Date");
     if (!endDate) missing.push("End Date");
-    if (!calendarId) missing.push("Calendar");
     if (missing.length > 0) {
       toast.error(`Required fields missing: ${missing.join(", ")}`);
       return;
@@ -401,7 +402,7 @@ export default function EventFormDialog({
             <div className="space-y-2">
               <Label className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                Calendar *
+                Calendar
               </Label>
               <Select
                 value={calendarId?.toString() || ""}

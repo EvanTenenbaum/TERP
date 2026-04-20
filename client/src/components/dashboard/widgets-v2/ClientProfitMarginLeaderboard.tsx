@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState, DatabaseErrorState } from "@/components/ui/empty-state";
 import { trpc } from "@/lib/trpc";
 
 // LINT-005: Define interface for client profit margin data
@@ -20,11 +21,15 @@ interface ClientProfitMarginData {
 
 export const ClientProfitMarginLeaderboard = memo(
   function ClientProfitMarginLeaderboard() {
-    const { data: response, isLoading } =
-      trpc.dashboard.getClientProfitMargin.useQuery(
-        {},
-        { refetchInterval: 60000 }
-      );
+    const {
+      data: response,
+      isLoading,
+      error,
+      refetch,
+    } = trpc.dashboard.getClientProfitMargin.useQuery(
+      {},
+      { refetchInterval: 60000 }
+    );
 
     const data = response?.data || [];
 
@@ -46,6 +51,12 @@ export const ClientProfitMarginLeaderboard = memo(
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </div>
+          ) : error ? (
+            <DatabaseErrorState
+              entity="client profit margin data"
+              errorMessage={error.message}
+              onRetry={() => void refetch()}
+            />
           ) : data.length > 0 ? (
             <Table>
               <TableHeader>
@@ -82,9 +93,12 @@ export const ClientProfitMarginLeaderboard = memo(
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No profit margin data available
-            </div>
+            <EmptyState
+              variant="analytics"
+              size="sm"
+              title="No profit margin data yet"
+              description="Per-client profit margins appear once sales are recorded."
+            />
           )}
         </CardContent>
       </Card>
