@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { trpc } from "@/lib/trpc";
@@ -30,7 +30,6 @@ export function MentionInput({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const focusTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // FIXED: Clean up timeout on unmount to prevent memory leaks
   useEffect(() => {
     return () => {
       if (focusTimeoutRef.current) {
@@ -39,8 +38,9 @@ export function MentionInput({
     };
   }, []);
 
-  // Fetch all users for mentions
-  const { data: allUsers = [] } = trpc.userManagement.listUsers.useQuery();
+  // Use comments-scoped mention endpoint so any commenter can see the picker
+  // without requiring the stricter `users:read` permission.
+  const { data: allUsers = [] } = trpc.comments.listMentionableUsers.useQuery();
 
   // Filter users based on mention query
   const filteredUsers = allUsers.filter((user: User) => {
@@ -51,26 +51,41 @@ export function MentionInput({
     return name.includes(query) || email.includes(query);
   });
 
-  useEffect(() => {
-    // Detect @ mentions
-    const cursorPosition = textareaRef.current?.selectionStart || 0;
-    const textBeforeCursor = value.substring(0, cursorPosition);
-    const lastAtSymbol = textBeforeCursor.lastIndexOf("@");
+  const detectMention = useCallback(
+    (nextValue: string, cursorPosition: number) => {
+      const textBeforeCursor = nextValue.substring(0, cursorPosition);
+      const lastAtSymbol = textBeforeCursor.lastIndexOf("@");
 
-    if (lastAtSymbol !== -1) {
-      const textAfterAt = textBeforeCursor.substring(lastAtSymbol + 1);
-      // Check if there's a space after @ or if we're still typing
-      if (!textAfterAt.includes(" ")) {
-        setMentionQuery(textAfterAt);
-        setShowSuggestions(true);
-        setSelectedIndex(0);
-      } else {
+      if (lastAtSymbol === -1) {
         setShowSuggestions(false);
+        return;
       }
-    } else {
-      setShowSuggestions(false);
-    }
-  }, [value]);
+
+      // @ must be at the start or preceded by whitespace to count as a mention trigger
+      const charBefore =
+        lastAtSymbol > 0 ? textBeforeCursor[lastAtSymbol - 1] : "";
+      if (charBefore && !/\s/.test(charBefore)) {
+        setShowSuggestions(false);
+        return;
+      }
+
+      const textAfterAt = textBeforeCursor.substring(lastAtSymbol + 1);
+      if (textAfterAt.includes(" ") || textAfterAt.includes("\n")) {
+        setShowSuggestions(false);
+        return;
+      }
+
+      setMentionQuery(textAfterAt);
+      setShowSuggestions(true);
+      setSelectedIndex(0);
+    },
+    []
+  );
+
+  useEffect(() => {
+    const cursorPosition = textareaRef.current?.selectionStart ?? value.length;
+    detectMention(value, cursorPosition);
+  }, [value, detectMention]);
 
   const insertMention = (user: User) => {
     const cursorPosition = textareaRef.current?.selectionStart || 0;
@@ -104,11 +119,11 @@ export function MentionInput({
     if (showSuggestions && filteredUsers.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex((prev) => (prev + 1) % filteredUsers.length);
+        setSelectedIndex(prev => (prev + 1) % filteredUsers.length);
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedIndex(
-          (prev) => (prev - 1 + filteredUsers.length) % filteredUsers.length
+          prev => (prev - 1 + filteredUsers.length) % filteredUsers.length
         );
       } else if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -125,13 +140,21 @@ export function MentionInput({
     onKeyDown?.(e);
   };
 
+  const handleSelectionChange = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    detectMention(el.value, el.selectionStart ?? el.value.length);
+  };
+
   return (
     <div className="relative">
       <Textarea
         ref={textareaRef}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
+        onKeyUp={handleSelectionChange}
+        onClick={handleSelectionChange}
         placeholder={placeholder}
         className={className}
       />
@@ -152,7 +175,9 @@ export function MentionInput({
             >
               <div className="font-medium">{user.name || "Unknown"}</div>
               {user.email && (
-                <div className="text-xs text-muted-foreground">{user.email}</div>
+                <div className="text-xs text-muted-foreground">
+                  {user.email}
+                </div>
               )}
             </button>
           ))}
