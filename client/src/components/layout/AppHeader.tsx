@@ -27,6 +27,7 @@ import { useState } from "react";
 import { AppBreadcrumb } from "./AppBreadcrumb";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { useUiDensity } from "@/hooks/useUiDensity";
 import versionInfo from "../../../version.json";
 
@@ -46,14 +47,12 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
 
   // Get current user
   const { data: user } = trpc.auth.me.useQuery();
-  const logout = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      setLocation("/login");
-    },
-  });
+  // TER-1149: Route through useAuth().logout so the single helper owns the
+  // full teardown (server invalidation + tRPC cache clear + hard redirect).
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    logout.mutate();
+    void logout();
   };
 
   const openCommandPalette = () => {
@@ -93,7 +92,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="h-10 w-10 shrink-0 md:hidden"
+          className="h-11 w-11 shrink-0 md:hidden"
           onClick={onMenuClick}
           aria-label="Open menu"
         >
@@ -135,12 +134,12 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
         </form>
 
         <div className="ml-auto flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-card/90 p-1 shadow-sm">
-          <NotificationBell className="relative hidden sm:flex" />
+          <NotificationBell className="relative flex h-11 w-11 items-center justify-center sm:h-9 sm:w-9" />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="flex h-9 items-center gap-2 rounded-full border-0 bg-transparent px-2.5 shadow-none"
+                className="flex h-11 min-w-[44px] items-center gap-2 rounded-full border-0 bg-transparent px-2.5 shadow-none md:h-9 md:min-w-0"
               >
                 <User className="h-4 w-4 shrink-0" />
                 <span className="hidden max-w-[132px] truncate text-sm font-medium md:inline">
