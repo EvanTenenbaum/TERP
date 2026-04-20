@@ -218,7 +218,8 @@
     "staging:chains": "npx playwright test tests-e2e/chains/chain-runner.spec.ts --project=staging-critical",
     "staging:chains:headed": "npx playwright test tests-e2e/chains/chain-runner.spec.ts --project=staging-critical --headed",
     "context:refresh": "node scripts/agent-context/generate-agent-context.mjs",
-    "context:check": "node scripts/agent-context/generate-agent-context.mjs --check"
+    "context:check": "node scripts/agent-context/generate-agent-context.mjs --check",
+    "session:reap": "bash scripts/session-reaper.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
