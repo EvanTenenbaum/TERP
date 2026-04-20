@@ -12,7 +12,10 @@ BLUE=$'\033[0;34m'
 NC=$'\033[0m' # No Color
 
 MASTER_ROADMAP="docs/roadmaps/MASTER_ROADMAP.md"
+mkdir -p "$(dirname "$MASTER_ROADMAP")"
+[ -f "$MASTER_ROADMAP" ] || touch "$MASTER_ROADMAP"
 TESTING_ROADMAP="docs/roadmaps/TESTING_ROADMAP.md"
+[ -f "$TESTING_ROADMAP" ] || touch "$TESTING_ROADMAP"
 ACTIVE_SESSIONS="docs/ACTIVE_SESSIONS.md"
 SESSION_DIR="docs/sessions/active"
 LOCK_FILE="/tmp/start-task.lock"
@@ -264,8 +267,8 @@ ${TASK_DESCRIPTION:-[Describe what you are working on]}
 EOF
 
 # 6. Update roadmap
-sed -i "s/\(${TASK_ID}.*\)\[ \]/\1[~]/" "$ROADMAP_FILE"
-sed -i "s/\(${TASK_ID}.*\[~\]\)/\1 (Session: ${SESSION_ID})/" "$ROADMAP_FILE"
+sed -i "" "s/\(${TASK_ID}.*\)\[ \]/\1[~]/" "$ROADMAP_FILE"
+sed -i "" "s/\(${TASK_ID}.*\[~\]\)/\1 (Session: ${SESSION_ID})/" "$ROADMAP_FILE"
 
 # 7. Update ACTIVE_SESSIONS.md
 if [ ! -f "$ACTIVE_SESSIONS" ]; then
