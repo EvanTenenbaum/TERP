@@ -1910,9 +1910,11 @@ export const inventoryRouter = router({
       .use(requirePermission("inventory:read"))
       .input(z.number().optional().default(10))
       .query(async ({ input }) => {
+        // TER-1148: Dashboard must not 500 when profitability data is
+        // incomplete (missing COGS, empty orders, deleted batches mid-scan).
+        // Degrade to an empty result instead of propagating to the client.
         try {
           const result = await inventoryDb.getTopProfitableBatches(input);
-          // BUG-034: Standardized pagination response
           return createSafeUnifiedResponse(
             result,
             result?.length || 0,
@@ -1920,8 +1922,12 @@ export const inventoryRouter = router({
             0
           );
         } catch (error) {
-          handleError(error, "inventory.profitability.top");
-          throw error;
+          inventoryLogger.operationFailure(
+            "profitability.top",
+            error as Error,
+            { input }
+          );
+          return createSafeUnifiedResponse([], 0, input, 0);
         }
       }),
 
@@ -1929,11 +1935,25 @@ export const inventoryRouter = router({
     summary: protectedProcedure
       .use(requirePermission("inventory:read"))
       .query(async () => {
+        // TER-1148: Return zero-state summary when the underlying query fails
+        // (missing tables, null COGS rows, etc.) so the dashboard tile can
+        // render "no data" instead of error.
         try {
           return await inventoryDb.getProfitabilitySummary();
         } catch (error) {
-          handleError(error, "inventory.profitability.summary");
-          throw error;
+          inventoryLogger.operationFailure(
+            "profitability.summary",
+            error as Error,
+            {}
+          );
+          return {
+            totalRevenue: 0,
+            totalCost: 0,
+            grossProfit: 0,
+            avgMargin: 0,
+            totalUnits: 0,
+            batchesWithSales: 0,
+          };
         }
       }),
   }),

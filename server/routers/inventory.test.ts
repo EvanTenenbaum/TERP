@@ -952,6 +952,57 @@ describe("Inventory Router", () => {
     });
   });
 
+  // TER-1148: Dashboard must never 500 on incomplete profitability data.
+  describe("profitability", () => {
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
+    it("summary returns zero-state when the underlying query fails", async () => {
+      vi.mocked(inventoryDb.getProfitabilitySummary).mockRejectedValue(
+        new Error("relation \"batches\" does not exist")
+      );
+
+      const result = await caller.inventory.profitability.summary();
+
+      expect(result).toEqual({
+        totalRevenue: 0,
+        totalCost: 0,
+        grossProfit: 0,
+        avgMargin: 0,
+        totalUnits: 0,
+        batchesWithSales: 0,
+      });
+    });
+
+    it("summary returns real values on success", async () => {
+      vi.mocked(inventoryDb.getProfitabilitySummary).mockResolvedValue({
+        totalRevenue: 100,
+        totalCost: 40,
+        grossProfit: 60,
+        avgMargin: 60,
+        totalUnits: 10,
+        batchesWithSales: 2,
+      });
+
+      const result = await caller.inventory.profitability.summary();
+
+      expect(result.grossProfit).toBe(60);
+      expect(result.batchesWithSales).toBe(2);
+    });
+
+    it("top returns an empty paginated response when the DB query fails", async () => {
+      vi.mocked(inventoryDb.getTopProfitableBatches).mockRejectedValue(
+        new Error("Batch not found")
+      );
+
+      const result = await caller.inventory.profitability.top(5);
+
+      expect(result.items).toEqual([]);
+      expect(result.pagination?.total).toBe(0);
+    });
+  });
+
   describe("Edge Cases and Error Handling", () => {
     it("should handle empty batch list", async () => {
       // Arrange
