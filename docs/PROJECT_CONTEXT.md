@@ -1,5 +1,7 @@
 # TERP Project Context
 
+> Status note (2026-04-17): This file is preserved as legacy/background context only. Do not use it as live startup truth. Start with `docs/agent-context/START_HERE.md`, confirm freshness in `docs/agent-context/manifest.json`, then use `docs/agent-context/state.json` and `docs/agent-context/work.json` for machine-readable PM state.
+
 **Version:** 2.1  
 **Last Updated:** October 27, 2025  
 **Purpose:** Complete system overview for seamless handoff between Manus sessions
