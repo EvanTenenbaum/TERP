@@ -152,6 +152,26 @@ server/*Db.ts             # Legacy data access (don't extend)
 - Treat `docs/ACTIVE_SESSIONS.md` as a legacy global view, not the live Orders runtime gate snapshot
 - Never edit files another agent is working on
 
+## Completion Gate — Mandatory Before Any Ticket Is Marked Done
+
+**Every ticket requires adversarial QA and self-healing before being marked Done or opening a merge PR.**
+
+The sequence is non-negotiable:
+
+1. **Implement** the feature/fix on a branch
+2. **Adversarial QA** — treat your own implementation as an adversary would:
+   - Does it actually satisfy all acceptance criteria? Check each one explicitly.
+   - Are there edge cases not handled? (empty state, error state, loading state, mobile)
+   - Does it break any existing functionality in adjacent files?
+   - Are there TypeScript errors, missing null checks, or unsafe casts?
+   - Does it follow existing patterns in the codebase (not invent new ones)?
+   - Would a senior engineer approve this, or flag it immediately?
+3. **Self-healing** — fix every issue found in step 2. Do not open a PR until self-healing is complete.
+4. **CI gate** — push, confirm , , , all pass on GHA.
+5. **Only then**: open PR and comment on the Linear ticket with evidence of completion.
+
+**If you skip adversarial QA, the ticket is not done. Period.**
+
 ## Skills & Deep Protocols
 
 Domain knowledge is loaded on demand via `.claude/skills/`. Key skills:
