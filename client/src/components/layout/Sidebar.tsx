@@ -27,6 +27,7 @@ import { normalizeOperationsTab } from "@/lib/workspaceRoutes";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 import { useNavigationState } from "@/hooks/useNavigationState";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -118,8 +119,12 @@ export const Sidebar = React.memo(function Sidebar({
   open = false,
   onClose,
 }: SidebarProps) {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   const search = useSearch();
+  // TER-1149: Route logout through useAuth so the same teardown path is used
+  // everywhere (Sidebar previously only navigated to /login without calling
+  // the logout mutation, leaving the session authenticated).
+  const { logout } = useAuth();
   const { flags, isLoading: featureFlagsLoading } = useFeatureFlags();
   const { data: currentUser } = trpc.auth.me.useQuery(undefined, {
     staleTime: 60_000,
@@ -183,8 +188,8 @@ export const Sidebar = React.memo(function Sidebar({
 
   const handleLogout = useCallback(() => {
     onClose?.();
-    setLocation("/login");
-  }, [onClose, setLocation]);
+    void logout();
+  }, [onClose, logout]);
 
   const navRef = useRef<HTMLElement>(null);
   const activeGroupKey = useMemo(
