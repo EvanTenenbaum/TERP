@@ -213,8 +213,6 @@ export function ClientCombobox({
           aria-label="Select a client"
           data-testid="client-select"
           disabled={disabled || isLoading}
-          onClick={e => e.stopPropagation()}
-          onPointerDown={e => e.stopPropagation()}
           className={cn(
             "w-full justify-between font-normal",
             !selectedDisplayLabel && "text-muted-foreground",
