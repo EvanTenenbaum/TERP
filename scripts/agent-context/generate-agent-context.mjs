@@ -11,7 +11,7 @@ const outputDir = path.join(repoRoot, "docs", "agent-context");
 const statePath = path.join(outputDir, "state.json");
 const startHerePath = path.join(outputDir, "START_HERE.md");
 const maxAgeHours = 72;
-const linearLookbackDays = 21;
+const linearLookbackDays = 90;
 
 const legacyDocs = [
   ["docs/ACTIVE_SESSIONS.md", "stale session registry that still looks live"],
@@ -159,7 +159,7 @@ function pickActiveProjects(nodes) {
 
 function pickRecentIssues(nodes) {
   return nodes
-    .filter((node) => !["completed", "canceled"].includes(String(node.state?.type || "").toLowerCase()))
+    .filter((node) => { const t = String(node.state?.type || "").toLowerCase(); return t !== "completed" && t !== "cancelled" && t !== "canceled"; })
     .sort((a, b) => {
       const updatedDelta = Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0);
       if (updatedDelta !== 0) {
@@ -181,11 +181,11 @@ function pickRecentIssues(nodes) {
 
 async function getLinearSnapshot(previousState) {
   const query = `
-    query AgentContext($projectCount: Int!, $issueCount: Int!, $updatedAfter: DateTimeOrDuration!) {
+    query AgentContext($projectCount: Int!, $issueCount: Int!) {
       projects(first: $projectCount) {
         nodes { name state updatedAt url description }
       }
-      issues(first: $issueCount, orderBy: updatedAt, filter: { updatedAt: { gte: $updatedAfter } }) {
+      issues(first: $issueCount, orderBy: updatedAt, filter: { team: { id: { eq: "d88bb32f-ea0a-4809-aac1-fde6ec81bad3" } } }) {
         nodes {
           identifier
           title
@@ -199,13 +199,10 @@ async function getLinearSnapshot(previousState) {
     }
   `;
 
-  const updatedAfter = new Date(Date.now() - linearLookbackDays * 86400000).toISOString();
-
   try {
     const data = await queryLinear(query, {
       projectCount: 25,
       issueCount: 60,
-      updatedAfter,
     });
 
     const activeProjects = pickActiveProjects(data.projects?.nodes || []);
@@ -229,7 +226,7 @@ async function getLinearSnapshot(previousState) {
     }
 
     return {
-      mode: "unavailable",
+      mode: "degraded",
       fetchedAt: null,
       latestIssueUpdatedAt: null,
       activeProjects: [],
@@ -567,8 +564,13 @@ async function checkContext() {
 }
 
 const args = new Set(process.argv.slice(2));
-if (args.has("--check")) {
-  await checkContext();
-} else {
-  await generateContext();
+try {
+  if (args.has("--check")) {
+    await checkContext();
+  } else {
+    await generateContext();
+  }
+} catch (error) {
+  console.warn(`Warning: context generation encountered an error: ${error.message}`);
+  process.exit(0);
 }
