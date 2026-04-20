@@ -154,25 +154,71 @@ export const OperationalKpisWidget = memo(function OperationalKpisWidget() {
     );
   }
 
-  const openOrdersCount = data?.openOrders.count ?? 0;
-  const openOrdersValue = data?.openOrders.totalValue ?? 0;
-  const fulfilledTodayCount = data?.fulfilledToday.count ?? 0;
-  const receivablesTotal = data?.outstandingReceivables.total ?? 0;
-  const receivablesInvoices = data?.outstandingReceivables.invoiceCount ?? 0;
-  const thisWeekCash = data?.cashCollected.thisWeek ?? 0;
-  const lastWeekCash = data?.cashCollected.lastWeek ?? 0;
-  const percentChange = data?.cashCollected.percentChange ?? 0;
+  if (isLoading || !data) {
+    return (
+      <div
+        aria-label="Operational KPIs"
+        aria-busy="true"
+        className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        <KpiTile
+          title="Open Orders"
+          icon={ShoppingCart}
+          value=""
+          onClick={() => {}}
+          loading
+        />
+        <KpiTile
+          title="Fulfilled Today"
+          icon={PackageCheck}
+          value=""
+          onClick={() => {}}
+          loading
+        />
+        <KpiTile
+          title="Outstanding Receivables"
+          icon={CircleDollarSign}
+          value=""
+          onClick={() => {}}
+          loading
+        />
+        <KpiTile
+          title="Cash Collected (7d)"
+          icon={Wallet}
+          value=""
+          onClick={() => {}}
+          loading
+        />
+      </div>
+    );
+  }
+
+  const openOrdersCount = data.openOrders.count;
+  const openOrdersValue = data.openOrders.totalValue;
+  const fulfilledTodayCount = data.fulfilledToday.count;
+  const receivablesTotal = data.outstandingReceivables.total;
+  const receivablesInvoices = data.outstandingReceivables.invoiceCount;
+  const thisWeekCash = data.cashCollected.thisWeek;
+  const lastWeekCash = data.cashCollected.lastWeek;
+  const percentChange = data.cashCollected.percentChange;
 
   const cashTrend: Trend =
-    percentChange > 0 ? "up" : percentChange < 0 ? "down" : "neutral";
-  const cashTrendLabel = `${
-    percentChange > 0 ? "+" : ""
-  }${percentChange}% vs last week`;
+    percentChange === null
+      ? "neutral"
+      : percentChange > 0
+        ? "up"
+        : percentChange < 0
+          ? "down"
+          : "neutral";
+  const cashTrendLabel =
+    percentChange === null
+      ? "N/A vs last week"
+      : `${percentChange > 0 ? "+" : ""}${percentChange}% vs last week`;
 
   return (
     <div
       aria-label="Operational KPIs"
-      className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4"
+      className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
     >
       <KpiTile
         title="Open Orders"

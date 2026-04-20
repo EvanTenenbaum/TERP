@@ -205,9 +205,14 @@ interface OperationalKpisResponse {
   cashCollected: {
     thisWeek: number;
     lastWeek: number;
-    /** Percent change this-week vs last-week. 0 when last-week was 0. */
-    percentChange: number;
+    /** Percent change this-week vs last-week. null when last-week was 0 (no baseline). */
+    percentChange: number | null;
   };
+}
+
+function toFiniteNumber(value: unknown): number {
+  const parsed = parseFloat(String(value ?? "0"));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 /**
@@ -494,84 +499,95 @@ export const dashboardRouter = router({
 
       // Open orders: confirmed SALE orders not yet paid/cancelled and not
       // fulfilled beyond DELIVERED/CANCELLED.
-      let openOrdersCount = 0;
-      let openOrdersValue = 0;
-      let fulfilledTodayCount = 0;
-
-      if (db) {
-        const openOrdersRows: Pick<Order, "total">[] = await db
-          .select({ total: ordersTable.total })
-          .from(ordersTable)
-          .where(
-            and(
-              isNull(ordersTable.deletedAt),
-              eq(ordersTable.orderType, "SALE"),
-              sql`${ordersTable.isDraft} = 0`,
-              notInArray(ordersTable.fulfillmentStatus, [
-                "DELIVERED",
-                "CANCELLED",
-                "RETURNED",
-                "RESTOCKED",
-                "RETURNED_TO_VENDOR",
-              ])
+      const openOrdersQuery: Promise<Pick<Order, "total">[]> = db
+        ? db
+            .select({ total: ordersTable.total })
+            .from(ordersTable)
+            .where(
+              and(
+                isNull(ordersTable.deletedAt),
+                eq(ordersTable.orderType, "SALE"),
+                sql`${ordersTable.isDraft} = 0`,
+                notInArray(ordersTable.fulfillmentStatus, [
+                  "DELIVERED",
+                  "CANCELLED",
+                  "RETURNED",
+                  "RESTOCKED",
+                  "RETURNED_TO_VENDOR",
+                ])
+              )
             )
-          );
+        : Promise.resolve([]);
 
-        openOrdersCount = openOrdersRows.length;
-        openOrdersValue = openOrdersRows.reduce(
-          (sum, row) => sum + Number(row.total || 0),
-          0
-        );
-
-        const fulfilledRows = await db
-          .select({ id: ordersTable.id })
-          .from(ordersTable)
-          .where(
-            and(
-              isNull(ordersTable.deletedAt),
-              eq(ordersTable.orderType, "SALE"),
-              inArray(ordersTable.fulfillmentStatus, [
-                "SHIPPED",
-                "DELIVERED",
-              ]),
-              sql`${ordersTable.shippedAt} >= ${startOfToday}`
+      const fulfilledTodayQuery: Promise<{ id: number }[]> = db
+        ? db
+            .select({ id: ordersTable.id })
+            .from(ordersTable)
+            .where(
+              and(
+                isNull(ordersTable.deletedAt),
+                eq(ordersTable.orderType, "SALE"),
+                inArray(ordersTable.fulfillmentStatus, [
+                  "SHIPPED",
+                  "DELIVERED",
+                ]),
+                sql`${ordersTable.shippedAt} >= ${startOfToday}`,
+                sql`${ordersTable.shippedAt} <= ${now}`
+              )
             )
-          );
-        fulfilledTodayCount = fulfilledRows.length;
-      }
+        : Promise.resolve([]);
 
-      // Outstanding receivables (reuse existing helper).
-      const receivablesResult = await arApDb.getOutstandingReceivables();
+      // All five queries run in parallel so dashboard TTFB is gated by the
+      // slowest one rather than the sum.
+      const [
+        openOrdersRows,
+        fulfilledRows,
+        receivablesResult,
+        thisWeekPayments,
+        lastWeekPayments,
+      ] = await Promise.all([
+        openOrdersQuery,
+        fulfilledTodayQuery,
+        arApDb.getOutstandingReceivables(),
+        arApDb.getPayments({
+          paymentType: "RECEIVED",
+          startDate: startOfThisWeek,
+          endDate: now,
+        }),
+        arApDb.getPayments({
+          paymentType: "RECEIVED",
+          startDate: startOfLastWeek,
+          endDate: startOfThisWeek,
+        }),
+      ]);
+
+      const openOrdersCount = openOrdersRows.length;
+      const openOrdersValue = openOrdersRows.reduce(
+        (sum, row) => sum + toFiniteNumber(row.total),
+        0
+      );
+      const fulfilledTodayCount = fulfilledRows.length;
+
       const receivablesInvoices = receivablesResult.invoices || [];
-      const receivablesTotal = Number(receivablesResult.total || 0);
-
-      // Cash collected: this week vs previous 7-day window.
-      const thisWeekPayments = await arApDb.getPayments({
-        paymentType: "RECEIVED",
-        startDate: startOfThisWeek,
-        endDate: now,
-      });
-      const lastWeekPayments = await arApDb.getPayments({
-        paymentType: "RECEIVED",
-        startDate: startOfLastWeek,
-        endDate: startOfThisWeek,
-      });
+      const receivablesTotal = toFiniteNumber(receivablesResult.total);
 
       const thisWeekCash = (thisWeekPayments.payments || []).reduce(
-        (sum: number, p: Payment) => sum + Number(p.amount || 0),
+        (sum: number, p: Payment) => sum + toFiniteNumber(p.amount),
         0
       );
       const lastWeekCash = (lastWeekPayments.payments || []).reduce(
-        (sum: number, p: Payment) => sum + Number(p.amount || 0),
+        (sum: number, p: Payment) => sum + toFiniteNumber(p.amount),
         0
       );
 
+      // Null when no baseline exists — client renders "N/A" rather than
+      // fabricating a "+0% vs last week" trend.
       const percentChange =
         lastWeekCash > 0
-          ? ((thisWeekCash - lastWeekCash) / lastWeekCash) * 100
-          : thisWeekCash > 0
-            ? 100
-            : 0;
+          ? Math.round(
+              ((thisWeekCash - lastWeekCash) / lastWeekCash) * 100 * 100
+            ) / 100
+          : null;
 
       return {
         openOrders: {
@@ -588,7 +604,7 @@ export const dashboardRouter = router({
         cashCollected: {
           thisWeek: thisWeekCash,
           lastWeek: lastWeekCash,
-          percentChange: Math.round(percentChange * 100) / 100,
+          percentChange,
         },
       };
     }),
