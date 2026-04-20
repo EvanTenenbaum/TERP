@@ -15,7 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, DatabaseErrorState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -25,10 +25,10 @@ import { useLocation } from "wouter";
 export const TransactionSnapshotWidget = memo(
   function TransactionSnapshotWidget() {
     const [, setLocation] = useLocation();
-    const { data, isLoading } = trpc.dashboard.getTransactionSnapshot.useQuery(
-      undefined,
-      { refetchInterval: 60000 }
-    );
+    const { data, isLoading, error, refetch } =
+      trpc.dashboard.getTransactionSnapshot.useQuery(undefined, {
+        refetchInterval: 60000,
+      });
 
     const formatCurrency = (value: number) => {
       return `$${value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -56,6 +56,12 @@ export const TransactionSnapshotWidget = memo(
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </div>
+          ) : error ? (
+            <DatabaseErrorState
+              entity="transaction snapshot"
+              errorMessage={error.message}
+              onRetry={() => void refetch()}
+            />
           ) : data ? (
             <Table>
               <TableHeader>

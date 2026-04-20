@@ -16,16 +16,16 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, DatabaseErrorState } from "@/components/ui/empty-state";
 import { ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
   const [, setLocation] = useLocation();
-  const { data, isLoading } = trpc.dashboard.getSalesComparison.useQuery(
-    undefined,
-    { refetchInterval: 60000 }
-  );
+  const { data, isLoading, error, refetch } =
+    trpc.dashboard.getSalesComparison.useQuery(undefined, {
+      refetchInterval: 60000,
+    });
 
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -60,6 +60,12 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
+        ) : error ? (
+          <DatabaseErrorState
+            entity="sales comparison"
+            errorMessage={error.message}
+            onRetry={() => void refetch()}
+          />
         ) : data ? (
           <Table>
             <TableHeader>

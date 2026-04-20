@@ -1,14 +1,19 @@
 import { memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EmptyState } from "@/components/ui/empty-state";
+import {
+  EmptyState,
+  DatabaseErrorState,
+  isDatabaseError,
+} from "@/components/ui/empty-state";
 import { trpc } from "@/lib/trpc";
 import { TrendingUp, DollarSign, Percent, Package } from "lucide-react";
 
 export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
-  const { data: summary, isLoading } =
-    trpc.inventory.profitability.summary.useQuery();
-  const { data: topBatches } = trpc.inventory.profitability.top.useQuery(5);
+  const summaryQuery = trpc.inventory.profitability.summary.useQuery();
+  const topBatchesQuery = trpc.inventory.profitability.top.useQuery(5);
+  const { data: summary, isLoading, error, refetch } = summaryQuery;
+  const { data: topBatches } = topBatchesQuery;
 
   if (isLoading) {
     return (
@@ -29,6 +34,29 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
     );
   }
 
+  if (error) {
+    return (
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-green-600" />
+          Profitability Analysis
+        </h3>
+        <DatabaseErrorState
+          entity="profitability data"
+          errorMessage={
+            isDatabaseError(error)
+              ? undefined
+              : error.message || "Failed to load profitability analysis."
+          }
+          onRetry={() => {
+            void refetch();
+            void topBatchesQuery.refetch();
+          }}
+        />
+      </Card>
+    );
+  }
+
   if (!summary) {
     return (
       <Card className="p-6">
@@ -39,8 +67,8 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
         <EmptyState
           variant="analytics"
           size="sm"
-          title="No profitability data"
-          description="Profitability analysis will appear once sales are recorded"
+          title="No profitability data yet"
+          description="Profitability analysis will appear once sales are recorded."
         />
       </Card>
     );

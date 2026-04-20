@@ -17,7 +17,7 @@ import {
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, DatabaseErrorState } from "@/components/ui/empty-state";
 import { ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -27,10 +27,11 @@ export const CashFlowWidget = memo(function CashFlowWidget() {
   const [, setLocation] = useLocation();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("LIFETIME");
 
-  const { data, isLoading } = trpc.dashboard.getCashFlow.useQuery(
-    { timePeriod },
-    { refetchInterval: 60000 }
-  );
+  const { data, isLoading, error, refetch } =
+    trpc.dashboard.getCashFlow.useQuery(
+      { timePeriod },
+      { refetchInterval: 60000 }
+    );
 
   const formatCurrency = (value: number) => {
     return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -73,6 +74,12 @@ export const CashFlowWidget = memo(function CashFlowWidget() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
+        ) : error ? (
+          <DatabaseErrorState
+            entity="cash flow data"
+            errorMessage={error.message}
+            onRetry={() => void refetch()}
+          />
         ) : data ? (
           <Table>
             <TableBody>

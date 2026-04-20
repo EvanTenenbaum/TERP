@@ -8,7 +8,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, DatabaseErrorState } from "@/components/ui/empty-state";
 import { ArrowRight, DollarSign, Clock, Wallet } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -17,10 +17,11 @@ import { formatDateTime } from "@/lib/dateFormat";
 export const AvailableCashWidget = memo(function AvailableCashWidget() {
   const [, setLocation] = useLocation();
 
-  const { data, isLoading, error } = trpc.cashAudit.getCashDashboard.useQuery(
-    undefined,
-    { refetchInterval: 60000 } // Refresh every minute
-  );
+  const { data, isLoading, error, refetch } =
+    trpc.cashAudit.getCashDashboard.useQuery(
+      undefined,
+      { refetchInterval: 60000 } // Refresh every minute
+    );
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -74,11 +75,10 @@ export const AvailableCashWidget = memo(function AvailableCashWidget() {
             </div>
           </div>
         ) : error ? (
-          <EmptyState
-            variant="generic"
-            size="sm"
-            title="Unable to load cash data"
-            description="Please try refreshing the page"
+          <DatabaseErrorState
+            entity="cash data"
+            errorMessage={error.message}
+            onRetry={() => void refetch()}
           />
         ) : data ? (
           <div className="space-y-4">
