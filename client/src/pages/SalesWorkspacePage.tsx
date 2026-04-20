@@ -21,6 +21,9 @@ const ReturnsPilotSurface = lazy(
 );
 const ReturnsPage = lazy(() => import("@/pages/ReturnsPage"));
 const LiveShoppingPage = lazy(() => import("@/pages/LiveShoppingPage"));
+const ShippingPickListPage = lazy(
+  () => import("@/pages/ShippingPickListPage")
+);
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { SALES_WORKSPACE } from "@/config/workspaces";
@@ -374,6 +377,17 @@ export default function SalesWorkspacePage() {
           ) : (
             <OrdersWorkSurface onNewOrder={() => setShowOrderDrawer(true)} />
           )}
+        </LinearWorkspacePanel>
+        <LinearWorkspacePanel value="pick-list">
+          <Suspense
+            fallback={
+              <div className="p-4 text-sm text-muted-foreground">
+                Loading pick list...
+              </div>
+            }
+          >
+            <ShippingPickListPage />
+          </Suspense>
         </LinearWorkspacePanel>
         <LinearWorkspacePanel value="quotes">
           {shouldRenderPilotSurface(quotesPilotReady, quotesSurfaceMode) ? (

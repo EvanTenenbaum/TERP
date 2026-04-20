@@ -17,13 +17,19 @@ export const SALES_WORKSPACE = {
     "Manage orders, quotes, returns, sales catalogues, and live shopping in one workspace.",
   tabs: [
     { value: "orders", label: "Orders" },
+    { value: "pick-list", label: "Pick List" },
     { value: "quotes", label: "Quotes" },
     { value: "returns", label: "Returns" },
     { value: "sales-sheets", label: "Sales Catalogues" },
     { value: "live-shopping", label: "Live Shopping" },
   ],
 } as const satisfies WorkspaceConfig<
-  "orders" | "quotes" | "returns" | "sales-sheets" | "live-shopping"
+  | "orders"
+  | "pick-list"
+  | "quotes"
+  | "returns"
+  | "sales-sheets"
+  | "live-shopping"
 >;
 
 export const DEMAND_SUPPLY_WORKSPACE = {
