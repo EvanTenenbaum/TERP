@@ -10,6 +10,7 @@ import {
   router,
 } from "../_core/trpc";
 import { simpleAuth } from "../_core/simpleAuth";
+import { isPublicDemoUser } from "../_core/context";
 import * as db from "../db";
 import { logAuditEvent, AuditEventType } from "../auditLogger";
 import { logger } from "../_core/logger";
@@ -30,6 +31,12 @@ export const authRouter = router({
         tokenId: token,
         reason: "LOGOUT",
       });
+    }
+    // TER-1149: Also bulk-invalidate every JWT issued to this user before
+    // now — covers multi-tab logouts and stolen-token scenarios where other
+    // outstanding tokens would otherwise still authenticate.
+    if (ctx.user && !isPublicDemoUser(ctx.user)) {
+      invalidateUserTokens(ctx.user.id, "LOGOUT");
     }
     const cookieOptions = getSessionCookieOptions(ctx.req);
     ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });

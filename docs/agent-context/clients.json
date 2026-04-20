@@ -1,0 +1,285 @@
+{
+  "schemaVersion": 1,
+  "defaultTrustLevel": "read-only",
+  "description": "Registry of PM-capable client surfaces. Edit via PR only. Newly onboarded clients stay read-only until explicitly promoted.",
+  "clients": [
+    {
+      "id": "hermes",
+      "name": "Hermes",
+      "surface": "Hermes",
+      "category": "local",
+      "trustLevel": "first-class-writer",
+      "readPaths": [
+        "shared-live-bundle",
+        "local-files",
+        "pm-mcp"
+      ],
+      "fallbackReadPaths": [
+        "public-mirror"
+      ],
+      "writeMode": "pm-mcp",
+      "allowedTools": [
+        "pm.read",
+        "pm.appendDecision",
+        "pm.checkpoint",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/hermes.md",
+      "pushBeforeHosted": false,
+      "notes": "Dedicated adapter required; do not assume parity with Codex or Claude clients.",
+      "signingMode": "pm-mediator",
+      "signingKeyFingerprint": "managed-by-mediator"
+    },
+    {
+      "id": "codex-mac-app",
+      "name": "Codex Mac app",
+      "surface": "Codex Mac app",
+      "category": "local",
+      "trustLevel": "first-class-writer",
+      "readPaths": [
+        "shared-live-bundle",
+        "local-files",
+        "pm-mcp"
+      ],
+      "fallbackReadPaths": [
+        "public-mirror"
+      ],
+      "writeMode": "pm-mcp",
+      "allowedTools": [
+        "pm.read",
+        "pm.appendDecision",
+        "pm.checkpoint",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/codex-mac-app.md",
+      "pushBeforeHosted": false,
+      "notes": "Primary TERP local working surface.",
+      "signingMode": "pm-mediator",
+      "signingKeyFingerprint": "managed-by-mediator"
+    },
+    {
+      "id": "codex-cloud",
+      "name": "Codex cloud",
+      "surface": "Codex cloud",
+      "category": "hosted",
+      "trustLevel": "mediated-writer",
+      "readPaths": [
+        "git-clone",
+        "public-mirror"
+      ],
+      "fallbackReadPaths": [
+        "bootstrap-paste"
+      ],
+      "writeMode": "pull-request",
+      "allowedTools": [
+        "pm.read",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/codex-cloud.md",
+      "pushBeforeHosted": true,
+      "notes": "Hosted surface should work from pushed git state and open PRs for PM-affecting changes.",
+      "signingMode": "git-identity",
+      "signingKeyFingerprint": "pr-mediated"
+    },
+    {
+      "id": "codex-cli-local",
+      "name": "Codex CLI (local)",
+      "surface": "Codex CLI",
+      "category": "local",
+      "trustLevel": "first-class-writer",
+      "readPaths": [
+        "shared-live-bundle",
+        "local-files",
+        "pm-mcp"
+      ],
+      "fallbackReadPaths": [
+        "public-mirror"
+      ],
+      "writeMode": "pm-mcp",
+      "allowedTools": [
+        "pm.read",
+        "pm.appendDecision",
+        "pm.checkpoint",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/codex-cli-local.md",
+      "pushBeforeHosted": false,
+      "notes": "Treat as first-class writer only when running on trusted local infrastructure.",
+      "signingMode": "pm-mediator",
+      "signingKeyFingerprint": "managed-by-mediator"
+    },
+    {
+      "id": "codex-cli-cloud",
+      "name": "Codex CLI (cloud)",
+      "surface": "Codex CLI",
+      "category": "hosted",
+      "trustLevel": "mediated-writer",
+      "readPaths": [
+        "git-clone",
+        "public-mirror"
+      ],
+      "fallbackReadPaths": [
+        "bootstrap-paste"
+      ],
+      "writeMode": "pull-request",
+      "allowedTools": [
+        "pm.read",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/codex-cli-cloud.md",
+      "pushBeforeHosted": true,
+      "notes": "Cloud or sandboxed Codex CLI runs should use PRs or proposal files, not direct PM writes.",
+      "signingMode": "git-identity",
+      "signingKeyFingerprint": "pr-mediated"
+    },
+    {
+      "id": "claude-mac-app",
+      "name": "Claude Mac app",
+      "surface": "Claude Mac app",
+      "category": "local",
+      "trustLevel": "conditional-first-class-writer",
+      "readPaths": [
+        "shared-live-bundle",
+        "local-files",
+        "pm-mcp"
+      ],
+      "fallbackReadPaths": [
+        "public-mirror"
+      ],
+      "writeMode": "pm-mcp",
+      "allowedTools": [
+        "pm.read",
+        "pm.appendDecision",
+        "pm.checkpoint",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/claude-mac-app.md",
+      "pushBeforeHosted": false,
+      "notes": "Promote to first-class writer only when refresh/check and local connector support are validated end to end.",
+      "signingMode": "pm-mediator",
+      "signingKeyFingerprint": "managed-by-mediator"
+    },
+    {
+      "id": "claude-ai",
+      "name": "claude.ai",
+      "surface": "claude.ai",
+      "category": "hosted",
+      "trustLevel": "read-only",
+      "readPaths": [
+        "github-integration",
+        "public-mirror"
+      ],
+      "fallbackReadPaths": [
+        "bootstrap-paste"
+      ],
+      "writeMode": "proposal-only",
+      "allowedTools": [
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/claude-ai.md",
+      "pushBeforeHosted": true,
+      "notes": "Hosted Anthropic surfaces never depend on tailnet-only services and do not write authoritatively.",
+      "signingMode": "none",
+      "signingKeyFingerprint": "read-only"
+    },
+    {
+      "id": "claude-code-cloud",
+      "name": "Claude Code cloud",
+      "surface": "Claude Code cloud",
+      "category": "hosted",
+      "trustLevel": "mediated-writer",
+      "readPaths": [
+        "git-clone",
+        "public-mirror"
+      ],
+      "fallbackReadPaths": [
+        "bootstrap-paste"
+      ],
+      "writeMode": "pull-request",
+      "allowedTools": [
+        "pm.read",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/claude-code-cloud.md",
+      "pushBeforeHosted": true,
+      "notes": "Use pushed git state and PR-mediated writes.",
+      "signingMode": "git-identity",
+      "signingKeyFingerprint": "pr-mediated"
+    },
+    {
+      "id": "claude-code-cli-local",
+      "name": "Claude Code CLI (local)",
+      "surface": "Claude Code CLI",
+      "category": "local",
+      "trustLevel": "first-class-writer",
+      "readPaths": [
+        "shared-live-bundle",
+        "local-files",
+        "pm-mcp"
+      ],
+      "fallbackReadPaths": [
+        "public-mirror"
+      ],
+      "writeMode": "pm-mcp",
+      "allowedTools": [
+        "pm.read",
+        "pm.appendDecision",
+        "pm.checkpoint",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/claude-code-cli-local.md",
+      "pushBeforeHosted": false,
+      "notes": "Trusted local Claude Code CLI may act as a first-class writer through the mediator only.",
+      "signingMode": "pm-mediator",
+      "signingKeyFingerprint": "managed-by-mediator"
+    },
+    {
+      "id": "claude-code-cli-cloud",
+      "name": "Claude Code CLI (cloud)",
+      "surface": "Claude Code CLI",
+      "category": "hosted",
+      "trustLevel": "mediated-writer",
+      "readPaths": [
+        "git-clone",
+        "public-mirror"
+      ],
+      "fallbackReadPaths": [
+        "bootstrap-paste"
+      ],
+      "writeMode": "pull-request",
+      "allowedTools": [
+        "pm.read",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/claude-code-cli-cloud.md",
+      "pushBeforeHosted": true,
+      "notes": "Cloud Claude Code CLI should use PR or proposal mediated writes.",
+      "signingMode": "git-identity",
+      "signingKeyFingerprint": "pr-mediated"
+    },
+    {
+      "id": "new-model-template",
+      "name": "Future new model/service",
+      "surface": "Any new model/service",
+      "category": "template",
+      "trustLevel": "read-only",
+      "readPaths": [
+        "public-mirror",
+        "bootstrap-paste"
+      ],
+      "fallbackReadPaths": [
+        "manual-bootstrap"
+      ],
+      "writeMode": "proposal-only",
+      "allowedTools": [
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/any-llm.md",
+      "pushBeforeHosted": true,
+      "notes": "Unregistered clients stay read-only until a validated adapter and registry entry exist.",
+      "signingMode": "none",
+      "signingKeyFingerprint": "read-only"
+    }
+  ],
+  "updatedAt": "2026-04-17T16:46:49.930Z"
+}

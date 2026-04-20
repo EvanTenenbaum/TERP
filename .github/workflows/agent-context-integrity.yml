@@ -1,0 +1,79 @@
+name: Agent Context Integrity
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/agent-context-*.yml"
+      - "AGENTS.md"
+      - "CLAUDE.md"
+      - ".claude/skills/roadmap-management/SKILL.md"
+      - "agent-prompts/README.md"
+      - "docs/agent-context/**"
+      - "docs/runbooks/PERSISTENT_PM_SYSTEM.md"
+      - "docs/PROJECT_CONTEXT.md"
+      - "product-management/START_HERE.md"
+      - "scripts/agent-context/**"
+      - "eslint.config.js"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: agent-context-integrity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-agent-context:
+    runs-on: ubuntu-latest
+    env:
+      LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint PM runtime scripts
+        run: pnpm exec eslint scripts/agent-context --ext .mjs,.ts
+
+      - name: Run PM runtime tests
+        run: >
+          pnpm exec vitest run
+          scripts/agent-context/generate-agent-context.test.ts
+          scripts/agent-context/pm-mcp-server.test.ts
+          scripts/agent-context/pm-publisher.test.ts
+          scripts/agent-context/pm-onboard-client.test.ts
+          scripts/agent-context/install-pm-services.test.ts
+
+      - name: Refresh PM bundle
+        run: pnpm context:refresh
+
+      - name: Fail if bridge and legacy PM surfaces drifted
+        run: >
+          git diff --exit-code --
+          product-management/START_HERE.md
+          AGENTS.md
+          CLAUDE.md
+          agent-prompts/README.md
+          docs/PROJECT_CONTEXT.md
+          .claude/skills/roadmap-management/SKILL.md
+
+      - name: Verify PM freshness and integrity
+        run: pnpm context:check

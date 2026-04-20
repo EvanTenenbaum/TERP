@@ -17,6 +17,7 @@ import { and, desc, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "../db";
 import { logger } from "../_core/logger";
+import { isSchemaDriftError } from "../_core/dbErrors";
 import {
   clients,
   orders,
@@ -27,12 +28,17 @@ import { adminProcedure, router } from "../_core/trpc";
 
 /**
  * Detects MySQL errors caused by missing tables or columns in a legacy schema.
- * Use this to guard all referral table queries — the referral_credits and
- * referral_settings tables may not exist on older DB deployments.
+ * Delegates to the shared isSchemaDriftError helper so nested/wrapped errors
+ * (drizzle query wraps, errors exposing only `errno`, etc.) are also caught —
+ * TER-1147 surfaced cases where the original narrow `.code`-only check missed
+ * these, causing /orders/new to 500.
  */
 function isLegacySchemaError(error: unknown): boolean {
-  const code = (error as { code?: string })?.code;
-  return code === "ER_BAD_FIELD_ERROR" || code === "ER_NO_SUCH_TABLE";
+  return isSchemaDriftError(error, [
+    "referral_credits",
+    "referral_credit_settings",
+    "referral_settings",
+  ]);
 }
 
 /**

@@ -10,25 +10,7 @@ TERP is a specialized ERP for THCA wholesale cannabis operations. React 19 + Tai
 
 ## Startup Contract
 
-Before scanning old docs, commit history, or running broad searches:
-
-1. Run `pnpm context:refresh` to get current project state
-2. Read `docs/agent-context/START_HERE.md` — current startup truth
-3. Read `docs/agent-handoff/handoff.json` if it exists — previous session context
-4. Use `docs/agent-context/state.json` for machine-readable state
-
-To start work on a task:
-```bash
-export AGENT_PREFIX=cc  # cc=claude-code, codex=codex, oh=openhands
-export AGENT_MODEL=claude-opus-4-7
-bash scripts/start-task.sh TER-NNNN
-```
-
-**Enforcement is at the git layer — not in this file.** Git hooks will block commits without a valid session file. CI will block PRs without session validation. Read `.kiro/steering/03-agent-coordination.md` for the full protocol.
-
-**For web agents (Claude Web):** You cannot run scripts. The operator must provide context by pasting `handoff.json` or `START_HERE.md` into your context. See `.kiro/steering/05-external-agent-handoff.md` §6.
-
-Treat `docs/ACTIVE_SESSIONS.md`, `docs/PROJECT_CONTEXT.md`, `docs/TERP_AGENT_INSTRUCTIONS.md`, and `docs/ROADMAP_AGENT_GUIDE.md` as **legacy/background** — do not use them as current truth.
+Before scanning old docs or commit history for broad orientation, read `docs/agent-context/START_HERE.md`. Confirm freshness in `docs/agent-context/manifest.json`, then use `docs/agent-context/state.json` and `docs/agent-context/work.json` for machine-readable startup truth and remaining-work ordering. Treat `docs/ACTIVE_SESSIONS.md`, `docs/PROJECT_CONTEXT.md`, `docs/TERP_AGENT_INSTRUCTIONS.md`, `docs/ROADMAP_AGENT_GUIDE.md`, and `product-management/START_HERE.md` as legacy/background unless the agent-context bundle tells you otherwise.
 
 ## Commands (Run Before Every Commit)
 

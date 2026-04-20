@@ -363,6 +363,50 @@ describe("Orders Router", () => {
       expect(result.items[0].clientId).toBe(42);
       expect(result.items[0].client).toEqual({ id: 42, name: "Acme Corp" });
     });
+
+    // TER-1146: /orders must render even when a row was rescued at the Db layer
+    // with items=[] due to a corrupted legacy items payload. The router must not
+    // 500 and the paginated response must include the rescued row.
+    it("returns rows rescued to items=[] without 500ing the list", async () => {
+      const mockOrders = [
+        {
+          id: 1,
+          orderNumber: "S-2026-010",
+          orderType: "SALE",
+          clientId: 10,
+          isDraft: false,
+          items: [
+            {
+              batchId: 1,
+              displayName: "OG Kush",
+              quantity: 2,
+              unitPrice: 100,
+              isSample: false,
+            },
+          ],
+          lineItemCount: 1,
+          client: { id: 10, name: "Acme" },
+        },
+        {
+          id: 2,
+          orderNumber: "S-2026-011",
+          orderType: "SALE",
+          clientId: 11,
+          isDraft: false,
+          items: [],
+          lineItemCount: 0,
+          client: { id: 11, name: "Beta Co" },
+        },
+      ];
+
+      vi.mocked(ordersDb.getAllOrders).mockResolvedValue(mockOrders);
+
+      const result = await caller.orders.getAll({ isDraft: false });
+      expect(result.items).toHaveLength(2);
+      expect(result.items[1].id).toBe(2);
+      expect(result.items[1].items).toEqual([]);
+      expect(result.items[1].lineItemCount).toBe(0);
+    });
   });
 
   describe("update", () => {
