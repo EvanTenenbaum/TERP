@@ -54,6 +54,14 @@ EOF
 
   mv "$SESSION_FILE" "$ABANDONED_DIR/reaped-${SESSION_NAME}"
 
+  # Reset roadmap status so task can be restarted
+  TASK_ID=$(grep 'Task ID:' "$ABANDONED_DIR/reaped-${SESSION_NAME}" 2>/dev/null | grep -oP 'TER-[0-9]+' | head -1 || true)
+  MASTER_ROADMAP="docs/roadmaps/MASTER_ROADMAP.md"
+  if [ -n "$TASK_ID" ] && [ -f "$MASTER_ROADMAP" ]; then
+    sed -i '' "s/\(${TASK_ID}.*\)\[~\]/\1[ ]/" "$MASTER_ROADMAP" 2>/dev/null || \
+    sed -i "s/\(${TASK_ID}.*\)\[~\]/\1[ ]/" "$MASTER_ROADMAP"
+  fi
+
   echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) | REAPED | ${SESSION_NAME} | branch: ${BRANCH} | reason: ${REASON}" >> "$AUDIT_LOG"
 
   ABANDONED_COUNT=$((ABANDONED_COUNT + 1))

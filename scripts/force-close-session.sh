@@ -64,4 +64,12 @@ fi
 echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) | FORCE_CLOSE | ${TASK_ID} | reason: ${REASON} | operator: $(git config user.email 2>/dev/null || echo 'unknown') | branch: $(git branch --show-current)" >> "$AUDIT_LOG"
 echo -e "${GREEN}✓ Audit log updated: ${AUDIT_LOG}${NC}"
 
+# Reset roadmap status from [~] back to [ ] so task can be restarted
+MASTER_ROADMAP="docs/roadmaps/MASTER_ROADMAP.md"
+if [ -f "$MASTER_ROADMAP" ] && grep -q "${TASK_ID}" "$MASTER_ROADMAP"; then
+  sed -i '' "s/\(${TASK_ID}.*\)\[~\]/\1[ ]/" "$MASTER_ROADMAP" 2>/dev/null || \
+  sed -i "s/\(${TASK_ID}.*\)\[~\]/\1[ ]/" "$MASTER_ROADMAP"
+  echo -e "✓ Roadmap status reset to [ ] for ${TASK_ID}"
+fi
+
 echo -e "${GREEN}✅ Session force-closed. Task ${TASK_ID} can now be started fresh.${NC}"

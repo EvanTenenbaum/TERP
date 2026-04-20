@@ -50,6 +50,7 @@ echo -e "${YELLOW}ℹ️  Full test suite (pnpm test + pnpm build) runs in CI on
 # Write fast-completion marker for session tracking
 CURRENT_BRANCH=$(git branch --show-current)
 if [ -n "$TASK_ID" ]; then
+  mkdir -p "docs/agent-handoff"
   FAST_COMPLETE_FILE="docs/agent-handoff/.fast-complete-${TASK_ID}"
   echo "{\"taskId\":\"${TASK_ID}\",\"branch\":\"${CURRENT_BRANCH}\",\"completedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"type\":\"fast\"}" > "$FAST_COMPLETE_FILE"
 fi
