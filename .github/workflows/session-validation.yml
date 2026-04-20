@@ -1,0 +1,64 @@
+name: Validate Agent Session
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  statuses: write
+
+jobs:
+  validate-session:
+    name: Validate Agent Session
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Check session file
+        id: check_session
+        env:
+          BRANCH_NAME: ${{ github.head_ref }}
+        run: |
+          echo "Branch: $BRANCH_NAME"
+
+          # Branches that are exempt from session requirement
+          if [[ "$BRANCH_NAME" == main ]] ||              [[ "$BRANCH_NAME" == staging ]] ||              [[ "$BRANCH_NAME" == production ]] ||              [[ "$BRANCH_NAME" =~ ^hotfix/ ]] ||              [[ "$BRANCH_NAME" =~ ^dependabot/ ]] ||              [[ "$BRANCH_NAME" =~ ^renovate/ ]]; then
+            echo "status=exempt" >> $GITHUB_OUTPUT
+            echo "✅ Exempt branch — session check skipped"
+            exit 0
+          fi
+
+          # Agent branches (agent/*) — warn only, don't block
+          # These are created by autonomous agents that may not run start-task.sh
+          if [[ "$BRANCH_NAME" =~ ^agent/ ]]; then
+            SESSION_COUNT=$(find docs/sessions/active -name "*.md" -o -name "*.json" 2>/dev/null | grep -v ".gitkeep" | wc -l | tr -d ' ')
+            if [ "$SESSION_COUNT" -eq 0 ]; then
+              echo "status=warn" >> $GITHUB_OUTPUT
+              echo "⚠️  Agent branch with no session file — passing with warning"
+              echo "   Branch: $BRANCH_NAME"
+              echo "   For full enforcement, run: bash scripts/start-task.sh <TASK_ID>"
+              exit 0
+            fi
+          fi
+
+          # All other branches (cc/*, fix/*, feat/*, etc.) — hard enforce
+          SESSION_COUNT=$(find docs/sessions/active -name "*.md" -o -name "*.json" 2>/dev/null | grep -v ".gitkeep" | wc -l | tr -d ' ')
+
+          if [ "$SESSION_COUNT" -gt 0 ]; then
+            echo "status=pass" >> $GITHUB_OUTPUT
+            echo "✅ Session file found ($SESSION_COUNT file(s))"
+            find docs/sessions/active -name "*.md" -o -name "*.json" 2>/dev/null | grep -v ".gitkeep" | head -5
+          else
+            echo "status=fail" >> $GITHUB_OUTPUT
+            echo "❌ No session file found in docs/sessions/active/"
+            echo ""
+            echo "Every PR to main requires a session file created by scripts/start-task.sh."
+            echo "Run: bash scripts/start-task.sh <TASK_ID>"
+            echo "Then commit the session file and push."
+            exit 1
+          fi
