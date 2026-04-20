@@ -1,80 +1,37 @@
-# TERP Persistent PM
+# TERP Agent Current Truth
 
 > Generated file. Manual edits will be overwritten by `scripts/agent-context/generate-agent-context.mjs`.
 
 ## Snapshot
 
-- Generated: `2026-04-17T21:57:31.930Z`
-- Freshness status: `fresh`
-- Manifest: `docs/agent-context/manifest.json`
+- Generated: `2026-04-17T21:34:42.792Z`
+- Freshness status: `partial`
 - Refresh command: `pnpm context:refresh`
 - Drift check: `pnpm context:check`
-- PM launch readiness: `pnpm pm:launch:check`
-- Git anchor: `f9fdb0cd` on branch `codex/persistent-pm-hardening-20260417`
-- Working tree dirty: `true`
-- Linear mode: `live`
-- Decision log count: `0`
-
-## Canonical PM Bundle
-
-- `docs/agent-context/START_HERE.md` - human-readable PM bootstrap
-- `docs/agent-context/manifest.json` - freshness, TTLs, and artifact hashes
-- `docs/agent-context/state.json` - machine-readable PM state and trust ladder
-- `docs/agent-context/work.json` - remaining work queue and readiness ordering
-- `docs/agent-context/evidence.json` - proof pointers backing current claims
-- `docs/agent-context/decisions.ndjson` - append-only PM decision log
-- `docs/agent-context/clients.json` - client registry and trust levels
-- `docs/agent-context/bootstrap/` - per-surface startup instructions and paste-in prompts
-
-## Shared Live Bundle For All TERP Worktrees
-
-- Shared bundle root: `/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current`
-- Shared entrypoint: `/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current/START_HERE.md`
-- Shared manifest: `/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current/manifest.json`
-- Shared machine state: `/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current/state.json`
-- Shared work map: `/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current/work.json`
-- Locator command: `git rev-parse --git-common-dir`
+- Git anchor: `4f23376` on branch `claude/terp-status-review-Av2Wq`
+- Working tree dirty: `false`
+- Linear mode: `last-known`
 
 ## Start Here
 
 1. Read `AGENTS.md`.
 2. Read `CLAUDE.md`.
-3. If you are in any TERP worktree, prefer the shared live bundle under `/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current`.
-4. Read this file or the shared entrypoint.
-5. Confirm freshness and hashes in the shared or repo-local `manifest.json`.
-6. Use the shared or repo-local `state.json` and `work.json` for machine-readable truth.
-7. If you are resuming from a hosted, cloud, or newly onboarded surface, load the matching file under `docs/agent-context/bootstrap/`.
-8. Never treat `product-management/START_HERE.md`, `docs/ACTIVE_SESSIONS.md`, or old prompt-pack docs as authoritative PM state.
+3. Read this file, then use `docs/agent-context/state.json` if you need machine-readable truth.
+4. If your work is in Orders runtime, jump to `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json` next.
+5. Do not start by scanning `MASTER_ROADMAP.md`, `ACTIVE_SESSIONS.md`, or old prompt-pack docs for current direction.
 
 ## Current Direction
 
-Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at f9fdb0cd and led by `docs(context): refresh PM bundle after launch activation`, `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
+Current TERP direction centers on inventory, intake, and purchase operations and orders and order workflow; recent git activity is anchored at 4f23376 and is dominated by `docs(context): refresh agent-context after 420-fork merge`, `chore(hooks): make closeout-guard path portable`, `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
 
-- persistent PM and handoff durability
-- QA, proof, and rollout hardening
-- spreadsheet-native rollout
+- inventory, intake, and purchase operations
 - orders and order workflow
-
-## Trust Ladder
-
-- First-class writers: Hermes, Codex Mac app, Codex CLI (local), Claude Code CLI (local)
-- Conditional first-class writers: Claude Mac app (drop to mediated-writer until local refresh/check support is validated).
-- Mediated writers: Codex cloud, Codex CLI (cloud), Claude Code cloud, Claude Code CLI (cloud)
-- Read-only by default: claude.ai, Future new model/service
-
-## Attention Required
-
-- No open PM conflicts are currently recorded.
+- operator workflow polish
+- accounting, payments, and ledger work
 
 ## Freshness Notes
 
-- Tracker data was refreshed live from Linear.
-- Working tree contains local edits. This bundle reports committed truth at HEAD and notes that local diffs exist.
-
-## Top Ready Work
-
-- `TER-1073` (high, ready) - [P2-22B] Portable cuts and saved-cut continuity across selling surfaces | Spreadsheet-Native Full Rollout
-- `TER-1052` (high, ready) - [P2-06] Order creator: show client credit, balance, and recent order history before adding items
+- Linear could not be refreshed live, so the tracker section fell back to the last known snapshot (2026-04-08T03:11:06.962Z).
 
 ## Active Projects
 
@@ -84,71 +41,56 @@ Current TERP direction centers on persistent PM and handoff durability and QA, p
 - `TERP - Sprint 2026-03-09 Open Bugs + Mobile UX Hardening` [backlog] updated 2026-03-09 - https://linear.app/terpcorp/project/terp-sprint-2026-03-09-open-bugs-mobile-ux-hardening-0a5bca1df82d
 - `TERP - Sales Sheet UX + Artifact Quality (User Testing Ready)` [backlog] updated 2026-02-24 - https://linear.app/terpcorp/project/terp-sales-sheet-ux-artifact-quality-user-testing-ready-ffbf645b28e0
 - `TERP - Immediate Phase: Broken Buttons & Interaction Reliability` [backlog] updated 2026-02-11 - https://linear.app/terpcorp/project/terp-immediate-phase-broken-buttons-and-interaction-reliability-ba50b992584c
-- `TERP - Golden Flows Beta` [backlog] updated 2026-02-03 - https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d
 
 ## Recent High-Signal Issues
 
-- `TER-1073` (high, 2026-04-15) - [P2-22B] Portable cuts and saved-cut continuity across selling surfaces | Spreadsheet-Native Full Rollout
-- `TER-1052` (high, 2026-04-15) - [P2-06] Order creator: show client credit, balance, and recent order history before adding items
-- `TER-1139` (normal, 2026-04-09) - [UI-XA6] Verify workflow confirmations exist for destructive/creation actions
-- `TER-1138` (low, 2026-04-09) - [UI-XA5] Verify key workflows reachable in ≤3 clicks
-- `TER-1137` (normal, 2026-04-09) - [UI-XA4] Verify cross-module contextual links exist
-- `TER-1136` (normal, 2026-04-09) - [UI-XA3] Verify primary action columns visible at 1280px on all tables
-- `TER-1135` (low, 2026-04-09) - [UI-XA2] Verify page title is visually dominant on all workspace pages
-- `TER-1134` (low, 2026-04-09) - [UI-XA1] Audit column header / row prefix duplication
-- `TER-1133` (low, 2026-04-09) - [UI-NT5] Add contextual empty states per notification category
-- `TER-1132` (normal, 2026-04-09) - [UI-NT4] Add inline "mark read" button per notification row
-- `TER-1131` (normal, 2026-04-09) - [UI-NT3] Differentiate urgent/exception notifications visually
-- `TER-1130` (normal, 2026-04-09) - [UI-NT2] Strengthen unread notification row visual distinction
-- `TER-1129` (normal, 2026-04-09) - [UI-NT1] Split notifications into FYI vs needs-action categories
-- `TER-1128` (low, 2026-04-09) - [UI-AC3] Verify summary dashboard cards reflect active filters
-- `TER-1127` (normal, 2026-04-09) - [UI-AC2] Replace plain-text loading states with table-shaped skeletons
-- `TER-1126` (normal, 2026-04-09) - [UI-AC1] Add financial period to workspace header meta
-- `TER-1125` (normal, 2026-04-09) - [UI-RP4] Verify scroll/filter preservation on table→profile navigation
-- `TER-1124` (normal, 2026-04-09) - [UI-RP3] Add "status" column to client table
-- `TER-1123` (normal, 2026-04-09) - [UI-RP2] Add "last activity" column to client table
-- `TER-1122` (high, 2026-04-09) - [UI-RP1] Fix ClientProfilePage role badges to use semantic colors
+- `TER-1065` (normal, 2026-04-08) - [P2-19] Contact activity/communication log for payments follow-up tracking
+- `TER-1063` (normal, 2026-04-08) - [P2-17] Shipping/fulfillment: generate pick list from confirmed orders with batch locations
+- `TER-1056` (normal, 2026-04-08) - [P2-10] Dashboard: activity feed showing recent orders, payments, intake since last session
+- `TER-1055` (normal, 2026-04-08) - [P2-09] Dashboard: add operational KPIs - expected deliveries, pending fulfillment, appointments today
+- `TER-1066` (high, 2026-04-08) - [P2-20] Remaining initiative: spec-driven seam execution framework | Spreadsheet-Native Full Rollout
+- `TER-1048` (high, 2026-04-08) - [P2-02] Inventory: default filter to LIVE status, human-readable status labels across all grids
+- `TER-1053` (normal, 2026-04-06) - [P2-07] Inventory row action: Add to Order button to start order from inventory context
+- `TER-1052` (high, 2026-04-06) - [P2-06] Order creator: show client credit, balance, and recent order history before adding items
+- `TER-1051` (normal, 2026-04-06) - [P2-05] Product name display: show strain/product name prominently, supplier as secondary text
+- `TER-1050` (high, 2026-04-06) - [P2-04] Sales Catalogue: fast access + shareable link generation for chat-based client communication
+- `TER-1049` (high, 2026-04-06) - [P2-03] Cmd+K search: include products and inventory batches in global search
+- `TER-1047` (high, 2026-04-06) - [P2-01] Inventory grid: add Price, COGS, Margin columns to default view
 
 ## Program-Specific Machine State
 
 - Orders runtime: `G2` / `closed with evidence` (updated 2026-03-20) - TER-795 is closed with evidence. Keep G2 sealed and follow the reopened G6 rollout verdict for the remaining retirement remediation work.
 
-## Recent PM Bootstraps
+## Recent Commits
 
-- `docs/agent-context/bootstrap/claude-code-cli-local.md` - Claude Code CLI (local) [first-class-writer]
-- `docs/agent-context/bootstrap/codex-cli-local.md` - Codex CLI (local) [first-class-writer]
-- `docs/agent-context/bootstrap/codex-mac-app.md` - Codex Mac app [first-class-writer]
-- `docs/agent-context/bootstrap/hermes.md` - Hermes [first-class-writer]
-- `docs/agent-context/bootstrap/claude-mac-app.md` - Claude Mac app [conditional-first-class-writer]
-- `docs/agent-context/bootstrap/claude-code-cli-cloud.md` - Claude Code CLI (cloud) [mediated-writer]
-- `docs/agent-context/bootstrap/claude-code-cloud.md` - Claude Code cloud [mediated-writer]
-- `docs/agent-context/bootstrap/codex-cli-cloud.md` - Codex CLI (cloud) [mediated-writer]
-- `docs/agent-context/bootstrap/codex-cloud.md` - Codex cloud [mediated-writer]
-- `docs/agent-context/bootstrap/claude-ai.md` - claude.ai [read-only]
-- `docs/agent-context/bootstrap/any-llm.md` - Future new model/service [read-only]
+- 2026-04-17 `4f23376` docs(context): refresh agent-context after 420-fork merge
+- 2026-04-17 `6744922` chore(hooks): make closeout-guard path portable
+- 2026-04-15 `328edd7` feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)
+- 2026-04-10 `d970ebe` feat(ui): advance april 9 ticket train remediation (#578)
+- 2026-04-09 `46d9738` fix(notifications): improve inline triage and empty states (#577)
+- 2026-04-08 `f1a1abb` feat: payment follow-up + pick list + dashboard ops (#576)
+- 2026-04-08 `8e73fc6` docs(context): refresh startup truth after P2 closeout (#575)
+- 2026-04-08 `e760614` docs(p2): close TER-1071 deferred pass (#574)
+- 2026-04-08 `1b7e493` feat(po): close TER-1070 tranche 3 continuity (#573)
+- 2026-04-08 `db28993` feat(sales): close TER-1069 retrieval continuity (#572)
 
 ## What Not To Trust As Current Startup Truth
 
-- `docs/ACTIVE_SESSIONS.md` - legacy session registry snapshot; redirects correctly | declared last updated 2026-02-04
-- `docs/PROJECT_CONTEXT.md` - historical orientation packet; redirects correctly | declared last updated October 27, 2025
-- `docs/TERP_AGENT_INSTRUCTIONS.md` - legacy onboarding prompt-pack file; redirects correctly | declared last updated 2026-02-01
-- `docs/ROADMAP_AGENT_GUIDE.md` - legacy roadmap guide; redirects correctly
-- `product-management/START_HERE.md` - legacy PM entrypoint; redirects correctly
-- `agent-prompts/README.md` - legacy prompt-pack entrypoint; redirects correctly
+- `docs/ACTIVE_SESSIONS.md` - stale session registry that still looks live | declared last updated 2026-02-04
+- `docs/PROJECT_CONTEXT.md` - historical orientation snapshot, not current runtime truth | declared last updated October 27, 2025
+- `docs/TERP_AGENT_INSTRUCTIONS.md` - older prompt-pack instructions that still point at legacy roadmap flow | declared last updated 2026-02-01
+- `docs/ROADMAP_AGENT_GUIDE.md` - older roadmap guide that still says MASTER_ROADMAP is current
+- `product-management/START_HERE.md` - separate PM system entrypoint, not the live TERP repo startup contract
+
+## Drill Deeper Next
+
+- `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json` - machine-readable Orders runtime verdicts and next move
+- `docs/roadmaps/orders-spreadsheet-runtime/README.md` - Orders runtime gate roadmap and tranche layout
+- `docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-build-source-of-truth.md` - broader spreadsheet-native preservation packet and source precedence rules
+- `docs/TESTING.md` - canonical verification commands and E2E guidance
 
 ## Keep This Fresh
 
-- Run `pnpm context:refresh` after meaningful checkpoints, before remote-agent handoff, and after merges to `main`.
-- Run `pnpm context:check` before claiming the PM bundle is fresh enough for authoritative work.
-- Run `pnpm pm:launch:check` to decide whether the persistent PM system itself is safe to launch or keep using.
-- If a committed PM snapshot trails `git HEAD`, rerun `pnpm pm:launch:check` or `pnpm context:refresh` before treating that lag as a PM outage.
-- Every refresh/checkpoint also updates the shared live bundle in `/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current` so other TERP worktrees can see the same PM state.
-- Never hand-edit `state.json`, `work.json`, `evidence.json`, or `manifest.json`.
-- First-class writers should mutate PM state only through the mediator (`pm.appendDecision` / `pm.checkpoint`) or an intentional PR append to `decisions.ndjson`.
-
-## PM Launch Contract
-
-- `pnpm pm:launch:check` is the scoped gate for PM availability and PM runtime launch.
-- Unrelated TERP product or UI failures in `pnpm test`, `pnpm build`, or other broad repo checks do not by themselves disable the PM system.
-- Full repo verification still matters when shipping TERP application changes, but it is not a prerequisite for using the PM system to coordinate or repair that work.
-- A committed PM bundle snapshot may temporarily lag one commit behind `HEAD`; live PM readiness comes from a fresh run of `pnpm pm:launch:check`, not from assuming the tracked snapshot is self-updating.
+- Run `pnpm context:refresh` after meaningful tracker checkpoints, before remote-agent handoff, and after merges to `main`.
+- Run `pnpm context:check` when you want to know if this bundle has fallen behind git or Linear.
+- If Linear cannot be refreshed, this file should say so explicitly instead of pretending the tracker snapshot is current.

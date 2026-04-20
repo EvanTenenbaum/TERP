@@ -952,20 +952,18 @@ export async function getAllOrders(filters?: {
       .offset(safeOffset);
   }
 
-  // Transform results to include client data and parse JSON items
-  // ST-050: Error propagation - JSON parsing errors now throw instead of silently returning empty array
+  // Transform results to include client data and parse JSON items.
+  // TER-1146: list endpoints never 500 from a single corrupted items payload —
+  // log the row and fall back to items=[] so the rest of /orders still renders.
+  // Strict propagation still applies to single-order reads (getOrderById).
   const transformed: Order[] = results.map(row => {
-    // Parse items JSON string to array
     let parsedItems: OrderItem[] = [];
     if (row.orders.items) {
       try {
         parsedItems = parseStoredOrderItems(row.orders.items);
       } catch (e) {
         console.error(`Failed to parse items for order ${row.orders.id}:`, e);
-        throw new Error(
-          `Data corruption detected: Cannot parse items for order ${row.orders.id}. ` +
-            `This order requires data remediation. Original error: ${e instanceof Error ? e.message : String(e)}`
-        );
+        parsedItems = [];
       }
     }
 

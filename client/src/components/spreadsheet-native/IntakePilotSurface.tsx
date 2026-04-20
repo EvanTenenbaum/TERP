@@ -1482,6 +1482,20 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
   const columnDefs = useMemo<ColDef<IntakeDraftRow>[]>(
     () => [
       {
+        // TER-1059: PO reference column — always em-dash for direct intake rows
+        headerName: "PO #",
+        colId: "poNumber",
+        width: 80,
+        editable: false,
+        sortable: false,
+        filter: false,
+        cellClass: "powersheet-cell--locked",
+        headerTooltip:
+          "Purchase Order reference. Shows \u2014 for direct intake (no PO).",
+        valueGetter: () => null,
+        valueFormatter: () => "\u2014",
+      },
+      {
         headerName: "Supplier",
         field: "vendorName",
         minWidth: 130,

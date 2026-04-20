@@ -11,6 +11,7 @@ import { featureFlagService } from "../services/featureFlagService";
 import { featureFlagsDb } from "../featureFlagsDb";
 import { seedFeatureFlags } from "../services/seedFeatureFlags";
 import { TRPCError } from "@trpc/server";
+import { logger } from "../_core/logger";
 
 /**
  * Input validation schemas
@@ -385,7 +386,24 @@ export const featureFlagsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      return featureFlagService.getAuditHistory(input.flagKey, input.limit);
+      // TER-1156: The audit log table may be empty or unavailable (missing
+      // migration, stale replica). Render an empty history instead of 500
+      // so /settings/feature-flags stays usable.
+      try {
+        return await featureFlagService.getAuditHistory(
+          input.flagKey,
+          input.limit
+        );
+      } catch (error) {
+        logger.error(
+          {
+            err: error instanceof Error ? error.message : String(error),
+            flagKey: input.flagKey,
+          },
+          "[FeatureFlags] getAuditHistory failed — returning empty list"
+        );
+        return [];
+      }
     }),
 
   /**
