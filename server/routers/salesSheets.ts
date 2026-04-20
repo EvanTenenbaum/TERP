@@ -405,36 +405,55 @@ export const salesSheetsRouter = router({
       // Increment view count
       await salesSheetsDb.incrementViewCount(sheet.id);
 
-      // Return sanitized data (no COGS, no margin info)
+      // Return client-safe data only.
+      // SECURITY: never expose internal fields to this public endpoint:
+      //   - vendor / supplier names (internal procurement identity)
+      //   - batchSku (internal batch reference)
+      //   - cogs*, effectiveCogs*, unitCogs* (cost-of-goods)
+      //   - basePrice, priceMarkup, appliedRules (margin intelligence)
+      type StoredItem = {
+        id: number;
+        name: string;
+        category?: string;
+        subcategory?: string;
+        brand?: string;
+        strain?: string;
+        quantity: number;
+        finalPrice?: number;
+        retailPrice: number;
+        imageUrl?: string;
+        // internal fields present in JSON but intentionally omitted below
+        vendor?: string;
+        batchSku?: string;
+        basePrice?: number;
+        priceMarkup?: number;
+        unitCogs?: number;
+        unitCogsMin?: number | null;
+        unitCogsMax?: number | null;
+        effectiveCogs?: number;
+        cogsMode?: string;
+        effectiveCogsBasis?: string;
+        appliedRules?: unknown[];
+      };
       return {
         id: sheet.id,
         clientName: sheet.clientName,
-        items: (
-          sheet.items as unknown as Array<{
-            id: number;
-            name: string;
-            category?: string;
-            subcategory?: string;
-            brand?: string;
-            quantity: number;
-            finalPrice?: number;
-            retailPrice: number;
-            imageUrl?: string;
-          }>
-        ).map(item => ({
+        createdAt: sheet.createdAt,
+        expiresAt: sheet.shareExpiresAt,
+        totalValue: sheet.totalValue,
+        itemCount: sheet.itemCount,
+        items: (sheet.items as unknown as StoredItem[]).map(item => ({
           id: item.id,
           name: item.name,
           category: item.category,
           subcategory: item.subcategory,
           brand: item.brand,
+          strain: item.strain,
           quantity: item.quantity,
           price: item.finalPrice ?? item.retailPrice,
           imageUrl: item.imageUrl,
+          // vendor, batchSku, cogs*, basePrice, priceMarkup intentionally excluded
         })),
-        totalValue: sheet.totalValue,
-        itemCount: sheet.itemCount,
-        createdAt: sheet.createdAt,
-        expiresAt: sheet.shareExpiresAt,
       };
     }),
 

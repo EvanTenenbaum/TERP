@@ -19,6 +19,7 @@ import {
   Plus,
   History,
   ReceiptText,
+  Truck,
   Users,
 } from "lucide-react";
 import { buildNavigationAccessModel } from "@/config/navigation";
@@ -26,6 +27,7 @@ import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 import { useRecentPages } from "@/hooks/useRecentPages";
 import {
   buildOperationsWorkspacePath,
+  buildProcurementWorkspacePath,
   buildSalesWorkspacePath,
 } from "@/lib/workspaceRoutes";
 import { trpc } from "@/lib/trpc";
@@ -132,6 +134,18 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
       shortcut: "R",
       action: () => {
         setLocation(buildOperationsWorkspacePath("receiving"));
+        onOpenChange(false);
+      },
+    },
+    {
+      // TER-1060: Expected deliveries today quick-action
+      id: "expected-deliveries-today",
+      label: "Expected deliveries today",
+      icon: Truck,
+      action: () => {
+        setLocation(
+          buildProcurementWorkspacePath(undefined, { expectedToday: "1" })
+        );
         onOpenChange(false);
       },
     },
