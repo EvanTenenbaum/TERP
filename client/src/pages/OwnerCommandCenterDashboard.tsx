@@ -9,6 +9,7 @@ import { OwnerQuickCardsWidget } from "@/components/dashboard/owner/OwnerQuickCa
 import { OwnerAppointmentsWidget } from "@/components/dashboard/owner/OwnerAppointmentsWidget";
 import { OwnerSkuStatusBrowserWidget } from "@/components/dashboard/owner/OwnerSkuStatusBrowserWidget";
 import { Badge } from "@/components/ui/badge";
+import { ComponentErrorBoundary } from "@/components/ErrorBoundary";
 
 export default function OwnerCommandCenterDashboard() {
   const now = new Date();
@@ -48,39 +49,55 @@ export default function OwnerCommandCenterDashboard() {
       {/* Row 1: Daily pulse — today's sales + appointments + cash */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <OwnerQuickCardsWidget />
+          <ComponentErrorBoundary name="Quick Cards">
+            <OwnerQuickCardsWidget />
+          </ComponentErrorBoundary>
         </div>
         <div className="lg:col-span-4">
-          <OwnerAppointmentsWidget />
+          <ComponentErrorBoundary name="Appointments">
+            <OwnerAppointmentsWidget />
+          </ComponentErrorBoundary>
         </div>
         <div className="lg:col-span-4">
-          <OwnerCashDecisionPanel />
+          <ComponentErrorBoundary name="Cash Decision">
+            <OwnerCashDecisionPanel />
+          </ComponentErrorBoundary>
         </div>
       </div>
 
       {/* Row 2: Money in vs. money out */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-5">
-          <OwnerDebtPositionWidget />
+          <ComponentErrorBoundary name="Debt Position">
+            <OwnerDebtPositionWidget />
+          </ComponentErrorBoundary>
         </div>
         <div className="lg:col-span-7">
-          <OwnerVendorsNeedPaymentWidget />
+          <ComponentErrorBoundary name="Vendors Needing Payment">
+            <OwnerVendorsNeedPaymentWidget />
+          </ComponentErrorBoundary>
         </div>
       </div>
 
       {/* Row 3: Inventory health */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
         <div className="lg:col-span-6">
-          <InventorySnapshotWidget />
+          <ComponentErrorBoundary name="Inventory Snapshot">
+            <InventorySnapshotWidget />
+          </ComponentErrorBoundary>
         </div>
         <div className="lg:col-span-6">
-          <AgingInventoryWidget />
+          <ComponentErrorBoundary name="Aging Inventory">
+            <AgingInventoryWidget />
+          </ComponentErrorBoundary>
         </div>
       </div>
 
       {/* Row 4: SKU Status Browser (hidden by default, collapsed) */}
       <div>
-        <OwnerSkuStatusBrowserWidget />
+        <ComponentErrorBoundary name="SKU Status Browser">
+          <OwnerSkuStatusBrowserWidget />
+        </ComponentErrorBoundary>
       </div>
     </div>
   );
