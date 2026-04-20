@@ -56,7 +56,11 @@ export function CogsClientSettings() {
     if (type === "NONE") {
       return <Badge variant="secondary">No Adjustment</Badge>;
     }
-    const numValue = parseFloat(value);
+    const parsed = parseFloat(value);
+    const numValue = Number.isFinite(parsed) ? parsed : 0;
+    if (numValue === 0) {
+      return <Badge variant="outline">No adjustment</Badge>;
+    }
     const displayValue = Math.abs(numValue);
     const isLegacyIncrease =
       (type === "PERCENTAGE" || type === "FIXED_AMOUNT") && numValue < 0;
