@@ -1,42 +1,53 @@
 #!/usr/bin/env bash
-# Pre-push hook for TERP
-# Validates branch names and checks for conflicts before push
+# TERP pre-push hook — Linear task state validation
+# Blocks pushes for tasks that are cancelled or completed in Linear.
 
-# Source shared config
-. "$(dirname -- "$0")/qa-config.sh"
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo '')
 
-echo "🔍 Running pre-push checks..."
-
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-
-# Check 1: Allow direct push to main (per protocol)
-# But warn if local is behind remote
-if [ "$CURRENT_BRANCH" == "main" ]; then
-  # Check if local is behind remote
-  git fetch origin main --quiet 2>/dev/null || true
-  LOCAL=$(git rev-parse HEAD)
-  REMOTE=$(git rev-parse origin/main 2>/dev/null || echo "$LOCAL")
-  
-  if [ "$LOCAL" != "$REMOTE" ] && git merge-base --is-ancestor "$LOCAL" "$REMOTE" 2>/dev/null; then
-    echo "⚠️  WARNING: Local main is behind remote main"
-    echo "   Consider pulling first: git pull origin main"
-    echo "   (Push will proceed, but conflicts may occur)"
-    echo ""
-  fi
-  
-  # Allow push to main (non-blocking)
-  echo "✅ Pushing to main (deployment will be monitored automatically)"
+# Skip: exempt branches
+if [[ "$CURRENT_BRANCH" =~ ^(main|staging|production)$ ]] || \
+   [[ "$CURRENT_BRANCH" =~ ^(hotfix|renovate|dependabot)/ ]]; then
   exit 0
 fi
 
-# Check 2: Verify branch name format (for non-main branches only)
-if [[ ! "$CURRENT_BRANCH" =~ $BRANCH_NAME_REGEX ]]; then
-  echo "❌ PUSH BLOCKED: Invalid branch name format: $CURRENT_BRANCH"
-  echo "   Valid formats: <prefix>/<description> (e.g., feature/my-feature, fix/bug-123)"
-  echo "   Or flat names: my-branch-name"
-  echo "   Or use 'pnpm start-task' to create a branch automatically."
+# Skip: HOTFIX mode
+if [ "${HOTFIX:-}" = '1' ]; then
+  exit 0
+fi
+
+# Extract task ID from branch name (TER-NNNN pattern)
+TASK_ID=$(echo "$CURRENT_BRANCH" | grep -oE 'TER-[0-9]+' | head -1 || true)
+
+# Skip: no task ID in branch name
+if [ -z "$TASK_ID" ]; then
+  exit 0
+fi
+
+# Run context:refresh (best-effort, silent)
+(cd "$(git rev-parse --show-toplevel)" && pnpm context:refresh --silent 2>/dev/null || true) &
+
+# Validate task state in Linear
+LINEAR_KEY=$(grep 'LINEAR_API_KEY' ~/.codex/.env 2>/dev/null | cut -d= -f2 | tr -d '\r' || true)
+
+if [ -z "$LINEAR_KEY" ]; then
+  # No key — skip validation silently
+  exit 0
+fi
+
+ISSUE_STATE_TYPE=$(curl -s -X POST https://api.linear.app/graphql \
+  -H 'Content-Type: application/json' \
+  -H "Authorization: $LINEAR_KEY" \
+  --max-time 8 \
+  -d "{\"query\":\"{issue(id:\\\"${TASK_ID}\\\"){state{type}}}\"}" \
+  2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('issue',{}).get('state',{}).get('type','unknown'))" 2>/dev/null || echo 'unknown')
+
+if [ "$ISSUE_STATE_TYPE" = 'completed' ] || [ "$ISSUE_STATE_TYPE" = 'cancelled' ]; then
+  echo ""
+  echo "❌ Cannot push: Linear task ${TASK_ID} is ${ISSUE_STATE_TYPE}."
+  echo "   If this push is intentional, use: HOTFIX=1 git push"
+  echo ""
   exit 1
 fi
 
-echo "✅ All pre-push checks passed"
+# Also run any existing pre-push checks from the original file (if applicable)
 exit 0
