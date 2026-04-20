@@ -139,13 +139,19 @@ export default function ShippingPickListPage() {
         </div>
         <Button
           onClick={handleExport}
-          disabled={!data || data.length === 0}
+          disabled={isLoading || !data || data.length === 0}
           variant="outline"
         >
           <Download className="mr-2 h-4 w-4" />
           Export CSV
         </Button>
       </div>
+
+      {data && data.length === 500 ? (
+        <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          Showing first 500 results — use filters to narrow results.
+        </div>
+      ) : null}
 
       <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <div>

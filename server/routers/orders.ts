@@ -561,8 +561,14 @@ export const ordersRouter = router({
       z
         .object({
           status: z.enum(["pending", "partial", "fulfilled"]).optional(),
-          dateFrom: z.string().optional(),
-          dateTo: z.string().optional(),
+          dateFrom: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional(),
+          dateTo: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional(),
         })
         .optional()
     )
@@ -583,14 +589,18 @@ export const ordersRouter = router({
             ? (["PACKED"] as const)
             : statusFilter === "fulfilled"
               ? (["SHIPPED", "DELIVERED"] as const)
-              : (["CONFIRMED", "READY_FOR_PACKING", "PACKED"] as const);
+              : null;
 
       const conditions: SQL<unknown>[] = [
         eq(orders.orderType, "SALE"),
         sql`${orders.isDraft} = 0`,
         isNull(orders.deletedAt),
-        safeInArray(orders.fulfillmentStatus, [...fulfillmentStatusList]),
       ];
+      if (fulfillmentStatusList) {
+        conditions.push(
+          safeInArray(orders.fulfillmentStatus, [...fulfillmentStatusList])
+        );
+      }
 
       const parseBoundaryDate = (value: string, endOfDay: boolean) => {
         const parsed = new Date(value);
@@ -615,7 +625,7 @@ export const ordersRouter = router({
         .leftJoin(clients, eq(orders.clientId, clients.id))
         .where(and(...conditions))
         .orderBy(desc(orders.createdAt))
-        .limit(200);
+        .limit(500);
 
       // Collect batch IDs from JSON items payload across all rows so we can
       // enrich line items with real SKU / product name / sellable UOM in a
@@ -674,24 +684,28 @@ export const ordersRouter = router({
       const productById = new Map(productRows.map(p => [p.id, p]));
 
       return parsedRows.map(({ row, items }) => {
-        const lineItems = items.map(item => {
+        const lineItems = items.flatMap(item => {
           const batchId = Number(item.batchId);
           const batch = Number.isFinite(batchId)
             ? batchById.get(batchId)
             : undefined;
           const product = batch ? productById.get(batch.productId) : undefined;
+          const sku = batch?.sku ?? null;
+          if (sku === null) return [];
           const qtyNum = Number(item.quantity);
-          return {
-            batchId: Number.isFinite(batchId) ? batchId : null,
-            sku: batch?.sku ?? null,
-            productName:
-              item.displayName ??
-              item.productName ??
-              product?.nameCanonical ??
-              (batch ? `Batch ${batch.id}` : "Unknown item"),
-            quantity: Number.isFinite(qtyNum) ? qtyNum : 0,
-            unit: product?.uomSellable ?? "EA",
-          };
+          return [
+            {
+              batchId: Number.isFinite(batchId) ? batchId : null,
+              sku,
+              productName:
+                item.displayName ??
+                item.productName ??
+                product?.nameCanonical ??
+                (batch ? `Batch ${batch.id}` : "Unknown item"),
+              quantity: Number.isFinite(qtyNum) ? qtyNum : 0,
+              unit: product?.uomSellable ?? "EA",
+            },
+          ];
         });
 
         return {
