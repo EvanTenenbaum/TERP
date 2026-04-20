@@ -1,1 +1,1 @@
-
+{"id":"linear-not-live","kind":"tracker-freshness","severity":"medium","status":"open","summary":"Linear snapshot fell back to last-known state and should be refreshed before authoritative writes.","detected_at":"2026-04-20T21:35:58.176Z"}

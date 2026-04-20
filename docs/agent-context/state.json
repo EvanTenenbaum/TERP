@@ -1,163 +1,228 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-04-17T21:34:42.792Z",
+  "schemaVersion": 2,
+  "generatedAt": "2026-04-20T21:35:58.176Z",
   "generator": {
     "script": "scripts/agent-context/generate-agent-context.mjs",
-    "maxAgeHours": 72,
-    "linearLookbackDays": 21
+    "reason": "manual-refresh",
+    "linearLookbackDays": 21,
+    "artifactTtls": {
+      "START_HERE.md": 3600,
+      "state.json": 900,
+      "work.json": 3600,
+      "evidence.json": 86400,
+      "manifest.json": 900,
+      "health.json": 300,
+      "bootstrap/README.md": 3600,
+      "bootstrap/any-llm.md": 3600,
+      "public/START_HERE.md": 3600,
+      "public/state.json": 900,
+      "public/work.json": 3600,
+      "public/manifest.json": 900,
+      "public/health.json": 300
+    }
   },
   "startupContract": {
-    "readFirst": ["AGENTS.md", "CLAUDE.md", "docs/agent-context/START_HERE.md"],
+    "readFirst": [
+      "AGENTS.md",
+      "CLAUDE.md",
+      "/home/user/TERP/.git/persistent-pm/current/START_HERE.md",
+      "/home/user/TERP/.git/persistent-pm/current/manifest.json",
+      "docs/agent-context/START_HERE.md",
+      "docs/agent-context/manifest.json"
+    ],
     "entrypoint": "docs/agent-context/START_HERE.md",
+    "manifest": "docs/agent-context/manifest.json",
     "machineState": "docs/agent-context/state.json",
+    "workMap": "docs/agent-context/work.json",
+    "decisionLog": "docs/agent-context/decisions.ndjson",
+    "clientsRegistry": "docs/agent-context/clients.json",
+    "evidenceIndex": "docs/agent-context/evidence.json",
+    "proposalsDir": "docs/agent-context/proposals",
+    "bootstrapsDir": "docs/agent-context/bootstrap",
+    "runbook": "docs/runbooks/PERSISTENT_PM_SYSTEM.md",
+    "sharedLiveBundleDir": "/home/user/TERP/.git/persistent-pm/current",
+    "sharedManifest": "/home/user/TERP/.git/persistent-pm/current/manifest.json",
+    "sharedEntryPoint": "/home/user/TERP/.git/persistent-pm/current/START_HERE.md",
+    "sharedState": "/home/user/TERP/.git/persistent-pm/current/state.json",
+    "sharedWorkMap": "/home/user/TERP/.git/persistent-pm/current/work.json",
+    "sharedLocatorCommand": "git rev-parse --git-common-dir",
     "refreshCommand": "pnpm context:refresh",
     "checkCommand": "pnpm context:check",
+    "launchReadinessCommand": "pnpm pm:launch:check",
+    "checkpointCommand": "pnpm pm:checkpoint",
+    "onboardCommand": "pnpm pm:onboard -- <client-name>",
+    "servicesInstallCommand": "pnpm pm:services:install",
     "doNotTreatAsCurrentTruth": [
       "docs/ACTIVE_SESSIONS.md",
       "docs/PROJECT_CONTEXT.md",
       "docs/TERP_AGENT_INSTRUCTIONS.md",
       "docs/ROADMAP_AGENT_GUIDE.md",
-      "product-management/START_HERE.md"
+      "product-management/START_HERE.md",
+      "agent-prompts/README.md"
     ]
   },
   "freshness": {
     "status": "partial",
-    "maxAgeHours": 72,
-    "snapshotAgeHours": 0,
     "notes": [
-      "Linear could not be refreshed live, so the tracker section fell back to the last known snapshot (2026-04-08T03:11:06.962Z)."
+      "Linear could not be refreshed live, so tracker sections fell back to the last known snapshot (2026-04-08T03:11:06.962Z).",
+      "Attention-required conflicts are active. Read the Attention Required section before claiming startup truth is settled."
     ]
   },
   "git": {
-    "branch": "claude/terp-status-review-Av2Wq",
-    "head": "4f23376443890f71caa0e2b74ff6452a810da8da",
-    "shortHead": "4f23376",
+    "branch": "claude/onboard-terp-agent-pgtSc",
+    "head": "ddfee7cdc99297c556fae5680ebd68ce1a1616b5",
+    "shortHead": "ddfee7c",
     "workingTreeDirty": false,
     "recentCommits": [
       {
-        "date": "2026-04-17",
-        "sha": "4f23376",
-        "subject": "docs(context): refresh agent-context after 420-fork merge"
+        "date": "2026-04-20",
+        "head": "ddfee7cdc99297c556fae5680ebd68ce1a1616b5",
+        "sha": "ddfee7c",
+        "subject": "chore(policy): require adversarial QA + self-healing before ticket completion"
+      },
+      {
+        "date": "2026-04-20",
+        "head": "435de2c5dec65f3880901717436e49e2a3d6f905",
+        "sha": "435de2c",
+        "subject": "chore(infra): remove local TSC from pre-commit hook"
+      },
+      {
+        "date": "2026-04-20",
+        "head": "c89e21bf7cdbdc4a7f7b9dddf02ec9169e12e39d",
+        "sha": "c89e21b",
+        "subject": "chore(infra): remove local TSC from DONE.sh, add CI-wait poll loop"
+      },
+      {
+        "date": "2026-04-20",
+        "head": "29bd3d860a0ad550a6aaa613a1123586f6f23174",
+        "sha": "29bd3d8",
+        "subject": "fix(client): Wave 0 client bugs - TER-640/1150/1151/1152/1153/1154/1155 (#590)"
+      },
+      {
+        "date": "2026-04-20",
+        "head": "adb640475463c78a19110314a2ee63adb6d684db",
+        "sha": "adb6404",
+        "subject": "feat: harden persistent PM runtime (#583)"
+      },
+      {
+        "date": "2026-04-20",
+        "head": "70da6a247c0609c984a3b446c664c4f5274e82f4",
+        "sha": "70da6a2",
+        "subject": "docs(audit): expand UI+UX audit to master review with flow-by-flow + Tier A + 8-PR plan (#588)"
+      },
+      {
+        "date": "2026-04-20",
+        "head": "d64a1bf6faecb0a607757fa8a64d4f5379f1b72e",
+        "sha": "d64a1bf",
+        "subject": "test: resync 4 broken test files after 420-fork UI overhaul (#587)"
+      },
+      {
+        "date": "2026-04-20",
+        "head": "21a1965cc825c135786f75190b366538eabfa341",
+        "sha": "21a1965",
+        "subject": "fix(auth): enforce unauthenticated state on logout - TER-1149 (#591)"
+      },
+      {
+        "date": "2026-04-20",
+        "head": "a62c5dbe88b9f75a92f706507d686ec70a6b290a",
+        "sha": "a62c5db",
+        "subject": "fix(server): Wave 0 server 500s — TER-1146, TER-1147, TER-1148, TER-1156 (#589)"
+      },
+      {
+        "date": "2026-04-20",
+        "head": "1d8e7eed6b71d1dbd53b5b871a29cbd14e0177ae",
+        "sha": "1d8e7ee",
+        "subject": "ci(enforcement): add session-validation workflow + BOOT.sh/DONE.sh root helpers"
       },
       {
         "date": "2026-04-17",
-        "sha": "6744922",
-        "subject": "chore(hooks): make closeout-guard path portable"
+        "head": "cfe936fd059de8fb64e59795e8bf439dd52ee088",
+        "sha": "cfe936f",
+        "subject": "feat(shared-sales): close TER-1075 outbound identity and terms parity (#586)"
+      },
+      {
+        "date": "2026-04-17",
+        "head": "cf846f487402321cccdd69ba55beb407bdcfe498",
+        "sha": "cf846f4",
+        "subject": "feat(intake): close TER-1059 + TER-1060 ops continuity (#585)"
+      },
+      {
+        "date": "2026-04-17",
+        "head": "f77104dd428e90a01d0d95f29762b38d4474cf45",
+        "sha": "f77104d",
+        "subject": "fix: restore typecheck on main + portable hooks + context refresh (#584)"
       },
       {
         "date": "2026-04-15",
+        "head": "328edd743239ea65d4c2ccd260554b2725244235",
         "sha": "328edd7",
         "subject": "feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)"
       },
       {
         "date": "2026-04-10",
+        "head": "d970ebe2c75839979d0da7a7da49a64cd796877b",
         "sha": "d970ebe",
         "subject": "feat(ui): advance april 9 ticket train remediation (#578)"
       },
       {
         "date": "2026-04-09",
+        "head": "46d97388dd97bbd0fedaae479dafbe394a600b16",
         "sha": "46d9738",
         "subject": "fix(notifications): improve inline triage and empty states (#577)"
       },
       {
         "date": "2026-04-08",
+        "head": "f1a1abb2402cd8862f2419c05371dfcd7f92b920",
         "sha": "f1a1abb",
         "subject": "feat: payment follow-up + pick list + dashboard ops (#576)"
       },
       {
         "date": "2026-04-08",
+        "head": "8e73fc6a8fd216e5daf08faea3518d5e103b143b",
         "sha": "8e73fc6",
         "subject": "docs(context): refresh startup truth after P2 closeout (#575)"
       },
       {
         "date": "2026-04-08",
+        "head": "e760614b08f2e642a13c18e63b3e8b749820e4b3",
         "sha": "e760614",
         "subject": "docs(p2): close TER-1071 deferred pass (#574)"
       },
       {
         "date": "2026-04-08",
+        "head": "1b7e493a96f16387ce8bda93fc3829c67c12834b",
         "sha": "1b7e493",
         "subject": "feat(po): close TER-1070 tranche 3 continuity (#573)"
       },
       {
         "date": "2026-04-08",
+        "head": "db289932c7f8e4a4db4c0ccac02790d45cd5b2c4",
         "sha": "db28993",
         "subject": "feat(sales): close TER-1069 retrieval continuity (#572)"
       },
       {
         "date": "2026-04-08",
+        "head": "8e019eb8a81a25e0f6169cc080cc8d575c57fbf3",
         "sha": "8e019eb",
         "subject": "feat(ux): close TER-1068 tranche 1 (#571)"
       },
       {
         "date": "2026-04-08",
+        "head": "7586564ebbf49fa94192500dc872ee337a7c4595",
         "sha": "7586564",
         "subject": "fix(ux): land TER-1067 recovery and canonical P2 packet (#570)"
       },
       {
         "date": "2026-04-07",
+        "head": "994bbee489c3c5656540f01de93fc808e3f80279",
         "sha": "994bbee",
         "subject": "test(surfaces): deepen behavioral coverage and polish inventory/po UX (#568)"
       },
       {
         "date": "2026-04-07",
+        "head": "3d68f93c09b10455f2070d1e91ce4fdeecf66fa4",
         "sha": "3d68f93",
         "subject": "feat: land spreadsheet-native continuity and QA hardening (#567)"
-      },
-      {
-        "date": "2026-04-06",
-        "sha": "730d122",
-        "subject": "fix(ux): Waves 0-5 — 46 UX improvements across all surfaces (#566)"
-      },
-      {
-        "date": "2026-04-02",
-        "sha": "d92fc16",
-        "subject": "chore(ci): remove temporary runner key recovery workflow (#565)"
-      },
-      {
-        "date": "2026-04-02",
-        "sha": "72868ea",
-        "subject": "chore(ci): add temporary runner key recovery workflow (#564)"
-      },
-      {
-        "date": "2026-04-02",
-        "sha": "e844551",
-        "subject": "[codex] Harden sales catalogue adversarial follow-ups (#563)"
-      },
-      {
-        "date": "2026-04-02",
-        "sha": "5019156",
-        "subject": "build(ci): harden ops ssh and nightly e2e output (#562)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "19011c0",
-        "subject": "build(ci): upgrade active actions to node 24 (#559)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "2e7bbab",
-        "subject": "fix(sales-catalogue): keep shared links working without clipboard (#561)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "0bc2475",
-        "subject": "fix(sales-catalogue): preserve shared view popup gesture (#558)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "79bff4a",
-        "subject": "fix(sales-catalogue): harden catalogue handoff flows (#557)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "871ca70",
-        "subject": "fix(health): reduce noisy disk degradation warnings (#556)"
-      },
-      {
-        "date": "2026-04-01",
-        "sha": "b90edd4",
-        "subject": "fix: persist create-order client selection in the URL (#555)"
       }
     ]
   },
@@ -324,22 +389,22 @@
   "direction": {
     "focusAreas": [
       "inventory, intake, and purchase operations",
+      "QA, proof, and rollout hardening",
       "orders and order workflow",
-      "operator workflow polish",
       "accounting, payments, and ledger work"
     ],
-    "summary": "Current TERP direction centers on inventory, intake, and purchase operations and orders and order workflow; recent git activity is anchored at 4f23376 and is dominated by `docs(context): refresh agent-context after 420-fork merge`, `chore(hooks): make closeout-guard path portable`, `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "summary": "Current TERP direction centers on inventory, intake, and purchase operations and QA, proof, and rollout hardening; recent git activity is anchored at ddfee7c and led by `chore(policy): require adversarial QA + self-healing before ticket completion`, `chore(infra): remove local TSC from pre-commit hook`, `chore(infra): remove local TSC from DONE.sh, add CI-wait poll loop`, `fix(client): Wave 0 client bugs - TER-640/1150/1151/1152/1153/1154/1155 (#590)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
     "themeEvidence": [
       {
         "label": "inventory, intake, and purchase operations",
         "count": 9
       },
       {
-        "label": "orders and order workflow",
+        "label": "QA, proof, and rollout hardening",
         "count": 6
       },
       {
-        "label": "operator workflow polish",
+        "label": "orders and order workflow",
         "count": 5
       },
       {
@@ -347,21 +412,132 @@
         "count": 3
       },
       {
-        "label": "QA, parity proof, and rollout hardening",
-        "count": 3
-      },
-      {
         "label": "spreadsheet-native rollout",
         "count": 2
+      },
+      {
+        "label": "persistent PM and handoff durability",
+        "count": 1
       }
     ]
   },
+  "trustModel": {
+    "defaultNewClientTrust": "read-only",
+    "firstClassWriters": [
+      "Hermes",
+      "Codex Mac app",
+      "Codex CLI (local)",
+      "Claude Code CLI (local)"
+    ],
+    "conditionalFirstClassWriters": ["Claude Mac app"],
+    "mediatedWriters": [
+      "Codex cloud",
+      "Codex CLI (cloud)",
+      "Claude Code cloud",
+      "Claude Code CLI (cloud)"
+    ],
+    "readOnly": ["claude.ai", "Future new model/service"]
+  },
+  "decisions": {
+    "total": 0,
+    "latest": [],
+    "latestAt": null,
+    "latestByClient": null
+  },
+  "work": {
+    "path": "docs/agent-context/work.json",
+    "summary": {
+      "total": 12,
+      "ready": 12,
+      "blocked": 0,
+      "done": 0,
+      "topReady": [
+        {
+          "id": "TER-1065",
+          "title": "[P2-19] Contact activity/communication log for payments follow-up tracking",
+          "priority": "normal",
+          "project": null,
+          "url": "https://linear.app/terpcorp/issue/TER-1065/p2-19-contact-activitycommunication-log-for-payments-follow-up"
+        },
+        {
+          "id": "TER-1063",
+          "title": "[P2-17] Shipping/fulfillment: generate pick list from confirmed orders with batch locations",
+          "priority": "normal",
+          "project": null,
+          "url": "https://linear.app/terpcorp/issue/TER-1063/p2-17-shippingfulfillment-generate-pick-list-from-confirmed-orders"
+        },
+        {
+          "id": "TER-1056",
+          "title": "[P2-10] Dashboard: activity feed showing recent orders, payments, intake since last session",
+          "priority": "normal",
+          "project": null,
+          "url": "https://linear.app/terpcorp/issue/TER-1056/p2-10-dashboard-activity-feed-showing-recent-orders-payments-intake"
+        },
+        {
+          "id": "TER-1055",
+          "title": "[P2-09] Dashboard: add operational KPIs - expected deliveries, pending fulfillment, appointments today",
+          "priority": "normal",
+          "project": null,
+          "url": "https://linear.app/terpcorp/issue/TER-1055/p2-09-dashboard-add-operational-kpis-expected-deliveries-pending"
+        },
+        {
+          "id": "TER-1066",
+          "title": "[P2-20] Remaining initiative: spec-driven seam execution framework",
+          "priority": "high",
+          "project": "Spreadsheet-Native Full Rollout",
+          "url": "https://linear.app/terpcorp/issue/TER-1066/p2-20-remaining-initiative-spec-driven-seam-execution-framework"
+        },
+        {
+          "id": "TER-1048",
+          "title": "[P2-02] Inventory: default filter to LIVE status, human-readable status labels across all grids",
+          "priority": "high",
+          "project": null,
+          "url": "https://linear.app/terpcorp/issue/TER-1048/p2-02-inventory-default-filter-to-live-status-human-readable-status"
+        }
+      ]
+    }
+  },
+  "evidence": {
+    "path": "docs/agent-context/evidence.json",
+    "commits": 12,
+    "decisions": 0,
+    "issues": 12
+  },
+  "publicMirror": {
+    "path": "docs/agent-context/public",
+    "artifacts": [
+      "START_HERE.md",
+      "state.json",
+      "work.json",
+      "manifest.json",
+      "health.json"
+    ],
+    "workflow": ".github/workflows/agent-context-pages.yml"
+  },
+  "mediator": {
+    "mcpServer": "scripts/agent-context/pm-mcp-server.mjs",
+    "linearReconciler": "scripts/agent-context/pm-linear-reconciler.mjs",
+    "publisher": "scripts/agent-context/pm-publisher.mjs",
+    "checkpointCli": "scripts/agent-context/pm-checkpoint.mjs"
+  },
   "repoTruthHierarchy": [
-    "`docs/agent-context/state.json` for startup truth, freshness, and where to drill deeper next.",
-    "Program-specific machine state like `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json` when working that exact lane.",
-    "Current code, tests, and runtime evidence when docs and tracker narratives disagree.",
-    "Linear project and issue state for live execution direction.",
-    "Legacy docs only as historical background, never as silent current truth."
+    "`docs/agent-context/manifest.json` for freshness and artifact integrity.",
+    "`docs/agent-context/state.json` for machine-readable PM state and trust rules.",
+    "`docs/agent-context/work.json` for remaining work order and blockers.",
+    "`docs/agent-context/decisions.ndjson` for settled PM decisions and rationale.",
+    "Current code, tests, git history, and runtime evidence when docs and tracker narratives disagree.",
+    "Linear issue and project state for live execution direction.",
+    "Legacy docs only as background, never as silent current truth."
+  ],
+  "attentionRequired": [
+    {
+      "id": "linear-not-live",
+      "kind": "tracker-freshness",
+      "severity": "medium",
+      "status": "open",
+      "summary": "Linear snapshot fell back to last-known state and should be refreshed before authoritative writes.",
+      "detected_at": "2026-04-20T21:35:58.176Z"
+    }
   ],
   "activeLaneSignals": [
     {
@@ -374,16 +550,20 @@
   ],
   "deepDiveDocs": [
     {
+      "path": "docs/agent-context/manifest.json",
+      "reason": "per-artifact freshness, hashes, schema versions, and TTLs"
+    },
+    {
+      "path": "docs/agent-context/work.json",
+      "reason": "remaining work queue, readiness, and issue ordering"
+    },
+    {
+      "path": "docs/agent-context/evidence.json",
+      "reason": "commits, issues, and decisions backing current PM claims"
+    },
+    {
       "path": "docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json",
       "reason": "machine-readable Orders runtime verdicts and next move"
-    },
-    {
-      "path": "docs/roadmaps/orders-spreadsheet-runtime/README.md",
-      "reason": "Orders runtime gate roadmap and tranche layout"
-    },
-    {
-      "path": "docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-build-source-of-truth.md",
-      "reason": "broader spreadsheet-native preservation packet and source precedence rules"
     },
     {
       "path": "docs/TESTING.md",
@@ -393,28 +573,45 @@
   "legacyWarnings": [
     {
       "path": "docs/ACTIVE_SESSIONS.md",
-      "reason": "stale session registry that still looks live",
-      "lastUpdated": "2026-02-04"
+      "reason": "legacy session registry snapshot",
+      "lastUpdated": "2026-02-04",
+      "pointsToStartupContract": true,
+      "substantivePmContent": false
     },
     {
       "path": "docs/PROJECT_CONTEXT.md",
-      "reason": "historical orientation snapshot, not current runtime truth",
-      "lastUpdated": "October 27, 2025"
+      "reason": "historical orientation packet",
+      "lastUpdated": "October 27, 2025",
+      "pointsToStartupContract": true,
+      "substantivePmContent": false
     },
     {
       "path": "docs/TERP_AGENT_INSTRUCTIONS.md",
-      "reason": "older prompt-pack instructions that still point at legacy roadmap flow",
-      "lastUpdated": "2026-02-01"
+      "reason": "legacy onboarding prompt-pack file",
+      "lastUpdated": "2026-02-01",
+      "pointsToStartupContract": true,
+      "substantivePmContent": false
     },
     {
       "path": "docs/ROADMAP_AGENT_GUIDE.md",
-      "reason": "older roadmap guide that still says MASTER_ROADMAP is current",
-      "lastUpdated": null
+      "reason": "legacy roadmap guide",
+      "lastUpdated": null,
+      "pointsToStartupContract": true,
+      "substantivePmContent": false
     },
     {
       "path": "product-management/START_HERE.md",
-      "reason": "separate PM system entrypoint, not the live TERP repo startup contract",
-      "lastUpdated": null
+      "reason": "legacy PM entrypoint",
+      "lastUpdated": null,
+      "pointsToStartupContract": true,
+      "substantivePmContent": false
+    },
+    {
+      "path": "agent-prompts/README.md",
+      "reason": "legacy prompt-pack entrypoint",
+      "lastUpdated": null,
+      "pointsToStartupContract": true,
+      "substantivePmContent": false
     }
   ]
 }

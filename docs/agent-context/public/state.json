@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-04-17T21:57:31.930Z",
+  "generatedAt": "2026-04-20T21:35:58.176Z",
   "startupContract": {
     "entrypoint": "START_HERE.md",
     "manifest": "manifest.json",
@@ -8,77 +8,76 @@
     "workMap": "work.json"
   },
   "freshness": {
-    "status": "fresh",
+    "status": "partial",
     "notes": [
-      "Tracker data was refreshed live from Linear.",
-      "Working tree contains local edits. This bundle reports committed truth at HEAD and notes that local diffs exist."
+      "Linear could not be refreshed live, so tracker sections fell back to the last known snapshot (2026-04-08T03:11:06.962Z).",
+      "Attention-required conflicts are active. Read the Attention Required section before claiming startup truth is settled."
     ]
   },
   "git": {
-    "branch": "codex/persistent-pm-hardening-20260417",
-    "head": "f9fdb0cdacc29d488f2784f5aeeef86a86812d81",
-    "shortHead": "f9fdb0cd",
-    "workingTreeDirty": true,
+    "branch": "claude/onboard-terp-agent-pgtSc",
+    "head": "ddfee7cdc99297c556fae5680ebd68ce1a1616b5",
+    "shortHead": "ddfee7c",
+    "workingTreeDirty": false,
     "recentCommits": [
       {
-        "date": "2026-04-17",
-        "sha": "f9fdb0cd",
-        "subject": "docs(context): refresh PM bundle after launch activation"
+        "date": "2026-04-20",
+        "sha": "ddfee7c",
+        "subject": "chore(policy): require adversarial QA + self-healing before ticket completion"
       },
       {
-        "date": "2026-04-17",
-        "sha": "250eba1c",
-        "subject": "fix(pm): fall back to user launchctl domain"
+        "date": "2026-04-20",
+        "sha": "435de2c",
+        "subject": "chore(infra): remove local TSC from pre-commit hook"
       },
       {
-        "date": "2026-04-17",
-        "sha": "65e34559",
-        "subject": "feat(pm): add scoped launch readiness gate"
+        "date": "2026-04-20",
+        "sha": "c89e21b",
+        "subject": "chore(infra): remove local TSC from DONE.sh, add CI-wait poll loop"
       },
       {
-        "date": "2026-04-17",
-        "sha": "64774ca3",
-        "subject": "test(pm): align fixtures with Claude protocol"
+        "date": "2026-04-20",
+        "sha": "29bd3d8",
+        "subject": "fix(client): Wave 0 client bugs - TER-640/1150/1151/1152/1153/1154/1155 (#590)"
       },
       {
-        "date": "2026-04-17",
-        "sha": "c155897e",
-        "subject": "fix(pm): normalize Claude protocol casing"
+        "date": "2026-04-20",
+        "sha": "adb6404",
+        "subject": "feat: harden persistent PM runtime (#583)"
       },
       {
-        "date": "2026-04-17",
-        "sha": "48a98623",
-        "subject": "fix(pm): declare MCP sdk and stabilize CI"
+        "date": "2026-04-20",
+        "sha": "70da6a2",
+        "subject": "docs(audit): expand UI+UX audit to master review with flow-by-flow + Tier A + 8-PR plan (#588)"
       },
       {
-        "date": "2026-04-17",
-        "sha": "3605e38e",
-        "subject": "feat(pm): harden persistent PM runtime"
+        "date": "2026-04-20",
+        "sha": "d64a1bf",
+        "subject": "test: resync 4 broken test files after 420-fork UI overhaul (#587)"
       },
       {
-        "date": "2026-04-15",
-        "sha": "328edd74",
-        "subject": "feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)"
+        "date": "2026-04-20",
+        "sha": "21a1965",
+        "subject": "fix(auth): enforce unauthenticated state on logout - TER-1149 (#591)"
       },
       {
-        "date": "2026-04-10",
-        "sha": "d970ebe2",
-        "subject": "feat(ui): advance april 9 ticket train remediation (#578)"
+        "date": "2026-04-20",
+        "sha": "a62c5db",
+        "subject": "fix(server): Wave 0 server 500s — TER-1146, TER-1147, TER-1148, TER-1156 (#589)"
       },
       {
-        "date": "2026-04-09",
-        "sha": "46d97388",
-        "subject": "fix(notifications): improve inline triage and empty states (#577)"
+        "date": "2026-04-20",
+        "sha": "1d8e7ee",
+        "subject": "ci(enforcement): add session-validation workflow + BOOT.sh/DONE.sh root helpers"
       }
     ]
   },
   "linear": {
-    "mode": "live",
-    "fetchedAt": "2026-04-17T21:57:32.325Z",
-    "latestIssueUpdatedAt": "2026-04-15T13:53:08.265Z",
+    "mode": "last-known",
+    "fetchedAt": "2026-04-08T03:11:06.962Z",
+    "latestIssueUpdatedAt": "2026-04-08T03:10:07.816Z",
     "activeProjects": [
       {
-        "id": "03841d5c-5438-44ab-b8c0-6f542ab6ffb0",
         "name": "Spreadsheet-Native Full Rollout",
         "state": "started",
         "updatedAt": "2026-03-20T22:03:52.118Z",
@@ -86,7 +85,6 @@
         "description": "Roll out PowersheetGrid to all TERP modules. 4 waves: Core Business → Operations → Sales Extensions → Classic Sunset."
       },
       {
-        "id": "a666216a-b3be-4248-b153-5720fb8eac93",
         "name": "TERP - Orders Spreadsheet Runtime Rollout",
         "state": "backlog",
         "updatedAt": "2026-03-17T20:55:16.524Z",
@@ -94,7 +92,6 @@
         "description": "Make Orders the first rollout-ready sheet-native surface by adding full spreadsheet interaction parity on top of the existing anti-drift contract and Orders workflow."
       },
       {
-        "id": "8615edb8-09e1-4213-986d-4b5127e0a31f",
         "name": "March 10 Recording Backlog Closure",
         "state": "planned",
         "updatedAt": "2026-03-11T16:10:58.285Z",
@@ -102,7 +99,6 @@
         "description": "Close the unresolved March 10 staging screen-recording backlog with proof-based coverage control and final replay signoff."
       },
       {
-        "id": "d30b7ab9-a96f-4efd-a6b4-1b361942d5f3",
         "name": "TERP - Sprint 2026-03-09 Open Bugs + Mobile UX Hardening",
         "state": "backlog",
         "updatedAt": "2026-03-09T21:54:07.816Z",
@@ -110,7 +106,6 @@
         "description": "Clear the full open bug backlog while shipping the next mobile usability, page orientation, and accessibility remediations."
       },
       {
-        "id": "edf23b73-d4ee-4ab5-b29d-e4580ef7d3eb",
         "name": "TERP - Sales Sheet UX + Artifact Quality (User Testing Ready)",
         "state": "backlog",
         "updatedAt": "2026-02-24T23:21:30.981Z",
@@ -118,236 +113,155 @@
         "description": "Atomic roadmap to make Sales Sheet feature-complete, redesign-consistent, and user-testing ready."
       },
       {
-        "id": "26a06582-5b03-4abd-abbd-bde5eeccefbe",
         "name": "TERP - Immediate Phase: Broken Buttons & Interaction Reliability",
         "state": "backlog",
         "updatedAt": "2026-02-11T22:42:09.258Z",
         "url": "https://linear.app/terpcorp/project/terp-immediate-phase-broken-buttons-and-interaction-reliability-ba50b992584c",
         "description": "Stabilize broken controls first, then harden tests/CI so regressions are blocked before merge."
-      },
-      {
-        "id": "79882db1-0cac-448b-b73c-5dd9307c85c8",
-        "name": "TERP - Golden Flows Beta",
-        "state": "backlog",
-        "updatedAt": "2026-02-03T22:09:29.787Z",
-        "url": "https://linear.app/terpcorp/project/terp-golden-flows-beta-1fd329c5978d",
-        "description": ""
       }
     ],
     "recentIssues": [
       {
-        "identifier": "TER-1073",
-        "title": "[P2-22B] Portable cuts and saved-cut continuity across selling surfaces",
+        "identifier": "TER-1065",
+        "title": "[P2-19] Contact activity/communication log for payments follow-up tracking",
+        "priority": "normal",
+        "updatedAt": "2026-04-08T03:10:07.816Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1065/p2-19-contact-activitycommunication-log-for-payments-follow-up",
+        "state": "In Review",
+        "project": null
+      },
+      {
+        "identifier": "TER-1063",
+        "title": "[P2-17] Shipping/fulfillment: generate pick list from confirmed orders with batch locations",
+        "priority": "normal",
+        "updatedAt": "2026-04-08T03:10:07.814Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1063/p2-17-shippingfulfillment-generate-pick-list-from-confirmed-orders",
+        "state": "In Review",
+        "project": null
+      },
+      {
+        "identifier": "TER-1056",
+        "title": "[P2-10] Dashboard: activity feed showing recent orders, payments, intake since last session",
+        "priority": "normal",
+        "updatedAt": "2026-04-08T03:10:07.812Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1056/p2-10-dashboard-activity-feed-showing-recent-orders-payments-intake",
+        "state": "In Review",
+        "project": null
+      },
+      {
+        "identifier": "TER-1055",
+        "title": "[P2-09] Dashboard: add operational KPIs - expected deliveries, pending fulfillment, appointments today",
+        "priority": "normal",
+        "updatedAt": "2026-04-08T03:10:07.810Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1055/p2-09-dashboard-add-operational-kpis-expected-deliveries-pending",
+        "state": "In Review",
+        "project": null
+      },
+      {
+        "identifier": "TER-1066",
+        "title": "[P2-20] Remaining initiative: spec-driven seam execution framework",
         "priority": "high",
-        "updatedAt": "2026-04-15T13:53:08.265Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1073/p2-22b-portable-cuts-and-saved-cut-continuity-across-selling-surfaces",
+        "updatedAt": "2026-04-08T03:10:07.796Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1066/p2-20-remaining-initiative-spec-driven-seam-execution-framework",
         "state": "In Review",
         "project": "Spreadsheet-Native Full Rollout"
+      },
+      {
+        "identifier": "TER-1048",
+        "title": "[P2-02] Inventory: default filter to LIVE status, human-readable status labels across all grids",
+        "priority": "high",
+        "updatedAt": "2026-04-08T00:07:55.035Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1048/p2-02-inventory-default-filter-to-live-status-human-readable-status",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1053",
+        "title": "[P2-07] Inventory row action: Add to Order button to start order from inventory context",
+        "priority": "normal",
+        "updatedAt": "2026-04-06T18:45:57.391Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1053/p2-07-inventory-row-action-add-to-order-button-to-start-order-from",
+        "state": "Todo",
+        "project": null
       },
       {
         "identifier": "TER-1052",
         "title": "[P2-06] Order creator: show client credit, balance, and recent order history before adding items",
         "priority": "high",
-        "updatedAt": "2026-04-15T13:53:08.263Z",
+        "updatedAt": "2026-04-06T18:45:56.069Z",
         "url": "https://linear.app/terpcorp/issue/TER-1052/p2-06-order-creator-show-client-credit-balance-and-recent-order",
-        "state": "In Review",
+        "state": "Todo",
         "project": null
       },
       {
-        "identifier": "TER-1139",
-        "title": "[UI-XA6] Verify workflow confirmations exist for destructive/creation actions",
+        "identifier": "TER-1051",
+        "title": "[P2-05] Product name display: show strain/product name prominently, supplier as secondary text",
         "priority": "normal",
-        "updatedAt": "2026-04-09T19:27:35.233Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1139/ui-xa6-verify-workflow-confirmations-exist-for-destructivecreation",
-        "state": "Backlog",
+        "updatedAt": "2026-04-06T18:45:54.986Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1051/p2-05-product-name-display-show-strainproduct-name-prominently",
+        "state": "Todo",
         "project": null
       },
       {
-        "identifier": "TER-1138",
-        "title": "[UI-XA5] Verify key workflows reachable in ≤3 clicks",
-        "priority": "low",
-        "updatedAt": "2026-04-09T19:27:28.613Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1138/ui-xa5-verify-key-workflows-reachable-in-3-clicks",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1137",
-        "title": "[UI-XA4] Verify cross-module contextual links exist",
-        "priority": "normal",
-        "updatedAt": "2026-04-09T19:27:22.923Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1137/ui-xa4-verify-cross-module-contextual-links-exist",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1136",
-        "title": "[UI-XA3] Verify primary action columns visible at 1280px on all tables",
-        "priority": "normal",
-        "updatedAt": "2026-04-09T19:27:13.141Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1136/ui-xa3-verify-primary-action-columns-visible-at-1280px-on-all-tables",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1135",
-        "title": "[UI-XA2] Verify page title is visually dominant on all workspace pages",
-        "priority": "low",
-        "updatedAt": "2026-04-09T19:27:06.029Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1135/ui-xa2-verify-page-title-is-visually-dominant-on-all-workspace-pages",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1134",
-        "title": "[UI-XA1] Audit column header / row prefix duplication",
-        "priority": "low",
-        "updatedAt": "2026-04-09T19:26:59.113Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1134/ui-xa1-audit-column-header-row-prefix-duplication",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1133",
-        "title": "[UI-NT5] Add contextual empty states per notification category",
-        "priority": "low",
-        "updatedAt": "2026-04-09T19:26:52.454Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1133/ui-nt5-add-contextual-empty-states-per-notification-category",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1132",
-        "title": "[UI-NT4] Add inline \"mark read\" button per notification row",
-        "priority": "normal",
-        "updatedAt": "2026-04-09T19:26:46.985Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1132/ui-nt4-add-inline-mark-read-button-per-notification-row",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1131",
-        "title": "[UI-NT3] Differentiate urgent/exception notifications visually",
-        "priority": "normal",
-        "updatedAt": "2026-04-09T19:26:27.712Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1131/ui-nt3-differentiate-urgentexception-notifications-visually",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1130",
-        "title": "[UI-NT2] Strengthen unread notification row visual distinction",
-        "priority": "normal",
-        "updatedAt": "2026-04-09T19:26:21.191Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1130/ui-nt2-strengthen-unread-notification-row-visual-distinction",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1129",
-        "title": "[UI-NT1] Split notifications into FYI vs needs-action categories",
-        "priority": "normal",
-        "updatedAt": "2026-04-09T19:26:15.798Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1129/ui-nt1-split-notifications-into-fyi-vs-needs-action-categories",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1128",
-        "title": "[UI-AC3] Verify summary dashboard cards reflect active filters",
-        "priority": "low",
-        "updatedAt": "2026-04-09T19:26:06.893Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1128/ui-ac3-verify-summary-dashboard-cards-reflect-active-filters",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1127",
-        "title": "[UI-AC2] Replace plain-text loading states with table-shaped skeletons",
-        "priority": "normal",
-        "updatedAt": "2026-04-09T19:25:59.747Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1127/ui-ac2-replace-plain-text-loading-states-with-table-shaped-skeletons",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1126",
-        "title": "[UI-AC1] Add financial period to workspace header meta",
-        "priority": "normal",
-        "updatedAt": "2026-04-09T19:25:52.457Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1126/ui-ac1-add-financial-period-to-workspace-header-meta",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1125",
-        "title": "[UI-RP4] Verify scroll/filter preservation on table→profile navigation",
-        "priority": "normal",
-        "updatedAt": "2026-04-09T19:25:46.465Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1125/ui-rp4-verify-scrollfilter-preservation-on-tableprofile-navigation",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1124",
-        "title": "[UI-RP3] Add \"status\" column to client table",
-        "priority": "normal",
-        "updatedAt": "2026-04-09T19:25:39.097Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1124/ui-rp3-add-status-column-to-client-table",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1123",
-        "title": "[UI-RP2] Add \"last activity\" column to client table",
-        "priority": "normal",
-        "updatedAt": "2026-04-09T19:25:35.131Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1123/ui-rp2-add-last-activity-column-to-client-table",
-        "state": "Backlog",
-        "project": null
-      },
-      {
-        "identifier": "TER-1122",
-        "title": "[UI-RP1] Fix ClientProfilePage role badges to use semantic colors",
+        "identifier": "TER-1050",
+        "title": "[P2-04] Sales Catalogue: fast access + shareable link generation for chat-based client communication",
         "priority": "high",
-        "updatedAt": "2026-04-09T19:25:28.108Z",
-        "url": "https://linear.app/terpcorp/issue/TER-1122/ui-rp1-fix-clientprofilepage-role-badges-to-use-semantic-colors",
-        "state": "Backlog",
+        "updatedAt": "2026-04-06T18:45:54.044Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1050/p2-04-sales-catalogue-fast-access-shareable-link-generation-for-chat",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1049",
+        "title": "[P2-03] Cmd+K search: include products and inventory batches in global search",
+        "priority": "high",
+        "updatedAt": "2026-04-06T18:45:52.818Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1049/p2-03-cmdk-search-include-products-and-inventory-batches-in-global",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1047",
+        "title": "[P2-01] Inventory grid: add Price, COGS, Margin columns to default view",
+        "priority": "high",
+        "updatedAt": "2026-04-06T18:45:50.284Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1047/p2-01-inventory-grid-add-price-cogs-margin-columns-to-default-view",
+        "state": "Todo",
         "project": null
       }
     ]
   },
   "direction": {
     "focusAreas": [
-      "persistent PM and handoff durability",
+      "inventory, intake, and purchase operations",
       "QA, proof, and rollout hardening",
-      "spreadsheet-native rollout",
-      "orders and order workflow"
+      "orders and order workflow",
+      "accounting, payments, and ledger work"
     ],
-    "summary": "Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at f9fdb0cd and led by `docs(context): refresh PM bundle after launch activation`, `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "summary": "Current TERP direction centers on inventory, intake, and purchase operations and QA, proof, and rollout hardening; recent git activity is anchored at ddfee7c and led by `chore(policy): require adversarial QA + self-healing before ticket completion`, `chore(infra): remove local TSC from pre-commit hook`, `chore(infra): remove local TSC from DONE.sh, add CI-wait poll loop`, `fix(client): Wave 0 client bugs - TER-640/1150/1151/1152/1153/1154/1155 (#590)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
     "themeEvidence": [
       {
-        "label": "persistent PM and handoff durability",
-        "count": 7
+        "label": "inventory, intake, and purchase operations",
+        "count": 9
       },
       {
         "label": "QA, proof, and rollout hardening",
-        "count": 4
+        "count": 6
+      },
+      {
+        "label": "orders and order workflow",
+        "count": 5
+      },
+      {
+        "label": "accounting, payments, and ledger work",
+        "count": 3
       },
       {
         "label": "spreadsheet-native rollout",
         "count": 2
       },
       {
-        "label": "orders and order workflow",
-        "count": 2
-      },
-      {
-        "label": "inventory, intake, and purchase operations",
-        "count": 1
-      },
-      {
-        "label": "accounting, payments, and ledger work",
+        "label": "persistent PM and handoff durability",
         "count": 1
       }
     ]
@@ -360,19 +274,14 @@
       "Codex CLI (local)",
       "Claude Code CLI (local)"
     ],
-    "conditionalFirstClassWriters": [
-      "Claude Mac app"
-    ],
+    "conditionalFirstClassWriters": ["Claude Mac app"],
     "mediatedWriters": [
       "Codex cloud",
       "Codex CLI (cloud)",
       "Claude Code cloud",
       "Claude Code CLI (cloud)"
     ],
-    "readOnly": [
-      "claude.ai",
-      "Future new model/service"
-    ]
+    "readOnly": ["claude.ai", "Future new model/service"]
   },
   "decisions": {
     "total": 0,
@@ -381,24 +290,52 @@
   "work": {
     "path": "docs/agent-context/work.json",
     "summary": {
-      "total": 20,
-      "ready": 2,
-      "blocked": 18,
+      "total": 12,
+      "ready": 12,
+      "blocked": 0,
       "done": 0,
       "topReady": [
         {
-          "id": "TER-1073",
-          "title": "[P2-22B] Portable cuts and saved-cut continuity across selling surfaces",
-          "priority": "high",
-          "project": "Spreadsheet-Native Full Rollout",
-          "url": "https://linear.app/terpcorp/issue/TER-1073/p2-22b-portable-cuts-and-saved-cut-continuity-across-selling-surfaces"
+          "id": "TER-1065",
+          "title": "[P2-19] Contact activity/communication log for payments follow-up tracking",
+          "priority": "normal",
+          "project": null,
+          "url": "https://linear.app/terpcorp/issue/TER-1065/p2-19-contact-activitycommunication-log-for-payments-follow-up"
         },
         {
-          "id": "TER-1052",
-          "title": "[P2-06] Order creator: show client credit, balance, and recent order history before adding items",
+          "id": "TER-1063",
+          "title": "[P2-17] Shipping/fulfillment: generate pick list from confirmed orders with batch locations",
+          "priority": "normal",
+          "project": null,
+          "url": "https://linear.app/terpcorp/issue/TER-1063/p2-17-shippingfulfillment-generate-pick-list-from-confirmed-orders"
+        },
+        {
+          "id": "TER-1056",
+          "title": "[P2-10] Dashboard: activity feed showing recent orders, payments, intake since last session",
+          "priority": "normal",
+          "project": null,
+          "url": "https://linear.app/terpcorp/issue/TER-1056/p2-10-dashboard-activity-feed-showing-recent-orders-payments-intake"
+        },
+        {
+          "id": "TER-1055",
+          "title": "[P2-09] Dashboard: add operational KPIs - expected deliveries, pending fulfillment, appointments today",
+          "priority": "normal",
+          "project": null,
+          "url": "https://linear.app/terpcorp/issue/TER-1055/p2-09-dashboard-add-operational-kpis-expected-deliveries-pending"
+        },
+        {
+          "id": "TER-1066",
+          "title": "[P2-20] Remaining initiative: spec-driven seam execution framework",
+          "priority": "high",
+          "project": "Spreadsheet-Native Full Rollout",
+          "url": "https://linear.app/terpcorp/issue/TER-1066/p2-20-remaining-initiative-spec-driven-seam-execution-framework"
+        },
+        {
+          "id": "TER-1048",
+          "title": "[P2-02] Inventory: default filter to LIVE status, human-readable status labels across all grids",
           "priority": "high",
           "project": null,
-          "url": "https://linear.app/terpcorp/issue/TER-1052/p2-06-order-creator-show-client-credit-balance-and-recent-order"
+          "url": "https://linear.app/terpcorp/issue/TER-1048/p2-02-inventory-default-filter-to-live-status-human-readable-status"
         }
       ]
     }
@@ -414,5 +351,14 @@
     ],
     "workflow": ".github/workflows/agent-context-pages.yml"
   },
-  "attentionRequired": []
+  "attentionRequired": [
+    {
+      "id": "linear-not-live",
+      "kind": "tracker-freshness",
+      "severity": "medium",
+      "status": "open",
+      "summary": "Linear snapshot fell back to last-known state and should be refreshed before authoritative writes.",
+      "detected_at": "2026-04-20T21:35:58.176Z"
+    }
+  ]
 }

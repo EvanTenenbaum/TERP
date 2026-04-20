@@ -4,10 +4,10 @@
 
 ## Snapshot
 
-- Generated: `2026-04-17T21:57:31.930Z`
-- Freshness status: `fresh`
-- Git anchor: `f9fdb0cd`
-- Linear mode: `live`
+- Generated: `2026-04-20T21:35:58.176Z`
+- Freshness status: `partial`
+- Git anchor: `ddfee7c`
+- Linear mode: `last-known`
 
 ## Public Read Order
 
@@ -19,12 +19,12 @@
 
 ## Current Direction
 
-Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at f9fdb0cd and led by `docs(context): refresh PM bundle after launch activation`, `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
+Current TERP direction centers on inventory, intake, and purchase operations and QA, proof, and rollout hardening; recent git activity is anchored at ddfee7c and led by `chore(policy): require adversarial QA + self-healing before ticket completion`, `chore(infra): remove local TSC from pre-commit hook`, `chore(infra): remove local TSC from DONE.sh, add CI-wait poll loop`, `fix(client): Wave 0 client bugs - TER-640/1150/1151/1152/1153/1154/1155 (#590)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
 
-- persistent PM and handoff durability
+- inventory, intake, and purchase operations
 - QA, proof, and rollout hardening
-- spreadsheet-native rollout
 - orders and order workflow
+- accounting, payments, and ledger work
 
 ## Trust Ladder
 
@@ -35,9 +35,13 @@ Current TERP direction centers on persistent PM and handoff durability and QA, p
 
 ## Attention Required
 
-- No open PM conflicts are currently surfaced.
+- [medium] Linear snapshot fell back to last-known state and should be refreshed before authoritative writes.
 
 ## Top Ready Work
 
-- `TER-1073` (high, ready) - [P2-22B] Portable cuts and saved-cut continuity across selling surfaces | Spreadsheet-Native Full Rollout
-- `TER-1052` (high, ready) - [P2-06] Order creator: show client credit, balance, and recent order history before adding items
+- `TER-1065` (normal, ready) - [P2-19] Contact activity/communication log for payments follow-up tracking
+- `TER-1063` (normal, ready) - [P2-17] Shipping/fulfillment: generate pick list from confirmed orders with batch locations
+- `TER-1056` (normal, ready) - [P2-10] Dashboard: activity feed showing recent orders, payments, intake since last session
+- `TER-1055` (normal, ready) - [P2-09] Dashboard: add operational KPIs - expected deliveries, pending fulfillment, appointments today
+- `TER-1066` (high, ready) - [P2-20] Remaining initiative: spec-driven seam execution framework | Spreadsheet-Native Full Rollout
+- `TER-1048` (high, ready) - [P2-02] Inventory: default filter to LIVE status, human-readable status labels across all grids

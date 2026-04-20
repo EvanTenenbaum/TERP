@@ -19,14 +19,12 @@
 
 ## Startup Steps
 
-1. Resolve the shared TERP PM bundle from `/Users/evan/spec-erp-docker/TERP/TERP/.git/persistent-pm/current` (discoverable from `git rev-parse --git-common-dir`).
+1. Resolve the shared TERP PM bundle from `/home/user/TERP/.git/persistent-pm/current` (discoverable from `git rev-parse --git-common-dir`).
 2. Read the shared `manifest.json` and make sure the PM bundle is fresh enough for your task.
 3. Read the shared `START_HERE.md`.
 4. Read the shared `state.json` and `work.json`.
 5. If you need proof behind a PM claim, read `docs/agent-context/evidence.json` or the shared mirror.
 6. Do not treat `product-management/START_HERE.md`, legacy prompt packs, or chat memory as PM authority.
-
-
 
 ## Write Rules
 
@@ -64,6 +62,5 @@ Rules:
 - If a committed PM snapshot trails `HEAD`, rerun `pnpm pm:launch:check` or refresh the shared live bundle before treating that lag as downtime.
 
 Current PM summary:
-Current TERP direction centers on persistent PM and handoff durability and QA, proof, and rollout hardening; recent git activity is anchored at f9fdb0cd and led by `docs(context): refresh PM bundle after launch activation`, `fix(pm): fall back to user launchctl domain`, `feat(pm): add scoped launch readiness gate`, `test(pm): align fixtures with Claude protocol`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
+Current TERP direction centers on inventory, intake, and purchase operations and QA, proof, and rollout hardening; recent git activity is anchored at ddfee7c and led by `chore(policy): require adversarial QA + self-healing before ticket completion`, `chore(infra): remove local TSC from pre-commit hook`, `chore(infra): remove local TSC from DONE.sh, add CI-wait poll loop`, `fix(client): Wave 0 client bugs - TER-640/1150/1151/1152/1153/1154/1155 (#590)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.
 ```
-
