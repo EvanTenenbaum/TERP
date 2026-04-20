@@ -107,18 +107,9 @@ echo "✅ Security checks passed"
 # Run lint-staged for formatting and linting
 npx lint-staged
 
-# Run TypeScript type check on staged server + client files
-# Run TypeScript type check
-echo "  Running tsc type check..."
-TSC_ERRORS=$(cd "$(git rev-parse --show-toplevel)" && NODE_OPTIONS=--max-old-space-size=4096 npx tsc --noEmit --incremental 2>&1 | grep "error TS" | grep -v "StagingAgentation" || true)
-if [ -n "$TSC_ERRORS" ]; then
-  echo ""
-  echo "❌ TypeScript errors found:"
-  echo "$TSC_ERRORS" | head -10
-  echo ""
-  echo "Fix type errors before committing, or use 'git commit --no-verify' to bypass."
-  exit 1
-fi
-echo "✅ TSC clean"
+# TypeScript check runs on GHA CI (pre-merge.yml) — not locally.
+# Running pnpm tsc locally saturates Mac Mini when multiple agents run concurrently.
+# GHA validates TSC on every PR before merge — correctness guarantee is preserved.
+echo "  ℹ️  TSC validation runs in CI (GHA), not locally — skipping local tsc check"
 
 echo "✅ All pre-commit checks passed"
