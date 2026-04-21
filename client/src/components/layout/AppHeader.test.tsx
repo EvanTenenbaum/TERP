@@ -91,9 +91,10 @@ vi.mock("@/lib/trpc", () => ({
       },
     })),
     useUtils: vi.fn(() => ({
-      notifications: {
-        list: { invalidate: vi.fn() },
-        getUnreadCount: { invalidate: vi.fn() },
+      auth: {
+        me: {
+          invalidate: vi.fn(),
+        },
       },
     })),
   },

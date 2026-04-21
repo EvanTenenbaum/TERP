@@ -32,7 +32,7 @@ import {
   type Batch,
   type OrderLineItem,
 } from "../../drizzle/schema";
-import { eq, and, isNull, sql, asc } from "drizzle-orm";
+import { eq, and, isNull, sql, asc, desc, gte, lte, type SQL } from "drizzle-orm";
 import { safeInArray } from "../lib/sqlSafety";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
@@ -545,6 +545,179 @@ export const ordersRouter = router({
       const offset = input?.offset || 0;
 
       return createSafeUnifiedResponse(orders, -1, limit, offset);
+    }),
+
+  /**
+   * Get shipping pick list — flattened view of open-order line items
+   * for warehouse staff to pull against. TER-1063.
+   *
+   * "pending" = CONFIRMED + READY_FOR_PACKING (not yet picked)
+   * "partial" = PACKED (picked, awaiting ship)
+   * "fulfilled" = SHIPPED + DELIVERED
+   */
+  getPickList: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(
+      z
+        .object({
+          status: z.enum(["pending", "partial", "fulfilled"]).optional(),
+          dateFrom: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional(),
+          dateTo: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional(),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+      }
+
+      const statusFilter = input?.status;
+      const fulfillmentStatusList =
+        statusFilter === "pending"
+          ? (["CONFIRMED", "READY_FOR_PACKING"] as const)
+          : statusFilter === "partial"
+            ? (["PACKED"] as const)
+            : statusFilter === "fulfilled"
+              ? (["SHIPPED", "DELIVERED"] as const)
+              : null;
+
+      const conditions: SQL<unknown>[] = [
+        eq(orders.orderType, "SALE"),
+        sql`${orders.isDraft} = 0`,
+        isNull(orders.deletedAt),
+      ];
+      if (fulfillmentStatusList) {
+        conditions.push(
+          safeInArray(orders.fulfillmentStatus, [...fulfillmentStatusList])
+        );
+      }
+
+      const parseBoundaryDate = (value: string, endOfDay: boolean) => {
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) return null;
+        if (endOfDay) parsed.setUTCHours(23, 59, 59, 999);
+        else parsed.setUTCHours(0, 0, 0, 0);
+        return parsed;
+      };
+
+      if (input?.dateFrom) {
+        const from = parseBoundaryDate(input.dateFrom, false);
+        if (from) conditions.push(gte(orders.createdAt, from));
+      }
+      if (input?.dateTo) {
+        const to = parseBoundaryDate(input.dateTo, true);
+        if (to) conditions.push(lte(orders.createdAt, to));
+      }
+
+      const rows = await db
+        .select({ orders: orders, clients: clients })
+        .from(orders)
+        .leftJoin(clients, eq(orders.clientId, clients.id))
+        .where(and(...conditions))
+        .orderBy(desc(orders.createdAt))
+        .limit(500);
+
+      // Collect batch IDs from JSON items payload across all rows so we can
+      // enrich line items with real SKU / product name / sellable UOM in a
+      // bounded number of follow-up queries.
+      const batchIdSet = new Set<number>();
+      const parsedRows = rows.map(row => {
+        let items: Array<{
+          batchId?: number;
+          displayName?: string | null;
+          productName?: string | null;
+          quantity?: number | string | null;
+        }> = [];
+        if (row.orders.items) {
+          try {
+            const raw =
+              typeof row.orders.items === "string"
+                ? JSON.parse(row.orders.items)
+                : row.orders.items;
+            if (Array.isArray(raw)) items = raw;
+          } catch {
+            items = [];
+          }
+        }
+        for (const it of items) {
+          const parsed = Number(it.batchId);
+          if (Number.isFinite(parsed) && parsed > 0) batchIdSet.add(parsed);
+        }
+        return { row, items };
+      });
+
+      const batchIds = [...batchIdSet];
+      const batchRows = batchIds.length
+        ? await db
+            .select({
+              id: batches.id,
+              sku: batches.sku,
+              productId: batches.productId,
+            })
+            .from(batches)
+            .where(safeInArray(batches.id, batchIds))
+        : [];
+
+      const productIds = [...new Set(batchRows.map(b => b.productId))];
+      const productRows = productIds.length
+        ? await db
+            .select({
+              id: products.id,
+              nameCanonical: products.nameCanonical,
+              uomSellable: products.uomSellable,
+            })
+            .from(products)
+            .where(safeInArray(products.id, productIds))
+        : [];
+
+      const batchById = new Map(batchRows.map(b => [b.id, b]));
+      const productById = new Map(productRows.map(p => [p.id, p]));
+
+      return parsedRows.map(({ row, items }) => {
+        const lineItems = items.flatMap(item => {
+          const batchId = Number(item.batchId);
+          const batch = Number.isFinite(batchId)
+            ? batchById.get(batchId)
+            : undefined;
+          const product = batch ? productById.get(batch.productId) : undefined;
+          const sku = batch?.sku ?? null;
+          if (sku === null) return [];
+          const qtyNum = Number(item.quantity);
+          return [
+            {
+              batchId: Number.isFinite(batchId) ? batchId : null,
+              sku,
+              productName:
+                item.displayName ??
+                item.productName ??
+                product?.nameCanonical ??
+                (batch ? `Batch ${batch.id}` : "Unknown item"),
+              quantity: Number.isFinite(qtyNum) ? qtyNum : 0,
+              unit: product?.uomSellable ?? "EA",
+            },
+          ];
+        });
+
+        return {
+          orderId: row.orders.id,
+          orderNumber: row.orders.orderNumber,
+          clientId: row.orders.clientId,
+          clientName: row.clients?.name ?? null,
+          fulfillmentStatus: row.orders.fulfillmentStatus,
+          createdAt: row.orders.createdAt,
+          lineItems,
+        };
+      });
     }),
 
   /**

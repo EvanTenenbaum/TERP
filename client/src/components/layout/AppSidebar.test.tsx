@@ -63,20 +63,16 @@ vi.mock("@/lib/trpc", () => ({
       logout: {
         useMutation: () => ({
           mutate: vi.fn(),
-          isLoading: false,
         }),
       },
     },
-    useUtils: vi.fn(() => ({
+    useUtils: () => ({
       auth: {
-        me: { invalidate: vi.fn() },
+        me: {
+          invalidate: vi.fn(),
+        },
       },
-    })),
-    useContext: vi.fn(() => ({
-      auth: {
-        me: { invalidate: vi.fn() },
-      },
-    })),
+    }),
   },
 }));
 

@@ -3,6 +3,7 @@ import OrdersWorkSurface from "@/components/work-surface/OrdersWorkSurface";
 import QuotesWorkSurface from "@/components/work-surface/QuotesWorkSurface";
 import SheetModeToggle from "@/components/spreadsheet-native/SheetModeToggle";
 import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const OrdersSheetPilotSurface = lazy(
   () => import("@/components/spreadsheet-native/OrdersSheetPilotSurface")
@@ -21,6 +22,9 @@ const ReturnsPilotSurface = lazy(
 );
 const ReturnsPage = lazy(() => import("@/pages/ReturnsPage"));
 const LiveShoppingPage = lazy(() => import("@/pages/LiveShoppingPage"));
+const ShippingPickListPage = lazy(
+  () => import("@/pages/ShippingPickListPage")
+);
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
 import { SALES_WORKSPACE } from "@/config/workspaces";
@@ -374,6 +378,19 @@ export default function SalesWorkspacePage() {
           ) : (
             <OrdersWorkSurface onNewOrder={() => setShowOrderDrawer(true)} />
           )}
+        </LinearWorkspacePanel>
+        <LinearWorkspacePanel value="pick-list">
+          <ErrorBoundary variant="compact" name="Shipping Pick List">
+            <Suspense
+              fallback={
+                <div className="p-4 text-sm text-muted-foreground">
+                  Loading pick list...
+                </div>
+              }
+            >
+              <ShippingPickListPage />
+            </Suspense>
+          </ErrorBoundary>
         </LinearWorkspacePanel>
         <LinearWorkspacePanel value="quotes">
           {shouldRenderPilotSurface(quotesPilotReady, quotesSurfaceMode) ? (
