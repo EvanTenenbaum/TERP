@@ -32,7 +32,6 @@ export { LineItemRow } from "./LineItemRow";
 export { OrdersDocumentLineItemsGrid } from "./OrdersDocumentLineItemsGrid";
 
 // Fulfillment components
-export { OrderFulfillment } from "./OrderFulfillment";
 export { ShipOrderModal } from "./ShipOrderModal";
 export { ProcessReturnModal } from "./ProcessReturnModal";
 export { ReturnHistorySection } from "./ReturnHistorySection";
@@ -47,7 +46,6 @@ export { CreditWarningDialog } from "./CreditWarningDialog";
 export { BatchSelectionDialog } from "./BatchSelectionDialog";
 
 // Order modals
-export { ConfirmDraftModal } from "./ConfirmDraftModal";
 export { DeleteDraftModal } from "./DeleteDraftModal";
 export { EditInvoiceDialog } from "./EditInvoiceDialog";
 
