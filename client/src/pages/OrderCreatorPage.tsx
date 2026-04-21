@@ -1472,7 +1472,6 @@ export default function OrderCreatorPageV2({
   }, [setLocation]);
 
   const confirmFinalize = () => {
-    setShowFinalizeConfirm(false);
 
     if (!clientId) return;
 
