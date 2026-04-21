@@ -603,6 +603,27 @@ export function InventoryManagementSurface() {
         flex: 1.3,
         minWidth: 280,
         cellClass: "powersheet-cell--locked",
+        cellRenderer: (params: {
+          data?: InventoryPilotRow;
+          value?: string;
+        }) => {
+          if (!params.data) return params.value ?? "-";
+          return (
+            <div className="flex flex-col gap-0.5 py-1">
+              <div className="font-medium text-sm leading-tight">
+                {params.data.productName}
+              </div>
+              {(params.data.vendorName !== "-" ||
+                params.data.brandName !== "-") && (
+                <div className="text-xs text-muted-foreground leading-tight">
+                  {[params.data.vendorName, params.data.brandName]
+                    .filter(v => v && v !== "-")
+                    .join(" / ")}
+                </div>
+              )}
+            </div>
+          );
+        },
       },
       {
         field: "vendorName",

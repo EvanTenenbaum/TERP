@@ -440,6 +440,16 @@ export function OrdersSheetPilotSurface({
         headerName: "Product",
         flex: 1.2,
         minWidth: 180,
+        cellRenderer: (params: { value?: string }) => {
+          if (!params.value) return "-";
+          // TER-1051: Product name is already prominent in order line items
+          // Just render the display name as-is since it's already product-focused
+          return (
+            <div className="font-medium text-sm leading-tight py-1">
+              {params.value}
+            </div>
+          );
+        },
       },
       {
         field: "batchSku",
