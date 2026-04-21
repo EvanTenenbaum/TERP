@@ -3177,4 +3177,81 @@ export const ordersRouter = router({
         allocatedAt: alloc.allocatedAt,
       }));
     }),
+
+  /**
+   * TER-1056: Batch update order status
+   * Updates multiple orders to a new status in a single operation
+   */
+  batchUpdateOrderStatus: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        orderIds: z.array(z.number()).min(1).max(100),
+        newStatus: z.enum([
+          "READY_FOR_PACKING",
+          "PACKED",
+          "SHIPPED",
+          "DELIVERED",
+          "CANCELLED",
+        ]),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Cancellation requires the more specific orders:cancel permission
+      if (input.newStatus === "CANCELLED") {
+        const { hasPermission } = await import("../services/permissionService");
+        const canCancel = await hasPermission(String(userId), "orders:cancel");
+        if (!canCancel) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "You do not have permission to cancel orders. Required permission: orders:cancel",
+          });
+        }
+      }
+
+      const results: Array<{
+        orderId: number;
+        success: boolean;
+        error?: string;
+      }> = [];
+
+      // Process each order sequentially to maintain data integrity
+      for (const orderId of input.orderIds) {
+        try {
+          await ordersDb.updateOrderStatus({
+            orderId,
+            newStatus: input.newStatus,
+            notes: input.notes,
+            userId,
+          });
+          results.push({ orderId, success: true });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Unknown error";
+          results.push({ orderId, success: false, error: errorMessage });
+          logger.error({
+            msg: "TER-1056: Failed to update order status in batch",
+            orderId,
+            newStatus: input.newStatus,
+            error: errorMessage,
+          });
+        }
+      }
+
+      const successCount = results.filter(r => r.success).length;
+      const failureCount = results.length - successCount;
+
+      return {
+        results,
+        summary: {
+          total: input.orderIds.length,
+          succeeded: successCount,
+          failed: failureCount,
+        },
+      };
+    }),
 });

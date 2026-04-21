@@ -666,4 +666,82 @@ describe("Orders Router", () => {
       expect(result.paymentTerms).toBe("COD");
     });
   });
+
+  describe("batchUpdateOrderStatus (TER-1056)", () => {
+    it("should successfully update multiple orders to new status", async () => {
+      // Arrange
+      const orderIds = [1, 2, 3];
+      const newStatus = "SHIPPED" as const;
+
+      vi.mocked(ordersDb.updateOrderStatus)
+        .mockResolvedValueOnce({ success: true, newStatus: "SHIPPED" })
+        .mockResolvedValueOnce({ success: true, newStatus: "SHIPPED" })
+        .mockResolvedValueOnce({ success: true, newStatus: "SHIPPED" });
+
+      // Act
+      const result = await caller.orders.batchUpdateOrderStatus({
+        orderIds,
+        newStatus,
+      });
+
+      // Assert
+      expect(result.summary.total).toBe(3);
+      expect(result.summary.succeeded).toBe(3);
+      expect(result.summary.failed).toBe(0);
+      expect(result.results).toHaveLength(3);
+      expect(result.results.every((r: { success: boolean }) => r.success)).toBe(
+        true
+      );
+      expect(ordersDb.updateOrderStatus).toHaveBeenCalledTimes(3);
+    });
+
+    it("should handle partial failures gracefully", async () => {
+      // Arrange
+      const orderIds = [1, 2, 3];
+      const newStatus = "DELIVERED" as const;
+
+      vi.mocked(ordersDb.updateOrderStatus)
+        .mockResolvedValueOnce({ success: true, newStatus: "DELIVERED" })
+        .mockRejectedValueOnce(new Error("Order not found"))
+        .mockResolvedValueOnce({ success: true, newStatus: "DELIVERED" });
+
+      // Act
+      const result = await caller.orders.batchUpdateOrderStatus({
+        orderIds,
+        newStatus,
+      });
+
+      // Assert
+      expect(result.summary.total).toBe(3);
+      expect(result.summary.succeeded).toBe(2);
+      expect(result.summary.failed).toBe(1);
+      expect(result.results[0].success).toBe(true);
+      expect(result.results[1].success).toBe(false);
+      expect(result.results[1].error).toBe("Order not found");
+      expect(result.results[2].success).toBe(true);
+    });
+
+    it("should enforce minimum 1 order requirement", async () => {
+      // Arrange & Act & Assert
+      await expect(
+        caller.orders.batchUpdateOrderStatus({
+          orderIds: [],
+          newStatus: "PACKED",
+        })
+      ).rejects.toThrow();
+    });
+
+    it("should enforce maximum 100 orders limit", async () => {
+      // Arrange
+      const orderIds = Array.from({ length: 101 }, (_, i) => i + 1);
+
+      // Act & Assert
+      await expect(
+        caller.orders.batchUpdateOrderStatus({
+          orderIds,
+          newStatus: "READY_FOR_PACKING",
+        })
+      ).rejects.toThrow();
+    });
+  });
 });
