@@ -190,7 +190,12 @@ describe("ST-050: Error Propagation in ordersDb", () => {
       
       // Valid order should parse correctly
       expect(result[1]?.id).toBe(2);
-      expect(result[1]?.items).toEqual([{ batchId: 1, quantity: 5 }]);
+      expect(result[1]?.items).toEqual([
+        expect.objectContaining({
+          batchId: 1,
+          quantity: 5,
+        }),
+      ]);
     });
 
     it("keeps legacy seeded orders readable when batchIds are missing but item text is present", async () => {

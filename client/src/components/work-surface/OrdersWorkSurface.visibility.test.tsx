@@ -230,6 +230,7 @@ vi.mock("@/lib/trpc", () => {
         processRestock: { useMutation: () => mutationStub },
         processVendorReturn: { useMutation: () => mutationStub },
         updateOrderStatus: { useMutation: () => mutationStub },
+        batchUpdateOrderStatus: { useMutation: () => mutationStub },
       },
       accounting: {
         invoices: {
@@ -306,7 +307,8 @@ describe.skip("OrdersWorkSurface wave 5 visibility wiring", () => {
     ).toBeInTheDocument();
   });
 
-  it("shows due date and semantic payment badge for confirmed orders", () => {
+  // TER-1063: Due Date column not present in this branch
+  it.skip("shows due date and semantic payment badge for confirmed orders", () => {
     render(<OrdersWorkSurface />);
 
     expect(screen.getByText("Due Date")).toBeInTheDocument();
@@ -314,7 +316,8 @@ describe.skip("OrdersWorkSurface wave 5 visibility wiring", () => {
     expect(screen.getByText("Feb 15, 2026")).toBeInTheDocument();
   });
 
-  it("applies row-level danger and warning styling to actionable payment states", () => {
+  // TER-1063: Row-level payment styling not present in this branch
+  it.skip("applies row-level danger and warning styling to actionable payment states", () => {
     mockOrdersResponse.confirmed = {
       items: [
         {
@@ -339,7 +342,8 @@ describe.skip("OrdersWorkSurface wave 5 visibility wiring", () => {
     );
   });
 
-  it("keeps at most two primary quick actions and moves the rest into overflow", () => {
+  // TER-1063: Quick actions overflow not present in this branch
+  it.skip("keeps at most two primary quick actions and moves the rest into overflow", () => {
     mockHasAnyPermission.mockReturnValue(true);
     mockOrdersResponse.confirmed = {
       items: [
@@ -373,7 +377,8 @@ describe.skip("OrdersWorkSurface wave 5 visibility wiring", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("defaults confirmed orders to the most actionable sort order", () => {
+  // TER-1063: Actionable sort order not implemented in this branch
+  it.skip("defaults confirmed orders to the most actionable sort order", () => {
     mockOrdersResponse.confirmed = {
       items: [
         {
@@ -396,7 +401,8 @@ describe.skip("OrdersWorkSurface wave 5 visibility wiring", () => {
     expect(renderedRows[1]).toHaveAttribute("data-orderid", "102");
   });
 
-  it("opens the linked client profile from the order inspector", () => {
+  // TER-1063: Client profile link not present in this branch
+  it.skip("opens the linked client profile from the order inspector", () => {
     render(<OrdersWorkSurface />);
 
     fireEvent.click(screen.getByTestId("order-row-101"));
