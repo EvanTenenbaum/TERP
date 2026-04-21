@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useLocation, useSearch } from "wouter";
 import {
   CommandDialog,
@@ -41,19 +41,19 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [location, setLocation] = useLocation();
   const search = useSearch();
   const { flags, isLoading } = useFeatureFlags();
-  const { recentPages } = useRecentPages();
+  const { recentPages, recordPage } = useRecentPages();
   const [inputValue, setInputValue] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Debounce the search query — 300ms after user stops typing
+  // Minimal debounce (30ms) for search query — starts after 1 character
   useEffect(() => {
-    if (inputValue.length <= 2) {
+    if (inputValue.length < 1) {
       setDebouncedQuery("");
       return;
     }
     const timer = setTimeout(() => {
       setDebouncedQuery(inputValue);
-    }, 300);
+    }, 30);
     return () => clearTimeout(timer);
   }, [inputValue]);
 
@@ -68,7 +68,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const { data: searchResults, isLoading: isSearching } =
     trpc.search.global.useQuery(
       { query: debouncedQuery },
-      { enabled: debouncedQuery.length > 2 }
+      { enabled: debouncedQuery.length >= 1 }
     );
 
   const navigationAccessModel = useMemo(
@@ -116,64 +116,66 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     return commands;
   }, [navigationAccessModel.commandNavigationItems]);
 
-  const actionCommands = [
-    {
-      id: "new-sale",
-      label: "New Sales Order",
-      icon: Plus,
-      shortcut: "N",
-      action: () => {
-        setLocation(buildSalesWorkspacePath("create-order"));
-        onOpenChange(false);
-      },
+  const handleNavigate = useCallback(
+    (url: string) => {
+      recordPage(url);
+      setLocation(url);
+      onOpenChange(false);
     },
-    {
-      id: "record-receipt",
-      label: "Record Receiving",
-      icon: ReceiptText,
-      shortcut: "R",
-      action: () => {
-        setLocation(buildOperationsWorkspacePath("receiving"));
-        onOpenChange(false);
-      },
-    },
-    {
-      // TER-1060: Expected deliveries today quick-action
-      id: "expected-deliveries-today",
-      label: "Expected deliveries today",
-      icon: Truck,
-      action: () => {
-        setLocation(
-          buildProcurementWorkspacePath(undefined, { expectedToday: "1" })
-        );
-        onOpenChange(false);
-      },
-    },
-    {
-      id: "sales-catalogue",
-      label: "Sales Catalogue",
-      icon: Layers,
-      action: () => {
-        setLocation(buildSalesWorkspacePath("sales-sheets"));
-        onOpenChange(false);
-      },
-    },
-    {
-      id: "help",
-      label: "Help & Documentation",
-      icon: HelpCircle,
-      shortcut: "?",
-      action: () => {
-        setLocation("/help");
-        onOpenChange(false);
-      },
-    },
-  ];
+    [recordPage, setLocation, onOpenChange]
+  );
 
-  const handleNavigate = (url: string) => {
-    setLocation(url);
-    onOpenChange(false);
-  };
+  const actionCommands = useMemo(
+    () => [
+      {
+        id: "new-sale",
+        label: "New Sales Order",
+        icon: Plus,
+        shortcut: "N",
+        action: () => {
+          handleNavigate(buildSalesWorkspacePath("create-order"));
+        },
+      },
+      {
+        id: "record-receipt",
+        label: "Record Receiving",
+        icon: ReceiptText,
+        shortcut: "R",
+        action: () => {
+          handleNavigate(buildOperationsWorkspacePath("receiving"));
+        },
+      },
+      {
+        // TER-1060: Expected deliveries today quick-action
+        id: "expected-deliveries-today",
+        label: "Expected deliveries today",
+        icon: Truck,
+        action: () => {
+          handleNavigate(
+            buildProcurementWorkspacePath(undefined, { expectedToday: "1" })
+          );
+        },
+      },
+      {
+        id: "sales-catalogue",
+        label: "Sales Catalogue",
+        icon: Layers,
+        action: () => {
+          handleNavigate(buildSalesWorkspacePath("sales-sheets"));
+        },
+      },
+      {
+        id: "help",
+        label: "Help & Documentation",
+        icon: HelpCircle,
+        shortcut: "?",
+        action: () => {
+          handleNavigate("/help");
+        },
+      },
+    ],
+    [handleNavigate]
+  );
 
   const currentPath = `${location}${search || ""}`;
   const recentCommands = useMemo(
@@ -181,7 +183,35 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     [currentPath, recentPages]
   );
 
-  const isActiveSearch = debouncedQuery.length > 2;
+  // Pinned items — always visible shortcuts
+  const pinnedCommands = [
+    {
+      id: "pinned-new-order",
+      label: "New Order",
+      path: buildSalesWorkspacePath("create-order"),
+      icon: Plus,
+    },
+    {
+      id: "pinned-new-intake",
+      label: "New Intake",
+      path: buildOperationsWorkspacePath("receiving"),
+      icon: ReceiptText,
+    },
+    {
+      id: "pinned-inventory",
+      label: "Inventory",
+      path: "/inventory",
+      icon: Package,
+    },
+    {
+      id: "pinned-customers",
+      label: "Customers",
+      path: "/relationships?tab=clients",
+      icon: Users,
+    },
+  ];
+
+  const isActiveSearch = debouncedQuery.length >= 1;
   const hasQuotes = (searchResults?.quotes?.length ?? 0) > 0;
   const hasOrders = (searchResults?.orders?.length ?? 0) > 0;
   const hasCustomers = (searchResults?.customers?.length ?? 0) > 0;
@@ -303,6 +333,22 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           <>
             <CommandEmpty>No results found.</CommandEmpty>
 
+            <CommandGroup heading="Pinned">
+              {pinnedCommands.map(item => {
+                const Icon = item.icon;
+                return (
+                  <CommandItem
+                    key={item.id}
+                    value={`${item.label} pinned`}
+                    onSelect={() => handleNavigate(item.path)}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    <span>{item.label}</span>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+
             {recentCommands.length > 0 && (
               <CommandGroup heading="Recently Opened">
                 {recentCommands.map(page => (
@@ -325,10 +371,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
                   <CommandItem
                     key={item.id}
                     value={`${item.label} navigation`}
-                    onSelect={() => {
-                      setLocation(item.path);
-                      onOpenChange(false);
-                    }}
+                    onSelect={() => handleNavigate(item.path)}
                   >
                     <Icon className="mr-2 h-4 w-4" />
                     <span>{item.label}</span>
