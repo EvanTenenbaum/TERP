@@ -171,6 +171,20 @@ const EXPORT_COLUMNS: ExportColumn<InventoryPilotRow>[] = [
     label: "Unit COGS",
     formatter: v => (v === null || v === undefined ? "" : String(v)),
   },
+  {
+    key: "unitPrice",
+    label: "Unit Price",
+    formatter: v => (v === null || v === undefined ? "" : String(v)),
+  },
+  {
+    key: "marginPercent",
+    label: "Margin %",
+    formatter: v => {
+      if (v === null || v === undefined) return "";
+      const margin = Number(v);
+      return Number.isFinite(margin) ? `${margin.toFixed(1)}%` : "";
+    },
+  },
   { key: "ageLabel", label: "Age" },
   {
     key: "stockStatus",
@@ -716,6 +730,31 @@ export function InventoryManagementSurface() {
         cellClass: canUpdateInventory
           ? "powersheet-cell--editable"
           : "powersheet-cell--locked",
+      },
+      {
+        field: "unitPrice",
+        headerName: "Price",
+        minWidth: 100,
+        maxWidth: 120,
+        valueFormatter: params => formatCurrency(params.value ?? null),
+        cellClass: "powersheet-cell--locked",
+      },
+      {
+        field: "marginPercent",
+        headerName: "Margin",
+        minWidth: 100,
+        maxWidth: 120,
+        valueFormatter: params => {
+          if (params.value === null || params.value === undefined) {
+            return "-";
+          }
+          const margin = Number(params.value);
+          if (!Number.isFinite(margin)) {
+            return "-";
+          }
+          return `${margin.toFixed(1)}%`;
+        },
+        cellClass: "powersheet-cell--locked",
       },
       {
         field: "ageLabel",
