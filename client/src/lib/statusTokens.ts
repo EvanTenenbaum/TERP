@@ -223,7 +223,7 @@ export const BATCH_STATUS_CLASSES: Record<string, string> = {
 
 export function getBatchStatusLabel(status: string): string {
   return (
-    BATCH_STATUS_LABELS[status] ??
+    BATCH_STATUS_LABELS[status as keyof typeof BATCH_STATUS_LABELS] ??
     status
       .replace(/_/g, " ")
       .toLowerCase()
