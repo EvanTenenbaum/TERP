@@ -136,9 +136,11 @@ describe("ST-050: Error Propagation in ordersDb", () => {
   });
 
   describe("getAllOrders - JSON parsing errors", () => {
-    it("should throw error when any order has corrupted JSON", async () => {
-      // getAllOrders calls db.select({orders, clients}).from().leftJoin().where().orderBy().limit().offset()
-      // All chain methods return `this`, offset() resolves to the rows
+    it("returns partial results when any order has corrupted JSON", async () => {
+      // TER-1146: getAllOrders now tolerates corrupted JSON in list endpoints
+      // - Logs the error for debugging
+      // - Returns items=[] for the corrupted order
+      // - Returns other orders successfully (partial results)
       const resolvedRows = [
         {
           orders: {
@@ -146,8 +148,21 @@ describe("ST-050: Error Propagation in ordersDb", () => {
             orderNumber: "O-1",
             items: '{"invalid": json}', // Invalid JSON
             subtotal: "50",
+            deletedAt: null,
           },
           clients: { id: 1, name: "Test Client" },
+        },
+        {
+          orders: {
+            id: 2,
+            orderNumber: "O-2",
+            items: JSON.stringify([
+              { batchId: 1, displayName: "Valid Item", quantity: 5 },
+            ]),
+            subtotal: "100",
+            deletedAt: null,
+          },
+          clients: { id: 2, name: "Test Client 2" },
         },
       ];
 
@@ -165,10 +180,17 @@ describe("ST-050: Error Propagation in ordersDb", () => {
         mockDb as unknown as Awaited<ReturnType<typeof getDb>>
       );
 
-      // Should throw when encountering corrupted data
-      await expect(ordersDb.getAllOrders()).rejects.toThrow(
-        /Data corruption detected.*order 1/
-      );
+      // Should return partial results (corrupted order has items=[], valid order has items)
+      const result = await ordersDb.getAllOrders();
+      expect(result).toHaveLength(2);
+      expect(result[0]?.items).toEqual([]); // Corrupted order returns empty items
+      expect(result[1]?.items).toEqual([
+        expect.objectContaining({
+          batchId: 1,
+          displayName: "Valid Item",
+          quantity: 5,
+        }),
+      ]);
     });
 
     it("keeps legacy seeded orders readable when batchIds are missing but item text is present", async () => {

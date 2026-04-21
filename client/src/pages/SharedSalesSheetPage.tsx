@@ -128,7 +128,7 @@ export default function SharedSalesSheetPage() {
             <div className="text-right shrink-0">
               <div className="flex items-center gap-1.5 text-primary-foreground/70 text-sm">
                 <CalendarDays className="h-4 w-4" />
-                <span>{formatDate(sheet.createdAt)}</span>
+                <span>Shared on {formatDate(sheet.createdAt)}</span>
               </div>
               {sheet.expiresAt ? (
                 <p className="text-primary-foreground/60 text-xs mt-1">

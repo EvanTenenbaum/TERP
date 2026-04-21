@@ -60,7 +60,23 @@ vi.mock("@/lib/trpc", () => ({
           data: { id: 42, email: "qa@terp.test", name: "QA User" },
         }),
       },
+      logout: {
+        useMutation: () => ({
+          mutate: vi.fn(),
+          isLoading: false,
+        }),
+      },
     },
+    useUtils: vi.fn(() => ({
+      auth: {
+        me: { invalidate: vi.fn() },
+      },
+    })),
+    useContext: vi.fn(() => ({
+      auth: {
+        me: { invalidate: vi.fn() },
+      },
+    })),
   },
 }));
 
