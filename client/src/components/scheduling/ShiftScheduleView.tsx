@@ -395,7 +395,8 @@ function CreateShiftModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="fixed inset-0 bg-black/50" onClick={onClose} />
+      {/* Backdrop (TER-1191: z-[-1] so modal content stays clickable inside the z-50 parent) */}
+      <div className="fixed inset-0 z-[-1] bg-black/50" onClick={onClose} />
       <div className="relative bg-white rounded-xl shadow-xl w-full max-w-md">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="font-semibold text-gray-900">
