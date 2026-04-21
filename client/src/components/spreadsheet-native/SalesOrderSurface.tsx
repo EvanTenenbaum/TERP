@@ -12,10 +12,12 @@ import { useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
 import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { adaptInventorySavedViewToSalesFilters } from "@/lib/portableInventoryViews";
+import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { trpc } from "@/lib/trpc";
 import { normalizePositiveIntegerWithin } from "@/lib/quantity";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { useOrderCalculations } from "@/hooks/orders/useOrderCalculations";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   type CreditCheckResult,
   resolveOrderCostVisibility,
@@ -41,10 +43,16 @@ import {
   OrderAdjustmentsBar,
   CreditWarningDialog,
 } from "@/components/orders";
+import { ClientCommitContextCard } from "@/components/orders/ClientCommitContextCard";
 import type { OrderAdjustment } from "@/components/orders/types";
 import { QuickViewSelector } from "@/components/sales/QuickViewSelector";
 import { SaveViewDialog } from "@/components/sales/SaveViewDialog";
 import { AdvancedFilters } from "@/components/sales/AdvancedFilters";
+import {
+  clearPortableSalesCut,
+  isSalesInventorySellable,
+  readPortableSalesCut,
+} from "@/components/sales/filtering";
 import {
   DEFAULT_COLUMN_VISIBILITY,
   DEFAULT_FILTERS,
@@ -136,6 +144,9 @@ const parseNonNegativeNumber = (value: string): number | null => {
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 };
+
+const formatLineCountLabel = (count: number, noun: string) =>
+  `${count} ${noun}${count === 1 ? "" : "s"}`;
 
 const getInventoryCogsPerUnit = (item: PricedInventoryItem) =>
   item.effectiveCogs ?? item.basePrice ?? item.unitCogs ?? 0;
@@ -330,10 +341,12 @@ export function SalesOrderSurface({
     useState<string | undefined>();
   const [isCheckingCredit, setIsCheckingCredit] = useState(false);
   const defaultViewAppliedClientRef = useRef<number | null>(null);
+  const importedPortableCutClientRef = useRef<number | null>(null);
   const skipNextDefaultViewApplyRef = useRef(false);
   const isQuoteCreateEntry =
     isCreateOrderEntry &&
     (routeMode === "quote" || draft.orderType === "QUOTE");
+  const { hasAnyPermission } = usePermissions();
 
   const clientsQuery = trpc.clients.list.useQuery({ limit: 1000 });
   const clientList = useMemo(() => {
@@ -368,6 +381,14 @@ export function SalesOrderSurface({
     () => resolveOrderCostVisibility(displaySettingsQuery.data),
     [displaySettingsQuery.data]
   );
+  const canViewPricingContext = hasAnyPermission([
+    "orders:view_pricing",
+    "pricing:read",
+    "pricing:access",
+    "pricing:rules:read",
+    "pricing:profiles:read",
+    "pricing:defaults:view",
+  ]);
 
   const selectedBatchIds = useMemo(
     () => new Set(draft.items.map(item => item.batchId)),
@@ -402,8 +423,22 @@ export function SalesOrderSurface({
         filters.categories.includes(item.category ?? "")
       );
     }
+    if (filters.brands.length > 0) {
+      items = items.filter(item => filters.brands.includes(item.brand ?? ""));
+    }
     if (filters.grades.length > 0) {
       items = items.filter(item => filters.grades.includes(item.grade ?? ""));
+    }
+    if (filters.strainFamilies.length > 0) {
+      items = items.filter(item => {
+        const raw = item as PricedInventoryItem & {
+          strainFamily?: string | null;
+          strain?: string | null;
+        };
+        return filters.strainFamilies.includes(
+          raw.strainFamily ?? raw.strain ?? ""
+        );
+      });
     }
     if (filters.vendors.length > 0) {
       items = items.filter(item => filters.vendors.includes(item.vendor ?? ""));
@@ -418,6 +453,14 @@ export function SalesOrderSurface({
     }
     if (filters.inStockOnly) {
       items = items.filter(item => item.quantity > 0);
+    }
+    if (!filters.includeUnavailable) {
+      items = items.filter(item =>
+        isSalesInventorySellable({
+          quantity: item.quantity,
+          status: item.status,
+        })
+      );
     }
 
     return sortInventory(items, sort);
@@ -446,6 +489,46 @@ export function SalesOrderSurface({
   useEffect(() => {
     setInventoryRowControls({});
   }, [draft.clientId]);
+
+  useEffect(() => {
+    if (!draft.clientId) {
+      importedPortableCutClientRef.current = null;
+      return;
+    }
+    if (importedPortableCutClientRef.current === draft.clientId) {
+      return;
+    }
+
+    const nextPortableCut = readPortableSalesCut();
+    if (!nextPortableCut || nextPortableCut.clientId !== draft.clientId) {
+      return;
+    }
+
+    if (nextPortableCut.viewId && !savedViewsQuery.data) {
+      return;
+    }
+
+    const matchedView = nextPortableCut.viewId
+      ? savedViewsQuery.data?.find(view => view.id === nextPortableCut.viewId)
+      : null;
+
+    skipNextDefaultViewApplyRef.current = true;
+    setFilters(nextPortableCut.filters);
+    setSort(
+      (matchedView?.sort as InventorySortConfig | undefined) ?? DEFAULT_SORT
+    );
+    setColumnVisibility(
+      matchedView?.columnVisibility ?? DEFAULT_COLUMN_VISIBILITY
+    );
+    setCurrentViewId(nextPortableCut.viewId ?? null);
+    importedPortableCutClientRef.current = draft.clientId;
+    clearPortableSalesCut();
+    toast.info(
+      nextPortableCut.viewName
+        ? `Imported cut: ${nextPortableCut.viewName}`
+        : "Imported inventory filters"
+    );
+  }, [draft.clientId, savedViewsQuery.data]);
 
   const calculationState = useOrderCalculations(draft.items, draft.adjustment);
   const orderTotals = calculationState.totals;
@@ -513,6 +596,67 @@ export function SalesOrderSurface({
     draft.isFinalizingDraft ||
     isCheckingCredit ||
     creditCheckMutation.isPending;
+  const consignmentRiskItems = useMemo(
+    () =>
+      draft.items.filter(
+        item => item.cogsMode === "RANGE" && item.isBelowVendorRange
+      ),
+    [draft.items]
+  );
+  const consignmentRiskSummary = useMemo(() => {
+    if (consignmentRiskItems.length === 0) {
+      return null;
+    }
+
+    const labels = consignmentRiskItems
+      .slice(0, 2)
+      .map(item => item.productDisplayName || `Batch #${item.batchId}`);
+    const remainder = consignmentRiskItems.length - labels.length;
+
+    return remainder > 0
+      ? `${labels.join(", ")} +${remainder} more`
+      : labels.join(", ");
+  }, [consignmentRiskItems]);
+  const draftAvailabilitySummary = useMemo(() => {
+    const byBatchId = new Map(
+      (inventoryQuery.data ?? []).map(item => [item.id, item])
+    );
+    let sellableCount = 0;
+    let blockedCount = 0;
+    let unresolvedCount = 0;
+
+    draft.items.forEach(item => {
+      const liveItem = byBatchId.get(item.batchId);
+      if (!liveItem) {
+        unresolvedCount += 1;
+        return;
+      }
+
+      if (
+        isSalesInventorySellable({
+          quantity: liveItem.quantity,
+          status: liveItem.status,
+        })
+      ) {
+        sellableCount += 1;
+        return;
+      }
+
+      blockedCount += 1;
+    });
+
+    return {
+      sellableCount,
+      blockedCount,
+      unresolvedCount,
+      issueCount: blockedCount + unresolvedCount,
+    };
+  }, [draft.items, inventoryQuery.data]);
+  const hasOnlyUnavailableDraftLines =
+    draft.items.length > 0 &&
+    draftAvailabilitySummary.sellableCount === 0 &&
+    draftAvailabilitySummary.issueCount > 0;
+  const hasDraftAvailabilityWarnings = draftAvailabilitySummary.issueCount > 0;
 
   const updateInventoryRowControls = useCallback(
     (
@@ -835,8 +979,10 @@ export function SalesOrderSurface({
       setColumnVisibility(DEFAULT_COLUMN_VISIBILITY);
       setCurrentViewId(null);
       defaultViewAppliedClientRef.current = null;
+      importedPortableCutClientRef.current = null;
       skipNextDefaultViewApplyRef.current = false;
       setPendingCreditOverrideReason(undefined);
+      clearPortableSalesCut();
     },
     [
       buildDocumentRoute,
@@ -1012,10 +1158,15 @@ export function SalesOrderSurface({
   );
 
   const activeFilterCount =
+    (filters.search.trim() ? 1 : 0) +
     filters.categories.length +
+    filters.brands.length +
     filters.grades.length +
+    filters.strainFamilies.length +
     filters.vendors.length +
-    (filters.inStockOnly ? 1 : 0);
+    (filters.priceMin !== null || filters.priceMax !== null ? 1 : 0) +
+    (filters.inStockOnly ? 1 : 0) +
+    (filters.includeUnavailable ? 1 : 0);
   const documentContextLabel = draft.activeDraftId
     ? `Draft #${draft.activeDraftId}`
     : draft.isSalesSheetImport
@@ -1088,6 +1239,57 @@ export function SalesOrderSurface({
   );
   const documentControlsBand = (
     <div className="space-y-1">
+      {hasDraftAvailabilityWarnings ? (
+        <div className="rounded-xl border border-amber-300/80 bg-amber-50/70 px-3 py-2 text-sm text-amber-950 shadow-sm">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+            <div className="space-y-1">
+              <p className="font-medium">
+                {hasOnlyUnavailableDraftLines
+                  ? "This draft only contains unavailable, blocked, or unresolved lines. Replace, recheck, or remove them before confirming the order."
+                  : `${formatLineCountLabel(draftAvailabilitySummary.issueCount, "draft line")} still needs live availability confirmation before final confirmation.`}
+              </p>
+              <div className="flex flex-wrap gap-2 text-xs text-amber-900/80">
+                {draftAvailabilitySummary.blockedCount > 0 ? (
+                  <span>
+                    {formatLineCountLabel(
+                      draftAvailabilitySummary.blockedCount,
+                      "blocked line"
+                    )}
+                  </span>
+                ) : null}
+                {draftAvailabilitySummary.unresolvedCount > 0 ? (
+                  <span>
+                    {formatLineCountLabel(
+                      draftAvailabilitySummary.unresolvedCount,
+                      "unresolved line"
+                    )}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {consignmentRiskItems.length > 0 ? (
+        <div className="rounded-xl border border-amber-300/80 bg-amber-50/70 px-3 py-2 text-sm text-amber-950 shadow-sm">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+            <div className="space-y-1">
+              <p className="font-medium">
+                Consignment range follow-up required on{" "}
+                {consignmentRiskItems.length}{" "}
+                {consignmentRiskItems.length === 1 ? "line" : "lines"} before
+                commit.
+              </p>
+              <p className="text-xs text-amber-900/80">
+                {consignmentRiskSummary}. The below-range exception stays
+                flagged for settlement follow-up.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="overflow-hidden rounded-xl border border-border/70 bg-background shadow-sm">
         <InvoiceBottom
           subtotal={orderTotals.subtotal}
@@ -1130,7 +1332,8 @@ export function SalesOrderSurface({
         finalizeDisabled={
           !calculationState.isValid ||
           isFinalizeBusy ||
-          isUnavailableClientRoute
+          isUnavailableClientRoute ||
+          hasOnlyUnavailableDraftLines
         }
         isFinalizePending={isFinalizeBusy}
         isSeededFromCatalogue={draft.isSalesSheetImport}
@@ -1138,6 +1341,32 @@ export function SalesOrderSurface({
       />
     </div>
   );
+  const handleOpenClientOverview = useCallback(() => {
+    if (!draft.clientId) {
+      return;
+    }
+
+    setLocation(buildRelationshipProfilePath(draft.clientId, "overview"));
+  }, [draft.clientId, setLocation]);
+  const handleOpenClientMoney = useCallback(() => {
+    if (!draft.clientId) {
+      return;
+    }
+
+    setLocation(buildRelationshipProfilePath(draft.clientId, "money"));
+  }, [draft.clientId, setLocation]);
+  const handleOpenClientPricing = useCallback(() => {
+    if (!draft.clientId) {
+      return;
+    }
+
+    setLocation(buildRelationshipProfilePath(draft.clientId, "sales-pricing"));
+  }, [draft.clientId, setLocation]);
+  const showClientCommitContext =
+    draft.clientId !== null &&
+    !isUnavailableClientRoute &&
+    !draft.isFinalizingDraft;
+  const activeClientId = draft.clientId ?? 0;
 
   return (
     <div {...keyboardProps} className="flex h-full flex-col gap-1">
@@ -1225,6 +1454,22 @@ export function SalesOrderSurface({
               size="sm"
               variant="outline"
               className="h-6 px-2 text-[10px]"
+              onClick={() =>
+                setFilters(current => ({
+                  ...current,
+                  includeUnavailable: !current.includeUnavailable,
+                }))
+              }
+            >
+              {filters.includeUnavailable
+                ? "Including unavailable"
+                : "Available now"}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-6 px-2 text-[10px]"
               onClick={() => setShowAdvancedFilters(prev => !prev)}
             >
               Filters{activeFilterCount > 0 ? " \u25cf" : ""}
@@ -1251,6 +1496,18 @@ export function SalesOrderSurface({
           onOpenChange={setShowAdvancedFilters}
         />
       )}
+
+      {showClientCommitContext ? (
+        <div className="px-1">
+          <ClientCommitContextCard
+            clientId={activeClientId}
+            canViewPricingContext={canViewPricingContext}
+            onOpenOverview={handleOpenClientOverview}
+            onOpenMoney={handleOpenClientMoney}
+            onOpenPricing={handleOpenClientPricing}
+          />
+        </div>
+      ) : null}
 
       {draft.clientId ? (
         isUnavailableClientRoute ? (
@@ -1336,6 +1593,8 @@ export function SalesOrderSurface({
         onOpenChange={setShowCreditWarning}
         creditCheck={creditCheckResult}
         orderTotal={grandTotal}
+        onViewPaymentHistory={() => setLocation("/accounting?tab=invoices")}
+        onRecordPayment={() => setLocation("/accounting?tab=payments")}
         clientName={selectedClientLabel ?? "Selected customer"}
         onProceed={handleCreditProceed}
         onCancel={handleCreditCancel}

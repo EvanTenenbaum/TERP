@@ -49,6 +49,7 @@ fi
 TASK_ID=""
 SESSION_ID=""
 SKIP_VERIFY=false
+FAST_MODE=false
 
 while [[ $# -gt 0 ]]; do
   case $1 in
@@ -58,6 +59,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-verify)
       SKIP_VERIFY=true
+      shift
+      ;;
+    --fast|-f)
+      FAST_MODE=true
       shift
       ;;
     *)
@@ -82,6 +87,11 @@ if [ -z "$TASK_ID" ]; then
 fi
 
 echo -e "${GREEN}🏁 Completing task: ${TASK_ID}${NC}"
+
+# Fast mode delegates to complete-task-fast.sh
+if [ "$FAST_MODE" = true ]; then
+  exec bash scripts/complete-task-fast.sh "$TASK_ID"
+fi
 
 # --- Pre-Completion Verification ---
 if [ "$SKIP_VERIFY" = false ]; then

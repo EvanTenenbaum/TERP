@@ -159,3 +159,7 @@ scripts/test-adjust-api.ts
 
 # Dolt database files (added by bd init)
 .dolt/
+/.bosun/
+
+# Agent handoff audit log (operational metadata, not source)
+docs/agent-handoff/audit.log

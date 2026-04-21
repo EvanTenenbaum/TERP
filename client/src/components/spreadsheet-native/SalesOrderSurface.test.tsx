@@ -81,6 +81,9 @@ const mockDraftState = {
     quantity: number;
     cogsPerUnit: number;
     originalCogsPerUnit: number;
+    cogsMode?: "FIXED" | "RANGE";
+    productDisplayName?: string;
+    isBelowVendorRange?: boolean;
     marginPercent: number;
     marginDollar: number;
     unitPrice: number;
@@ -455,8 +458,7 @@ describe("SalesOrderSurface", () => {
     ).toBeInTheDocument();
   });
 
-  // TODO: ClientCommitContextCard removed from SalesOrderSurface in 420-fork; restore when card is re-integrated
-  it.skip("renders inventory and document sections when a customer is selected", () => {
+  it("renders inventory and document sections when a customer is selected", () => {
     mockDraftState.clientId = 7;
     const { container } = render(<SalesOrderSurface />);
     expect(screen.getByText("Selected client: Acme")).toBeInTheDocument();
@@ -488,8 +490,7 @@ describe("SalesOrderSurface", () => {
     ).toHaveLength(1);
   });
 
-  // TODO: quarantine filter and include-unavailable toggle removed from SalesOrderSurface in 420-fork; restore if inventory visibility UX is revisited
-  it.skip("defaults the order inventory browser to sellable rows only", async () => {
+  it("defaults the order inventory browser to sellable rows only", async () => {
     mockDraftState.clientId = 7;
     mockInventoryData = [
       {
@@ -535,8 +536,7 @@ describe("SalesOrderSurface", () => {
     ).toBeInTheDocument();
   });
 
-  // TODO: portable cut import flow (sessionStorage hydration, toast.info, include-unavailable carryover) removed in 420-fork; restore if cut-sharing UX is revisited
-  it.skip("applies imported portable cuts and preserves include-unavailable carryover", async () => {
+  it("applies imported portable cuts and preserves include-unavailable carryover", async () => {
     mockDraftState.clientId = 7;
     mockInventoryData = [
       {
@@ -639,29 +639,9 @@ describe("SalesOrderSurface", () => {
       ).toEqual(["Blue Dream", "Quarantined Cut"]);
     });
 
-    expect(screen.getByText("Saved cut: Andy Indoor")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Including unavailable" })
-    ).toBeInTheDocument();
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Including unavailable" })
-    );
-
-    await waitFor(() => {
-      expect(
-        (
-          gridPropsByTitle.get("Inventory")?.rows as
-            | Array<{ name: string }>
-            | undefined
-        )?.map(row => row.name)
-      ).toEqual(["Blue Dream"]);
-    });
-
-    expect(
-      screen.getByRole("button", { name: "Available now" })
-    ).toBeInTheDocument();
-    expect(screen.getByText("Include unavailable")).toBeInTheDocument();
+      window.sessionStorage.getItem("salesCataloguePortableCut")
+    ).toBeNull();
   });
 
   it("clears route hydration params before switching clients", () => {
@@ -757,8 +737,7 @@ describe("SalesOrderSurface", () => {
     ).not.toBeInTheDocument();
   });
 
-  // TODO: include-unavailable toggle and non-sellable row blocking removed from SalesOrderSurface in 420-fork; restore if inventory visibility UX is revisited
-  it.skip("keeps non-sellable rows blocked even when unavailable inventory is shown", async () => {
+  it("keeps non-sellable rows blocked even when unavailable inventory is shown", async () => {
     mockDraftState.clientId = 7;
     mockInventoryData = [
       {
@@ -786,8 +765,7 @@ describe("SalesOrderSurface", () => {
     });
   });
 
-  // TODO: ClientCommitContextCard (and its quick-action buttons) removed from SalesOrderSurface in 420-fork; restore when card is re-integrated
-  it.skip("routes commit-context quick actions into the relationship profile", () => {
+  it("routes commit-context quick actions into the relationship profile", () => {
     mockDraftState.clientId = 7;
 
     render(<SalesOrderSurface />);
@@ -808,6 +786,38 @@ describe("SalesOrderSurface", () => {
       3,
       "/clients/7?section=sales-pricing"
     );
+  });
+
+  it("shows a consignment risk summary before commit when a range-priced line is below vendor range", () => {
+    mockDraftState.clientId = 7;
+    mockDraftState.items = [
+      {
+        batchId: 11,
+        quantity: 1,
+        cogsPerUnit: 8,
+        originalCogsPerUnit: 10,
+        cogsMode: "RANGE",
+        productDisplayName: "Blue Dream",
+        isBelowVendorRange: true,
+        marginPercent: 20,
+        marginDollar: 2,
+        unitPrice: 10,
+        lineTotal: 10,
+        isCogsOverridden: false,
+        isMarginOverridden: false,
+        marginSource: "DEFAULT",
+        isSample: false,
+      },
+    ];
+
+    render(<SalesOrderSurface />);
+
+    expect(
+      screen.getByText(/consignment range follow-up required on 1 line/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Blue Dream\. The below-range exception stays flagged/i)
+    ).toBeInTheDocument();
   });
 
   it("applies staged quantity and markup before adding a row", () => {
@@ -909,8 +919,7 @@ describe("SalesOrderSurface", () => {
     expect(screen.queryByText("Confirm order?")).not.toBeInTheDocument();
   });
 
-  // TODO: draft-line availability blocking logic (all-unavailable/all-unresolved guard) removed from SalesOrderSurface in 420-fork; restore when line-status validation is revisited
-  it.skip("disables confirmation when every tracked draft line is unavailable", async () => {
+  it("disables confirmation when every tracked draft line is unavailable", async () => {
     mockDraftState.clientId = 7;
     mockDraftState.items = [
       {
@@ -954,8 +963,7 @@ describe("SalesOrderSurface", () => {
     expect(mockCreditMutation.mutateAsync).not.toHaveBeenCalled();
   });
 
-  // TODO: mixed sellable/blocked draft-line warning removed from SalesOrderSurface in 420-fork; restore when line-status validation is revisited
-  it.skip("keeps confirmation available when sellable and blocked draft lines are mixed", () => {
+  it("keeps confirmation available when sellable and blocked draft lines are mixed", () => {
     mockDraftState.clientId = 7;
     mockDraftState.items = [
       {
@@ -1020,8 +1028,7 @@ describe("SalesOrderSurface", () => {
     expect(screen.getByRole("button", { name: "Confirm Order" })).toBeEnabled();
   });
 
-  // TODO: draft-line availability blocking logic (all-unresolved guard) removed from SalesOrderSurface in 420-fork; restore when line-status validation is revisited
-  it.skip("disables confirmation when every tracked draft line is unresolved from live inventory", () => {
+  it("disables confirmation when every tracked draft line is unresolved from live inventory", () => {
     mockDraftState.clientId = 7;
     mockDraftState.items = [
       {
@@ -1066,8 +1073,7 @@ describe("SalesOrderSurface", () => {
     expect(mockCreditMutation.mutateAsync).not.toHaveBeenCalled();
   });
 
-  // TODO: onViewPaymentHistory callback removed from CreditWarningDialog usage in SalesOrderSurface in 420-fork; restore when accounting deep-links are re-wired
-  it.skip("routes the credit warning payment-history next step into accounting", async () => {
+  it("routes the credit warning payment-history next step into accounting", async () => {
     mockDraftState.clientId = 7;
     mockDraftState.items = [
       {
@@ -1112,8 +1118,7 @@ describe("SalesOrderSurface", () => {
     expect(mockSetLocation).toHaveBeenCalledWith("/accounting?tab=invoices");
   });
 
-  // TODO: onRecordPayment callback removed from CreditWarningDialog usage in SalesOrderSurface in 420-fork; restore when accounting deep-links are re-wired
-  it.skip("routes the credit warning record-payment next step into accounting", async () => {
+  it("routes the credit warning record-payment next step into accounting", async () => {
     mockDraftState.clientId = 7;
     mockDraftState.items = [
       {
