@@ -20,7 +20,6 @@ vi.mock("@/components/common/BackButton", () => ({
 vi.mock("@/components/accounting", () => ({
   StatusBadge: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   AgingBadge: ({ bucket }: { bucket: string }) => <div>{bucket}</div>,
-  ReceivePaymentModal: () => null,
   PayVendorModal: () => null,
 }));
 
@@ -29,7 +28,7 @@ vi.mock("@/components/accounting/GLReversalViewer", () => ({
 }));
 
 vi.mock("@/components/data-cards", () => ({
-  DataCardSection: ({ moduleId }: { moduleId: string }) => {
+  DataCardSection: ({ moduleId: _moduleId }: { moduleId: string }) => {
     // Mock the data cards section to render the content the tests expect
     const { trpc } = require("@/lib/trpc");
     const arSummary = trpc.accounting.arApDashboard.getARSummary.useQuery();

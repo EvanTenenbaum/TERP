@@ -29,7 +29,6 @@ import { BackButton } from "@/components/common/BackButton";
 import {
   StatusBadge,
   AgingBadge,
-  ReceivePaymentModal,
   PayVendorModal,
 } from "@/components/accounting";
 import { GLReversalViewer } from "@/components/accounting/GLReversalViewer";
@@ -39,8 +38,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from "@/lib/dateFormat";
 import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
 
-const RECEIVE_PAYMENT_LABEL_STORAGE_KEY =
-  "accounting-dashboard-receive-payment-used";
 const OVERDUE_ALERT_THRESHOLD = 25;
 
 interface OverdueInvoice {
@@ -98,16 +95,8 @@ interface RecentPayment {
 export default function AccountingDashboard({
   embedded,
 }: { embedded?: boolean } = {}) {
-  // WS-001 & WS-002: Quick Action Modal State
-  const [receivePaymentOpen, setReceivePaymentOpen] = useState(false);
+  // WS-002: Quick Action Modal State
   const [payVendorOpen, setPayVendorOpen] = useState(false);
-  const [hasUsedReceivePayment, setHasUsedReceivePayment] = useState(() => {
-    try {
-      return localStorage.getItem(RECEIVE_PAYMENT_LABEL_STORAGE_KEY) === "true";
-    } catch {
-      return false;
-    }
-  });
   const utils = trpc.useUtils();
 
   // Fetch dashboard data
@@ -191,15 +180,6 @@ export default function AccountingDashboard({
     window.location.href = path;
   };
 
-  const markReceivePaymentUsed = () => {
-    try {
-      localStorage.setItem(RECEIVE_PAYMENT_LABEL_STORAGE_KEY, "true");
-    } catch {
-      /* noop */
-    }
-    setHasUsedReceivePayment(true);
-  };
-
   return (
     <div className="flex flex-col gap-4 p-3" data-testid="accounting-dashboard">
       {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
@@ -224,15 +204,6 @@ export default function AccountingDashboard({
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                className="bg-green-600 hover:bg-green-700"
-                onClick={() => {
-                  markReceivePaymentUsed();
-                  setReceivePaymentOpen(true);
-                }}
-              >
-                {hasUsedReceivePayment ? "Quick Pay" : "Record Payment"}
-              </Button>
               <Button
                 variant="destructive"
                 onClick={() => setPayVendorOpen(true)}
@@ -326,7 +297,7 @@ export default function AccountingDashboard({
               variant="outline"
               className="w-fit border-green-300 bg-white/80 text-green-700"
             >
-              {hasUsedReceivePayment ? "Quick Pay" : "Record Payment"}
+              Record Payment
             </Badge>
             <div className="grid gap-2 lg:grid-cols-2">
               <div className="rounded-md border border-green-200 bg-background/90 p-2.5">
@@ -926,11 +897,7 @@ export default function AccountingDashboard({
         </TabsContent>
       </Tabs>
 
-      {/* WS-001 & WS-002: Quick Action Modals */}
-      <ReceivePaymentModal
-        open={receivePaymentOpen}
-        onOpenChange={setReceivePaymentOpen}
-      />
+      {/* WS-002: Quick Action Modals */}
       <PayVendorModal open={payVendorOpen} onOpenChange={setPayVendorOpen} />
 
       {/* Recent Activity */}

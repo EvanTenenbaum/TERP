@@ -1,5 +1,5 @@
 /**
- * FEAT-007: Record Payment Dialog
+ * FEAT-007: Payment Modal
  * Allows recording payments against invoices with partial payment support
  */
 
@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 
-interface RecordPaymentDialogProps {
+interface PaymentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoice: {
@@ -43,12 +43,12 @@ const PAYMENT_METHODS = [
   { value: "OTHER", label: "Other" },
 ] as const;
 
-export function RecordPaymentDialog({
+export function PaymentModal({
   open,
   onOpenChange,
   invoice,
   onSuccess,
-}: RecordPaymentDialogProps) {
+}: PaymentModalProps) {
   const [amount, setAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
   const [referenceNumber, setReferenceNumber] = useState("");
@@ -358,4 +358,4 @@ export function RecordPaymentDialog({
   );
 }
 
-export default RecordPaymentDialog;
+export default PaymentModal;
