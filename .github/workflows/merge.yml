@@ -15,6 +15,34 @@ env:
 
 jobs:
   # ================================================================
+  # JOB 0: Unit tests — fast drift detector for main
+  # Mirrors the pre-merge.yml unit-tests job so that if main is ever
+  # merged with a red unit-test suite (e.g. via force-merge / admin
+  # bypass / concurrent-PR interference), this job fails loudly on
+  # every main push instead of staying silent until the next PR rebases.
+  # Ref: TER-1210 — main silently drifted red and blocked 3 open PRs.
+  # ================================================================
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Unit tests
+        run: pnpm test --run
+
+  # ================================================================
   # JOB 1: Integration tests + build verification
   # These validate that the merge didn't break core data operations.
   # ================================================================
