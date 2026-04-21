@@ -12,8 +12,13 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  FileText,
+  Layers,
   LogOut,
+  Plus,
+  Truck,
   UserCircle2,
+  Users,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -260,6 +265,122 @@ export const Sidebar = React.memo(function Sidebar({
         </div>
 
         <nav ref={navRef} className="flex-1 overflow-y-auto p-3 space-y-2.5">
+          {/* TER-1217: Sales Quick Actions Section */}
+          {!collapsed && (
+            <div className="rounded-lg border border-white/10 bg-white/5 mb-3">
+              <div className="px-2 py-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
+                  Sales Quick Actions
+                </span>
+              </div>
+              <ul className="space-y-1 pb-2">
+                <li>
+                  <Link
+                    href="/sales?tab=create-order"
+                    onClick={onClose}
+                    aria-label="Create a new sales order"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
+                      isActivePath("/sales?tab=create-order")
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
+                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                    )}
+                    aria-current={
+                      isActivePath("/sales?tab=create-order")
+                        ? "page"
+                        : undefined
+                    }
+                  >
+                    <Plus className="h-5 w-5" aria-hidden />
+                    New Order
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/sales?tab=orders"
+                    onClick={onClose}
+                    aria-label="View active sales orders"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
+                      isActivePath("/sales?tab=orders")
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
+                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                    )}
+                    aria-current={
+                      isActivePath("/sales?tab=orders") ? "page" : undefined
+                    }
+                  >
+                    <FileText className="h-5 w-5" aria-hidden />
+                    Active Orders
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/sales?tab=sales-sheets"
+                    onClick={onClose}
+                    aria-label="View and manage sales catalogues"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
+                      isActivePath("/sales?tab=sales-sheets")
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
+                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                    )}
+                    aria-current={
+                      isActivePath("/sales?tab=sales-sheets")
+                        ? "page"
+                        : undefined
+                    }
+                  >
+                    <Layers className="h-5 w-5" aria-hidden />
+                    Sales Catalogue
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/relationships?tab=clients"
+                    onClick={onClose}
+                    aria-label="View recent customers and client relationships"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
+                      isActivePath("/relationships?tab=clients")
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
+                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                    )}
+                    aria-current={
+                      isActivePath("/relationships?tab=clients")
+                        ? "page"
+                        : undefined
+                    }
+                  >
+                    <Users className="h-5 w-5" aria-hidden />
+                    Recent Customers
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/inventory?tab=shipping"
+                    onClick={onClose}
+                    aria-label="View today's shipments and fulfillment"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
+                      isActivePath("/inventory?tab=shipping")
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
+                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                    )}
+                    aria-current={
+                      isActivePath("/inventory?tab=shipping")
+                        ? "page"
+                        : undefined
+                    }
+                  >
+                    <Truck className="h-5 w-5" aria-hidden />
+                    Today's Shipments
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
+
           {groupedNavigation.map(group => {
             const hasActiveItem = group.items.some(item =>
               isActivePath(item.path)
