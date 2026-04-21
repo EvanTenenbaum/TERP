@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Sidebar } from "./Sidebar";
 import { AppHeader } from "./AppHeader";
 import { MobileNav } from "./MobileNav";
+import { AdminImpersonationWarning } from "./AdminImpersonationWarning";
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -36,6 +37,8 @@ export const Layout = React.memo(function Layout({
             <div className="hidden md:block">
               <AppHeader onMenuClick={handleOpenSidebar} />
             </div>
+            {/* TER-1219: Show warning banner when admin has active impersonation sessions */}
+            <AdminImpersonationWarning />
           </>
         )}
         <main
