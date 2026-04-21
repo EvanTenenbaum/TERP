@@ -461,7 +461,6 @@ export default function OrderCreatorPageV2({
   const [showAdjustmentOnDocument, setShowAdjustmentOnDocument] =
     useState(true);
   const [orderType, setOrderType] = useState<"QUOTE" | "SALE">("SALE");
-  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [customerDrawerOpen, setCustomerDrawerOpen] = useState(false);
   const [customerDrawerSection, setCustomerDrawerSection] =
     useState<CustomerDrawerSection>("money");
@@ -1407,15 +1406,15 @@ export default function OrderCreatorPageV2({
       }
     }
 
-    // Show confirmation dialog for finalize
-    setShowFinalizeConfirm(true);
+    // TER-1222: Remove confirmation theater - finalize directly
+    confirmFinalize();
   };
 
   const handleCreditProceed = (overrideReason?: string) => {
     setShowCreditWarning(false);
     setPendingOverrideReason(overrideReason);
-    // Show finalize confirmation
-    setShowFinalizeConfirm(true);
+    // TER-1222: Remove confirmation theater - finalize directly after credit override
+    confirmFinalize();
   };
 
   const handleRequestCreditOverride = useCallback(
@@ -1473,7 +1472,6 @@ export default function OrderCreatorPageV2({
   }, [setLocation]);
 
   const confirmFinalize = () => {
-    setShowFinalizeConfirm(false);
 
     if (!clientId) return;
 
@@ -2292,16 +2290,7 @@ export default function OrderCreatorPageV2({
           onCancel={handleCreditCancel}
         />
 
-        {/* Finalize Confirmation Dialog */}
-        <ConfirmDialog
-          open={showFinalizeConfirm}
-          onOpenChange={setShowFinalizeConfirm}
-          title={`Finalize ${orderType === "QUOTE" ? "Quote" : "Sales Order"}?`}
-          description={`Are you sure you want to finalize this ${orderType.toLowerCase()}? Total: $${totals.total.toFixed(2)}. This will create the order and cannot be undone.`}
-          confirmLabel="Finalize"
-          variant="default"
-          onConfirm={confirmFinalize}
-        />
+        {/* TER-1222: Removed finalize confirmation dialog (confirmation theater) */}
 
         {/* CHAOS-007: Unsaved Changes Navigation Dialog */}
         <ConfirmNavigationDialog />
