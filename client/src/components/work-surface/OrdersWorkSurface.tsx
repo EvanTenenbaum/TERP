@@ -1173,6 +1173,15 @@ export function OrdersWorkSurface({
     [clients]
   );
 
+  // TER-1065: Get display name for order creator
+  const getSubmittedByName = useCallback(
+    (order: { createdByUser?: { name?: string | null; email?: string | null } | null }) => {
+      if (!order.createdByUser) return "Unknown";
+      return order.createdByUser.name || order.createdByUser.email || "Unknown";
+    },
+    []
+  );
+
   // Filtered orders
   const displayOrders = useMemo(() => {
     const orders = activeTab === "draft" ? draftOrders : confirmedOrders;
