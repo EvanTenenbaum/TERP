@@ -166,8 +166,8 @@ vi.mock("@/components/work-surface/KeyboardHintBar", () => ({
   KeyboardHintBar: () => <div data-testid="keyboard-hint-bar" />,
 }));
 
-vi.mock("@/components/accounting/RecordPaymentDialog", () => ({
-  RecordPaymentDialog: ({ open }: { open: boolean }) =>
+vi.mock("@/components/accounting/PaymentModal", () => ({
+  PaymentModal: ({ open }: { open: boolean }) =>
     open ? <div data-testid="record-payment-dialog" /> : null,
 }));
 

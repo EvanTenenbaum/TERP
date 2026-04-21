@@ -44,7 +44,7 @@ import {
 } from "@/components/work-surface/InspectorPanel";
 import { WorkSurfaceStatusBar } from "@/components/work-surface/WorkSurfaceStatusBar";
 import { KeyboardHintBar } from "@/components/work-surface/KeyboardHintBar";
-import { RecordPaymentDialog } from "@/components/accounting/RecordPaymentDialog";
+import { PaymentModal } from "@/components/accounting/PaymentModal";
 
 import { usePermissions } from "@/hooks/usePermissions";
 
@@ -884,7 +884,7 @@ export function PaymentsSurface() {
       />
 
       {/* ── 6. Sidecar Dialogs ── */}
-      <RecordPaymentDialog
+      <PaymentModal
         open={recordPaymentOpen}
         onOpenChange={setRecordPaymentOpen}
         invoice={invoiceForPaymentDialog}

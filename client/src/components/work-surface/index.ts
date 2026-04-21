@@ -38,11 +38,10 @@ export { QuotesWorkSurface } from "./QuotesWorkSurface";
 // Pick & Pack Work Surface - UXS-402
 export { PickPackWorkSurface } from "./PickPackWorkSurface";
 
-// Golden Flows - UXS-601, UXS-602, UXS-603
+// Golden Flows - UXS-601, UXS-602
 export {
   OrderCreationFlow,
   OrderToInvoiceFlow,
-  InvoiceToPaymentFlow,
 } from "./golden-flows";
 
 // Status Bar

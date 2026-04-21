@@ -10,10 +10,8 @@ export { AgingBadge } from "./AgingBadge";
 export { AccountSelector } from "./AccountSelector";
 export { FiscalPeriodSelector } from "./FiscalPeriodSelector";
 export { JournalEntryForm } from "./JournalEntryForm";
-export { ReceivePaymentModal } from "./ReceivePaymentModal";
 export { PayVendorModal } from "./PayVendorModal";
-export { RecordPaymentDialog } from "./RecordPaymentDialog"; // FEAT-007
-export { MultiInvoicePaymentForm } from "./MultiInvoicePaymentForm"; // FEAT-007
+export { PaymentModal } from "./PaymentModal"; // FEAT-007 (was RecordPaymentDialog)
 export { InvoicePaymentHistory } from "./InvoicePaymentHistory"; // FEAT-007
 export { BillStatusActions, BillStatusTimeline } from "./BillStatusActions"; // ARCH-004
 export {

@@ -79,7 +79,7 @@ import {
   KeyboardHintBar,
   type KeyboardHint,
 } from "@/components/work-surface/KeyboardHintBar";
-import { RecordPaymentDialog } from "@/components/accounting/RecordPaymentDialog";
+import { PaymentModal } from "@/components/accounting/PaymentModal";
 import { InvoiceGLStatus } from "@/components/accounting/GLReversalStatus";
 
 import { PowersheetGrid } from "./PowersheetGrid";
@@ -1820,7 +1820,7 @@ export function InvoicesSurface() {
 
       {/* ── 7. Sidecar Dialogs ── */}
 
-      <RecordPaymentDialog
+      <PaymentModal
         open={showPaymentDialog}
         onOpenChange={open => {
           setShowPaymentDialog(open);

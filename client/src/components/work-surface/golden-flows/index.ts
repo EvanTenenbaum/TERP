@@ -12,6 +12,3 @@ export { OrderCreationFlow } from "./OrderCreationFlow";
 
 // UXS-602: Order-to-Invoice Golden Flow
 export { OrderToInvoiceFlow } from "./OrderToInvoiceFlow";
-
-// UXS-603: Invoice-to-Payment Golden Flow
-export { InvoiceToPaymentFlow } from "./InvoiceToPaymentFlow";

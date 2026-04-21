@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { RecordPaymentDialog } from "./RecordPaymentDialog";
+import { PaymentModal } from "./PaymentModal";
 
 const {
   mockInvalidateInvoices,
@@ -76,7 +76,7 @@ vi.mock("sonner", () => ({
   },
 }));
 
-describe("RecordPaymentDialog", () => {
+describe("PaymentModal", () => {
   const invoice = {
     id: 34,
     invoiceNumber: "INV-000034",
@@ -94,7 +94,7 @@ describe("RecordPaymentDialog", () => {
   it("renders a stable payment overlay and pre-fills the amount due", () => {
     const onOpenChange = vi.fn();
     const { rerender } = render(
-      <RecordPaymentDialog
+      <PaymentModal
         open={true}
         onOpenChange={onOpenChange}
         invoice={invoice}
@@ -106,7 +106,7 @@ describe("RecordPaymentDialog", () => {
     expect(document.body.style.overflow).toBe("hidden");
 
     rerender(
-      <RecordPaymentDialog
+      <PaymentModal
         open={true}
         onOpenChange={onOpenChange}
         invoice={{ ...invoice }}
@@ -122,7 +122,7 @@ describe("RecordPaymentDialog", () => {
     const onSuccess = vi.fn();
 
     render(
-      <RecordPaymentDialog
+      <PaymentModal
         open={true}
         onOpenChange={onOpenChange}
         invoice={invoice}
