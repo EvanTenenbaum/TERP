@@ -258,40 +258,19 @@ export async function getVendorSupplyWithMatches(filters?: {
   try {
     const supplies = await getVendorSupply(filters);
 
-    // FE-QA-FIX: Calculate actual buyer counts using matching engine
-    const { findBuyersForVendorSupply } =
-      await import("./matchingEngineEnhanced");
-
-    const suppliesWithCounts = await Promise.all(
-      supplies.map(async supply => {
-        try {
-          // Only calculate matches for available items
-          if (supply.status === "AVAILABLE") {
-            const buyers = await findBuyersForVendorSupply(supply.id);
-            return {
-              ...supply,
-              buyerCount: buyers.length,
-            };
-          }
-          return {
-            ...supply,
-            buyerCount: 0,
-          };
-        } catch (matchError) {
-          // Log but don't fail - return 0 if matching fails for one item
-          logger.warn(
-            { supplyId: supply.id, error: matchError },
-            "Failed to find buyers for supply item"
-          );
-          return {
-            ...supply,
-            buyerCount: 0,
-          };
-        }
-      })
-    );
-
-    return suppliesWithCounts;
+    // TER-1198: the previous implementation called
+    // `findBuyersForVendorSupply(supply.id)` per row, which issued several
+    // DB queries per supply (active client needs scan + strain-family
+    // lookups per need) AND wrote match records via `recordMatch` for every
+    // list fetch — a full N*M*k fan-out with side effects on every page
+    // load. We now return a zeroed `buyerCount` from the list path; real
+    // match counts are computed lazily by `vendorSupply.findBuyers` on the
+    // detail view. A proper batched buyer-count query will be filed as a
+    // follow-up if the UI needs list-level totals again.
+    return supplies.map(supply => ({
+      ...supply,
+      buyerCount: 0,
+    }));
   } catch (error) {
     logger.error({ error }, "Error fetching vendor supply with matches");
     throw new Error(
