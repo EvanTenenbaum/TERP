@@ -1173,6 +1173,18 @@ export function OrdersWorkSurface({
     [clients]
   );
 
+  // TER-1065: Get display name for order creator
+  const getSubmittedByName = useCallback(
+    (order: Order) => {
+      const withUser = order as Order & {
+        createdByUser?: { name?: string | null; email?: string | null } | null;
+      };
+      if (!withUser.createdByUser) return "Unknown";
+      return withUser.createdByUser.name || withUser.createdByUser.email || "Unknown";
+    },
+    []
+  );
+
   // Filtered orders
   const displayOrders = useMemo(() => {
     const orders = activeTab === "draft" ? draftOrders : confirmedOrders;
@@ -1961,6 +1973,7 @@ export function OrdersWorkSurface({
                   </TableHead>
                   <TableHead>Order #</TableHead>
                   <TableHead>Client</TableHead>
+                  <TableHead>Submitted By</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Payment</TableHead>
                   <TableHead>Status</TableHead>
@@ -1971,7 +1984,7 @@ export function OrdersWorkSurface({
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="h-64 text-center">
+                    <TableCell colSpan={9} className="h-64 text-center">
                       <div className="flex items-center justify-center gap-2 text-muted-foreground">
                         <Loader2 className="h-5 w-5 animate-spin" />
                         <span>Loading orders…</span>
@@ -1980,7 +1993,7 @@ export function OrdersWorkSurface({
                   </TableRow>
                 ) : displayOrders.length === 0 ? (
                   <TableRow data-testid="orders-empty-state">
-                    <TableCell colSpan={8} className="h-64 text-center">
+                    <TableCell colSpan={9} className="h-64 text-center">
                       <EmptyState
                         variant="orders"
                         title="No orders found"
@@ -2032,6 +2045,7 @@ export function OrdersWorkSurface({
                         />
                       </TableCell>
                       <TableCell>{getClientName(order.clientId)}</TableCell>
+                      <TableCell>{getSubmittedByName(order)}</TableCell>
                       <TableCell>{formatDate(order.createdAt)}</TableCell>
                       <TableCell>
                         {formatPaymentStatus(order.saleStatus)}
