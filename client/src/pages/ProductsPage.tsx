@@ -4,10 +4,10 @@
  * TER-642: Fix strain management at /products so chain test can create strains
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { useSearch } from "wouter";
+import { useTableUrlState } from "@/hooks/useTableUrlState";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -190,10 +190,15 @@ function CreateStrainDialog({
 }
 
 export default function ProductsPage() {
-  const routeSearch = useSearch();
-  const [search, setSearch] = useState("");
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const utils = trpc.useUtils();
+  
+  // TER-1212: URL-persist table state
+  const { filters, setFilters } = useTableUrlState({
+    defaultFilters: {
+      search: "",
+    },
+  });
 
   const {
     data: strainsData,
@@ -202,14 +207,6 @@ export default function ProductsPage() {
     error,
     refetch,
   } = trpc.strains.list.useQuery({ limit: 500 });
-
-  useEffect(() => {
-    const params = new URLSearchParams(routeSearch);
-    const routeQuery = params.get("search");
-    if (routeQuery) {
-      setSearch(routeQuery);
-    }
-  }, [routeSearch]);
 
   const createMutation = trpc.strains.create.useMutation({
     onSuccess: () => {
@@ -224,10 +221,10 @@ export default function ProductsPage() {
 
   const strains = useMemo(() => {
     const items = strainsData?.items ?? [];
-    if (!search.trim()) return items;
-    const lower = search.toLowerCase();
+    if (!filters.search.trim()) return items;
+    const lower = filters.search.toLowerCase();
     return items.filter(s => s.name.toLowerCase().includes(lower));
-  }, [strainsData, search]);
+  }, [strainsData, filters.search]);
 
   const handleCreateSubmit = useCallback(
     (data: StrainFormData) => {
@@ -290,8 +287,8 @@ export default function ProductsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
             placeholder="Search strains..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            value={filters.search}
+            onChange={e => setFilters({ search: e.target.value })}
             className="pl-10"
           />
         </div>
@@ -307,7 +304,7 @@ export default function ProductsPage() {
               <Beaker className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
               <p className="font-medium">No strains found</p>
               <p className="text-sm text-muted-foreground mt-1">
-                {search
+                {filters.search
                   ? "Try adjusting your search"
                   : "Create your first strain"}
               </p>
