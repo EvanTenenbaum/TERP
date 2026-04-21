@@ -279,7 +279,131 @@
       "notes": "Unregistered clients stay read-only until a validated adapter and registry entry exist.",
       "signingMode": "none",
       "signingKeyFingerprint": "read-only"
+    },
+    {
+      "id": "droid-mac-app",
+      "name": "Factory Droid Mac app",
+      "surface": "Factory Droid desktop",
+      "category": "local",
+      "trustLevel": "mediated-writer",
+      "readPaths": [
+        "shared-live-bundle",
+        "local-files",
+        "pm-mcp"
+      ],
+      "fallbackReadPaths": [
+        "public-mirror"
+      ],
+      "writeMode": "pull-request",
+      "allowedTools": [
+        "pm.read",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/droid.md",
+      "pushBeforeHosted": false,
+      "notes": "Factory Droid desktop app session on Evans MacBook (BYOM computer name: terp-agent). Droid has no pm-mcp adapter today, so PM state writes must go through PRs. Code writes are fine.",
+      "signingMode": "git-identity",
+      "signingKeyFingerprint": "pr-mediated"
+    },
+    {
+      "id": "droid-web",
+      "name": "Factory Droid web app",
+      "surface": "app.factory.ai",
+      "category": "hosted",
+      "trustLevel": "mediated-writer",
+      "readPaths": [
+        "git-clone",
+        "shared-live-bundle",
+        "public-mirror"
+      ],
+      "fallbackReadPaths": [
+        "bootstrap-paste"
+      ],
+      "writeMode": "pull-request",
+      "allowedTools": [
+        "pm.read",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/droid.md",
+      "pushBeforeHosted": true,
+      "notes": "Factory Droid session started from app.factory.ai, typically targeting BYOM computer terp-droplet. Must use PR-mediated writes.",
+      "signingMode": "git-identity",
+      "signingKeyFingerprint": "pr-mediated"
+    },
+    {
+      "id": "droid-cli-local",
+      "name": "Factory Droid CLI (local Mac)",
+      "surface": "droid CLI",
+      "category": "local",
+      "trustLevel": "mediated-writer",
+      "readPaths": [
+        "shared-live-bundle",
+        "local-files",
+        "pm-mcp"
+      ],
+      "fallbackReadPaths": [
+        "public-mirror"
+      ],
+      "writeMode": "pull-request",
+      "allowedTools": [
+        "pm.read",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/droid.md",
+      "pushBeforeHosted": false,
+      "notes": "Interactive droid TUI or droid exec invoked from Evans Mac. Until a pm-mcp adapter exists for Droid, PM writes are PR-mediated.",
+      "signingMode": "git-identity",
+      "signingKeyFingerprint": "pr-mediated"
+    },
+    {
+      "id": "droid-droplet-byom",
+      "name": "Factory Droid on terp-droplet (BYOM)",
+      "surface": "droid daemon on DO droplet",
+      "category": "hosted",
+      "trustLevel": "mediated-writer",
+      "readPaths": [
+        "git-clone",
+        "shared-live-bundle",
+        "public-mirror"
+      ],
+      "fallbackReadPaths": [
+        "bootstrap-paste"
+      ],
+      "writeMode": "pull-request",
+      "allowedTools": [
+        "pm.read",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/droid.md",
+      "pushBeforeHosted": true,
+      "notes": "BYOM Droid Computer at DO droplet 159.89.32.112 (user factory-user). Used when sessions originate from web, desktop, or Hermes dispatch. Checkouts live at /home/factory-user/projects/<repo>. PR-mediated writes only.",
+      "signingMode": "git-identity",
+      "signingKeyFingerprint": "pr-mediated"
+    },
+    {
+      "id": "droid-exec-ci",
+      "name": "Factory Droid Action (GitHub Actions)",
+      "surface": "droid-action@v3",
+      "category": "hosted",
+      "trustLevel": "mediated-writer",
+      "readPaths": [
+        "git-clone",
+        "public-mirror"
+      ],
+      "fallbackReadPaths": [
+        "bootstrap-paste"
+      ],
+      "writeMode": "pull-request",
+      "allowedTools": [
+        "pm.read",
+        "pm.proposeChange"
+      ],
+      "bootstrapPath": "docs/agent-context/bootstrap/droid.md",
+      "pushBeforeHosted": true,
+      "notes": "Factory-AI/droid-action@v3 running from .github/workflows/droid.yml (@droid mentions) and droid-review.yml (auto PR review). Ephemeral GH Actions runner; can comment on PRs and open new ones, never writes PM state directly.",
+      "signingMode": "git-identity",
+      "signingKeyFingerprint": "pr-mediated"
     }
   ],
-  "updatedAt": "2026-04-17T16:46:49.930Z"
+  "updatedAt": "2026-04-20T22:46:24.000Z"
 }
