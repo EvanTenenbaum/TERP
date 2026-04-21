@@ -998,6 +998,15 @@ function PurchaseOrderCreateEditMode({
         headerName: "Product",
         flex: 1.5,
         cellClass: "powersheet-cell--locked",
+        cellRenderer: (params: { value?: string }) => {
+          if (!params.value) return "-";
+          // TER-1051: Show product name prominently
+          return (
+            <div className="font-medium text-sm leading-tight py-1">
+              {params.value}
+            </div>
+          );
+        },
       },
       {
         field: "category",
@@ -1986,6 +1995,15 @@ function PurchaseOrderQueueMode({
         flex: 1.5,
         minWidth: 180,
         cellClass: "powersheet-cell--locked",
+        cellRenderer: (params: { value?: string }) => {
+          if (!params.value) return "-";
+          // TER-1051: Show product name prominently
+          return (
+            <div className="font-medium text-sm leading-tight py-1">
+              {params.value}
+            </div>
+          );
+        },
       },
       {
         field: "category",

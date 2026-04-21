@@ -172,6 +172,20 @@ const EXPORT_COLUMNS: ExportColumn<InventoryPilotRow>[] = [
     label: "Unit COGS",
     formatter: v => (v === null || v === undefined ? "" : String(v)),
   },
+  {
+    key: "unitPrice",
+    label: "Unit Price",
+    formatter: v => (v === null || v === undefined ? "" : String(v)),
+  },
+  {
+    key: "marginPercent",
+    label: "Margin %",
+    formatter: v => {
+      if (v === null || v === undefined) return "";
+      const margin = Number(v);
+      return Number.isFinite(margin) ? `${margin.toFixed(1)}%` : "";
+    },
+  },
   { key: "ageLabel", label: "Age" },
   {
     key: "stockStatus",
@@ -611,6 +625,27 @@ export function InventoryManagementSurface() {
         flex: 1.3,
         minWidth: 280,
         cellClass: "powersheet-cell--locked",
+        cellRenderer: (params: {
+          data?: InventoryPilotRow;
+          value?: string;
+        }) => {
+          if (!params.data) return params.value ?? "-";
+          return (
+            <div className="flex flex-col gap-0.5 py-1">
+              <div className="font-medium text-sm leading-tight">
+                {params.data.productName}
+              </div>
+              {(params.data.vendorName !== "-" ||
+                params.data.brandName !== "-") && (
+                <div className="text-xs text-muted-foreground leading-tight">
+                  {[params.data.vendorName, params.data.brandName]
+                    .filter(v => v && v !== "-")
+                    .join(" / ")}
+                </div>
+              )}
+            </div>
+          );
+        },
       },
       {
         field: "vendorName",
@@ -724,6 +759,31 @@ export function InventoryManagementSurface() {
         cellClass: canUpdateInventory
           ? "powersheet-cell--editable"
           : "powersheet-cell--locked",
+      },
+      {
+        field: "unitPrice",
+        headerName: "Price",
+        minWidth: 100,
+        maxWidth: 120,
+        valueFormatter: params => formatCurrency(params.value ?? null),
+        cellClass: "powersheet-cell--locked",
+      },
+      {
+        field: "marginPercent",
+        headerName: "Margin",
+        minWidth: 100,
+        maxWidth: 120,
+        valueFormatter: params => {
+          if (params.value === null || params.value === undefined) {
+            return "-";
+          }
+          const margin = Number(params.value);
+          if (!Number.isFinite(margin)) {
+            return "-";
+          }
+          return `${margin.toFixed(1)}%`;
+        },
+        cellClass: "powersheet-cell--locked",
       },
       {
         field: "ageLabel",

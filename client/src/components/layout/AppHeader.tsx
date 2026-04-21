@@ -135,6 +135,15 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
 
         <div className="ml-auto flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-card/90 p-1 shadow-sm">
           <NotificationBell className="relative flex h-11 w-11 items-center justify-center sm:h-9 sm:w-9" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="flex h-11 w-11 touch-manipulation rounded-full border-0 bg-transparent shadow-none sm:hidden"
+            onClick={() => setLocation("/settings")}
+            aria-label="Settings"
+          >
+            <Settings className="h-5 w-5" />
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

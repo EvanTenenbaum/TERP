@@ -390,6 +390,24 @@ export function InventorySheetPilotSurface({
         headerName: "Product",
         flex: 1.3,
         minWidth: 280,
+        cellRenderer: (params: { data?: InventoryPilotRow }) => {
+          if (!params.data) return "-";
+          return (
+            <div className="flex flex-col gap-0.5 py-1">
+              <div className="font-medium text-sm leading-tight">
+                {params.data.productName}
+              </div>
+              {(params.data.vendorName !== "-" ||
+                params.data.brandName !== "-") && (
+                <div className="text-xs text-muted-foreground leading-tight">
+                  {[params.data.vendorName, params.data.brandName]
+                    .filter(v => v && v !== "-")
+                    .join(" / ")}
+                </div>
+              )}
+            </div>
+          );
+        },
         cellClass: "powersheet-cell--locked",
       },
       {

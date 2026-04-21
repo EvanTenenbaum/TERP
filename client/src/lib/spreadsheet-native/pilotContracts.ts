@@ -41,24 +41,20 @@ function formatAgeLabel(value: Date | string | null | undefined) {
   return `${diffDays}d`;
 }
 
+/**
+ * TER-1051: Build product summary with strain/product name prominently
+ * Format: "Product Name\nSupplier / Brand / Grade" for text-only contexts
+ * For grid cells, use ProductNameCell component instead for better formatting
+ */
 function buildProductSummary(input: {
   productName: string;
   vendorName: string | null | undefined;
   brandName: string | null | undefined;
   grade: string | null | undefined;
 }) {
-  const details = [input.vendorName, input.brandName, input.grade]
-    .map(value => value?.trim())
-    .filter(
-      (value): value is string =>
-        Boolean(value) && value !== "-" && value !== "Unknown"
-    );
-
-  if (details.length === 0) {
-    return input.productName;
-  }
-
-  return `${input.productName} · ${details.join(" / ")}`;
+  // For plain text contexts, just return product name
+  // Supplier/brand are shown in separate columns or via ProductNameCell renderer
+  return input.productName;
 }
 
 export interface InventoryPilotRow {

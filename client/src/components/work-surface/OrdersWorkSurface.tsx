@@ -83,6 +83,13 @@ import {
   InspectorField,
   useInspectorPanel,
 } from "./InspectorPanel";
+import {
+  BulkActionsBar,
+  useTableSelection,
+  SelectAllCheckbox,
+  SelectRowCheckbox,
+  type StatusOption,
+} from "@/components/ui/bulk-actions";
 
 // Icons
 import {
@@ -1166,6 +1173,18 @@ export function OrdersWorkSurface({
     [clients]
   );
 
+  // TER-1065: Get display name for order creator
+  const getSubmittedByName = useCallback(
+    (order: Order) => {
+      const withUser = order as Order & {
+        createdByUser?: { name?: string | null; email?: string | null } | null;
+      };
+      if (!withUser.createdByUser) return "Unknown";
+      return withUser.createdByUser.name || withUser.createdByUser.email || "Unknown";
+    },
+    []
+  );
+
   // Filtered orders
   const displayOrders = useMemo(() => {
     const orders = activeTab === "draft" ? draftOrders : confirmedOrders;
@@ -1231,6 +1250,15 @@ export function OrdersWorkSurface({
       onClick: () => setActiveTab("draft"),
     };
   }, [activeTab, search, setLocation, statusFilter]);
+
+  // TER-1056: Bulk selection state
+  const selection = useTableSelection<Order>(displayOrders as Order[]);
+
+  // TER-1056: Clear selection when changing tabs or filters
+  useEffect(() => {
+    selection.clearSelection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, search, statusFilter]);
 
   // Selected order
   const selectedOrderSummary = useMemo(
@@ -1575,6 +1603,31 @@ export function OrdersWorkSurface({
     },
   });
 
+  // TER-1056: Batch update order status mutation
+  const batchUpdateStatusMutation =
+    trpc.orders.batchUpdateOrderStatus.useMutation({
+      onMutate: () => setSaving("Updating order statuses..."),
+      onSuccess: result => {
+        const { succeeded, failed } = result.summary;
+        if (failed > 0) {
+          toast.warning(
+            `Updated ${succeeded} order${succeeded !== 1 ? "s" : ""}, ${failed} failed`
+          );
+        } else {
+          toast.success(
+            `Successfully updated ${succeeded} order${succeeded !== 1 ? "s" : ""}`
+          );
+        }
+        setSaved();
+        selection.clearSelection();
+        void refetchConfirmed();
+      },
+      onError: err => {
+        toast.error(err.message || "Failed to update order statuses");
+        setError(err.message);
+      },
+    });
+
   // Track version for optimistic locking when order is selected (UXS-705)
   useEffect(() => {
     if (selectedOrder && selectedOrder.version !== undefined) {
@@ -1653,6 +1706,57 @@ export function OrdersWorkSurface({
       } else if (inspector.isOpen) inspector.close();
     },
   });
+
+  // TER-1056: Bulk action status options (only for confirmed orders)
+  const bulkStatusOptions: StatusOption[] = useMemo(
+    () => [
+      { value: "READY_FOR_PACKING", label: "Pending" },
+      { value: "PACKED", label: "Ready" },
+      { value: "SHIPPED", label: "Shipped" },
+      { value: "DELIVERED", label: "Delivered" },
+      { value: "CANCELLED", label: "Cancelled" },
+    ],
+    []
+  );
+
+  // TER-1056: Handle bulk status change
+  const handleBulkStatusChange = useCallback(
+    (newStatus: string) => {
+      if (selection.selectedCount === 0) {
+        toast.error("No orders selected");
+        return;
+      }
+
+      if (activeTab === "draft") {
+        toast.error("Bulk status update is only available for confirmed orders");
+        return;
+      }
+
+      const validStatus = [
+        "READY_FOR_PACKING",
+        "PACKED",
+        "SHIPPED",
+        "DELIVERED",
+        "CANCELLED",
+      ].find(s => s === newStatus);
+
+      if (!validStatus) {
+        toast.error("Invalid status selected");
+        return;
+      }
+
+      batchUpdateStatusMutation.mutate({
+        orderIds: selection.selectedItems.map(o => o.id),
+        newStatus: validStatus as
+          | "READY_FOR_PACKING"
+          | "PACKED"
+          | "SHIPPED"
+          | "DELIVERED"
+          | "CANCELLED",
+      });
+    },
+    [selection, activeTab, batchUpdateStatusMutation]
+  );
 
   // Handlers
   const handleEdit = (orderId: number) =>
@@ -1860,8 +1964,16 @@ export function OrdersWorkSurface({
             <Table data-testid="orders-table" className="min-h-[420px]">
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-12">
+                    <SelectAllCheckbox
+                      checked={selection.isAllSelected}
+                      indeterminate={selection.isIndeterminate}
+                      onCheckedChange={selection.toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Order #</TableHead>
                   <TableHead>Client</TableHead>
+                  <TableHead>Submitted By</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Payment</TableHead>
                   <TableHead>Status</TableHead>
@@ -1872,7 +1984,7 @@ export function OrdersWorkSurface({
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-64 text-center">
+                    <TableCell colSpan={9} className="h-64 text-center">
                       <div className="flex items-center justify-center gap-2 text-muted-foreground">
                         <Loader2 className="h-5 w-5 animate-spin" />
                         <span>Loading orders…</span>
@@ -1881,7 +1993,7 @@ export function OrdersWorkSurface({
                   </TableRow>
                 ) : displayOrders.length === 0 ? (
                   <TableRow data-testid="orders-empty-state">
-                    <TableCell colSpan={7} className="h-64 text-center">
+                    <TableCell colSpan={9} className="h-64 text-center">
                       <EmptyState
                         variant="orders"
                         title="No orders found"
@@ -1916,6 +2028,12 @@ export function OrdersWorkSurface({
                         inspector.open();
                       }}
                     >
+                      <TableCell className="w-12" onClick={e => e.stopPropagation()}>
+                        <SelectRowCheckbox
+                          checked={selection.isSelected(order.id)}
+                          onCheckedChange={() => selection.toggleSelection(order.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">
                         <MonoId
                           value={
@@ -1927,6 +2045,7 @@ export function OrdersWorkSurface({
                         />
                       </TableCell>
                       <TableCell>{getClientName(order.clientId)}</TableCell>
+                      <TableCell>{getSubmittedByName(order)}</TableCell>
                       <TableCell>{formatDate(order.createdAt)}</TableCell>
                       <TableCell>
                         {formatPaymentStatus(order.saleStatus)}
@@ -2360,6 +2479,18 @@ export function OrdersWorkSurface({
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />
+
+      {/* TER-1056: Bulk Actions Bar */}
+      {activeTab === "confirmed" && selection.selectedCount > 0 && (
+        <BulkActionsBar
+          selectedCount={selection.selectedCount}
+          totalCount={displayOrders.length}
+          onClearSelection={selection.clearSelection}
+          onSelectAll={selection.selectAll}
+          statusOptions={bulkStatusOptions}
+          onStatusChange={handleBulkStatusChange}
+        />
+      )}
     </div>
   );
 }

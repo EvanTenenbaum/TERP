@@ -338,6 +338,15 @@ export function ProductBrowserGrid({
         field: "productName",
         flex: 2,
         minWidth: 140,
+        cellRenderer: (params: { value?: string }) => {
+          if (!params.value) return "-";
+          // TER-1051: Show product name prominently
+          return (
+            <div className="font-medium text-sm leading-tight py-1">
+              {params.value}
+            </div>
+          );
+        },
       },
       {
         headerName: "Category",

@@ -12,6 +12,7 @@ import {
   orders,
   batches,
   clients,
+  users,
   sampleInventoryLog,
   orderLineItems,
   orderLineItemAllocations,
@@ -924,7 +925,8 @@ export async function getAllOrders(filters?: {
 
   // BUG-078: Explicitly select columns from both tables to avoid ambiguous column names
   // When using leftJoin, bare .select() causes MySQL column name conflicts (both tables have 'id', 'created_at', etc.)
-  // This fix ensures result structure is { orders: {...}, clients: {...} }
+  // TER-1065: Added users join to include creator info for "Submitted By" column
+  // This fix ensures result structure is { orders: {...}, clients: {...}, createdByUser: {...} }
   let results;
 
   if (conditions.length > 0) {
@@ -932,9 +934,11 @@ export async function getAllOrders(filters?: {
       .select({
         orders: orders,
         clients: clients,
+        createdByUser: users,
       })
       .from(orders)
       .leftJoin(clients, eq(orders.clientId, clients.id))
+      .leftJoin(users, eq(orders.createdBy, users.id))
       .where(and(...conditions))
       .orderBy(desc(orders.createdAt))
       .limit(safeLimit)
@@ -944,9 +948,11 @@ export async function getAllOrders(filters?: {
       .select({
         orders: orders,
         clients: clients,
+        createdByUser: users,
       })
       .from(orders)
       .leftJoin(clients, eq(orders.clientId, clients.id))
+      .leftJoin(users, eq(orders.createdBy, users.id))
       .orderBy(desc(orders.createdAt))
       .limit(safeLimit)
       .offset(safeOffset);
@@ -956,6 +962,7 @@ export async function getAllOrders(filters?: {
   // TER-1146: list endpoints never 500 from a single corrupted items payload —
   // log the row and fall back to items=[] so the rest of /orders still renders.
   // Strict propagation still applies to single-order reads (getOrderById).
+  // TER-1065: Include createdByUser data for "Submitted By" column
   const transformed: Order[] = results.map(row => {
     let parsedItems: OrderItem[] = [];
     if (row.orders.items) {
@@ -972,6 +979,7 @@ export async function getAllOrders(filters?: {
       items: parsedItems,
       lineItemCount: parsedItems.length,
       client: row.clients,
+      createdByUser: row.createdByUser,
     } as Order;
   });
 

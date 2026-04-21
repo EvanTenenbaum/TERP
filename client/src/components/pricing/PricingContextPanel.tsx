@@ -316,26 +316,54 @@ export function PricingContextPanel({
             )}
 
             {/* COGS Adjustment */}
-            {client.cogsAdjustmentType !== "NONE" && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">COGS Adjustment</span>
-                <Badge
-                  variant={
-                    client.cogsAdjustmentType === "PERCENTAGE_INCREASE" ||
-                    client.cogsAdjustmentType === "FIXED_INCREASE"
-                      ? "destructive"
-                      : "secondary"
-                  }
-                >
-                  {/* Legacy "PERCENTAGE"/"FIXED_AMOUNT" values treated as decrease */}
-                  {client.cogsAdjustmentType === "PERCENTAGE" ||
+            {client.cogsAdjustmentType !== "NONE" &&
+              (() => {
+                const rawValue = parseFloat(
+                  String(client.cogsAdjustmentValue ?? "0")
+                );
+                const adjustmentValue = Number.isFinite(rawValue)
+                  ? rawValue
+                  : 0;
+                const absoluteValue = Math.abs(adjustmentValue);
+                const isPercent =
+                  client.cogsAdjustmentType === "PERCENTAGE" ||
                   client.cogsAdjustmentType === "PERCENTAGE_DECREASE" ||
-                  client.cogsAdjustmentType === "PERCENTAGE_INCREASE"
-                    ? `${client.cogsAdjustmentValue}% COGS ${client.cogsAdjustmentType === "PERCENTAGE_INCREASE" ? "Increase" : "Decrease"}`
-                    : `$${client.cogsAdjustmentValue} COGS ${client.cogsAdjustmentType === "FIXED_INCREASE" ? "Increase" : "Decrease"}`}
-                </Badge>
-              </div>
-            )}
+                  client.cogsAdjustmentType === "PERCENTAGE_INCREASE";
+                if (adjustmentValue === 0) {
+                  return (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        COGS Adjustment
+                      </span>
+                      <Badge variant="outline">No adjustment</Badge>
+                    </div>
+                  );
+                }
+                // Legacy `PERCENTAGE`/`FIXED_AMOUNT` types encode direction via the
+                // sign of the value (negative => increase). New `*_INCREASE` /
+                // `*_DECREASE` variants are direction-explicit.
+                const isLegacyIncrease =
+                  (client.cogsAdjustmentType === "PERCENTAGE" ||
+                    client.cogsAdjustmentType === "FIXED_AMOUNT") &&
+                  adjustmentValue < 0;
+                const isIncrease =
+                  client.cogsAdjustmentType === "PERCENTAGE_INCREASE" ||
+                  client.cogsAdjustmentType === "FIXED_INCREASE" ||
+                  isLegacyIncrease;
+                const direction = isIncrease ? "Increase" : "Decrease";
+                return (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      COGS Adjustment
+                    </span>
+                    <Badge variant={isIncrease ? "destructive" : "secondary"}>
+                      {isPercent
+                        ? `${absoluteValue}% COGS ${direction}`
+                        : `$${absoluteValue} COGS ${direction}`}
+                    </Badge>
+                  </div>
+                );
+              })()}
 
             {/* Credit Source */}
             <div className="flex items-center justify-between text-sm">

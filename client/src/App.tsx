@@ -614,6 +614,13 @@ function Router() {
                   )}
                 />
                 <Route
+                  path="/settings/display"
+                  component={RedirectWithSearch(
+                    "/settings/display",
+                    "/account"
+                  )}
+                />
+                <Route
                   path="/settings/feature-flags"
                   component={RedirectWithTab(
                     "/settings/feature-flags",

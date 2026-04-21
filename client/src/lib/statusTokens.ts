@@ -208,9 +208,9 @@ export function getPaymentTermLabel(term: string): string {
 
 export const BATCH_STATUS_LABELS: Record<string, string> = {
   AWAITING_INTAKE: "Awaiting Intake",
-  LIVE: "Available",
+  LIVE: "Live",
   ON_HOLD: "On Hold",
-  QUARANTINED: "Quality Hold",
+  QUARANTINED: "Quarantined",
   SOLD_OUT: "Sold Out",
   CLOSED: "Closed",
 };
