@@ -1175,9 +1175,12 @@ export function OrdersWorkSurface({
 
   // TER-1065: Get display name for order creator
   const getSubmittedByName = useCallback(
-    (order: { createdByUser?: { name?: string | null; email?: string | null } | null }) => {
-      if (!order.createdByUser) return "Unknown";
-      return order.createdByUser.name || order.createdByUser.email || "Unknown";
+    (order: Order) => {
+      const withUser = order as Order & {
+        createdByUser?: { name?: string | null; email?: string | null } | null;
+      };
+      if (!withUser.createdByUser) return "Unknown";
+      return withUser.createdByUser.name || withUser.createdByUser.email || "Unknown";
     },
     []
   );
