@@ -333,7 +333,6 @@ export function SalesOrderSurface({
   const [inventoryRowControls, setInventoryRowControls] = useState<
     Record<number, InventoryRowControls>
   >({});
-  const [showFinalizeConfirm, setShowFinalizeConfirm] = useState(false);
   const [showCreditWarning, setShowCreditWarning] = useState(false);
   const [creditCheckResult, setCreditCheckResult] =
     useState<CreditCheckResult | null>(null);
@@ -1090,9 +1089,13 @@ export function SalesOrderSurface({
       }
     }
 
-    setShowFinalizeConfirm(true);
+    // TER-1222: Remove confirmation theater - finalize directly
+    confirmFinalizeDraft({
+      overrideReason: undefined,
+    });
   }, [
     calculationState.isValid,
+    confirmFinalizeDraft,
     creditCheckMutation,
     draft.clientId,
     draft.orderType,
@@ -1102,24 +1105,19 @@ export function SalesOrderSurface({
   ]);
 
   const handleCreditProceed = useCallback((overrideReason?: string) => {
-    setPendingCreditOverrideReason(overrideReason);
     setShowCreditWarning(false);
-    setShowFinalizeConfirm(true);
-  }, []);
+    setCreditCheckResult(null);
+    // TER-1222: Remove confirmation theater - finalize directly after credit override
+    confirmFinalizeDraft({
+      overrideReason: overrideReason?.trim() || undefined,
+    });
+  }, [confirmFinalizeDraft]);
 
   const handleCreditCancel = useCallback(() => {
     setShowCreditWarning(false);
     setCreditCheckResult(null);
     setPendingCreditOverrideReason(undefined);
   }, []);
-
-  const handleConfirmFinalize = useCallback(() => {
-    setShowFinalizeConfirm(false);
-    confirmFinalizeDraft({
-      overrideReason: pendingCreditOverrideReason?.trim() || undefined,
-    });
-    setPendingCreditOverrideReason(undefined);
-  }, [confirmFinalizeDraft, pendingCreditOverrideReason]);
 
   const keyboard = useWorkSurfaceKeyboard({
     gridMode: false,
@@ -1600,29 +1598,7 @@ export function SalesOrderSurface({
         onCancel={handleCreditCancel}
       />
 
-      <ConfirmDialog
-        open={showFinalizeConfirm}
-        onOpenChange={open => {
-          setShowFinalizeConfirm(open);
-          if (!open) {
-            setPendingCreditOverrideReason(undefined);
-          }
-        }}
-        title={
-          draft.orderType === "QUOTE" ? "Confirm quote?" : "Confirm order?"
-        }
-        description={
-          draft.orderType === "QUOTE"
-            ? "This will save the current draft and finalize it as a quote."
-            : "This will save the current draft and finalize it as a sales order."
-        }
-        confirmLabel={
-          draft.orderType === "QUOTE" ? "Confirm Quote" : "Confirm Order"
-        }
-        onConfirm={handleConfirmFinalize}
-        isLoading={draft.isFinalizingDraft}
-      />
-
+      {/* TER-1222: Removed finalize confirmation dialog (confirmation theater) */}
       <draft.ConfirmNavigationDialog />
     </div>
   );
