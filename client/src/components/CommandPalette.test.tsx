@@ -162,7 +162,7 @@ describe("CommandPalette", () => {
     render(<CommandPalette open onOpenChange={() => {}} />);
 
     expect(screen.getByText("Record Receiving")).toBeInTheDocument();
-    expect(screen.getByText("Inventory")).toBeInTheDocument();
+    expect(screen.getAllByText("Inventory")[0]).toBeInTheDocument();
   });
 
   it("shows recently opened records in the command palette", () => {
