@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useParams } from "wouter";
 import { useLocation } from "wouter";
-import { Plus, MoreVertical, ArrowLeft } from "lucide-react";
+import { Plus, MoreVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BackButton } from "@/components/common/BackButton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -133,14 +134,11 @@ export function TodoListDetailPage() {
     <div className="container mx-auto py-8 px-4">
       {/* Header */}
       <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => setLocation("/todos")}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Lists
-        </Button>
+        <BackButton
+          label="Back to Lists"
+          to="/todos"
+          className="mb-4 block xl:hidden"
+        />
 
         <div className="flex items-start justify-between">
           <div className="flex-1">
