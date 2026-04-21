@@ -36,7 +36,7 @@ export const liveSessionStatusEnum = mysqlEnum("status", [
  * Cart Item Status Enum
  * Represents the customer's intent for each product in their cart
  */
-export const cartItemStatusEnum = mysqlEnum("cartItemStatus", [
+export const cartItemStatusEnum = mysqlEnum("itemStatus", [
   "SAMPLE_REQUEST",  // Customer wants to see a sample brought out
   "INTERESTED",      // Customer is interested, may want to negotiate price
   "TO_PURCHASE",     // Customer intends to buy this item
