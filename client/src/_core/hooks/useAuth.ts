@@ -1,4 +1,5 @@
 import { getLoginUrl } from "@/const";
+import { clearAuthStorage } from "@/lib/logout";
 import { trpc } from "@/lib/trpc";
 import { TRPCClientError } from "@trpc/client";
 import { useCallback, useEffect, useMemo } from "react";
@@ -60,6 +61,9 @@ export function useAuth(options?: UseAuthOptions) {
       // data, and wouter SPA navigation keeps React/Zustand state alive.
       utils.auth.me.setData(undefined, undefined);
       await utils.invalidate();
+      // TER-1197: centralized clear for every auth-bearing storage key so
+      // stale user info / VIP portal session cannot leak across logins.
+      clearAuthStorage();
       if (typeof window !== "undefined") {
         window.location.assign(getLoginUrl());
       }
