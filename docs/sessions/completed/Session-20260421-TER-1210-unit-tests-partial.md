@@ -4,10 +4,10 @@
 **Agent:** Factory Droid (droplet)
 **Started:** 2026-04-20T23:30:00Z
 **Last Updated:** 2026-04-21T00:55:00Z
-**Status:** In Review — PR #596 all checks green, awaiting merge
-**Branch:** fix/ter-1210-unit-tests-partial
-**PR:** https://github.com/EvanTenenbaum/TERP/pull/596
-**Last commit:** 028849bf chore(session): add TER-1210 session file for agent-session gate
+**Status:** Shipped — PR #596 squash-merged to main as `8c7e7680`
+**Branch:** fix/ter-1210-unit-tests-partial (deleted on merge)
+**PR:** https://github.com/EvanTenenbaum/TERP/pull/596 (merged)
+**Merge commit:** 8c7e7680 test(unit): unblock pre-merge CI on main — TER-1210 partial (#596)
 
 ## Scope
 
