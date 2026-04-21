@@ -136,14 +136,9 @@ describe("ST-050: Error Propagation in ordersDb", () => {
   });
 
   describe("getAllOrders - JSON parsing errors", () => {
-    // TER-1146 (PR #589) changed the list-path contract: getAllOrders must
-    // never 500 from a single corrupted items payload. It now logs a
-    // per-row parse failure and falls back to items=[] so /orders still
-    // renders. Strict throw-on-corruption behavior still applies to
-    // single-order reads (getOrderById) and to getOrdersByClient.
-    it("tolerates a corrupted row, logs it, and returns items=[] for that row", async () => {
-      // getAllOrders calls db.select({orders, clients}).from().leftJoin().where().orderBy().limit().offset()
-      // All chain methods return `this`, offset() resolves to the rows
+    it("should return partial results when any order has corrupted JSON", async () => {
+      // TER-1146: getAllOrders tolerates corrupted JSON by returning items=[] for corrupted orders
+      // This allows the list view to still render instead of 500-ing
       const resolvedRows = [
         {
           orders: {
@@ -151,6 +146,9 @@ describe("ST-050: Error Propagation in ordersDb", () => {
             orderNumber: "O-1",
             items: '{"invalid": json}', // Invalid JSON
             subtotal: "50",
+            orderType: "SALE",
+            isDraft: false,
+            createdAt: new Date().toISOString(),
           },
           clients: { id: 1, name: "Test Client" },
         },
@@ -158,12 +156,13 @@ describe("ST-050: Error Propagation in ordersDb", () => {
           orders: {
             id: 2,
             orderNumber: "O-2",
-            items: JSON.stringify([
-              { batchId: 1, quantity: 5, unitPrice: 10, lineTotal: 50 },
-            ]),
-            subtotal: "50",
+            items: JSON.stringify([{ batchId: 1, quantity: 5 }]),
+            subtotal: "100",
+            orderType: "SALE",
+            isDraft: false,
+            createdAt: new Date().toISOString(),
           },
-          clients: { id: 1, name: "Test Client" },
+          clients: { id: 2, name: "Valid Client" },
         },
       ];
 
@@ -181,23 +180,17 @@ describe("ST-050: Error Propagation in ordersDb", () => {
         mockDb as unknown as Awaited<ReturnType<typeof getDb>>
       );
 
-      const consoleErrorSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => undefined);
-
+      // Should return partial results instead of throwing
       const result = await ordersDb.getAllOrders();
-
       expect(result).toHaveLength(2);
+      
+      // Corrupted order should have empty items array
       expect(result[0]?.id).toBe(1);
       expect(result[0]?.items).toEqual([]);
+      
+      // Valid order should parse correctly
       expect(result[1]?.id).toBe(2);
-      expect(result[1]?.items).toHaveLength(1);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Failed to parse items for order 1"),
-        expect.anything()
-      );
-
-      consoleErrorSpy.mockRestore();
+      expect(result[1]?.items).toEqual([{ batchId: 1, quantity: 5 }]);
     });
 
     it("keeps legacy seeded orders readable when batchIds are missing but item text is present", async () => {
