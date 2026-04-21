@@ -364,6 +364,31 @@ describe("Orders Router", () => {
       expect(result.items[0].client).toEqual({ id: 42, name: "Acme Corp" });
     });
 
+    // TER-1065: getAll should return creator info for "Submitted By" column
+    it("should return orders with creator (createdByUser) info", async () => {
+      const mockOrders = [
+        {
+          id: 1,
+          orderNumber: "S-2026-001",
+          orderType: "SALE",
+          clientId: 42,
+          createdBy: 5,
+          isDraft: false,
+          total: "1500.00",
+          client: { id: 42, name: "Acme Corp" },
+          createdByUser: { id: 5, name: "John Doe", email: "john@example.com" },
+        },
+      ];
+
+      vi.mocked(ordersDb.getAllOrders).mockResolvedValue(mockOrders);
+
+      const result = await caller.orders.getAll({ isDraft: false });
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0].createdByUser).toBeDefined();
+      expect(result.items[0].createdByUser?.name).toBe("John Doe");
+      expect(result.items[0].createdByUser?.email).toBe("john@example.com");
+    });
+
     // TER-1146: /orders must render even when a row was rescued at the Db layer
     // with items=[] due to a corrupted legacy items payload. The router must not
     // 500 and the paginated response must include the rescued row.
