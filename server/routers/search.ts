@@ -7,7 +7,13 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { clients, batches, orders, products } from "../../drizzle/schema";
+import {
+  clients,
+  batches,
+  orders,
+  products,
+  strains,
+} from "../../drizzle/schema";
 import { like, or, and, eq, sql, isNull } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
@@ -316,10 +322,9 @@ export const searchRouter = router({
 
       // Search products (via batches with product join)
       // BUG-042: Now includes product name and category
-      // SCHEMA-015: Removed strains join - strainId column doesn't exist in production
+      // TER-1049: Added strains join for strain-based search
       if (!types || types.includes("product") || types.includes("batch")) {
         try {
-          // Query without strains - strainId column doesn't exist in production
           const batchResults = await db
             .select({
               id: batches.id,
@@ -332,11 +337,12 @@ export const searchRouter = router({
               productName: products.nameCanonical,
               category: products.category,
               subcategory: products.subcategory,
-              strainName: sql<string | null>`NULL`.as("strainName"),
-              strainCategory: sql<string | null>`NULL`.as("strainCategory"),
+              strainName: strains.name,
+              strainCategory: strains.category,
             })
             .from(batches)
             .leftJoin(products, eq(batches.productId, products.id))
+            .leftJoin(strains, eq(products.strainId, strains.id))
             .where(
               and(
                 isNull(batches.deletedAt),
@@ -345,7 +351,9 @@ export const searchRouter = router({
                   like(batches.sku, searchTerm),
                   like(products.nameCanonical, searchTerm),
                   like(products.category, searchTerm),
-                  like(products.subcategory, searchTerm)
+                  like(products.subcategory, searchTerm),
+                  like(strains.name, searchTerm),
+                  like(strains.category, searchTerm)
                 )
               )
             )
