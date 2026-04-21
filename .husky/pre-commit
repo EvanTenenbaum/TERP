@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # Pre-commit hook for TERP (Enforcement v3.0)
 # Blocks commits with security vulnerabilities and known anti-patterns
 
