@@ -284,6 +284,9 @@ describe("spreadsheet-native pilot contracts", () => {
       availableQty: 19,
       productSummary: "Blue Dream · North Farm / North Brand / A",
       ageLabel: expect.stringMatching(/\d+d/),
+      unitPrice: null,
+      unitCogs: 320,
+      marginPercent: null,
     });
     expect(inventoryRows[0]?.identity.rowKey).toBe("batch:12");
 
