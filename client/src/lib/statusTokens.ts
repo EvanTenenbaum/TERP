@@ -205,15 +205,12 @@ export function getPaymentTermLabel(term: string): string {
 }
 
 // ─── Batch Status Tokens (420-fork Wave 3) ────────────────────────────────────
+// TER-1220: Import labels from canonical source to eliminate duplication
 
-export const BATCH_STATUS_LABELS: Record<string, string> = {
-  AWAITING_INTAKE: "Awaiting Intake",
-  LIVE: "Live",
-  ON_HOLD: "On Hold",
-  QUARANTINED: "Quarantined",
-  SOLD_OUT: "Sold Out",
-  CLOSED: "Closed",
-};
+import { BATCH_STATUS_LABELS } from "../../../server/constants/batchStatuses";
+
+// Re-export for backward compatibility
+export { BATCH_STATUS_LABELS };
 
 export const BATCH_STATUS_CLASSES: Record<string, string> = {
   AWAITING_INTAKE: "bg-blue-50 text-blue-700 border border-blue-200",
