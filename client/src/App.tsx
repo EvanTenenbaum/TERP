@@ -1019,7 +1019,7 @@ function App() {
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
-  // Global keyboard shortcuts (ENH-001)
+  // Global keyboard shortcuts (ENH-001, TER-1221)
   useKeyboardShortcuts([
     {
       key: "k",
@@ -1044,6 +1044,32 @@ function App() {
       key: "?",
       callback: () => setShowKeyboardShortcuts(true),
       description: "Show keyboard shortcuts",
+    },
+    // TER-1221: Single-key navigation shortcuts
+    {
+      key: "n",
+      callback: () => setLocation("/sales?tab=create-order"),
+      description: "New Order",
+    },
+    {
+      key: "i",
+      callback: () => setLocation("/inventory"),
+      description: "Inventory",
+    },
+    {
+      key: "c",
+      callback: () => setLocation("/relationships?tab=customers"),
+      description: "Customers",
+    },
+    {
+      key: "Escape",
+      callback: () => {
+        // Close any open modals
+        setShowCommandPalette(false);
+        setShowQuickAddTask(false);
+        setShowKeyboardShortcuts(false);
+      },
+      description: "Close modal/drawer",
     },
   ]);
 
