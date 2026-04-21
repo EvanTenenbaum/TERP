@@ -1,6 +1,7 @@
 import {
   InventorySnapshotWidget,
   AgingInventoryWidget,
+  OperationalKpisWidget,
 } from "@/components/dashboard/widgets-v2";
 import { OwnerCashDecisionPanel } from "@/components/dashboard/owner/OwnerCashDecisionPanel";
 import { OwnerDebtPositionWidget } from "@/components/dashboard/owner/OwnerDebtPositionWidget";
@@ -45,6 +46,11 @@ export default function OwnerCommandCenterDashboard() {
           Live &middot; Updated {updatedAt}
         </Badge>
       </div>
+
+      {/* Operational KPI row (TER-1055) */}
+      <ComponentErrorBoundary name="Operational KPIs">
+        <OperationalKpisWidget />
+      </ComponentErrorBoundary>
 
       {/* Row 1: Daily pulse — today's sales + appointments + cash */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
