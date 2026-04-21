@@ -52,7 +52,9 @@ export function RoomManagementModal({
     features: [],
   });
   const [featureInput, setFeatureInput] = useState("");
-  const [deleteFeatureConfirm, setDeleteFeatureConfirm] = useState<string | null>(null);
+  const [deleteFeatureConfirm, setDeleteFeatureConfirm] = useState<
+    string | null
+  >(null);
 
   const utils = trpc.useUtils();
 
@@ -148,9 +150,9 @@ export function RoomManagementModal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4">
-        {/* Backdrop */}
+        {/* Backdrop (TER-1191: z-[-1] so modal content stays clickable inside the z-50 parent) */}
         <div
-          className="fixed inset-0 bg-black/50 transition-opacity"
+          className="fixed inset-0 z-[-1] bg-black/50 transition-opacity"
           onClick={onClose}
         />
 
@@ -352,7 +354,10 @@ export function RoomManagementModal({
             {isLoading ? (
               <div className="animate-pulse space-y-4">
                 {[1, 2, 3].map(i => (
-                  <div key={`skeleton-${i}`} className="h-16 bg-gray-200 rounded" />
+                  <div
+                    key={`skeleton-${i}`}
+                    className="h-16 bg-gray-200 rounded"
+                  />
                 ))}
               </div>
             ) : (
@@ -413,7 +418,7 @@ export function RoomManagementModal({
       </div>
       <ConfirmDialog
         open={deleteFeatureConfirm !== null}
-        onOpenChange={(open) => !open && setDeleteFeatureConfirm(null)}
+        onOpenChange={open => !open && setDeleteFeatureConfirm(null)}
         title="Remove Feature"
         description="Are you sure you want to remove this feature from the room?"
         confirmLabel="Remove"

@@ -127,9 +127,9 @@ export function RoomBookingModal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4">
-        {/* Backdrop */}
+        {/* Backdrop (TER-1191: z-[-1] so modal content stays clickable inside the z-50 parent) */}
         <div
-          className="fixed inset-0 bg-black/50 transition-opacity"
+          className="fixed inset-0 z-[-1] bg-black/50 transition-opacity"
           onClick={handleClose}
         />
 
