@@ -64,6 +64,7 @@ import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
+import WarehousePickPackPage from "@/pages/WarehousePickPackPage"; // TER-1225: Warehouse mobile pick & pack
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -574,6 +575,11 @@ function Router() {
                 <Route
                   path="/pick-pack"
                   component={RedirectToOperationsTab("/pick-pack", "shipping")}
+                />
+                {/* TER-1225: Warehouse mobile/tablet pick & pack */}
+                <Route
+                  path="/warehouse/pick-pack"
+                  component={withErrorBoundary(WarehousePickPackPage)}
                 />
                 <Route
                   path="/photography"
