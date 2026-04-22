@@ -1,27 +1,41 @@
 /**
  * ProductBrowserGrid
  *
- * Multi-source product browser with 3 tabs for the PO creation split surface.
+ * Multi-source product browser with 4 tabs for the PO creation split surface.
  * Used to find and add products to a Purchase Order document.
  *
  * Tabs:
+ *   0. Quick Add       — blank-row form for products not yet in the system (default)
  *   1. Supplier History — recent products ordered from this supplier
  *   2. Low Stock       — inventory items below reorder threshold
  *   3. Catalog         — full product catalog search
+ *
+ * TER-1261: Clicking a row in Supplier History / Low Stock / Catalog tabs
+ * adds the product immediately (no second click). The Quick Add tab accepts
+ * a blank-row form for products not yet in the system.
  */
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { ColDef } from "ag-grid-community";
 import { trpc } from "@/lib/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import InlineRowAddControls from "./InlineRowAddControls";
 import { PowersheetGrid } from "./PowersheetGrid";
 import { getStockStatusLabel } from "@/components/inventory/StockStatusBadge";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type ActiveTab = "supplier-history" | "low-stock" | "catalog";
+type ActiveTab = "quick-add" | "supplier-history" | "low-stock" | "catalog";
+
+type QuickAddUnit = "g" | "lb" | "unit";
 
 export interface AddProductPayload {
   productId: number | null;
@@ -33,6 +47,10 @@ export interface AddProductPayload {
   unitCost: string | null;
   unitCostMin: string | null;
   unitCostMax: string | null;
+  /** TER-1261: optional SKU supplied via the Quick Add tab. */
+  sku?: string | null;
+  /** TER-1261: optional unit-of-measure supplied via the Quick Add tab. */
+  unit?: string | null;
 }
 
 export interface ProductBrowserGridProps {
@@ -90,14 +108,97 @@ export function ProductBrowserGrid({
   addedProductIds,
   onAddProduct,
 }: ProductBrowserGridProps) {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("supplier-history");
+  // TER-1261: Quick Add is the default / leftmost tab.
+  const [activeTab, setActiveTab] = useState<ActiveTab>("quick-add");
   const [search, setSearch] = useState("");
   const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
   const [selectedRow, setSelectedRow] = useState<BrowserRow | null>(null);
   const [requestedQuantities, setRequestedQuantities] = useState<
     Record<string, string>
   >({});
+
+  // TER-1261: Quick Add form state — separate from list-tab selection state.
+  const [quickAddName, setQuickAddName] = useState("");
+  const [quickAddSku, setQuickAddSku] = useState("");
+  const [quickAddQty, setQuickAddQty] = useState("1");
+  const [quickAddPrice, setQuickAddPrice] = useState("");
+  const [quickAddUnit, setQuickAddUnit] = useState<QuickAddUnit>("unit");
+  const [quickAddError, setQuickAddError] = useState<string | null>(null);
+
   const normalizedSearch = search.trim().toLowerCase();
+
+  const resetQuickAddForm = useCallback(() => {
+    setQuickAddName("");
+    setQuickAddSku("");
+    setQuickAddQty("1");
+    setQuickAddPrice("");
+    setQuickAddUnit("unit");
+    setQuickAddError(null);
+  }, []);
+
+  const handleQuickAddSubmit = useCallback(() => {
+    const trimmedName = quickAddName.trim();
+    if (!trimmedName) {
+      setQuickAddError("Product name is required");
+      return;
+    }
+    const qty = normalizeRequestedQuantity(quickAddQty);
+    const priceRaw = quickAddPrice.trim();
+    const priceNum = Number(priceRaw);
+    if (!priceRaw || !Number.isFinite(priceNum) || priceNum < 0) {
+      setQuickAddError("Unit price must be a non-negative number");
+      return;
+    }
+    const trimmedSku = quickAddSku.trim();
+    onAddProduct({
+      productId: null,
+      productName: trimmedName,
+      category: null,
+      subcategory: null,
+      quantityOrdered: qty,
+      cogsMode: "FIXED",
+      unitCost: priceNum.toString(),
+      unitCostMin: null,
+      unitCostMax: null,
+      sku: trimmedSku || null,
+      unit: quickAddUnit,
+    });
+    resetQuickAddForm();
+  }, [
+    onAddProduct,
+    quickAddName,
+    quickAddPrice,
+    quickAddQty,
+    quickAddSku,
+    quickAddUnit,
+    resetQuickAddForm,
+  ]);
+
+  // TER-1261: Click-to-add behavior for Supplier History / Low Stock / Catalog.
+  const handleAddRow = useCallback(
+    (row: BrowserRow) => {
+      if (
+        row.productId !== null &&
+        row.productId !== undefined &&
+        addedProductIds.has(row.productId)
+      ) {
+        return;
+      }
+      const quantityValue = requestedQuantities[row.identity.rowKey] ?? "1";
+      onAddProduct({
+        productId: row.productId,
+        productName: row.productName,
+        category: row.category,
+        subcategory: row.subcategory,
+        quantityOrdered: normalizeRequestedQuantity(quantityValue),
+        cogsMode: row.cogsMode,
+        unitCost: row.unitCost,
+        unitCostMin: row.unitCostMin,
+        unitCostMax: row.unitCostMax,
+      });
+    },
+    [addedProductIds, onAddProduct, requestedQuantities]
+  );
 
   // ── Queries ──────────────────────────────────────────────────────────────────
 
@@ -212,6 +313,10 @@ export function ProductBrowserGrid({
       }));
     }
 
+    if (activeTab === "quick-add") {
+      return [];
+    }
+
     // catalog tab — returns UnifiedPaginatedResponse with .items array
     const rawData = catalogQuery.data;
     const fallbackData = catalogFallbackQuery.data;
@@ -298,19 +403,7 @@ export function ProductBrowserGrid({
           return (
             <InlineRowAddControls
               added={added}
-              onAdd={() =>
-                onAddProduct({
-                  productId: row.productId,
-                  productName: row.productName,
-                  category: row.category,
-                  subcategory: row.subcategory,
-                  quantityOrdered: normalizeRequestedQuantity(quantityValue),
-                  cogsMode: row.cogsMode,
-                  unitCost: row.unitCost,
-                  unitCostMin: row.unitCostMin,
-                  unitCostMax: row.unitCostMax,
-                })
-              }
+              onAdd={() => handleAddRow(row)}
               quantityValue={quantityValue}
               quantityLabel={`Quantity for ${row.productName ?? "product"}`}
               onQuantityChange={value =>
@@ -373,13 +466,7 @@ export function ProductBrowserGrid({
     }
 
     return cols;
-  }, [
-    addedProductIds,
-    col3Header,
-    col4Header,
-    onAddProduct,
-    requestedQuantities,
-  ]);
+  }, [addedProductIds, col3Header, col4Header, handleAddRow, requestedQuantities]);
 
   // ── State derivations ─────────────────────────────────────────────────────────
 
@@ -396,17 +483,21 @@ export function ProductBrowserGrid({
 
   // ── Render ────────────────────────────────────────────────────────────────────
 
+  // TER-1261: Quick Add is first & default to support fast blank-row flows.
   const tabs: { id: ActiveTab; label: string }[] = [
+    { id: "quick-add", label: "Quick Add" },
     { id: "supplier-history", label: "Supplier History" },
     { id: "low-stock", label: "Low Stock" },
     { id: "catalog", label: "Catalog" },
   ];
 
+  const isQuickAdd = activeTab === "quick-add";
+
   return (
     <div className="flex flex-col gap-2">
       {/* Top bar: tab toggle + search */}
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1 flex-wrap">
           {tabs.map(tab => (
             <Button
               key={tab.id}
@@ -424,16 +515,44 @@ export function ProductBrowserGrid({
             </Button>
           ))}
         </div>
-        <Input
-          className="h-7 text-xs w-48"
-          placeholder="Search products..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+        {!isQuickAdd && (
+          <Input
+            className="h-7 text-xs w-48"
+            placeholder="Search products..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        )}
       </div>
 
-      {/* Grid area */}
-      {showNoSupplierState ? (
+      {/* Content area */}
+      {isQuickAdd ? (
+        <QuickAddForm
+          name={quickAddName}
+          sku={quickAddSku}
+          quantity={quickAddQty}
+          price={quickAddPrice}
+          unit={quickAddUnit}
+          error={quickAddError}
+          onNameChange={value => {
+            setQuickAddName(value);
+            if (quickAddError) setQuickAddError(null);
+          }}
+          onSkuChange={setQuickAddSku}
+          onQuantityChange={value =>
+            setQuickAddQty(sanitizeQuantityInput(value) || "")
+          }
+          onQuantityBlur={() =>
+            setQuickAddQty(String(normalizeRequestedQuantity(quickAddQty)))
+          }
+          onPriceChange={value => {
+            setQuickAddPrice(value);
+            if (quickAddError) setQuickAddError(null);
+          }}
+          onUnitChange={setQuickAddUnit}
+          onSubmit={handleQuickAddSubmit}
+        />
+      ) : showNoSupplierState ? (
         <div className="flex items-center justify-center h-40 text-sm text-muted-foreground border rounded-md bg-muted/30">
           Select a supplier first
         </div>
@@ -449,6 +568,11 @@ export function ProductBrowserGrid({
           onSelectedRowChange={row => {
             setSelectedRowId(row ? row.identity.rowKey : null);
             setSelectedRow(row ?? null);
+            // TER-1261: Click = add. Selecting a row from a list tab
+            // immediately appends the product to the right panel.
+            if (row) {
+              handleAddRow(row);
+            }
           }}
           headerActions={
             selectedRow ? (
@@ -459,21 +583,7 @@ export function ProductBrowserGrid({
                   Added
                 </Button>
               ) : (
-                <Button
-                  size="sm"
-                  onClick={() =>
-                    onAddProduct({
-                      productId: selectedRow.productId,
-                      productName: selectedRow.productName,
-                      category: selectedRow.category,
-                      subcategory: selectedRow.subcategory,
-                      cogsMode: selectedRow.cogsMode,
-                      unitCost: selectedRow.unitCost,
-                      unitCostMin: selectedRow.unitCostMin,
-                      unitCostMax: selectedRow.unitCostMax,
-                    })
-                  }
-                >
+                <Button size="sm" onClick={() => handleAddRow(selectedRow)}>
                   + Add Selected
                 </Button>
               )
@@ -492,6 +602,140 @@ export function ProductBrowserGrid({
         />
       )}
     </div>
+  );
+}
+
+// ── Quick Add form ─────────────────────────────────────────────────────────────
+
+interface QuickAddFormProps {
+  name: string;
+  sku: string;
+  quantity: string;
+  price: string;
+  unit: QuickAddUnit;
+  error: string | null;
+  onNameChange: (value: string) => void;
+  onSkuChange: (value: string) => void;
+  onQuantityChange: (value: string) => void;
+  onQuantityBlur: () => void;
+  onPriceChange: (value: string) => void;
+  onUnitChange: (value: QuickAddUnit) => void;
+  onSubmit: () => void;
+}
+
+function QuickAddForm({
+  name,
+  sku,
+  quantity,
+  price,
+  unit,
+  error,
+  onNameChange,
+  onSkuChange,
+  onQuantityChange,
+  onQuantityBlur,
+  onPriceChange,
+  onUnitChange,
+  onSubmit,
+}: QuickAddFormProps) {
+  return (
+    <form
+      className="flex flex-col gap-2 rounded-md border border-border/60 bg-muted/20 p-3"
+      onSubmit={e => {
+        e.preventDefault();
+        onSubmit();
+      }}
+      aria-label="Quick add product"
+    >
+      <p className="text-[11px] text-muted-foreground leading-tight">
+        Add a product that isn&apos;t in the system yet. It will be appended
+        to the PO line items as a new draft line.
+      </p>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="flex flex-col gap-1 col-span-2">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+            Product Name
+          </span>
+          <Input
+            className="h-8 text-xs"
+            placeholder="e.g. Wedding Cake - Top Shelf"
+            value={name}
+            onChange={e => onNameChange(e.target.value)}
+            aria-label="Quick add product name"
+          />
+        </label>
+        <label className="flex flex-col gap-1 col-span-2">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+            SKU <span className="normal-case text-muted-foreground/70">(optional)</span>
+          </span>
+          <Input
+            className="h-8 text-xs"
+            placeholder="SKU"
+            value={sku}
+            onChange={e => onSkuChange(e.target.value)}
+            aria-label="Quick add SKU"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+            Quantity
+          </span>
+          <Input
+            className="h-8 text-xs"
+            placeholder="Qty"
+            inputMode="numeric"
+            value={quantity}
+            onChange={e => onQuantityChange(e.target.value)}
+            onBlur={onQuantityBlur}
+            aria-label="Quick add quantity"
+          />
+        </label>
+        <label className="flex flex-col gap-1">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+            Unit Price
+          </span>
+          <Input
+            className="h-8 text-xs"
+            placeholder="0.00"
+            inputMode="decimal"
+            value={price}
+            onChange={e => onPriceChange(e.target.value)}
+            aria-label="Quick add unit price"
+          />
+        </label>
+        <label className="flex flex-col gap-1 col-span-2">
+          <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wide">
+            Unit
+          </span>
+          <Select
+            value={unit}
+            onValueChange={value => onUnitChange(value as QuickAddUnit)}
+          >
+            <SelectTrigger
+              className="h-8 text-xs"
+              aria-label="Quick add unit of measure"
+            >
+              <SelectValue placeholder="Select unit" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="g">Grams (g)</SelectItem>
+              <SelectItem value="lb">Pounds (lb)</SelectItem>
+              <SelectItem value="unit">Unit</SelectItem>
+            </SelectContent>
+          </Select>
+        </label>
+      </div>
+      {error ? (
+        <p className="text-[11px] text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <div className="flex justify-end pt-1">
+        <Button type="submit" size="sm" className="h-8 px-3 text-xs">
+          Add to PO
+        </Button>
+      </div>
+    </form>
   );
 }
 

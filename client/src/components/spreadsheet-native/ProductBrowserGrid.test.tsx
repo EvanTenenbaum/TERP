@@ -105,8 +105,11 @@ describe("ProductBrowserGrid", () => {
     onAddProduct: vi.fn(),
   };
 
-  it("renders tab toggle with Supplier History, Low Stock, Catalog", () => {
+  it("renders tab toggle with Quick Add, Supplier History, Low Stock, Catalog", () => {
     render(<ProductBrowserGrid {...defaultProps} />);
+    expect(
+      screen.getByRole("button", { name: /quick add/i })
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /supplier history/i })
     ).toBeInTheDocument();
@@ -118,17 +121,82 @@ describe("ProductBrowserGrid", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders search input", () => {
+  it("defaults to the Quick Add tab and shows the blank-row form", () => {
     render(<ProductBrowserGrid {...defaultProps} />);
+    expect(
+      screen.getByRole("form", { name: /quick add product/i })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/quick add product name/i)
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText(/quick add sku/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/quick add quantity/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/quick add unit price/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /add to po/i })
+    ).toBeInTheDocument();
+  });
+
+  it("submits the Quick Add form as a new blank line item", () => {
+    const onAddProduct = vi.fn();
+    render(
+      <ProductBrowserGrid {...defaultProps} onAddProduct={onAddProduct} />
+    );
+    fireEvent.change(screen.getByLabelText(/quick add product name/i), {
+      target: { value: "Mystery Strain" },
+    });
+    fireEvent.change(screen.getByLabelText(/quick add sku/i), {
+      target: { value: "SKU-42" },
+    });
+    fireEvent.change(screen.getByLabelText(/quick add quantity/i), {
+      target: { value: "5" },
+    });
+    fireEvent.change(screen.getByLabelText(/quick add unit price/i), {
+      target: { value: "12.50" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add to po/i }));
+
+    expect(onAddProduct).toHaveBeenCalledWith(
+      expect.objectContaining({
+        productId: null,
+        productName: "Mystery Strain",
+        quantityOrdered: 5,
+        cogsMode: "FIXED",
+        unitCost: "12.5",
+        sku: "SKU-42",
+        unit: "unit",
+      })
+    );
+  });
+
+  it("blocks the Quick Add submit when the product name is missing", () => {
+    const onAddProduct = vi.fn();
+    render(
+      <ProductBrowserGrid {...defaultProps} onAddProduct={onAddProduct} />
+    );
+    fireEvent.change(screen.getByLabelText(/quick add unit price/i), {
+      target: { value: "1.00" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /add to po/i }));
+    expect(onAddProduct).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /product name is required/i
+    );
+  });
+
+  it("renders search input on list tabs", () => {
+    render(<ProductBrowserGrid {...defaultProps} supplierId={12} />);
+    fireEvent.click(screen.getByRole("button", { name: /supplier history/i }));
     expect(screen.getByPlaceholderText(/search products/i)).toBeInTheDocument();
   });
 
-  it("shows empty state when no supplier is selected", () => {
+  it("shows empty state when no supplier is selected on Supplier History tab", () => {
     render(<ProductBrowserGrid {...defaultProps} supplierId={null} />);
+    fireEvent.click(screen.getByRole("button", { name: /supplier history/i }));
     expect(screen.getByText(/select a supplier first/i)).toBeInTheDocument();
   });
 
-  it("adds the selected supplier-history product", () => {
+  it("adds the selected supplier-history product on row click (no second click needed)", () => {
     const onAddProduct = vi.fn();
     supplierHistoryData = [
       {
@@ -153,8 +221,8 @@ describe("ProductBrowserGrid", () => {
       />
     );
 
+    fireEvent.click(screen.getByRole("button", { name: /supplier history/i }));
     fireEvent.click(screen.getByText("Select first row"));
-    fireEvent.click(screen.getByRole("button", { name: /^\+ add$/i }));
 
     expect(onAddProduct).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -192,6 +260,7 @@ describe("ProductBrowserGrid", () => {
       />
     );
 
+    fireEvent.click(screen.getByRole("button", { name: /supplier history/i }));
     fireEvent.click(screen.getByText("Select first row"));
 
     expect(screen.getByText("Added")).toBeInTheDocument();
@@ -219,7 +288,6 @@ describe("ProductBrowserGrid", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /catalog/i }));
     fireEvent.click(screen.getByText("Select first row"));
-    fireEvent.click(screen.getByRole("button", { name: /^\+ add$/i }));
 
     expect(onAddProduct).toHaveBeenCalledWith(
       expect.objectContaining({
