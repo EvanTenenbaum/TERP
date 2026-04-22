@@ -135,14 +135,15 @@ export const navigationItems: NavigationItem[] = [
     sidebarVisible: false,
     // NOTE: Feature flag intentionally omitted to ensure BUG-073 fix remains active
   },
-  // NAV-006: Leaderboard absorbed — hidden from sidebar
+  // TER-1234: Gamification resurfaced - leaderboard visible in sidebar
   {
     name: "Leaderboard",
     path: "/leaderboard",
     icon: Trophy,
     group: "sales",
     ariaLabel: "Sales performance leaderboard",
-    sidebarVisible: false,
+    sidebarVisible: true,
+    featureFlag: "leaderboard",
   },
 
   // ─── Buy group (1 sidebar item) ────────────────────────────────────────────
