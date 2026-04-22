@@ -44,15 +44,16 @@ describe("consolidated navigation IA", () => {
   });
 
   it("has exactly 11 sidebar-visible items", () => {
-    expect(sidebarItems).toHaveLength(11);
+    expect(sidebarItems).toHaveLength(12); // Updated for TER-1234: Leaderboard added to sidebar
   });
 
   it("has correct sidebar-visible items per group", () => {
     const sidebarPaths = sidebarItems.map(item => item.path);
 
-    // Sell group: Sales, Demand & Supply
+    // Sell group: Sales, Demand & Supply, Leaderboard (TER-1234)
     expect(sidebarPaths).toContain("/sales");
     expect(sidebarPaths).toContain("/demand-supply");
+    expect(sidebarPaths).toContain("/leaderboard");
 
     // Buy, Operations, and Relationships groups
     expect(sidebarPaths).toContain("/purchase-orders");
@@ -156,7 +157,7 @@ describe("consolidated navigation IA", () => {
     const financeItems = sidebarItems.filter(i => i.group === "finance");
     const adminItems = sidebarItems.filter(i => i.group === "admin");
 
-    expect(sellItems).toHaveLength(2);
+    expect(sellItems).toHaveLength(3); // Updated for TER-1234: Leaderboard added to sales group
     expect(buyItems).toHaveLength(1);
     expect(operationsItems).toHaveLength(1);
     expect(relationshipItems).toHaveLength(1);
