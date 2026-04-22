@@ -46,12 +46,14 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { useExport } from "@/hooks/work-surface/useExport";
 import type { ExportColumn } from "@/hooks/work-surface/useExport";
 import {
+  extractItems,
   mapInventoryDetailToPilotRow,
   mapInventoryItemsToPilotRows,
   summarizeInventoryDetail,
   useSpreadsheetSelectionParam,
 } from "@/lib/spreadsheet-native";
 import type { InventoryPilotRow } from "@/lib/spreadsheet-native";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import type {
   PowersheetSelectionSet,
   PowersheetSelectionSummary,
@@ -288,6 +290,11 @@ export function InventoryManagementSurface() {
     useState<OrderFromBatchState | null>(null);
   const [orderClientId, setOrderClientId] = useState<number | null>(null);
   const [orderQty, setOrderQty] = useState<string>("");
+  // TER-1053: Target an existing draft order or create a new one
+  const [orderTargetMode, setOrderTargetMode] = useState<"new" | "existing">(
+    "new"
+  );
+  const [selectedDraftId, setSelectedDraftId] = useState<number | null>(null);
 
   // Saved views state
   const [currentViewId, setCurrentViewId] = useState<number | null>(null);
@@ -333,6 +340,12 @@ export function InventoryManagementSurface() {
   const viewsQuery = trpc.inventory.views.list.useQuery();
   const buyersQuery = trpc.clients.list.useQuery(
     { limit: 1000 },
+    { enabled: orderFromBatch !== null }
+  );
+  // TER-1053: Load existing SALE drafts so users can append this batch to
+  // an in-progress order instead of always creating a new one.
+  const draftOrdersQuery = trpc.orders.getAll.useQuery(
+    { isDraft: true, orderType: "SALE", limit: 50 },
     { enabled: orderFromBatch !== null }
   );
   const detailQuery = trpc.inventory.getById.useQuery(selectedBatchId ?? 0, {
@@ -583,6 +596,51 @@ export function InventoryManagementSurface() {
       .filter(c => c.isBuyer !== false)
       .map(c => ({ id: c.id, name: c.name, email: c.email ?? null }));
   }, [buyersQuery.data]);
+
+  // TER-1053: Map draft orders to display options for the target selector.
+  // Drafts are ordered newest-first so the most recent draft is highlighted.
+  const draftOrderOptions = useMemo(() => {
+    const drafts = extractItems(
+      draftOrdersQuery.data as
+        | Array<{
+            id: number;
+            orderNumber: string;
+            clientId: number | null;
+            createdAt?: string | Date | null;
+          }>
+        | {
+            items?: Array<{
+              id: number;
+              orderNumber: string;
+              clientId: number | null;
+              createdAt?: string | Date | null;
+            }>;
+          }
+        | null
+        | undefined
+    );
+    const buyers = Array.isArray(buyersQuery.data)
+      ? buyersQuery.data
+      : (buyersQuery.data?.items ?? []);
+    const nameById = new Map(
+      (buyers as Array<{ id: number; name: string }>).map(c => [c.id, c.name])
+    );
+    return drafts
+      .map(draft => ({
+        id: draft.id,
+        orderNumber: draft.orderNumber,
+        clientId: draft.clientId,
+        clientName: draft.clientId
+          ? (nameById.get(draft.clientId) ?? "Unknown client")
+          : "No client",
+        createdAt: draft.createdAt ?? null,
+      }))
+      .sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tb - ta;
+      });
+  }, [draftOrdersQuery.data, buyersQuery.data]);
 
   useEffect(() => {
     if (selectedBatchId === null || selectedOnHandQty === null) {
@@ -843,7 +901,8 @@ export function InventoryManagementSurface() {
           return (
             <button
               type="button"
-              title="Create order from this batch"
+              title="Add to order"
+              aria-label={`Add ${row.sku} to order`}
               className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={e => {
                 e.stopPropagation();
@@ -855,6 +914,8 @@ export function InventoryManagementSurface() {
                 });
                 setOrderClientId(null);
                 setOrderQty("");
+                setOrderTargetMode("new");
+                setSelectedDraftId(null);
               }}
             >
               <ShoppingCart className="h-3.5 w-3.5" />
@@ -1759,7 +1820,7 @@ export function InventoryManagementSurface() {
         </Dialog>
       </div>
 
-      {/* ── 8b. Order from Inventory Drawer ── */}
+      {/* ── 8b. Add to Order Drawer (TER-1053) ── */}
       <Sheet
         open={!!orderFromBatch}
         onOpenChange={open => {
@@ -1767,6 +1828,8 @@ export function InventoryManagementSurface() {
             setOrderFromBatch(null);
             setOrderClientId(null);
             setOrderQty("");
+            setOrderTargetMode("new");
+            setSelectedDraftId(null);
           }
         }}
       >
@@ -1776,7 +1839,7 @@ export function InventoryManagementSurface() {
         >
           <SheetHeader className="flex-shrink-0 border-b px-5 py-4">
             <SheetTitle className="text-sm font-semibold">
-              New Order — {orderFromBatch?.productName}
+              Add to Order — {orderFromBatch?.productName}
             </SheetTitle>
             <p className="mt-0.5 text-xs text-muted-foreground">
               <span className="font-mono">{orderFromBatch?.sku}</span>
@@ -1784,63 +1847,151 @@ export function InventoryManagementSurface() {
           </SheetHeader>
           <div className="flex-1 overflow-y-auto p-5">
             <p className="mb-4 text-sm text-muted-foreground">
-              Select a client and enter quantity to create a draft order from
-              this batch.
+              {draftOrderOptions.length > 0
+                ? "Append this batch to an existing draft, or start a new order."
+                : "Select a client and enter a quantity to start a new draft order from this batch."}
             </p>
             <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="order-client">Client</Label>
-                <ClientCombobox
-                  value={orderClientId}
-                  onValueChange={setOrderClientId}
-                  clients={buyerClientOptions}
-                  placeholder="Select a client..."
-                  isLoading={buyersQuery.isLoading}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="order-qty">Quantity</Label>
-                <Input
-                  id="order-qty"
-                  type="number"
-                  inputMode="decimal"
-                  min={1}
-                  value={orderQty}
-                  onChange={e => setOrderQty(e.target.value)}
-                  placeholder="e.g. 100"
-                  className="h-8 text-sm"
-                />
-              </div>
-              <Button
-                className="w-full"
-                disabled={
-                  !orderClientId ||
-                  !orderQty ||
-                  Number(orderQty) <= 0 ||
-                  createOrderMutation.isPending
-                }
-                onClick={() => {
-                  if (!orderFromBatch || !orderClientId) return;
-                  const qty = Number(orderQty);
-                  if (!Number.isFinite(qty) || qty <= 0) return;
-                  createOrderMutation.mutate({
-                    orderType: "SALE",
-                    clientId: orderClientId,
-                    lineItems: [
-                      {
-                        batchId: orderFromBatch.batchId,
-                        batchSku: orderFromBatch.sku,
-                        quantity: qty,
-                        cogsPerUnit: orderFromBatch.unitCogs,
-                      },
-                    ],
-                  });
-                }}
-              >
-                {createOrderMutation.isPending
-                  ? "Creating..."
-                  : "Create Draft Order"}
-              </Button>
+              {draftOrderOptions.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="order-target-mode">Target</Label>
+                  <Select
+                    value={
+                      orderTargetMode === "existing" && selectedDraftId !== null
+                        ? `existing:${selectedDraftId}`
+                        : "new"
+                    }
+                    onValueChange={value => {
+                      if (value === "new") {
+                        setOrderTargetMode("new");
+                        setSelectedDraftId(null);
+                        return;
+                      }
+                      if (value.startsWith("existing:")) {
+                        const id = Number(value.slice("existing:".length));
+                        if (Number.isFinite(id)) {
+                          setOrderTargetMode("existing");
+                          setSelectedDraftId(id);
+                        }
+                      }
+                    }}
+                  >
+                    <SelectTrigger
+                      id="order-target-mode"
+                      className="h-8 text-sm"
+                      aria-label="Choose order target"
+                    >
+                      <SelectValue placeholder="Select target..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">
+                        Create new draft order
+                      </SelectItem>
+                      {draftOrderOptions.map(draft => (
+                        <SelectItem
+                          key={draft.id}
+                          value={`existing:${draft.id}`}
+                        >
+                          {draft.orderNumber} · {draft.clientName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {orderTargetMode === "existing" && selectedDraftId !== null ? (
+                <>
+                  <p className="text-xs text-muted-foreground">
+                    Opens the order editor with this batch pre-added. You can
+                    adjust quantity and pricing before saving the draft.
+                  </p>
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      if (!orderFromBatch || selectedDraftId === null) return;
+                      const target = draftOrderOptions.find(
+                        d => d.id === selectedDraftId
+                      );
+                      setLocation(
+                        buildSalesWorkspacePath("create-order", {
+                          draftId: selectedDraftId,
+                          batchId: orderFromBatch.batchId,
+                        })
+                      );
+                      toast.success(
+                        target
+                          ? `Adding ${orderFromBatch.sku} to ${target.orderNumber}`
+                          : `Adding ${orderFromBatch.sku} to draft`
+                      );
+                      setOrderFromBatch(null);
+                      setOrderClientId(null);
+                      setOrderQty("");
+                      setOrderTargetMode("new");
+                      setSelectedDraftId(null);
+                    }}
+                  >
+                    Add to{" "}
+                    {draftOrderOptions.find(d => d.id === selectedDraftId)
+                      ?.orderNumber ?? "draft"}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="order-client">Client</Label>
+                    <ClientCombobox
+                      value={orderClientId}
+                      onValueChange={setOrderClientId}
+                      clients={buyerClientOptions}
+                      placeholder="Select a client..."
+                      isLoading={buyersQuery.isLoading}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="order-qty">Quantity</Label>
+                    <Input
+                      id="order-qty"
+                      type="number"
+                      inputMode="decimal"
+                      min={1}
+                      value={orderQty}
+                      onChange={e => setOrderQty(e.target.value)}
+                      placeholder="e.g. 100"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <Button
+                    className="w-full"
+                    disabled={
+                      !orderClientId ||
+                      !orderQty ||
+                      Number(orderQty) <= 0 ||
+                      createOrderMutation.isPending
+                    }
+                    onClick={() => {
+                      if (!orderFromBatch || !orderClientId) return;
+                      const qty = Number(orderQty);
+                      if (!Number.isFinite(qty) || qty <= 0) return;
+                      createOrderMutation.mutate({
+                        orderType: "SALE",
+                        clientId: orderClientId,
+                        lineItems: [
+                          {
+                            batchId: orderFromBatch.batchId,
+                            batchSku: orderFromBatch.sku,
+                            quantity: qty,
+                            cogsPerUnit: orderFromBatch.unitCogs,
+                          },
+                        ],
+                      });
+                    }}
+                  >
+                    {createOrderMutation.isPending
+                      ? "Creating..."
+                      : "Create Draft Order"}
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </SheetContent>
