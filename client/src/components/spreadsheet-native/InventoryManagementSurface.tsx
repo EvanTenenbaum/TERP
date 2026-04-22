@@ -14,6 +14,7 @@ import { useLocation } from "wouter";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CellValueChangedEvent, ColDef } from "ag-grid-community";
 import {
+  Columns3,
   Download,
   Filter,
   Grid3X3,
@@ -96,6 +97,7 @@ import {
   type InventoryFilterState,
 } from "./InventoryAdvancedFilters";
 import { InventoryGalleryView } from "./InventoryGalleryView";
+import { InventoryKanbanBoard } from "../inventory/InventoryKanbanBoard";
 import {
   STATUS_OPTIONS,
   STATUS_LABELS,
@@ -216,7 +218,7 @@ const formatQuantity = (value: number) =>
 // Types
 // ============================================================================
 
-type ViewMode = "grid" | "gallery";
+type ViewMode = "board" | "grid" | "gallery";
 
 interface AdjustDrawerState {
   isOpen: boolean;
@@ -249,8 +251,14 @@ export function InventoryManagementSurface() {
   const { selectedId: selectedBatchId, setSelectedId: setSelectedBatchId } =
     useSpreadsheetSelectionParam("batchId");
 
-  // View & filter state
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  // View & filter state - default to board, persist in localStorage
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const stored = localStorage.getItem("inventory-view-mode");
+    if (stored === "board" || stored === "grid" || stored === "gallery") {
+      return stored;
+    }
+    return "board";
+  });
   const [filters, setFilters] = useState<InventoryFilterState>(
     createDefaultInventoryFilters
   );
@@ -293,6 +301,11 @@ export function InventoryManagementSurface() {
   useEffect(() => {
     setLoadedWindowCount(1);
   }, [filters]);
+
+  // Persist viewMode to localStorage
+  useEffect(() => {
+    localStorage.setItem("inventory-view-mode", viewMode);
+  }, [viewMode]);
 
   const loadedRowTarget = PAGE_SIZE * loadedWindowCount;
 
@@ -1097,6 +1110,15 @@ export function InventoryManagementSurface() {
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
             <Button
               size="sm"
+              variant={viewMode === "board" ? "default" : "outline"}
+              className="h-7 px-2"
+              onClick={() => setViewMode("board")}
+              aria-label="Board view"
+            >
+              <Columns3 className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="sm"
               variant={viewMode === "grid" ? "default" : "outline"}
               className="h-7 px-2"
               onClick={() => setViewMode("grid")}
@@ -1312,8 +1334,24 @@ export function InventoryManagementSurface() {
           gradeOptions={gradeOptions}
         />
 
-        {/* ── 4. Main Content (Grid / Gallery) ── */}
-        {viewMode === "grid" ? (
+        {/* ── 4. Main Content (Board / Grid / Gallery) ── */}
+        {viewMode === "board" ? (
+          <div className={`${surfacePanelClass} flex-1 min-h-[500px]`}>
+            <InventoryKanbanBoard
+              batches={rows.map(row => ({
+                batchId: row.batchId,
+                sku: row.sku,
+                productName: row.productName,
+                vendorName: row.vendorName,
+                brandName: row.brandName,
+                onHandQty: row.onHandQty,
+                unitPrice: row.unitPrice,
+                status: row.status,
+              }))}
+              onBatchClick={setSelectedBatchId}
+            />
+          </div>
+        ) : viewMode === "grid" ? (
           <PowersheetGrid
             surfaceId="inventory-management"
             requirementIds={[
