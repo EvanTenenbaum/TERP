@@ -346,7 +346,7 @@ const keyboardHints: KeyboardHint[] = [
   { key: "Shift+Click", label: "extend" },
 ];
 
-const catalogueInventoryGridHeight = "clamp(32rem, calc(100vh - 11rem), 56rem)";
+const catalogueInventoryGridHeight = "clamp(30rem, calc(100vh - 14rem), 52rem)";
 const surfacePanelClass =
   "rounded-xl border border-border/70 bg-card/80 shadow-sm";
 
@@ -988,11 +988,15 @@ export function SalesCatalogueSurface() {
         singleClickEdit: true,
         valueFormatter: params => `${Number(params.value ?? 0).toFixed(1)}%`,
         valueParser: params => {
-          const parsed = Number(params.newValue);
+          const stripped =
+            typeof params.newValue === "string"
+              ? params.newValue.replace(/[^0-9.-]/g, "")
+              : params.newValue;
+          const parsed = Number(stripped);
           return Number.isFinite(parsed) ? parsed : params.oldValue;
         },
         cellClass: "powersheet-cell--editable font-mono text-right",
-        headerTooltip: "Edit markup % — retail price will recompute",
+        headerTooltip: "Edit markup % — client price recomputes automatically",
       },
       {
         field: "retailPrice",
@@ -1005,13 +1009,13 @@ export function SalesCatalogueSurface() {
         valueParser: params => {
           const stripped =
             typeof params.newValue === "string"
-              ? params.newValue.replace(/[^0-9.\-]/g, "")
+              ? params.newValue.replace(/[^0-9.-]/g, "")
               : params.newValue;
           const parsed = Number(stripped);
           return Number.isFinite(parsed) ? parsed : params.oldValue;
         },
         cellClass: "powersheet-cell--editable font-mono text-right",
-        headerTooltip: "Edit client price — markup will recompute",
+        headerTooltip: "Edit client price — markup recomputes automatically",
       },
       {
         field: "lineTotal",
@@ -1339,7 +1343,7 @@ export function SalesCatalogueSurface() {
     setSelectedItems(prev =>
       prev.map(item => defaultById.get(item.id) ?? item)
     );
-    toast.success("Reloaded the client's current pricing");
+    toast.success("Applied the client's default pricing to every line");
   }, [inventoryQuery.data]);
 
   const handlePreviewCellValueChanged = useCallback(
@@ -1527,8 +1531,8 @@ export function SalesCatalogueSurface() {
   // ── render ─────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-1">
-      {/* ── HEADER TOOLBAR (client, draft name, save) ──────────────── */}
-      <div className={`${surfacePanelClass} px-3 py-1.5`}>
+      {/* ── TOOLBAR ──────────────────────────────────────────────────── */}
+      <div className={`${surfacePanelClass} px-3 py-2`}>
         <div className="flex flex-wrap items-start gap-3">
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex flex-wrap items-center gap-2">
@@ -1638,9 +1642,9 @@ export function SalesCatalogueSurface() {
         </div>
       </div>
 
-      {/* ── TOOLBAR: View · Filters · Save View ─────────────────────── */}
+      {/* ── ACTION BAR ───────────────────────────────────────────────── */}
       <div
-        className={`${surfacePanelClass} mx-0.5 flex flex-wrap items-center gap-2 px-3 py-1.5`}
+        className={`${surfacePanelClass} mx-0.5 flex flex-wrap items-center gap-2 px-3 py-2`}
       >
         <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
           View
@@ -1656,20 +1660,27 @@ export function SalesCatalogueSurface() {
             <Button
               size="sm"
               variant="outline"
-              className="h-7 px-2.5 text-xs"
-              onClick={() => setShowAdvancedFilters(current => !current)}
-            >
-              Filters
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 px-2.5 text-xs"
+              className="h-8 px-2.5 text-xs"
               onClick={() => setShowSaveViewDialog(true)}
               disabled={countActiveSalesFilters(filters) === 0}
             >
               Save View
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 px-2.5 text-xs"
+              onClick={() => setShowAdvancedFilters(current => !current)}
+            >
+              Filters
+            </Button>
+            <span className="ml-auto text-[10px] text-muted-foreground">
+              {checkedVisibleRows.length} checked · {inventoryRows.length}{" "}
+              visible
+              {selectedItems.length > 0
+                ? ` · ${selectedItems.length} items · ${formatCurrency(totalSheetValue)}`
+                : ""}
+            </span>
           </>
         ) : (
           <span className="text-xs text-muted-foreground">
@@ -1696,8 +1707,7 @@ export function SalesCatalogueSurface() {
         <div className="grid gap-1 lg:grid-cols-4 px-1">
           {/* Left: Inventory Browser (3/4) */}
           <div className="lg:col-span-3 flex flex-col gap-1">
-            {/* Above-table row: Add action + item count / total */}
-            <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/70 bg-background px-2 py-1">
+            <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/70 bg-background px-2 py-1">
               <Input
                 value={filters.search}
                 onChange={e =>
@@ -1706,9 +1716,10 @@ export function SalesCatalogueSurface() {
                 placeholder="Search product, vendor, category..."
                 className="h-7 max-w-xs text-xs"
               />
+              <SavedViewsDropdown onApplyView={handleApplyInventorySavedView} />
               <Button
                 size="sm"
-                className="h-7 px-2.5 text-[11px] font-medium"
+                className="h-7 px-2 text-[10px]"
                 disabled={
                   !selectedInventoryRowStillVisible || !selectedClientId
                 }
@@ -1717,15 +1728,56 @@ export function SalesCatalogueSurface() {
                 <Plus className="mr-1 h-3 w-3" />
                 Add Row
               </Button>
-              {checkedVisibleRows.length > 0 && (
-                <Button
-                  size="sm"
-                  className="h-7 px-2 text-[10px]"
-                  onClick={handleBulkAddVisible}
-                >
-                  Bulk Add ({checkedVisibleRows.length})
-                </Button>
-              )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[10px]"
+                disabled={selectableInventoryRows.length === 0}
+                onClick={handleSelectAllVisible}
+              >
+                Select All In View
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[10px]"
+                disabled={checkedVisibleRows.length === 0}
+                onClick={handleClearVisibleSelection}
+              >
+                Clear Checks
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 px-2 text-[10px]"
+                disabled={checkedVisibleRows.length === 0}
+                onClick={handleBulkAddVisible}
+              >
+                Bulk Add{" "}
+                {checkedVisibleRows.length > 0
+                  ? `(${checkedVisibleRows.length})`
+                  : ""}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[10px]"
+                disabled={!selectedClientId}
+                onClick={handleManageClientPricing}
+              >
+                <Settings2 className="mr-1 h-3 w-3" />
+                Customer Pricing
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2 text-[10px]"
+                disabled={selectedItems.length === 0}
+                onClick={handleReloadClientPricing}
+                title="Apply this client's default pricing tier to every line"
+              >
+                <RotateCcw className="mr-1 h-3 w-3" />
+                Load Client Pricing
+              </Button>
               <Button
                 size="sm"
                 variant={includeUnavailableInventory ? "default" : "outline"}
@@ -1736,67 +1788,12 @@ export function SalesCatalogueSurface() {
               >
                 Include unavailable
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 px-2"
-                    aria-label="More inventory actions"
-                  >
-                    <MoreHorizontal className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  <DropdownMenuItem
-                    disabled={selectableInventoryRows.length === 0}
-                    onClick={handleSelectAllVisible}
-                  >
-                    Select All In View
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={checkedVisibleRows.length === 0}
-                    onClick={handleClearVisibleSelection}
-                  >
-                    Clear Checks
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={!selectedClientId}
-                    onClick={handleManageClientPricing}
-                  >
-                    <Settings2 className="mr-2 h-3 w-3" />
-                    Customer Pricing
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    disabled={selectedItems.length === 0}
-                    onClick={handleReloadClientPricing}
-                  >
-                    <RotateCcw className="mr-2 h-3 w-3" />
-                    Reload Client Pricing
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <SavedViewsDropdown onApplyView={handleApplyInventorySavedView} />
-              <span className="ml-auto text-[11px] font-medium text-foreground">
-                {selectedItems.length > 0 ? (
-                  <>
-                    {selectedItems.length} item
-                    {selectedItems.length === 1 ? "" : "s"} ·{" "}
-                    <span className="font-semibold">
-                      {formatCurrency(totalSheetValue)}
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-muted-foreground">
-                    No catalogue items
-                  </span>
-                )}
-                <span className="ml-2 text-[10px] font-normal text-muted-foreground">
-                  {inventoryRows.length} visible
-                  {checkedVisibleRows.length > 0
-                    ? ` · ${checkedVisibleRows.length} checked`
-                    : ""}
-                </span>
+              <span className="ml-auto text-[10px] text-muted-foreground">
+                {checkedVisibleRows.length} checked · {inventoryRows.length}{" "}
+                visible ·{" "}
+                {selectedItems.length > 0
+                  ? `${selectedItems.length} items · ${formatCurrency(totalSheetValue)}`
+                  : "No catalogue items"}
               </span>
             </div>
             <PowersheetGrid
@@ -1825,8 +1822,8 @@ export function SalesCatalogueSurface() {
                 </span>
               }
               minHeight={catalogueInventoryGridHeight}
-              headerClassName="px-3 pb-0.5 pt-2"
-              contentClassName="px-3 pb-2 pt-0"
+              headerClassName="px-4 pb-1 pt-3"
+              contentClassName="px-4 pb-4 pt-0"
             />
           </div>
 
@@ -1843,6 +1840,8 @@ export function SalesCatalogueSurface() {
               onSelectedRowChange={row =>
                 setSelectedPreviewRowId(row?.identity.rowKey ?? null)
               }
+              onCellValueChanged={handlePreviewCellValueChanged}
+              stopEditingWhenCellsLoseFocus
               selectionMode="cell-range"
               enableFillHandle={false}
               enableUndoRedo={false}
@@ -1879,8 +1878,8 @@ export function SalesCatalogueSurface() {
                 ) : undefined
               }
               minHeight={240}
-              headerClassName="px-3 pb-0.5 pt-2"
-              contentClassName="px-3 pb-2 pt-0"
+              headerClassName="px-4 pb-1 pt-3"
+              contentClassName="px-4 pb-4 pt-0"
             />
 
             <div className={`${surfacePanelClass} p-3`}>
