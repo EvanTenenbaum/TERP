@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CellClickedEvent, ColDef } from "ag-grid-community";
 import {
+  Clipboard,
   Copy,
   ExternalLink,
   FileText,
@@ -1286,6 +1287,25 @@ export function SalesCatalogueSurface() {
     }
   }, [selectedItems]);
 
+  const handleCopyPageLink = useCallback(async () => {
+    if (typeof window === "undefined") return;
+
+    const pageUrl = window.location.href;
+
+    if (!navigator.clipboard?.writeText) {
+      toast.error("Clipboard access is not available in this browser");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(pageUrl);
+      toast.success("Link copied to clipboard");
+    } catch (error) {
+      toast.error("Could not copy link");
+      console.error("Failed to copy catalogue page link", error);
+    }
+  }, []);
+
   const handleManageClientPricing = useCallback(() => {
     if (!selectedClientId) return;
     setLocation(
@@ -1518,6 +1538,16 @@ export function SalesCatalogueSurface() {
           </div>
 
           <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs"
+              onClick={handleCopyPageLink}
+              title={`Copy this catalogue page URL (${isMac ? "\u2318" : "Ctrl"}+Shift+C)`}
+            >
+              <Clipboard className="mr-1 h-3 w-3" />
+              Copy Link
+            </Button>
             <Button
               size="sm"
               variant="outline"
