@@ -115,10 +115,15 @@ interface SheetPreviewRow {
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-    value
-  );
+const formatCurrency = (value: number | null | undefined) => {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "—";
+  }
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(value);
+};
 
 function isCatalogueItemSellable(item: PricedInventoryItem): boolean {
   const availableUnits = Math.max(0, Math.floor(item.quantity || 0));
@@ -219,7 +224,7 @@ function buildCatalogueDescriptor(item: {
   });
 
   return [identityLines.secondary, identityLines.tertiary, item.batchSku]
-    .filter(value => Boolean(value) && value !== "-")
+    .filter(value => Boolean(value) && value !== "-" && value !== "—")
     .join(" · ");
 }
 
@@ -256,7 +261,7 @@ function buildPrintableCatalogueHtml({
               ? `<div class="catalogue-image">${
                   item.imageUrl
                     ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" />`
-                    : `<div class="catalogue-image-fallback">No image</div>`
+                    : `<div class="catalogue-image-fallback">—</div>`
                 }</div>`
               : ""
           }
@@ -265,7 +270,7 @@ function buildPrintableCatalogueHtml({
               <h3>${escapeHtml(item.name)}</h3>
               <span>${formatCurrency(item.retailPrice)}</span>
             </div>
-            <p>${escapeHtml(item.category ?? "Uncategorized")}</p>
+            <p>${escapeHtml(item.category ?? "—")}</p>
             ${
               descriptor
                 ? `<p class="catalogue-descriptor">${escapeHtml(descriptor)}</p>`
@@ -315,7 +320,7 @@ function buildPrintableCatalogueHtml({
           <header class="catalogue-header">
             <div>
               <h1>${escapeHtml(title)}</h1>
-              <p>${escapeHtml(clientName ?? "No client selected")}</p>
+              <p>${escapeHtml(clientName ?? "—")}</p>
             </div>
             <div class="catalogue-total">${formatCurrency(totalValue)}</div>
           </header>
@@ -356,17 +361,17 @@ function mapInventoryToRows(
     inventoryId: item.id,
     selectedForAdd: checkedIds.has(item.id),
     name: item.name,
-    category: item.category ?? "-",
-    subcategory: item.subcategory ?? "-",
-    strain: item.strain ?? item.strainFamily ?? "-",
-    brand: item.brand ?? "-",
-    vendor: item.vendor ?? "-",
-    batchSku: item.batchSku ?? "-",
+    category: item.category ?? "—",
+    subcategory: item.subcategory ?? "—",
+    strain: item.strain ?? item.strainFamily ?? "—",
+    brand: item.brand ?? "—",
+    vendor: item.vendor ?? "—",
+    batchSku: item.batchSku ?? "—",
     basePrice: item.basePrice,
     markup: item.priceMarkup,
     retailPrice: item.retailPrice,
     quantity: item.quantity,
-    grade: item.grade ?? "-",
+    grade: item.grade ?? "—",
     inSheet: selectedIds.has(item.id),
     status: item.status ?? "LIVE",
     _raw: item,
@@ -380,7 +385,7 @@ function mapItemsToPreviewRows(
     identity: { rowKey: `preview:${item.id}` },
     index: index + 1,
     name: item.name,
-    category: item.category ?? "-",
+    category: item.category ?? "—",
     markup: item.priceMarkup,
     retailPrice: item.retailPrice,
     quantity: item.quantity,

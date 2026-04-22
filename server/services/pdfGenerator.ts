@@ -24,15 +24,17 @@ export interface InvoicePdfData {
 
 function formatCurrency(value: string | number | null | undefined): string {
   const numeric = typeof value === "string" ? parseFloat(value) : (value ?? 0);
-  if (!Number.isFinite(numeric)) return "$0.00";
+  if (!Number.isFinite(numeric)) return "—";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(numeric);
 }
 
 function formatDate(value: Date | null | undefined): string {
-  if (!value) return "-";
+  if (!value) return "—";
   return value.toLocaleDateString("en-US");
 }
 

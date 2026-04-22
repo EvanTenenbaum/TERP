@@ -51,7 +51,7 @@ interface PublicSheetItem {
 }
 
 const formatDate = (date: Date | string | null | undefined): string => {
-  if (!date) return "";
+  if (!date) return "—";
   return new Date(date).toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
