@@ -8,6 +8,9 @@ interface Event {
   endDate: string;
   endTime?: string | null;
   eventType: string;
+  entityType?: string;
+  entityId?: number;
+  clientId?: number | null;
   status: string;
   priority: string;
 }
@@ -169,14 +172,15 @@ function getEventsForDate(date: Date, events: Event[]): Event[] {
 }
 
 function getEventColorClass(event: Event): string {
-  // Priority-based colors
-  if (event.priority === "URGENT") {
-    return "bg-red-100 text-red-800";
-  } else if (event.priority === "HIGH") {
-    return "bg-orange-100 text-orange-800";
-  } else if (event.priority === "MEDIUM") {
-    return "bg-blue-100 text-blue-800";
+  // Event-type-based colors
+  if (event.eventType === "INTAKE") {
+    return "bg-green-100 text-green-800 border-l-4 border-green-500";
+  } else if (event.eventType === "DELIVERY") {
+    return "bg-blue-100 text-blue-800 border-l-4 border-blue-500";
+  } else if (event.eventType === "PAYMENT_DUE") {
+    return "bg-orange-100 text-orange-800 border-l-4 border-orange-500";
   } else {
+    // Fallback for other event types
     return "bg-gray-100 text-gray-800";
   }
 }

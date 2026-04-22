@@ -13,6 +13,8 @@ import { getDb } from "../db";
 import {
   calendarEvents,
   calendarRecurrenceInstances,
+  orders,
+  invoices,
 } from "../../drizzle/schema";
 import { and, eq, gte, lte, inArray, isNull, or, sql } from "drizzle-orm";
 import { calendarLogger } from "../_core/logger";
@@ -25,6 +27,141 @@ import { calendarLogger } from "../_core/logger";
  */
 
 export const calendarRouter = router({
+  // Get aggregated calendar events (intake appointments, delivery dates, payment due dates)
+  getCalendarDashboard: protectedProcedure
+    .input(
+      z.object({
+        startDate: z.string(), // ISO date
+        endDate: z.string(), // ISO date
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+      const db = await getDb();
+
+      if (!db) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+      }
+
+      const startDate = new Date(input.startDate);
+      const endDate = new Date(input.endDate);
+
+      try {
+        // 1. Get intake appointments from calendar_events
+        const intakeAppointments = await db
+          .select({
+            id: calendarEvents.id,
+            title: calendarEvents.title,
+            date: calendarEvents.startDate,
+            time: calendarEvents.startTime,
+            eventType: sql<string>`'INTAKE'`,
+            entityType: sql<string>`'calendar'`,
+            entityId: calendarEvents.id,
+            clientId: calendarEvents.clientId,
+          })
+          .from(calendarEvents)
+          .where(
+            and(
+              eq(calendarEvents.eventType, "INTAKE"),
+              gte(calendarEvents.startDate, startDate),
+              lte(calendarEvents.endDate, endDate),
+              isNull(calendarEvents.deletedAt)
+            )
+          );
+
+        // 2. Get order delivery dates from orders.dueDate
+        const orderDeliveries = await db
+          .select({
+            id: orders.id,
+            title: sql<string>`CONCAT('Order ', ${orders.orderNumber}, ' Delivery')`,
+            date: orders.dueDate,
+            time: sql<string | null>`NULL`,
+            eventType: sql<string>`'DELIVERY'`,
+            entityType: sql<string>`'order'`,
+            entityId: orders.id,
+            clientId: orders.clientId,
+          })
+          .from(orders)
+          .where(
+            and(
+              sql`${orders.dueDate} IS NOT NULL`,
+              gte(orders.dueDate, startDate),
+              lte(orders.dueDate, endDate),
+              eq(orders.orderType, "SALE"),
+              isNull(orders.deletedAt)
+            )
+          );
+
+        // 3. Get payment due dates from invoices.dueDate
+        const paymentDueDates = await db
+          .select({
+            id: invoices.id,
+            title: sql<string>`CONCAT('Payment Due - Invoice ', ${invoices.invoiceNumber})`,
+            date: invoices.dueDate,
+            time: sql<string | null>`NULL`,
+            eventType: sql<string>`'PAYMENT_DUE'`,
+            entityType: sql<string>`'invoice'`,
+            entityId: invoices.id,
+            clientId: invoices.customerId,
+          })
+          .from(invoices)
+          .where(
+            and(
+              gte(invoices.dueDate, startDate),
+              lte(invoices.dueDate, endDate),
+              sql`${invoices.status} NOT IN ('PAID', 'VOID')`,
+              isNull(invoices.deletedAt)
+            )
+          );
+
+        // Combine all events
+        const allEvents = [
+          ...intakeAppointments,
+          ...orderDeliveries,
+          ...paymentDueDates,
+        ];
+
+        // Convert dates to ISO strings for frontend
+        const formattedEvents = allEvents.map(event => ({
+          ...event,
+          date: event.date instanceof Date 
+            ? event.date.toISOString().split('T')[0] 
+            : String(event.date),
+        }));
+
+        calendarLogger.operationSuccess("getCalendarDashboard", {
+          userId,
+          eventsCount: formattedEvents.length,
+          intakeCount: intakeAppointments.length,
+          deliveryCount: orderDeliveries.length,
+          paymentDueCount: paymentDueDates.length,
+        });
+
+        return formattedEvents;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        calendarLogger.operationFailure(
+          "getCalendarDashboard",
+          error instanceof Error ? error : new Error(errorMessage),
+          {
+            userId,
+            startDate: input.startDate,
+            endDate: input.endDate,
+          }
+        );
+
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to fetch calendar dashboard events",
+          cause: error,
+        });
+      }
+    }),
+
   // Get events with intelligent filtering
   getEvents: protectedProcedure
     .input(
