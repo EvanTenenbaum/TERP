@@ -515,7 +515,10 @@ export default function CalendarPage() {
         )}
 
         {/* Time Off Tab */}
-        {activeTab === "timeoff" && <TimeOffRequestsList isAdmin={true} />}
+        {/* TER-1230: Check actual user role for time-off approvals instead of hardcoding isAdmin=true */}
+        {activeTab === "timeoff" && (
+          <TimeOffRequestsList isAdmin={user?.role === "admin"} />
+        )}
       </div>
 
       {/* Event Form Dialog */}
