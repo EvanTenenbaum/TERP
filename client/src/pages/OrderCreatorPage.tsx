@@ -2188,15 +2188,94 @@ export default function OrderCreatorPageV2({
                 )}
               </>
             ) : (
-              <Card>
-                <CardContent className="py-12">
-                  <div className="text-center text-muted-foreground">
-                    <ShoppingCart className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">{emptyStateTitle}</p>
-                    <p className="text-sm">{emptyStateDescription}</p>
-                  </div>
-                </CardContent>
-              </Card>
+              <div className="space-y-4">
+                <Card>
+                  <CardContent className="py-8">
+                    <div className="text-center mb-6">
+                      <ShoppingCart className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
+                      <h3 className="text-lg font-semibold mb-2">
+                        {emptyStateTitle}
+                      </h3>
+                      <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                        Select a customer from the dropdown above to begin adding items and building your order.
+                      </p>
+                    </div>
+
+                    {clients && clients.length > 0 && (
+                      <div className="mt-6">
+                        <h4 className="text-sm font-medium mb-3 text-center">
+                          Recent Customers
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-4xl mx-auto">
+                          {clients
+                            .filter(c => c.isBuyer)
+                            .slice(0, 6)
+                            .map(client => (
+                              <button
+                                key={client.id}
+                                onClick={() => {
+                                  handleOrderValidationChange("clientId", client.id);
+                                  handleOrderValidationBlur("clientId");
+                                  setClientId(client.id);
+                                  clearPortableCut();
+                                  setItems([]);
+                                }}
+                                className="p-3 text-left border rounded-lg hover:border-primary hover:bg-accent transition-colors"
+                              >
+                                <div className="font-medium text-sm truncate">
+                                  {client.name}
+                                </div>
+                                {client.email && (
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    {client.email}
+                                  </div>
+                                )}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="mt-6 text-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setQuickCreateClientOpen(true)}
+                      >
+                        + Create New Customer
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="space-y-2">
+                      <Label>Order Type</Label>
+                      <Select
+                        value={orderType}
+                        onValueChange={value => {
+                          const nextOrderType = value as "QUOTE" | "SALE";
+                          setOrderType(nextOrderType);
+                          handleOrderValidationChange("orderType", nextOrderType);
+                          handleOrderValidationBlur("orderType");
+                        }}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="SALE">Sale Order</SelectItem>
+                          <SelectItem value="QUOTE">Quote</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        You can change this later if needed
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             )}
           </div>
 
