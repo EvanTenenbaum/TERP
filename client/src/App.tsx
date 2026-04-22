@@ -49,7 +49,6 @@ import ShrinkageReportPage from "@/pages/ShrinkageReportPage"; // NAV-018: Shrin
 import ImpersonatePage from "@/pages/vip-portal/auth/ImpersonatePage";
 import SessionEndedPage from "@/pages/vip-portal/SessionEndedPage";
 import AccountPage from "@/pages/AccountPage";
-import { TodoListsPage } from "@/pages/TodoListsPage";
 import { TodoListDetailPage } from "@/pages/TodoListDetailPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 // MEET-049 FIX: Use lazy loading to isolate CalendarPage import
@@ -838,14 +837,22 @@ function Router() {
                   path="/clients/:clientId/vip-portal-config"
                   component={withErrorBoundary(VIPPortalConfigPage)}
                 />
-                {/* Todo Lists - support both /todo and /todos */}
+                {/* Todo Lists - redirect to notifications with todos tab */}
                 <Route
                   path="/todo"
-                  component={withErrorBoundary(TodoListsPage)}
+                  component={RedirectWithTab(
+                    "/todo",
+                    "/notifications",
+                    "todos"
+                  )}
                 />
                 <Route
                   path="/todos"
-                  component={withErrorBoundary(TodoListsPage)}
+                  component={RedirectWithTab(
+                    "/todos",
+                    "/notifications",
+                    "todos"
+                  )}
                 />
                 <Route
                   path="/todos/:listId"
@@ -963,7 +970,11 @@ function Router() {
                 />
                 <Route
                   path="/todo-lists"
-                  component={RedirectWithSearch("/todo-lists", "/todos")}
+                  component={RedirectWithTab(
+                    "/todo-lists",
+                    "/notifications",
+                    "todos"
+                  )}
                 />
 
                 {/* TER-859: Dead route redirects */}
