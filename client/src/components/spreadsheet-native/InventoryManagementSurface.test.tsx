@@ -259,6 +259,13 @@ vi.mock("@/lib/trpc", () => ({
       },
     },
     orders: {
+      getAll: {
+        useQuery: vi.fn(() => ({
+          data: { orders: [], total: 0 },
+          isLoading: false,
+          error: null,
+        })),
+      },
       createDraftEnhanced: {
         useMutation: vi.fn(() => ({ mutate: vi.fn(), isPending: false })),
       },
@@ -285,6 +292,7 @@ vi.mock("@/lib/spreadsheet-native", () => ({
   mapInventoryItemsToPilotRows: vi.fn((items: unknown[]) => items),
   mapInventoryDetailToPilotRow: vi.fn(() => null),
   summarizeInventoryDetail: vi.fn(() => null),
+  extractItems: vi.fn((data: unknown) => (data as { orders?: unknown[] })?.orders ?? []),
 }));
 
 vi.mock("wouter", () => ({
