@@ -317,7 +317,7 @@ describe("SalesCatalogueSurface", () => {
     fireEvent.click(screen.getByText("Select Client 1"));
 
     expect(gridPropsByTitle.get("Inventory")?.minHeight).toBe(
-      "clamp(30rem, calc(100vh - 14rem), 52rem)"
+      "clamp(32rem, calc(100vh - 11rem), 56rem)"
     );
   });
 
