@@ -94,9 +94,6 @@ services:
       - key: VITE_APP_ID
         value: terp-staging
         scope: RUN_AND_BUILD_TIME
-      - key: VITE_AGENTATION_ENDPOINT
-        value: https://evans-mac-mini.tailbe55dd.ts.net
-        scope: RUN_AND_BUILD_TIME
       - key: VITE_AG_GRID_LICENSE_KEY
         scope: RUN_AND_BUILD_TIME
         type: SECRET
