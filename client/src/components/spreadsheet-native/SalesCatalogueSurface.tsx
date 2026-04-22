@@ -10,7 +10,11 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CellClickedEvent, ColDef } from "ag-grid-community";
+import type {
+  CellClickedEvent,
+  CellValueChangedEvent,
+  ColDef,
+} from "ag-grid-community";
 import {
   Copy,
   ExternalLink,
@@ -976,6 +980,40 @@ export function SalesCatalogueSurface() {
         cellClass: "powersheet-cell--locked",
       },
       {
+        field: "markup",
+        headerName: "Markup %",
+        minWidth: 80,
+        maxWidth: 100,
+        editable: true,
+        singleClickEdit: true,
+        valueFormatter: params => `${Number(params.value ?? 0).toFixed(1)}%`,
+        valueParser: params => {
+          const parsed = Number(params.newValue);
+          return Number.isFinite(parsed) ? parsed : params.oldValue;
+        },
+        cellClass: "powersheet-cell--editable font-mono text-right",
+        headerTooltip: "Edit markup % — retail price will recompute",
+      },
+      {
+        field: "retailPrice",
+        headerName: "Price",
+        minWidth: 80,
+        maxWidth: 105,
+        editable: true,
+        singleClickEdit: true,
+        valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
+        valueParser: params => {
+          const stripped =
+            typeof params.newValue === "string"
+              ? params.newValue.replace(/[^0-9.\-]/g, "")
+              : params.newValue;
+          const parsed = Number(stripped);
+          return Number.isFinite(parsed) ? parsed : params.oldValue;
+        },
+        cellClass: "powersheet-cell--editable font-mono text-right",
+        headerTooltip: "Edit client price — markup will recompute",
+      },
+      {
         field: "lineTotal",
         headerName: "Total",
         minWidth: 75,
@@ -1303,6 +1341,44 @@ export function SalesCatalogueSurface() {
     );
     toast.success("Reloaded the client's current pricing");
   }, [inventoryQuery.data]);
+
+  const handlePreviewCellValueChanged = useCallback(
+    (event: CellValueChangedEvent<SheetPreviewRow>) => {
+      const row = event.data;
+      if (!row) return;
+
+      const field = event.colDef.field;
+      if (field !== "markup" && field !== "retailPrice") {
+        return;
+      }
+
+      const nextValue = Number(event.newValue);
+      if (!Number.isFinite(nextValue)) {
+        return;
+      }
+
+      setSelectedItems(prev =>
+        prev.map(item => {
+          if (item.id !== row._raw.id) return item;
+
+          if (field === "markup") {
+            return {
+              ...item,
+              priceMarkup: roundToTenth(nextValue),
+              retailPrice: calculateRetailFromMarkup(item.basePrice, nextValue),
+            };
+          }
+
+          return {
+            ...item,
+            retailPrice: roundToCents(nextValue),
+            priceMarkup: calculateMarkupFromRetail(item.basePrice, nextValue),
+          };
+        })
+      );
+    },
+    []
+  );
 
   const handleApplySelectedLineMarkup = useCallback(
     (value: string) => {
