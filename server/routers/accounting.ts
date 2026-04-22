@@ -201,7 +201,15 @@ export const accountingRouter = router({
           .from(bills)
           .where(
             and(
-              inArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
+              // TER-1255: APPROVED bills are awaiting payment and must roll
+              // up into Top Suppliers Owed; without this filter they were
+              // silently dropped and the AP card stayed at $0.
+              inArray(bills.status, [
+                "PENDING",
+                "APPROVED",
+                "PARTIAL",
+                "OVERDUE",
+              ]),
               sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
               sql`${bills.deletedAt} IS NULL`
             )
