@@ -68,6 +68,11 @@ import {
   getGradeClass,
 } from "@/lib/statusTokens";
 import {
+  StockStatusBadge,
+  getStockStatusLabel,
+  type StockStatus,
+} from "@/components/inventory/StockStatusBadge";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -192,7 +197,7 @@ const EXPORT_COLUMNS: ExportColumn<InventoryPilotRow>[] = [
   {
     key: "stockStatus",
     label: "Stock Status",
-    formatter: v => String(v ?? ""),
+    formatter: v => getStockStatusLabel(v as string | null | undefined),
   },
 ];
 
@@ -807,10 +812,21 @@ export function InventoryManagementSurface() {
       },
       {
         field: "stockStatus",
-        headerName: "Stock",
-        minWidth: 90,
-        maxWidth: 110,
+        headerName: "Stock Status",
+        minWidth: 120,
+        maxWidth: 150,
         cellClass: "powersheet-cell--locked",
+        valueFormatter: params =>
+          getStockStatusLabel(params.value as string | null | undefined),
+        cellRenderer: (params: { value: string | null | undefined }) => {
+          if (!params.value) return null;
+          return (
+            <StockStatusBadge
+              status={params.value as StockStatus}
+              showIcon={false}
+            />
+          );
+        },
       },
       {
         headerName: "",
@@ -1535,7 +1551,11 @@ export function InventoryManagementSurface() {
                   <p>{formatQuantity(selectedRow?.availableQty ?? 0)}</p>
                 </InspectorField>
                 <InspectorField label="Stock Status">
-                  <p>{selectedRow?.stockStatus ?? "Unknown"}</p>
+                  <p>
+                    {selectedRow?.stockStatus
+                      ? getStockStatusLabel(selectedRow.stockStatus)
+                      : "Unknown"}
+                  </p>
                 </InspectorField>
                 <InspectorField label="Age">
                   <p>{selectedRow?.ageLabel ?? "-"}</p>
