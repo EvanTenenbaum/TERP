@@ -30,6 +30,7 @@ import {
   StatusBadge,
   AgingBadge,
   PayVendorModal,
+  ReconciliationSummary,
 } from "@/components/accounting";
 import { GLReversalViewer } from "@/components/accounting/GLReversalViewer";
 import { DataCardSection } from "@/components/data-cards";
@@ -37,6 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from "@/lib/dateFormat";
 import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const OVERDUE_ALERT_THRESHOLD = 25;
 
@@ -98,6 +100,9 @@ export default function AccountingDashboard({
   // WS-002: Quick Action Modal State
   const [payVendorOpen, setPayVendorOpen] = useState(false);
   const utils = trpc.useUtils();
+  
+  // TER-1229: Check if user has accounting permissions for reconciliation view
+  const { hasPermission } = usePermissions();
 
   // Fetch dashboard data
   // BUG-092 fix: Add error handling to prevent widgets stuck on "Loading..."
@@ -261,6 +266,9 @@ export default function AccountingDashboard({
           </div>
         </CardContent>
       </Card>
+
+      {/* TER-1229: Reconciliation summary for Accountant role users */}
+      {hasPermission("accounting:manage") && <ReconciliationSummary />}
 
       {overdueInvoiceCount > OVERDUE_ALERT_THRESHOLD && (
         <Card className="border-red-200 bg-red-50/70 shadow-sm">
