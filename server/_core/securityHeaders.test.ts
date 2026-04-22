@@ -46,7 +46,7 @@ describe("getHelmetConfig", () => {
       getHelmetConfig(
         "production",
         "terp-staging",
-        "https://evans-mac-mini.tailbe55dd.ts.net"
+        "https://agentation.example.com"
       )
     ).toMatchObject({
       contentSecurityPolicy: {
@@ -57,8 +57,8 @@ describe("getHelmetConfig", () => {
             "http://127.0.0.1:4747",
             "ws://localhost:4747",
             "ws://127.0.0.1:4747",
-            "https://evans-mac-mini.tailbe55dd.ts.net",
-            "wss://evans-mac-mini.tailbe55dd.ts.net",
+            "https://agentation.example.com",
+            "wss://agentation.example.com",
           ]),
         },
       },
