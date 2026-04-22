@@ -391,11 +391,15 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
     maxWidth: 150,
     cellClass: "powersheet-cell--locked font-mono text-right",
     headerClass: "text-right",
+    // TER-1253: AG Grid React escapes strings returned from cellRenderer as
+    // text nodes, so returning an HTML string surfaces raw markup in the
+    // cell. Return JSX so the span is rendered as an element.
     cellRenderer: (params: { data?: InvoiceGridRow; value: string }) => {
-      if (!params.data) return params.value ?? "-";
+      const display = params.value ?? "-";
+      if (!params.data) return display;
       const due = parseFloat(params.data.amountDue);
       const color = due > 0 ? "text-red-600" : "text-green-600";
-      return `<span class="${color} font-mono">${params.value}</span>`;
+      return <span className={`${color} font-mono`}>{display}</span>;
     },
   },
   {
