@@ -1916,15 +1916,7 @@ export default function OrderCreatorPageV2({
       <Card>
         <CardContent className="pt-6 space-y-3">
           <div className="space-y-2">
-            <Label className="flex items-center gap-1">
-              Order Type
-              {orderTypeFieldState.showSuccess ? (
-                <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
-              ) : null}
-              {orderTypeFieldState.showError ? (
-                <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-              ) : null}
-            </Label>
+            <Label>Order Type</Label>
             <Select
               value={orderType}
               onValueChange={value => {
@@ -1934,13 +1926,7 @@ export default function OrderCreatorPageV2({
                 handleOrderValidationBlur("orderType");
               }}
             >
-              <SelectTrigger
-                className={cn(
-                  "w-full",
-                  orderTypeFieldState.showError && "border-red-500",
-                  orderTypeFieldState.showSuccess && "border-emerald-500"
-                )}
-              >
+              <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -1948,11 +1934,6 @@ export default function OrderCreatorPageV2({
                 <SelectItem value="QUOTE">Quote</SelectItem>
               </SelectContent>
             </Select>
-            {orderTypeFieldState.showError ? (
-              <p className="text-xs text-destructive">
-                {orderTypeFieldState.error}
-              </p>
-            ) : null}
           </div>
 
           <Button
@@ -2097,14 +2078,8 @@ export default function OrderCreatorPageV2({
 
           <div className="grid gap-4 border-b border-border/70 bg-muted/20 px-4 py-4 md:grid-cols-2">
             <div className="flex min-w-[260px] flex-1 flex-col gap-1">
-              <span className="flex items-center gap-1 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 Customer
-                {clientFieldState.showSuccess ? (
-                  <CheckCircle className="h-3.5 w-3.5 text-emerald-600" />
-                ) : null}
-                {clientFieldState.showError ? (
-                  <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-                ) : null}
               </span>
               <ClientCombobox
                 value={clientId}
@@ -2118,10 +2093,6 @@ export default function OrderCreatorPageV2({
                     setItems([]);
                   }
                 }}
-                className={cn(
-                  clientFieldState.showError && "border-red-500",
-                  clientFieldState.showSuccess && "border-emerald-500"
-                )}
                 clients={(clients || [])
                   .filter(c => c.isBuyer)
                   .map(client => ({
@@ -2134,11 +2105,6 @@ export default function OrderCreatorPageV2({
                 placeholder="Search for a customer..."
                 emptyText="No customers found"
               />
-              {clientFieldState.showError ? (
-                <p className="text-xs text-destructive">
-                  {clientFieldState.error}
-                </p>
-              ) : null}
               <QuickCreateClient
                 hideTrigger
                 open={quickCreateClientOpen}
