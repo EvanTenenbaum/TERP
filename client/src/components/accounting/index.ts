@@ -30,6 +30,9 @@ export { TrialBalanceReport } from "./TrialBalanceReport";
 export { BalanceSheetReport } from "./BalanceSheetReport";
 export { IncomeStatementReport } from "./IncomeStatementReport";
 
+// Reconciliation (TER-1229)
+export { ReconciliationSummary } from "./ReconciliationSummary";
+
 // Re-export types
 export type {
   InvoiceStatus,

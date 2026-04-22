@@ -530,6 +530,118 @@ export const accountingRouter = router({
           input.offset
         );
       }),
+
+    // Get reconciliation summary for Accountant role users (TER-1229)
+    getReconciliationSummary: protectedProcedure
+      .use(requirePermission("accounting:read"))
+      .query(async () => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        logger.info({ msg: "[Accounting] Getting reconciliation summary" });
+
+        // Get outstanding invoices count (SENT, VIEWED, PARTIAL, OVERDUE with amountDue > 0)
+        const [outstandingInvoicesResult] = await db
+          .select({
+            count: sql<number>`COUNT(*)`,
+            totalAmount: sql<number>`SUM(CAST(${invoices.amountDue} AS DECIMAL(15,2)))`,
+          })
+          .from(invoices)
+          .where(
+            and(
+              inArray(invoices.status, [
+                "SENT",
+                "VIEWED",
+                "PARTIAL",
+                "OVERDUE",
+              ]),
+              sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
+              sql`${invoices.deletedAt} IS NULL`
+            )
+          );
+
+        // Get unrecorded AR payments (RECEIVED payments without invoiceId)
+        const [unrecordedARPaymentsResult] = await db
+          .select({
+            count: sql<number>`COUNT(*)`,
+            totalAmount: sql<number>`SUM(CAST(${payments.amount} AS DECIMAL(15,2)))`,
+          })
+          .from(payments)
+          .where(
+            and(
+              eq(payments.paymentType, "RECEIVED"),
+              sql`${payments.invoiceId} IS NULL`,
+              sql`${payments.deletedAt} IS NULL`
+            )
+          );
+
+        // Get unrecorded AP payments (SENT payments without billId)
+        const [unrecordedAPPaymentsResult] = await db
+          .select({
+            count: sql<number>`COUNT(*)`,
+            totalAmount: sql<number>`SUM(CAST(${payments.amount} AS DECIMAL(15,2)))`,
+          })
+          .from(payments)
+          .where(
+            and(
+              eq(payments.paymentType, "SENT"),
+              sql`${payments.billId} IS NULL`,
+              sql`${payments.deletedAt} IS NULL`
+            )
+          );
+
+        // Get last reconciled date (most recent reconciledAt timestamp)
+        const [lastReconciledResult] = await db
+          .select({
+            lastReconciledAt: sql<Date>`MAX(${payments.reconciledAt})`,
+          })
+          .from(payments)
+          .where(
+            and(
+              eq(payments.isReconciled, true),
+              sql`${payments.reconciledAt} IS NOT NULL`
+            )
+          );
+
+        // Get invoices 30+ days overdue
+        const [invoices30PlusOverdueResult] = await db
+          .select({
+            count: sql<number>`COUNT(*)`,
+            totalAmount: sql<number>`SUM(CAST(${invoices.amountDue} AS DECIMAL(15,2)))`,
+          })
+          .from(invoices)
+          .where(
+            and(
+              eq(invoices.status, "OVERDUE"),
+              sql`${invoices.dueDate} IS NOT NULL`,
+              sql`DATEDIFF(CURDATE(), ${invoices.dueDate}) >= 30`,
+              sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
+              sql`${invoices.deletedAt} IS NULL`
+            )
+          );
+
+        return {
+          outstandingInvoices: {
+            count: outstandingInvoicesResult?.count || 0,
+            totalAmount: outstandingInvoicesResult?.totalAmount || 0,
+          },
+          unrecordedPayments: {
+            ar: {
+              count: unrecordedARPaymentsResult?.count || 0,
+              totalAmount: unrecordedARPaymentsResult?.totalAmount || 0,
+            },
+            ap: {
+              count: unrecordedAPPaymentsResult?.count || 0,
+              totalAmount: unrecordedAPPaymentsResult?.totalAmount || 0,
+            },
+          },
+          lastReconciledAt: lastReconciledResult?.lastReconciledAt || null,
+          invoices30PlusOverdue: {
+            count: invoices30PlusOverdueResult?.count || 0,
+            totalAmount: invoices30PlusOverdueResult?.totalAmount || 0,
+          },
+        };
+      }),
   }),
 
   // Chart of Accounts
