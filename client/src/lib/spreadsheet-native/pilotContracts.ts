@@ -139,6 +139,23 @@ function toNumber(value: number | string | null | undefined) {
   return 0;
 }
 
+/**
+ * TER-1256: Normalize a money value to a dollar-based number.
+ *
+ * All order/line totals are persisted as MySQL decimals (dollars, 2dp) and
+ * surfaced by the tRPC layer as numeric strings. The detail inspector panel
+ * must use the exact same normalization as the grid column so that a single
+ * row cannot render at 100x the grid value due to accidental cents/dollars
+ * drift in an intermediate type cast.
+ *
+ * Accepts number | string | null | undefined. Returns 0 for invalid inputs.
+ */
+export function normalizeOrderTotal(
+  value: number | string | null | undefined
+): number {
+  return toNumber(value);
+}
+
 function parseOptionalNumber(value: unknown) {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : null;

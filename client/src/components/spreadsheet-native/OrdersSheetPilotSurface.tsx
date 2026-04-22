@@ -25,6 +25,7 @@ import {
   extractItems,
   mapOrderLineItemsToPilotRows,
   mapOrdersToPilotRows,
+  normalizeOrderTotal,
   ordersQueueColumnPresets,
   useSpreadsheetSelectionParam,
 } from "@/lib/spreadsheet-native";
@@ -421,7 +422,9 @@ export function OrdersSheetPilotSurface({
         minWidth: 120,
         maxWidth: 140,
         sortable: true,
-        valueFormatter: params => formatCurrency(Number(params.value ?? 0)),
+        // TER-1256: route both grid and inspector totals through the same
+        // dollar normalization helper so they can never drift (cent shift).
+        valueFormatter: params => formatCurrency(normalizeOrderTotal(params.value)),
       },
       {
         field: "nextStepLabel",
@@ -975,7 +978,9 @@ export function OrdersSheetPilotSurface({
                 </p>
               </InspectorField>
               <InspectorField label="Total">
-                <p>{formatCurrency(selectedOrderRow.total)}</p>
+                {/* TER-1256: use the same normalization as the grid column so
+                    grid and inspector can never render a 100x drift. */}
+                <p>{formatCurrency(normalizeOrderTotal(selectedOrderRow.total))}</p>
               </InspectorField>
               <InspectorField label="Created">
                 <p>{formatDate(selectedOrderRow.createdAt)}</p>
