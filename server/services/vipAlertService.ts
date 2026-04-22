@@ -38,6 +38,7 @@ export async function checkVipPriceAlertsForBatch(
         productName: products.nameCanonical,
         sku: batches.sku,
         price: batches.unitCogs,
+        unitCogs: batches.unitCogs,
         batchStatus: batches.batchStatus,
       })
       .from(batches)
@@ -139,6 +140,7 @@ export async function checkVipStockAlertsForBatch(
         productName: products.nameCanonical,
         sku: batches.sku,
         price: batches.unitCogs,
+        unitCogs: batches.unitCogs,
         onHandQty: batches.onHandQty,
         batchStatus: batches.batchStatus,
       })
