@@ -1297,6 +1297,7 @@ export const inventoryRouter = router({
   // Create new batch (intake)
   // ✅ FIXED: Uses transactional service (TERP-INIT-005 Phase 1)
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
+  // ✅ TER-1228: Progress tracking and rollback support
   // SECURITY FIX: Changed from inventory:read to inventory:create
   intake: protectedProcedure
     .use(requirePermission("inventory:create"))
@@ -1328,10 +1329,85 @@ export const inventoryRouter = router({
           vendor: result.vendor,
           brand: result.brand,
           product: result.product,
+          progress: result.progress,
         };
       } catch (error) {
         inventoryLogger.operationFailure("intake", error as Error, { input });
+        
+        // TER-1228: Extract progress from error cause if available
+        let progress = undefined;
+        if (error && typeof error === "object" && "cause" in error) {
+          const cause = error.cause as { progress?: unknown };
+          if (cause && typeof cause === "object" && "progress" in cause) {
+            progress = cause.progress;
+          }
+        }
+        
+        // Re-throw with progress attached if available
+        if (progress) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error instanceof Error ? error.message : "Intake failed",
+            cause: { originalError: error, progress },
+          });
+        }
+        
         handleError(error, "inventory.intake");
+        throw error;
+      }
+    }),
+
+  // Rollback failed intake transaction (TER-1228)
+  rollbackIntake: protectedProcedure
+    .use(requirePermission("inventory:create"))
+    .input(
+      z.object({
+        targets: z.array(
+          z.object({
+            step: z.enum([
+              "VALIDATE_COGS",
+              "CREATE_VENDOR",
+              "LOOKUP_SUPPLIER",
+              "CREATE_BRAND",
+              "CREATE_PRODUCT",
+              "CREATE_LOT",
+              "CREATE_BATCH",
+              "CREATE_LOCATION",
+              "CREATE_AUDIT",
+              "CREATE_PAYABLE",
+            ]),
+            entityId: z.number(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        inventoryLogger.operationStart("rollbackIntake", {
+          targetCount: input.targets.length,
+        });
+
+        const { rollbackIntake } = await import(
+          "../services/intakeRollbackService"
+        );
+
+        const result = await rollbackIntake(
+          input.targets,
+          getAuthenticatedUserId(ctx)
+        );
+
+        inventoryLogger.operationSuccess("rollbackIntake", {
+          rolledBackSteps: result.rolledBackSteps,
+        });
+
+        return result;
+      } catch (error) {
+        inventoryLogger.operationFailure(
+          "rollbackIntake",
+          error as Error,
+          input
+        );
+        handleError(error, "inventory.rollbackIntake");
         throw error;
       }
     }),

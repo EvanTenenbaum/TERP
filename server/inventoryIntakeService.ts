@@ -7,9 +7,20 @@
  * - Atomic sequence generation for lot and batch codes
  * - All entity creation (vendor, brand, product, lot, batch, location, audit) is atomic
  * - Rollback on any failure to maintain data integrity
+ *
+ * TER-1228: Progress tracking and rollback UX
+ * - Track each step of the multi-entity transaction
+ * - Return progress information for UI display
+ * - Support rollback of partially completed transactions
  */
 
 import { TRPCError } from "@trpc/server";
+import type {
+  IntakeProgress,
+  IntakeStepName,
+  IntakeProgressUpdate,
+} from "@shared/intakeProgress";
+import { createInitialProgress, updateProgress } from "@shared/intakeProgress";
 import { getDb } from "./db";
 import {
   vendors,
@@ -114,21 +125,35 @@ export interface IntakeResult {
   brand: Brand;
   product: Product;
   lot: Lot;
+  progress: IntakeProgress;
+}
+
+export interface IntakeError extends Error {
+  progress: IntakeProgress;
 }
 
 /**
  * Process inventory intake with full transaction support
  * ✅ FIXED: Entire operation wrapped in transaction (TERP-INIT-005 Phase 1)
+ * ✅ TER-1228: Progress tracking and rollback support
  *
  * @param input Intake parameters
- * @returns Intake result with created entities
+ * @returns Intake result with created entities and progress information
  */
 export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
+  // TER-1228: Initialize progress tracking
+  let progress = createInitialProgress();
+
+  const updateStep = (update: IntakeProgressUpdate) => {
+    progress = updateProgress(progress, update);
+  };
+
   try {
-    // Validate COGS before starting transaction
+    // Step 1: Validate COGS
+    updateStep({ step: "VALIDATE_COGS", status: "running" });
     const cogsValidation = inventoryUtils.validateCOGS(
       input.cogsMode,
       input.unitCogs,
@@ -136,15 +161,25 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
       input.unitCogsMax
     );
     if (!cogsValidation.valid) {
-      throw new Error(cogsValidation.error);
+      updateStep({
+        step: "VALIDATE_COGS",
+        status: "failed",
+        error: cogsValidation.error,
+      });
+      const error = new Error(cogsValidation.error) as IntakeError;
+      error.progress = progress;
+      throw error;
     }
+    updateStep({ step: "VALIDATE_COGS", status: "complete" });
 
     // Wrap entire intake operation in a retryable transaction to absorb transient
     // lock waits/deadlocks under concurrent intake load.
     const result = await withRetryableTransaction(
       async tx => {
-        // 1. Find or create vendor (retained for brands.vendorId and lots.vendorId NOT NULL compatibility)
-        // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
+        // Step 2: Find or create vendor
+
+        updateStep({ step: "CREATE_VENDOR", status: "running" });
+
         const vendor = await findOrCreate<typeof vendors, Vendor>(
           tx,
           vendors,
@@ -152,7 +187,10 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           { name: input.vendorName }
         );
 
-        // W4-1: Look up supplier in clients table (isSeller=true) to set supplierClientId on lots
+        // Step 3: Look up supplier in clients table
+
+
+        updateStep({ step: "LOOKUP_SUPPLIER", status: "running" });
         const [supplierClient] = await tx
           .select({ id: clients.id })
           .from(clients)
@@ -165,8 +203,12 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           )
           .limit(1);
 
-        // 2. Find or create brand
-        // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
+        // Step 4: Find or create brand
+
+
+        updateStep({ step: "CREATE_BRAND", status: "running" });
+
+
         const brand = await findOrCreate<typeof brands, Brand>(
           tx,
           brands,
@@ -174,7 +216,10 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           { name: input.brandName, vendorId: vendor.id }
         );
 
-        // 3. Find or create product
+        // Step 5: Find or create product
+
+
+        updateStep({ step: "CREATE_PRODUCT", status: "running" });
         // ✅ REFACTORED: TERP-INIT-005 Phase 4 - Use reusable findOrCreate utility
         const normalizedProductName = inventoryUtils.normalizeProductName(
           input.productName
@@ -197,7 +242,10 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           }
         );
 
-        // 4. Generate lot code and create lot
+        // Step 6: Generate lot code and create lot
+
+
+        updateStep({ step: "CREATE_LOT", status: "running" });
         // Note: Sequence generation happens outside transaction but is atomic
         const lotCode = await inventoryUtils.generateLotCode();
 
@@ -228,8 +276,12 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
 
           lot = newLot;
         }
+        updateStep({ step: "CREATE_LOT", status: "complete", entityId: lot.id });
 
-        // 5. Generate batch code and a collision-safe SKU
+        // Step 7: Generate batch code and create batch
+
+
+        updateStep({ step: "CREATE_BATCH", status: "running" });
         let batchCode = await inventoryUtils.generateBatchCode();
         const brandKey = inventoryUtils.normalizeToKey(brand.name);
         const productKey = inventoryUtils.normalizeToKey(product.nameCanonical);
@@ -325,6 +377,11 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
             // Build the newly created batch from the insert payload instead of
             // immediately re-querying incompatible columns.
             batch = buildInsertedBatchSnapshot(batchId, batchPayload);
+            updateStep({
+              step: "CREATE_BATCH",
+              status: "complete",
+              entityId: batch.id,
+            });
           } catch (insertError) {
             if (!isDuplicateEntryError(insertError)) {
               throw insertError;
@@ -366,28 +423,50 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           );
         }
 
-        // 7. Create batch location
-        await tx.insert(batchLocations).values({
-          batchId: batch.id,
-          site: input.location.site,
-          zone: input.location.zone,
-          rack: input.location.rack,
-          shelf: input.location.shelf,
-          bin: input.location.bin,
-          qty: inventoryUtils.formatQty(input.quantity),
-          deletedAt: null,
+        // Step 8: Create batch location
+
+
+        updateStep({ step: "CREATE_LOCATION", status: "running" });
+        const [locationResult] = await tx
+          .insert(batchLocations)
+          .values({
+            batchId: batch.id,
+            site: input.location.site,
+            zone: input.location.zone,
+            rack: input.location.rack,
+            shelf: input.location.shelf,
+            bin: input.location.bin,
+            qty: inventoryUtils.formatQty(input.quantity),
+            deletedAt: null,
+          })
+          .$returningId();
+        updateStep({
+          step: "CREATE_LOCATION",
+          status: "complete",
+          entityId: locationResult.id,
         });
 
-        // 8. Create audit log
-        await tx.insert(auditLogs).values({
-          actorId: input.actorId,
-          entity: "Batch",
-          entityId: batch.id,
-          action: "CREATED",
-          before: null,
-          after: inventoryUtils.createAuditSnapshot(batch),
-          reason: "Initial intake",
-          deletedAt: null,
+        // Step 9: Create audit log
+
+
+        updateStep({ step: "CREATE_AUDIT", status: "running" });
+        const [auditResult] = await tx
+          .insert(auditLogs)
+          .values({
+            actorId: input.actorId,
+            entity: "Batch",
+            entityId: batch.id,
+            action: "CREATED",
+            before: null,
+            after: inventoryUtils.createAuditSnapshot(batch),
+            reason: "Initial intake",
+            deletedAt: null,
+          })
+          .$returningId();
+        updateStep({
+          step: "CREATE_AUDIT",
+          status: "complete",
+          entityId: auditResult.id,
         });
 
         return {
@@ -397,6 +476,7 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           brand,
           product,
           lot,
+          progress,
         };
       },
       // Intake can burst with parallel creates (vendor/brand/product SKU races).
@@ -404,9 +484,9 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
       { maxRetries: 5, timeout: 30, retryOnDuplicateKey: true }
     );
 
-    // 9. MEET-005: Create payable for consigned inventory after transaction commit.
-    // Running this outside the intake transaction avoids FK lock waits on the
-    // newly created batch/lot rows while preserving non-fatal behavior.
+    // Step 10: Create payable for consigned inventory (optional, non-fatal)
+
+
     if (result.batch.ownershipType === "CONSIGNED") {
       try {
         const cogsPerUnit =
@@ -422,7 +502,8 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
           .limit(1);
 
         if (supplierClient) {
-          await payablesService.createPayable(
+          updateStep({ step: "CREATE_PAYABLE", status: "running" });
+          const payableId = await payablesService.createPayable(
             {
               batchId: result.batch.id,
               lotId: result.lot.id,
@@ -431,6 +512,11 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
             },
             input.actorId
           );
+          updateStep({
+            step: "CREATE_PAYABLE",
+            status: "complete",
+            entityId: payableId,
+          });
           logger.info({
             msg: "[MEET-005] Created payable for consigned batch",
             batchId: result.batch.id,
@@ -457,15 +543,36 @@ export async function processIntake(input: IntakeInput): Promise<IntakeResult> {
     }
 
     return result;
+    return { ...result, progress };
   } catch (error) {
     logger.error({ error }, "Error processing intake");
+
+    // If error already has progress attached, preserve it
+    if (error && typeof error === "object" && "progress" in error) {
+      const intakeError = error as IntakeError;
+      logger.error({
+        msg: "Intake failed with progress",
+        progress: intakeError.progress,
+      });
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: error instanceof Error ? error.message : "Intake failed",
+        cause: {
+          originalError: error,
+          progress: intakeError.progress,
+        },
+      });
+    }
     if (error instanceof TRPCError) {
       throw error;
     }
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message: `Failed to process intake: ${error instanceof Error ? error.message : "Unknown error"}`,
-      cause: error,
+      cause: {
+        originalError: error,
+        progress,
+      },
     });
   }
 }
