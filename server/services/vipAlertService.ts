@@ -37,7 +37,7 @@ export async function checkVipPriceAlertsForBatch(
         productId: batches.productId,
         productName: products.nameCanonical,
         sku: batches.sku,
-        displayPrice: batches.displayPrice,
+        price: batches.price,
         batchStatus: batches.batchStatus,
       })
       .from(batches)
@@ -51,7 +51,7 @@ export async function checkVipPriceAlertsForBatch(
     }
 
     const batchData = batch[0];
-    const currentPrice = parseFloat(batchData.displayPrice || "0");
+    const currentPrice = parseFloat(batchData.price || "0");
 
     const matchingAlerts = await db
       .select({
@@ -138,7 +138,7 @@ export async function checkVipStockAlertsForBatch(
         id: batches.id,
         productName: products.nameCanonical,
         sku: batches.sku,
-        displayPrice: batches.displayPrice,
+        price: batches.price,
         onHandQty: batches.onHandQty,
         batchStatus: batches.batchStatus,
       })
@@ -183,7 +183,7 @@ export async function checkVipStockAlertsForBatch(
 
     const triggeredIds: number[] = [];
     const now = new Date();
-    const currentPrice = parseFloat(batchData.displayPrice || "0");
+    const currentPrice = parseFloat(batchData.price || "0");
 
     for (const alert of stockAlerts) {
       try {
@@ -273,7 +273,7 @@ export async function getTriggeredVipAlerts(limit = 50) {
         productName: products.nameCanonical,
         sku: batches.sku,
         targetPrice: clientPriceAlerts.targetPrice,
-        currentPrice: batches.displayPrice,
+        currentPrice: batches.price,
         triggeredAt: clientPriceAlerts.triggeredAt,
       })
       .from(clientPriceAlerts)
