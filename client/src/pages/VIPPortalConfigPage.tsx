@@ -257,7 +257,7 @@ export default function VIPPortalConfigPage() {
     <div className="p-4 md:p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <BackButton size="icon" />
+          <BackButton size="icon" className="block xl:hidden" />
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">
               VIP Portal Configuration

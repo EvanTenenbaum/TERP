@@ -474,7 +474,7 @@ export default function ClientProfilePage() {
   if (!shell) {
     return (
       <div className="space-y-4 p-4 md:p-6">
-        <BackButton />
+        <BackButton className="block xl:hidden" />
         <EmptyCard message="This relationship profile could not be loaded." />
       </div>
     );
@@ -482,7 +482,7 @@ export default function ClientProfilePage() {
 
   return (
     <div className="space-y-4 px-4 py-4 md:px-6">
-      <BackButton />
+      <BackButton className="block xl:hidden" />
 
       <LinearWorkspaceShell
         title={shell.name}
