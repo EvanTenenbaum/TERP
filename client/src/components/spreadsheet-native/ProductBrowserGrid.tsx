@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import InlineRowAddControls from "./InlineRowAddControls";
 import { PowersheetGrid } from "./PowersheetGrid";
+import { getStockStatusLabel } from "@/components/inventory/StockStatusBadge";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -207,7 +208,7 @@ export function ProductBrowserGrid({
           item.availableQty !== null && item.availableQty !== undefined
             ? String(item.availableQty)
             : "0",
-        col4: item.stockStatus ?? "",
+        col4: getStockStatusLabel(item.stockStatus),
       }));
     }
 

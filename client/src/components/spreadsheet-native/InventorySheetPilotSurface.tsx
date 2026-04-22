@@ -53,6 +53,7 @@ import {
   type InventoryBatchStatus,
   mod,
 } from "./inventoryConstants";
+import { getStockStatusLabel } from "@/components/inventory/StockStatusBadge";
 
 // ============================================================================
 // Constants
@@ -120,7 +121,7 @@ const EXPORT_COLUMNS: ExportColumn<InventoryPilotRow>[] = [
   {
     key: "stockStatus",
     label: "Stock Status",
-    formatter: v => String(v ?? ""),
+    formatter: v => getStockStatusLabel(v as string | null | undefined),
   },
 ];
 
@@ -920,7 +921,11 @@ export function InventorySheetPilotSurface({
                 <p>{String(detailSummary?.auditLogCount ?? 0)}</p>
               </InspectorField>
               <InspectorField label="Stock Status">
-                <p>{selectedRow?.stockStatus ?? "Unknown"}</p>
+                <p>
+                  {selectedRow?.stockStatus
+                    ? getStockStatusLabel(selectedRow.stockStatus)
+                    : "Unknown"}
+                </p>
               </InspectorField>
               <InspectorField label="Age">
                 <p>{selectedRow?.ageLabel ?? "-"}</p>

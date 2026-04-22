@@ -65,3 +65,32 @@ export function StockStatusBadge({
     </Badge>
   );
 }
+
+/**
+ * TER-1251: Human-readable labels for stock status enum values.
+ * Use this in grid column formatters, inspector fields, and CSV exports
+ * instead of rendering the raw enum string.
+ */
+export const STOCK_STATUS_LABELS: Record<StockStatus, string> = {
+  CRITICAL: statusConfig.CRITICAL.label,
+  LOW: statusConfig.LOW.label,
+  OPTIMAL: statusConfig.OPTIMAL.label,
+  OUT_OF_STOCK: statusConfig.OUT_OF_STOCK.label,
+};
+
+/**
+ * Resolve a human-readable label for a raw stock status enum value.
+ * Falls back to a title-cased form of the raw value when the enum is
+ * unrecognized, to avoid ever surfacing SCREAMING_SNAKE_CASE to users.
+ */
+export function getStockStatusLabel(
+  status: string | null | undefined
+): string {
+  if (!status) return "";
+  const known = STOCK_STATUS_LABELS[status as StockStatus];
+  if (known) return known;
+  return status
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
