@@ -719,6 +719,11 @@ export async function recordBillPayment(billId: number, amount: number) {
 
 /**
  * Get outstanding payables (unpaid/partial bills)
+ *
+ * TER-1255: Include APPROVED bills (approved, ready for payment, not yet
+ * paid). Without APPROVED, bills sitting in the approved-for-payment queue
+ * vanished from the AP dashboard widgets, which made Accounts Payable
+ * appear as $0 on the accounting dashboard.
  */
 export async function getOutstandingPayables() {
   const db = await getDb();
@@ -729,7 +734,12 @@ export async function getOutstandingPayables() {
     .from(bills)
     .where(
       and(
-        safeInArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
+        safeInArray(bills.status, [
+          "PENDING",
+          "APPROVED",
+          "PARTIAL",
+          "OVERDUE",
+        ]),
         sql`${bills.amountDue} > 0`,
         sql`${bills.deletedAt} IS NULL`
       )
@@ -756,6 +766,8 @@ export async function calculateAPAging() {
   try {
     const today = new Date();
 
+    // TER-1255: Include APPROVED bills (approved-for-payment but not yet
+    // paid) so the AP aging totals match the receipts that finance owes.
     const result = await db
       .select({
         billId: bills.id,
@@ -765,7 +777,12 @@ export async function calculateAPAging() {
       .from(bills)
       .where(
         and(
-          safeInArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
+          safeInArray(bills.status, [
+            "PENDING",
+            "APPROVED",
+            "PARTIAL",
+            "OVERDUE",
+          ]),
           sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
           sql`${bills.deletedAt} IS NULL`
         )
