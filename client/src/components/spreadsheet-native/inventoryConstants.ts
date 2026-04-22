@@ -1,27 +1,20 @@
 /**
  * Shared inventory constants used by InventoryManagementSurface and InventoryAdvancedFilters.
+ * TER-1220: Consolidated batch status definitions - re-exporting from server/constants/batchStatuses.ts
  */
 
-export const STATUS_OPTIONS = [
-  "AWAITING_INTAKE",
-  "LIVE",
-  "ON_HOLD",
-  "QUARANTINED",
-  "SOLD_OUT",
-  "CLOSED",
-] as const;
+import {
+  BATCH_STATUSES,
+  BATCH_STATUS_LABELS,
+  type BatchStatus,
+} from "../../../../server/constants/batchStatuses";
 
-export type InventoryBatchStatus = (typeof STATUS_OPTIONS)[number];
+// Re-export server constants with client-facing names for backward compatibility
+export const STATUS_OPTIONS = BATCH_STATUSES;
+export type InventoryBatchStatus = BatchStatus;
+export const STATUS_LABELS = BATCH_STATUS_LABELS;
 
-export const STATUS_LABELS: Record<InventoryBatchStatus, string> = {
-  AWAITING_INTAKE: "Awaiting Intake",
-  LIVE: "Live",
-  ON_HOLD: "On Hold",
-  QUARANTINED: "Quarantined",
-  SOLD_OUT: "Sold Out",
-  CLOSED: "Closed",
-};
-
+// Platform detection utilities (unrelated to batch status)
 export const isMac =
   typeof navigator !== "undefined" &&
   /mac/i.test(navigator.platform || navigator.userAgent);
