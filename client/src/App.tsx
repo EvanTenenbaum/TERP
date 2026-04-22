@@ -571,6 +571,19 @@ function Router() {
                   path="/orders"
                   component={RedirectWithTab("/orders", "/sales", "orders")}
                 />
+                {/* TER-1252: Redirect legacy /sell/orders path to /sales?tab=orders */}
+                <Route
+                  path="/sell/orders"
+                  component={RedirectWithTab(
+                    "/sell/orders",
+                    "/sales",
+                    "orders"
+                  )}
+                />
+                <Route
+                  path="/sell"
+                  component={RedirectWithSearch("/sell", "/sales")}
+                />
                 <Route
                   path="/pick-pack"
                   component={RedirectToOperationsTab("/pick-pack", "shipping")}
