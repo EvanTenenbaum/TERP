@@ -1531,13 +1531,14 @@ export function SalesOrderSurface({
             <AdaptiveSplitLayout
               primary={inventoryPanel}
               secondary={documentPanel}
-              autoSaveId="sales-order-surface-layout"
-              primaryDefaultSize={60}
-              primaryMinSize={44}
-              secondaryMinSize={28}
-              desktopClassName="min-h-[560px] flex-1"
-              primaryPanelClassName="min-w-0"
-              secondaryPanelClassName="min-w-0"
+              autoSaveId="sales-order-surface-layout-v2"
+              direction="vertical"
+              primaryDefaultSize={55}
+              primaryMinSize={20}
+              secondaryMinSize={20}
+              desktopClassName="min-h-[720px] flex-1"
+              primaryPanelClassName="min-h-0"
+              secondaryPanelClassName="min-h-0"
             />
             {documentControlsBand}
           </div>

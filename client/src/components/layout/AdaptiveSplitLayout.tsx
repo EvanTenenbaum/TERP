@@ -19,6 +19,14 @@ interface AdaptiveSplitLayoutProps {
   primaryPanelClassName?: string;
   secondaryPanelClassName?: string;
   handleClassName?: string;
+  /**
+   * Split direction.
+   * - "horizontal": panels arranged side-by-side with a vertical drag handle.
+   * - "vertical": panels stacked top/bottom with a horizontal drag handle
+   *   that spans the full width (draggable to resize heights).
+   * Defaults to "horizontal".
+   */
+  direction?: "horizontal" | "vertical";
 }
 
 export function AdaptiveSplitLayout({
@@ -34,6 +42,7 @@ export function AdaptiveSplitLayout({
   primaryPanelClassName,
   secondaryPanelClassName,
   handleClassName,
+  direction = "horizontal",
 }: AdaptiveSplitLayoutProps) {
   const [isDesktopLayout, setIsDesktopLayout] = useState<boolean>(() => {
     if (typeof window === "undefined") {
@@ -72,19 +81,32 @@ export function AdaptiveSplitLayout({
     );
   }
 
+  const isVertical = direction === "vertical";
+  const primarySpacingClass = isVertical ? "pb-3" : "pr-3";
+  const secondarySpacingClass = isVertical ? "pt-3" : "pl-3";
+  const handlePositionClass = isVertical ? "my-1 cursor-row-resize" : "mx-1";
+  const handleSizeClass = isVertical ? "after:h-3" : "after:w-3";
+  const panelGroupClassName = isVertical
+    ? cn("items-stretch", desktopClassName)
+    : cn("items-start", desktopClassName);
+
   return (
     <ResizablePanelGroup
-      direction="horizontal"
+      direction={direction}
       autoSaveId={autoSaveId}
-      className={cn("items-start", desktopClassName)}
+      className={panelGroupClassName}
     >
       <ResizablePanel defaultSize={primaryDefaultSize} minSize={primaryMinSize}>
-        <div className={cn("pr-3", primaryPanelClassName)}>{primary}</div>
+        <div className={cn(primarySpacingClass, primaryPanelClassName)}>
+          {primary}
+        </div>
       </ResizablePanel>
       <ResizableHandle
         withHandle
         className={cn(
-          "mx-1 rounded-full bg-border/70 after:w-3 hover:bg-border",
+          "rounded-full bg-border/70 hover:bg-border",
+          handlePositionClass,
+          handleSizeClass,
           handleClassName
         )}
       />
@@ -92,7 +114,9 @@ export function AdaptiveSplitLayout({
         defaultSize={resolvedSecondaryDefaultSize}
         minSize={secondaryMinSize}
       >
-        <div className={cn("pl-3", secondaryPanelClassName)}>{secondary}</div>
+        <div className={cn(secondarySpacingClass, secondaryPanelClassName)}>
+          {secondary}
+        </div>
       </ResizablePanel>
     </ResizablePanelGroup>
   );

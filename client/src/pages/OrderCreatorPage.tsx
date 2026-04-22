@@ -2141,7 +2141,11 @@ export default function OrderCreatorPageV2({
                   <AdaptiveSplitLayout
                     primary={primaryOrderSheetColumn}
                     secondary={secondaryOrderSheetColumn}
-                    autoSaveId="orders-document-sheet-layout"
+                    autoSaveId="orders-document-sheet-layout-v2"
+                    direction="vertical"
+                    primaryDefaultSize={55}
+                    primaryMinSize={20}
+                    secondaryMinSize={20}
                     desktopClassName="min-h-[960px]"
                   />
                 ) : (
