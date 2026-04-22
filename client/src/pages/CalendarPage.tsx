@@ -274,7 +274,7 @@ export default function CalendarPage() {
   }
 
   // Check if calendar has events
-  const hasEvents = events && events.length > 0;
+  const hasEvents = formattedEvents && formattedEvents.length > 0;
 
   return (
     <div className="flex h-screen flex-col bg-background">
