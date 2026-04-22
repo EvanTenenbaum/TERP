@@ -334,22 +334,23 @@ const extractItems = <T,>(data: unknown): T[] => {
   return [];
 };
 
+// TER-1257: Drop the `orderType: "SALE"` constraint so Standard View mirrors
+// the Spreadsheet View queue. The SALE-only filter caused Standard View to
+// return 0 orders while Spreadsheet View rendered data correctly — the
+// divergence was this over-narrow filter, not the data itself.
 export const buildConfirmedQueryInput = (
   fulfillmentStatus?: string
 ): {
-  orderType: "SALE";
   isDraft: boolean;
   fulfillmentStatus?: string;
 } =>
   fulfillmentStatus && fulfillmentStatus !== "ALL"
-    ? { orderType: "SALE", isDraft: false, fulfillmentStatus }
-    : { orderType: "SALE", isDraft: false };
+    ? { isDraft: false, fulfillmentStatus }
+    : { isDraft: false };
 
 export const buildDraftQueryInput = (): {
-  orderType: "SALE";
   isDraft: boolean;
 } => ({
-  orderType: "SALE",
   isDraft: true,
 });
 

@@ -13,25 +13,25 @@ import {
 } from "./OrdersWorkSurface";
 
 describe("buildDraftQueryInput", () => {
-  it("keeps the orders draft tab constrained to sales drafts", () => {
+  // TER-1257: Standard View must mirror the Spreadsheet View queue, which does
+  // not constrain by orderType. The previous `orderType: "SALE"` filter caused
+  // Standard View to return zero orders when data was visible in Spreadsheet.
+  it("requests all draft orders without constraining orderType", () => {
     expect(buildDraftQueryInput()).toEqual({
-      orderType: "SALE",
       isDraft: true,
     });
   });
 });
 
 describe("buildConfirmedQueryInput", () => {
-  it("always constrains confirmed orders to sales", () => {
+  it("requests all confirmed orders without constraining orderType", () => {
     expect(buildConfirmedQueryInput()).toEqual({
-      orderType: "SALE",
       isDraft: false,
     });
   });
 
-  it("preserves the selected fulfillment filter for sales only", () => {
+  it("preserves the selected fulfillment filter", () => {
     expect(buildConfirmedQueryInput("SHIPPED")).toEqual({
-      orderType: "SALE",
       isDraft: false,
       fulfillmentStatus: "SHIPPED",
     });
