@@ -83,58 +83,44 @@ export default function CalendarPage() {
   // Load user's default view (for future use)
   // const { data: defaultView } = trpc.calendarViews.getDefaultView.useQuery();
 
-  // Load events for current date range
-  // BUG-070 FIX: Added retry logic and timeout handling for stability under memory pressure
+  // Load calendar dashboard events (intake, delivery, payment due)
   const dateRange = getDateRange(currentDate, currentView);
   const {
-    data: eventsData,
+    data: dashboardEvents = [],
     refetch: refetchEvents,
     isLoading: eventsLoading,
     error: eventsError,
     isError: isEventsError,
-  } = trpc.calendar.getEvents.useQuery(
+  } = trpc.calendar.getCalendarDashboard.useQuery(
     {
       startDate: dateRange.start,
       endDate: dateRange.end,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
     {
-      // BUG-070 FIX: Retry logic for API failures
       retry: 2,
       retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 5000),
-      // Keep data fresh but cache for 30 seconds
       staleTime: 30 * 1000,
-      // Garbage collect after 5 minutes
       gcTime: 5 * 60 * 1000,
-      // Refetch on mount but not on window focus during development
       refetchOnMount: true,
       refetchOnWindowFocus: false,
     }
   );
 
-  // Handle the response which could be an array or an object with data property
-  const events = Array.isArray(eventsData)
-    ? eventsData
-    : eventsData?.data || [];
-
-  // Convert events to the format expected by view components
-  const formattedEvents = events.map(event => ({
+  // Convert to format expected by view components
+  const formattedEvents = dashboardEvents.map(event => ({
     id: event.id,
     title: event.title,
-    startDate:
-      typeof event.startDate === "string"
-        ? event.startDate
-        : event.startDate.toISOString().split("T")[0],
-    endDate:
-      typeof event.endDate === "string"
-        ? event.endDate
-        : event.endDate.toISOString().split("T")[0],
-    startTime: event.startTime,
-    endTime: event.endTime,
-    eventType: "eventType" in event ? event.eventType : "MEETING",
-    status: "status" in event ? event.status : "SCHEDULED",
-    priority: "priority" in event ? event.priority : "MEDIUM",
-    module: "module" in event ? event.module || "" : "",
+    startDate: event.date,
+    endDate: event.date, // Single-day events
+    startTime: event.time,
+    endTime: null,
+    eventType: event.eventType,
+    entityType: event.entityType,
+    entityId: event.entityId,
+    clientId: event.clientId,
+    status: "SCHEDULED",
+    priority: "MEDIUM",
+    module: "",
   }));
 
   // Handle view change
@@ -171,10 +157,24 @@ export default function CalendarPage() {
     setCurrentDate(new Date());
   };
 
-  // Handle event actions
+  // Handle event actions - navigate to appropriate page based on event type
   const handleEventClick = (eventId: number) => {
-    setSelectedEventId(eventId);
-    setIsEventDialogOpen(true);
+    const event = formattedEvents.find(e => e.id === eventId);
+    
+    if (!event) {
+      return;
+    }
+
+    // Navigate based on entity type
+    if (event.entityType === "order") {
+      window.location.href = `/orders?id=${event.entityId}`;
+    } else if (event.entityType === "invoice") {
+      window.location.href = `/accounting/invoices?id=${event.entityId}`;
+    } else if (event.entityType === "calendar") {
+      // Open calendar event dialog for intake appointments
+      setSelectedEventId(eventId);
+      setIsEventDialogOpen(true);
+    }
   };
 
   const handleCreateEvent = () => {
@@ -276,7 +276,7 @@ export default function CalendarPage() {
   }
 
   // Check if calendar has events
-  const hasEvents = events && events.length > 0;
+  const hasEvents = formattedEvents && formattedEvents.length > 0;
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -455,6 +455,22 @@ export default function CalendarPage() {
         {/* Calendar Tab */}
         {activeTab === "calendar" && (
           <>
+            {/* Event Type Legend */}
+            <div className="mb-4 flex flex-wrap gap-4 rounded-lg border border-border bg-card p-3">
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded border-l-4 border-green-500 bg-green-100"></div>
+                <span className="text-sm text-foreground">Intake Appointments</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded border-l-4 border-blue-500 bg-blue-100"></div>
+                <span className="text-sm text-foreground">Order Deliveries</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-4 w-4 rounded border-l-4 border-orange-500 bg-orange-100"></div>
+                <span className="text-sm text-foreground">Payment Due</span>
+              </div>
+            </div>
+
             {/* Loading state */}
             {eventsLoading && (
               <LoadingState message="Loading calendar events..." />
