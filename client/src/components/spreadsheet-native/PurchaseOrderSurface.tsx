@@ -790,20 +790,54 @@ function PurchaseOrderCreateEditMode({
     [routeSearch, setLocation]
   );
 
-  // ── Handlers ────────────────────────────────────────────────────────────────
-  const handleAddProduct = useCallback((product: AddProductPayload) => {
-    const newItem = createLineItemFromProduct(product);
-    setDoc(d => {
-      const hasOnlyPlaceholder =
-        d.lineItems.length === 1 &&
-        !d.lineItems[0].productId &&
-        !d.lineItems[0].productName;
-      return {
-        ...d,
-        lineItems: hasOnlyPlaceholder ? [newItem] : [...d.lineItems, newItem],
-      };
+  // TER-1261: Ref used to scroll the right panel to the newly-added line.
+  const rightPanelRef = useRef<HTMLDivElement | null>(null);
+  const scrollToBottomNextTick = useCallback(() => {
+    if (typeof window === "undefined") return;
+    window.requestAnimationFrame(() => {
+      const container = rightPanelRef.current;
+      if (!container) return;
+      // Scroll the right panel itself so the newest line is in view.
+      container.scrollTop = container.scrollHeight;
+      // If AG Grid rendered a scrollable viewport, scroll it too.
+      const viewport = container.querySelector<HTMLDivElement>(
+        ".ag-body-viewport"
+      );
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
     });
   }, []);
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
+  const handleAddProduct = useCallback(
+    (product: AddProductPayload) => {
+      const newItem = createLineItemFromProduct(product);
+      // TER-1261: Surface optional SKU/unit (supplied by the Quick Add tab) via
+      // the notes field so the information isn't silently dropped.
+      const metaParts: string[] = [];
+      if (product.sku) metaParts.push(`SKU: ${product.sku}`);
+      if (product.unit) metaParts.push(`Unit: ${product.unit}`);
+      if (metaParts.length > 0) {
+        const meta = metaParts.join(" · ");
+        newItem.notes = newItem.notes ? `${meta} · ${newItem.notes}` : meta;
+      }
+      setDoc(d => {
+        const hasOnlyPlaceholder =
+          d.lineItems.length === 1 &&
+          !d.lineItems[0].productId &&
+          !d.lineItems[0].productName;
+        return {
+          ...d,
+          lineItems: hasOnlyPlaceholder ? [newItem] : [...d.lineItems, newItem],
+        };
+      });
+      // TER-1261: Highlight the newly-added line and scroll it into view.
+      setSelectedDocLineId(newItem.tempId);
+      scrollToBottomNextTick();
+    },
+    [scrollToBottomNextTick]
+  );
 
   const handleAddBlankLine = useCallback(() => {
     setDoc(d => ({ ...d, lineItems: [...d.lineItems, createEmptyLineItem()] }));
@@ -1153,7 +1187,10 @@ function PurchaseOrderCreateEditMode({
         </div>
 
         {/* Right: PO Document (flex: 3) */}
-        <div className="flex-[3] min-w-0 flex flex-col gap-2 rounded-lg border border-border/70 bg-card p-2">
+        <div
+          ref={rightPanelRef}
+          className="flex-[3] min-w-0 flex flex-col gap-2 rounded-lg border border-border/70 bg-card p-2 overflow-auto"
+        >
           {/* Document Grid */}
           <PowersheetGrid<PoLineItem>
             surfaceId="po-document"
