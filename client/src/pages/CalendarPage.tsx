@@ -30,6 +30,7 @@ import {
 import { LoadingState } from "@/components/ui/loading-state";
 import { Card } from "@/components/ui/card";
 import {
+import { useAuth } from "@/hooks/useAuth";
   deriveCalendarDialogRouteState,
   parseCalendarRouteContext,
 } from "@/pages/calendarRoute";
@@ -45,6 +46,7 @@ type ViewType = "MONTH" | "WEEK" | "DAY" | "AGENDA";
 type TabType = "calendar" | "invitations" | "requests" | "timeoff";
 
 export default function CalendarPage() {
+  const { user } = useAuth();
   const routeSearch = useSearch();
   const routeTab = useMemo(() => {
     const params = new URLSearchParams(routeSearch);
@@ -515,7 +517,10 @@ export default function CalendarPage() {
         )}
 
         {/* Time Off Tab */}
-        {activeTab === "timeoff" && <TimeOffRequestsList isAdmin={true} />}
+        {/* TER-1230: Check actual user role for time-off approvals instead of hardcoding isAdmin=true */}
+        {activeTab === "timeoff" && (
+          <TimeOffRequestsList isAdmin={user?.role === "admin"} />
+        )}
       </div>
 
       {/* Event Form Dialog */}
