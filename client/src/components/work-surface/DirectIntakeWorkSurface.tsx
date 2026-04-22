@@ -71,6 +71,10 @@ import {
 import { WorkSurfaceStatusBar } from "./WorkSurfaceStatusBar";
 import { KeyboardHintBar } from "./KeyboardHintBar";
 
+// TER-1228: Intake progress and rollback
+import { IntakeProgressDialog } from "@/components/intake/IntakeProgressDialog";
+import type { IntakeProgress } from "@shared/intakeProgress";
+
 // Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
 import { getBrandLabel } from "@/lib/nomenclature";
 
@@ -1037,6 +1041,12 @@ export function DirectIntakeWorkSurface() {
     [rowSelection]
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // TER-1228: Progress tracking and rollback state
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
+  const [intakeProgress, setIntakeProgress] = useState<IntakeProgress | null>(null);
+  const [intakeError, setIntakeError] = useState<string | undefined>();
+  
   const gridApiRef = useRef<GridApi | null>(null);
   const undo = useUndo({ enableKeyboard: false });
   const { exportCSV, state: exportState } = useExport<IntakeExportRow>();
@@ -1777,7 +1787,9 @@ export function DirectIntakeWorkSurface() {
         }
 
         setSaving("Submitting intake...");
-        await intakeMutation.mutateAsync({
+        // TER-1228: Show progress dialog during intake
+        setProgressDialogOpen(true);
+        const result = await intakeMutation.mutateAsync({
           vendorName: normalizedRow.vendorName,
           brandName: normalizedRow.brandName,
           productName: normalizedRow.item,
@@ -1806,6 +1818,12 @@ export function DirectIntakeWorkSurface() {
           mediaUrls:
             uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         });
+        
+        // TER-1228: Store progress for display
+        if (result.progress) {
+          setIntakeProgress(result.progress);
+          setIntakeError(undefined);
+        }
 
         // Mark as submitted
         updateRows(prev =>
@@ -1828,6 +1846,25 @@ export function DirectIntakeWorkSurface() {
         setSaved();
         toast.success("Product Intake submitted");
       } catch (error) {
+        // TER-1228: Extract progress from error if available
+        let progress = null;
+        if (error && typeof error === "object" && "data" in error) {
+          const data = error.data as { cause?: { progress?: unknown } };
+          if (data.cause && typeof data.cause === "object" && "progress" in data.cause) {
+            progress = data.cause.progress as IntakeProgress;
+          }
+        }
+        
+        const message =
+          error instanceof Error ? error.message : "Failed to submit intake";
+        
+        // TER-1228: Show progress dialog with error state
+        if (progress) {
+          setIntakeProgress(progress);
+          setIntakeError(message);
+          setProgressDialogOpen(true);
+        }
+        
         // Rollback uploaded files if intake failed
         if (uploadedMediaUrls.length > 0) {
           try {
@@ -1843,8 +1880,6 @@ export function DirectIntakeWorkSurface() {
           }
         }
 
-        const message =
-          error instanceof Error ? error.message : "Failed to submit intake";
         updateRows(prev =>
           prev.map(r =>
             r.id === row.id
@@ -2766,6 +2801,20 @@ export function DirectIntakeWorkSurface() {
             ]}
           />
         }
+      />
+
+      {/* TER-1228: Intake Progress and Rollback Dialog */}
+      <IntakeProgressDialog
+        open={progressDialogOpen}
+        onOpenChange={setProgressDialogOpen}
+        progress={intakeProgress}
+        error={intakeError}
+        onRollbackComplete={() => {
+          // Refresh the UI after rollback
+          setIntakeProgress(null);
+          setIntakeError(undefined);
+          toast.info("Intake rolled back successfully");
+        }}
       />
     </section>
   );
