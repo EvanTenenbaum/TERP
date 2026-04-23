@@ -1,7 +1,7 @@
 # TER-1249 Agent Session
 
 - Ticket: TER-1249
-- Branch: feat/ter-1249-point-historical-analysis-import
+- **Branch:** `feat/ter-1249-point-historical-analysis-import`
 - Status: Complete
 - Agent: Factory Droid
 
