@@ -1,6 +1,6 @@
 import { eq, and, desc, sql, isNull } from "drizzle-orm";
 import { getDb } from "./db";
-import { vendorSupply } from "../drizzle/schema";
+import { vendorSupply, vendors } from "../drizzle/schema";
 import { logger } from "./_core/logger";
 import type { VendorSupply, InsertVendorSupply } from "../drizzle/schema";
 
