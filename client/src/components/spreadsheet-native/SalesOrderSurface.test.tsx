@@ -472,15 +472,45 @@ describe("SalesOrderSurface", () => {
     ).not.toBeInTheDocument();
 
     const panels = container.querySelectorAll("[data-panel]");
-    expect(panels).toHaveLength(2);
+    // TER-1281: Nested vertical splits — outer splits tables area vs. controls
+    // band, inner splits inventory vs. document grid.
+    expect(panels).toHaveLength(4);
+    // Outer primary panel hosts the nested inventory/document split.
     expect(
-      within(panels[1] as HTMLElement).getByTestId("document-grid")
+      within(panels[0] as HTMLElement).getByTestId("grid-inventory")
     ).toBeInTheDocument();
     expect(
-      within(panels[1] as HTMLElement).queryByTestId("invoice-bottom")
+      within(panels[0] as HTMLElement).getByTestId("document-grid")
+    ).toBeInTheDocument();
+    expect(
+      within(panels[0] as HTMLElement).queryByTestId("invoice-bottom")
+    ).not.toBeInTheDocument();
+    // Inner primary panel renders the inventory grid only.
+    expect(
+      within(panels[1] as HTMLElement).getByTestId("grid-inventory")
+    ).toBeInTheDocument();
+    expect(
+      within(panels[1] as HTMLElement).queryByTestId("document-grid")
+    ).not.toBeInTheDocument();
+    // Inner secondary panel renders the order line-items grid only.
+    expect(
+      within(panels[2] as HTMLElement).getByTestId("document-grid")
+    ).toBeInTheDocument();
+    expect(
+      within(panels[2] as HTMLElement).queryByTestId("invoice-bottom")
     ).not.toBeInTheDocument();
     expect(
-      within(panels[1] as HTMLElement).queryByTestId("order-adjustments")
+      within(panels[2] as HTMLElement).queryByTestId("order-adjustments")
+    ).not.toBeInTheDocument();
+    // Outer secondary panel hosts the fixed line-item controls band.
+    expect(
+      within(panels[3] as HTMLElement).getByTestId("invoice-bottom")
+    ).toBeInTheDocument();
+    expect(
+      within(panels[3] as HTMLElement).getByTestId("order-adjustments")
+    ).toBeInTheDocument();
+    expect(
+      within(panels[3] as HTMLElement).queryByTestId("grid-inventory")
     ).not.toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Save Draft" })).toHaveLength(
       1
