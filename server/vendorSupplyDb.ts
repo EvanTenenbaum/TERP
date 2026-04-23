@@ -251,7 +251,7 @@ export async function deleteVendorSupply(id: number): Promise<boolean> {
 export async function getVendorSupplyWithMatches(filters?: {
   status?: "AVAILABLE" | "RESERVED" | "PURCHASED" | "EXPIRED";
   vendorId?: number;
-}): Promise<Array<VendorSupply & { buyerCount: number; vendorName?: string }>> {
+}): Promise<Array<VendorSupply & { buyerCount: number; vendorName: string | null }>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
