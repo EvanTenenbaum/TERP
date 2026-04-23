@@ -5,6 +5,7 @@ import {
   SalesCatalogueSurface,
   buildCatalogueCsv,
   buildCatalogueChatText,
+  sanitizePrintImageUrl,
 } from "./SalesCatalogueSurface";
 
 const setLocation = vi.fn();
@@ -625,5 +626,76 @@ describe("SalesCatalogueSurface", () => {
     fireEvent.click(screen.getByText("Delete Draft 42"));
 
     expect(deleteDraftById).toHaveBeenCalledWith(42);
+  });
+});
+
+describe("sanitizePrintImageUrl", () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  it("accepts https URLs", () => {
+    expect(sanitizePrintImageUrl("https://cdn.example.com/img.jpg")).toBe(
+      "https://cdn.example.com/img.jpg"
+    );
+  });
+
+  it("accepts http URLs", () => {
+    expect(sanitizePrintImageUrl("http://cdn.example.com/img.jpg")).toBe(
+      "http://cdn.example.com/img.jpg"
+    );
+  });
+
+  it("accepts same-origin relative URLs", () => {
+    expect(sanitizePrintImageUrl("/uploads/img.jpg")).toBe("/uploads/img.jpg");
+    expect(sanitizePrintImageUrl("./img.jpg")).toBe("./img.jpg");
+    expect(sanitizePrintImageUrl("../img.jpg")).toBe("../img.jpg");
+  });
+
+  it("rejects javascript: URLs", () => {
+    expect(sanitizePrintImageUrl("javascript:alert(1)")).toBeNull();
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("rejects data:text/html URLs", () => {
+    expect(
+      sanitizePrintImageUrl("data:text/html,<script>alert(1)</script>")
+    ).toBeNull();
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("rejects vbscript: URLs", () => {
+    expect(sanitizePrintImageUrl("vbscript:msgbox(1)")).toBeNull();
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("rejects file: URLs", () => {
+    expect(sanitizePrintImageUrl("file:///etc/passwd")).toBeNull();
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("rejects protocol-relative URLs", () => {
+    expect(sanitizePrintImageUrl("//evil.example.com/img.jpg")).toBeNull();
+    expect(warnSpy).toHaveBeenCalled();
+  });
+
+  it("rejects null, undefined, and non-string values", () => {
+    expect(sanitizePrintImageUrl(null)).toBeNull();
+    expect(sanitizePrintImageUrl(undefined)).toBeNull();
+    expect(sanitizePrintImageUrl(123)).toBeNull();
+  });
+
+  it("rejects empty and whitespace-only strings", () => {
+    expect(sanitizePrintImageUrl("")).toBeNull();
+    expect(sanitizePrintImageUrl("   ")).toBeNull();
+  });
+
+  it("rejects URLs that cannot be parsed", () => {
+    // URL constructor tolerates lots of input; confirm obviously broken values
+    // with control characters are rejected without throwing.
+    expect(sanitizePrintImageUrl("http://[::broken")).toBeNull();
+    expect(warnSpy).toHaveBeenCalled();
   });
 });
