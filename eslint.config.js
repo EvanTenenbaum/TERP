@@ -123,6 +123,28 @@ export default [
       // General Rules
       // ============================================================
 
+      // ============================================================
+      // FORBIDDEN IMPORTS — Legacy matching engine files (TER-1250)
+      //
+      // matchingEngine.ts and matchingEngineReverseSimplified.ts have been
+      // deleted. All consumers must use matchingEngineEnhanced.ts instead.
+      // ============================================================
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/matchingEngine', './matchingEngine', '../matchingEngine'],
+              message: 'matchingEngine.ts has been deleted (TER-1250). Use matchingEngineEnhanced instead.',
+            },
+            {
+              group: ['**/matchingEngineReverseSimplified', './matchingEngineReverseSimplified', '../matchingEngineReverseSimplified'],
+              message: 'matchingEngineReverseSimplified.ts has been deleted (TER-1250). Use matchingEngineEnhanced instead.',
+            },
+          ],
+        },
+      ],
+
       'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
       'no-debugger': 'error',
       'no-unused-vars': 'off', // Use TypeScript version instead
