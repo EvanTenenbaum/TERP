@@ -26,20 +26,9 @@ export default function DemandSupplyWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={DEMAND_SUPPLY_WORKSPACE.title}
-      description={DEMAND_SUPPLY_WORKSPACE.description}
-      section="Sell"
       activeTab={activeTab}
       tabs={DEMAND_SUPPLY_WORKSPACE.tabs}
       onTabChange={tab => setActiveTab(tab)}
-      meta={[
-        { label: "Primary", value: "Matching supply with demand" },
-        {
-          label: "Current view",
-          value:
-            DEMAND_SUPPLY_WORKSPACE.tabs.find(tab => tab.value === activeTab)
-              ?.label ?? activeTab,
-        },
-      ]}
       commandStrip={
         <>
           <Button

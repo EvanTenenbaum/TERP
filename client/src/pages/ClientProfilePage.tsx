@@ -486,12 +486,9 @@ export default function ClientProfilePage() {
 
       <LinearWorkspaceShell
         title={shell.name}
-        description="Unified customer and supplier workspace with money, pricing, inventory, and activity in one place."
-        section="Relationships"
         activeTab={activeSection}
         tabs={PROFILE_TABS}
         onTabChange={handleSectionChange}
-        meta={meta}
         commandStrip={commandStrip}
       >
         <LinearWorkspacePanel value="overview">

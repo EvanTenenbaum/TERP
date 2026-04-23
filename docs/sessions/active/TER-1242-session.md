@@ -3,4 +3,4 @@
 - Ticket: TER-1242
 - Branch: feat/ter-1242-d-system-5-header-sidebar
 - Status: In Progress
-- Agent: Factory Droid (pending dispatch)
+- Agent: Manus PM Agent
