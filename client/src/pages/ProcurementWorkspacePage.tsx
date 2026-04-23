@@ -71,15 +71,9 @@ export default function ProcurementWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title="Buying"
-      description="Create and manage purchase orders, track supplier intake, and walk POs from draft to received."
-      section="Operations"
       activeTab={activeTab}
       tabs={PROCUREMENT_TABS}
       onTabChange={setActiveTab}
-      meta={[
-        { label: "Primary", value: "Purchase orders" },
-        { label: "Next handoff", value: "Receiving" },
-      ]}
       commandStrip={
         // TER-1060: Quick-nav shortcut into the "Expected Deliveries Today" filtered view
         <Button

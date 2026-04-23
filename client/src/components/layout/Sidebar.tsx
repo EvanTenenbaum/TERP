@@ -14,10 +14,8 @@ import {
   ChevronsRight,
   FileText,
   Layers,
-  LogOut,
   Plus,
   Truck,
-  UserCircle2,
   Users,
   X,
 } from "lucide-react";
@@ -31,11 +29,7 @@ import {
 import { normalizeOperationsTab } from "@/lib/workspaceRoutes";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
 import { useNavigationState } from "@/hooks/useNavigationState";
-import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 
 export interface SidebarProps {
   open?: boolean;
@@ -126,14 +120,6 @@ export const Sidebar = React.memo(function Sidebar({
 }: SidebarProps) {
   const [location] = useLocation();
   const search = useSearch();
-  // TER-1149: Route logout through useAuth so the same teardown path is used
-  // everywhere (Sidebar previously only navigated to /login without calling
-  // the logout mutation, leaving the session authenticated).
-  const { logout } = useAuth();
-  const { flags, isLoading: featureFlagsLoading } = useFeatureFlags();
-  const { data: currentUser } = trpc.auth.me.useQuery(undefined, {
-    staleTime: 60_000,
-  });
   const [openGroups, setOpenGroups] = useState<
     Record<NavigationGroupKey, boolean>
   >(() => getDefaultOpenGroups(`${location}${search || ""}`));
@@ -150,15 +136,7 @@ export const Sidebar = React.memo(function Sidebar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location]);
 
-  const navigationScopeKey = useMemo(() => {
-    if (currentUser?.id !== undefined && currentUser?.id !== null) {
-      return `user:${String(currentUser.id)}`;
-    }
-    if (currentUser?.email) {
-      return `email:${currentUser.email}`;
-    }
-    return "anonymous";
-  }, [currentUser?.email, currentUser?.id]);
+  const navigationScopeKey = "anonymous";
 
   const { pinnedPaths } = useNavigationState({
     scopeKey: navigationScopeKey,
@@ -190,11 +168,6 @@ export const Sidebar = React.memo(function Sidebar({
     },
     [location, search]
   );
-
-  const handleLogout = useCallback(() => {
-    onClose?.();
-    void logout();
-  }, [onClose, logout]);
 
   const navRef = useRef<HTMLElement>(null);
   const activeGroupKey = useMemo(
@@ -282,8 +255,8 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
                       isActivePath("/sales?tab=create-order")
-                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
-                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                        ? "bg-white/10 text-white font-semibold"
+                        : "font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                     )}
                     aria-current={
                       isActivePath("/sales?tab=create-order")
@@ -303,8 +276,8 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
                       isActivePath("/sales?tab=orders")
-                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
-                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                        ? "bg-white/10 text-white font-semibold"
+                        : "font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                     )}
                     aria-current={
                       isActivePath("/sales?tab=orders") ? "page" : undefined
@@ -322,8 +295,8 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
                       isActivePath("/sales?tab=sales-sheets")
-                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
-                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                        ? "bg-white/10 text-white font-semibold"
+                        : "font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                     )}
                     aria-current={
                       isActivePath("/sales?tab=sales-sheets")
@@ -343,8 +316,8 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
                       isActivePath("/relationships?tab=clients")
-                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
-                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                        ? "bg-white/10 text-white font-semibold"
+                        : "font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                     )}
                     aria-current={
                       isActivePath("/relationships?tab=clients")
@@ -364,8 +337,8 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
                       isActivePath("/inventory?tab=shipping")
-                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
-                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                        ? "bg-white/10 text-white font-semibold"
+                        : "font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                     )}
                     aria-current={
                       isActivePath("/inventory?tab=shipping")
@@ -389,31 +362,17 @@ export const Sidebar = React.memo(function Sidebar({
             return (
               <div
                 key={group.key}
-                className={cn(
-                  "rounded-lg border border-transparent transition-colors",
-                  hasActiveItem && "border-white/10 bg-white/5"
-                )}
+                className="rounded-lg border border-transparent"
               >
                 {!collapsed && (
                   <button
                     type="button"
-                    className={cn(
-                      "flex w-full items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors max-md:min-h-11",
-                      hasActiveItem
-                        ? "text-white/40 hover:text-white/60"
-                        : "text-white/40 hover:text-white/60"
-                    )}
+                    className="flex w-full items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors max-md:min-h-11 text-white/40 hover:text-white/60"
                     onClick={() => toggleGroup(group.key)}
                     aria-expanded={isOpen}
                     data-testid="nav-group-label"
                   >
                     <span className="flex items-center gap-1.5">
-                      {hasActiveItem && (
-                        <span
-                          className="inline-block h-1.5 w-1.5 rounded-full bg-[oklch(0.78_0.18_130)] flex-shrink-0"
-                          aria-hidden
-                        />
-                      )}
                       {group.label}
                     </span>
                     {isOpen ? (
@@ -450,10 +409,8 @@ export const Sidebar = React.memo(function Sidebar({
                                   ? "px-2 py-2 justify-center"
                                   : "px-3 py-2",
                                 isActive
-                                  ? cn(
-                                      "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
-                                    )
-                                  : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                                  ? "bg-white/10 text-white font-semibold"
+                                  : "font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                               )}
                               aria-current={isActive ? "page" : undefined}
                             >
@@ -481,34 +438,7 @@ export const Sidebar = React.memo(function Sidebar({
           })}
         </nav>
 
-        {/* TER-599: Simplified footer — user info + logout only */}
-        <div className="border-t border-white/10 p-3">
-          {!collapsed && (
-            <div className="flex items-center gap-2 mb-2">
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="text-xs bg-white/10 text-white/70">
-                  <UserCircle2 className="h-4 w-4" />
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-xs text-white/70 truncate">
-                {currentUser?.name || currentUser?.email || "TERP Operator"}
-              </p>
-            </div>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className={cn(
-              "text-white/50 hover:text-white/80 hover:bg-white/10",
-              collapsed ? "w-10 p-0" : "w-full justify-start"
-            )}
-            onClick={handleLogout}
-            aria-label="Logout"
-          >
-            <LogOut className={cn("h-4 w-4", !collapsed && "mr-2")} />
-            {!collapsed && "Logout"}
-          </Button>
-        </div>
+        {/* #32 TER-1242: Footer user block removed — user info is in AppHeader dropdown */}
       </aside>
     </>
   );
