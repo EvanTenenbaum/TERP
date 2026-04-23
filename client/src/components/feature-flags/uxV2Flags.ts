@@ -24,11 +24,6 @@
  *   (TER-1305). When disabled, the shell falls back to the single flat
  *   `tabs` rail so deep links keep working unchanged. Default when flag is
  *   absent from the server response: **disabled** (safe default).
- * - `ux.v2.filter-bar` — Enables the standardized `WorkspaceFilterBar` slot
- *   on `LinearWorkspaceShell` (TER-1310) plus the `useWorkspaceFilter()`
- *   URL-state hook. When disabled, surfaces should continue to render their
- *   own ad-hoc filter bars. Default when flag is absent from the server
- *   response: **disabled** (safe default).
  *
  * Add new UX v2 flags to `UX_V2_FLAGS` below; do NOT hard-code flag strings
  * at call sites.
@@ -50,8 +45,6 @@ export const UX_V2_FLAGS = {
    * rail when this flag is off even if `tabGroups` is present.
    */
   WORKSPACE_TABS: "ux.v2.workspace-tabs",
-  /** Workspace-level filter bar slot + useWorkspaceFilter hook (TER-1310). */
-  FILTER_BAR: "ux.v2.filter-bar",
 } as const;
 
 export type UxV2FlagKey = (typeof UX_V2_FLAGS)[keyof typeof UX_V2_FLAGS];
