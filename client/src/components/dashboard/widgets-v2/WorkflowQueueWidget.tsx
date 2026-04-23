@@ -39,7 +39,7 @@ export const WorkflowQueueWidget = memo(function WorkflowQueueWidget() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <Layers className="h-5 w-5 text-blue-600" />
+          <Layers className="h-5 w-5 text-[var(--info)]" />
           Workflow Queue
         </CardTitle>
         <Button
@@ -74,7 +74,7 @@ export const WorkflowQueueWidget = memo(function WorkflowQueueWidget() {
         ) : (
           <div className="space-y-3">
             {/* Total Summary */}
-            <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-center justify-between p-3 bg-[var(--info-bg)] rounded-lg border border-blue-200">
               <span className="font-semibold text-blue-900">
                 Total Batches in Queue
               </span>

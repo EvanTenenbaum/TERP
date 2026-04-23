@@ -377,8 +377,8 @@ export const RewardsCatalog = React.memo(function RewardsCatalog({
                 />
               </div>
 
-              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
-                <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
+              <div className="mt-4 p-3 bg-[var(--warning-bg)] dark:bg-yellow-950 rounded-lg">
+                <div className="flex items-center gap-2 text-[var(--warning)] dark:text-yellow-300">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm">
                     After redemption, you will have{" "}

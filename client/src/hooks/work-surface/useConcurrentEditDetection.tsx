@@ -341,9 +341,9 @@ export function useConcurrentEditDetection<T extends VersionedEntity>(
         >
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[var(--warning-bg)] dark:bg-yellow-900 flex items-center justify-center">
                 <svg
-                  className="w-5 h-5 text-yellow-600 dark:text-yellow-400"
+                  className="w-5 h-5 text-[var(--warning)] dark:text-yellow-400"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"

@@ -161,7 +161,7 @@ export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
     <div
       className={cn(
         "p-4 hover:bg-muted/50 cursor-pointer transition-colors relative",
-        item.status === "unread" && "bg-blue-50/50 dark:bg-blue-950/20"
+        item.status === "unread" && "bg-[var(--info-bg)]/50 dark:bg-blue-950/20"
       )}
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}

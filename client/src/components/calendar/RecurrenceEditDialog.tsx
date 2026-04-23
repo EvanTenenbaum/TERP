@@ -77,7 +77,7 @@ export default function RecurrenceEditDialog({
             {/* Single Instance */}
             <button
               onClick={() => onSelect("single")}
-              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 ${
+              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-[var(--info-bg)] ${
                 isDelete ? "hover:border-red-300 hover:bg-red-50" : ""
               }`}
             >
@@ -93,7 +93,7 @@ export default function RecurrenceEditDialog({
             {/* This and Future */}
             <button
               onClick={() => onSelect("future")}
-              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 ${
+              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-[var(--info-bg)] ${
                 isDelete ? "hover:border-red-300 hover:bg-red-50" : ""
               }`}
             >
@@ -109,7 +109,7 @@ export default function RecurrenceEditDialog({
             {/* All Events */}
             <button
               onClick={() => onSelect("all")}
-              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 ${
+              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-[var(--info-bg)] ${
                 isDelete ? "hover:border-red-300 hover:bg-red-50" : ""
               }`}
             >

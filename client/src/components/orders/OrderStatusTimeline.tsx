@@ -34,7 +34,7 @@ export function OrderStatusTimeline({ orderId }: OrderStatusTimelineProps) {
         <div key={entry.id} className="flex gap-3">
           <div className="flex flex-col items-center">
             {index === history.length - 1 ? (
-              <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+              <CheckCircle2 className="h-5 w-5 text-[var(--success)] flex-shrink-0" />
             ) : (
               <Circle className="h-5 w-5 text-gray-400 flex-shrink-0" />
             )}

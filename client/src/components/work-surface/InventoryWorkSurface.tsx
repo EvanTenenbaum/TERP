@@ -496,7 +496,7 @@ function BatchInspectorContent({
             <p className="font-semibold">{formatCurrency(batch.unitCogs)}</p>
           </InspectorField>
           <InspectorField label="Total Value">
-            <p className="font-semibold text-green-600">
+            <p className="font-semibold text-[var(--success)]">
               {formatCurrency(totalValue)}
             </p>
           </InspectorField>
@@ -1926,7 +1926,7 @@ export function InventoryWorkSurface() {
       {successMessage && (
         <div
           data-testid="success-toast"
-          className="toast-success mx-6 mt-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
+          className="toast-success mx-6 mt-3 rounded-md border border-green-200 bg-[var(--success-bg)] px-3 py-2 text-sm text-[var(--success)]"
         >
           {successMessage}
         </div>
@@ -2510,7 +2510,7 @@ export function InventoryWorkSurface() {
                                   <span
                                     className={cn(
                                       available <= 100 &&
-                                        "text-orange-600 font-semibold"
+                                        "text-[var(--warning)] font-semibold"
                                     )}
                                   >
                                     {formatQuantity(available)}

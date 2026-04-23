@@ -258,7 +258,7 @@ function StepIndicator({
                 "flex items-center gap-2 p-2 rounded-lg transition-colors",
                 isActive && "bg-primary text-primary-foreground",
                 isCompleted &&
-                  "bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer",
+                  "bg-[var(--success-bg)] text-[var(--success)] hover:bg-green-200 cursor-pointer",
                 !isActive && !isCompleted && "bg-muted text-muted-foreground",
                 !isClickable && !isActive && "cursor-not-allowed"
               )}
@@ -328,7 +328,7 @@ function ReviewOrderStep({
                 {order.confirmedAt ? formatDate(order.confirmedAt) : "N/A"}
               </CardDescription>
             </div>
-            <Badge variant="outline" className="bg-green-100 text-green-800">
+            <Badge variant="outline" className="bg-[var(--success-bg)] text-[var(--success)]">
               Confirmed
             </Badge>
           </div>
@@ -522,7 +522,7 @@ function AdjustmentsStep({
             </div>
           </div>
           {config.discount > 0 && (
-            <p className="text-sm text-green-600">
+            <p className="text-sm text-[var(--success)]">
               Discount: -{formatCurrency(discountAmount)}
             </p>
           )}
@@ -598,7 +598,7 @@ function AdjustmentsStep({
             <span>{formatCurrency(orderTotal)}</span>
           </div>
           {config.discount > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
+            <div className="flex justify-between text-sm text-[var(--success)]">
               <span>Discount</span>
               <span>-{formatCurrency(discountAmount)}</span>
             </div>

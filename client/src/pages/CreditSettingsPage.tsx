@@ -317,15 +317,15 @@ export default function CreditSettingsPage({
         </p>
       </div>
 
-      <Card className="border-blue-200 bg-blue-50/70">
+      <Card className="border-blue-200 bg-[var(--info-bg)]/70">
         <CardContent className="pt-6">
           <div className="flex gap-3">
-            <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <Info className="h-5 w-5 text-[var(--info)] flex-shrink-0 mt-0.5" />
             <div className="text-sm">
               <p className="font-medium text-blue-900 dark:text-blue-100">
                 Capacity settings are not issued adjustments
               </p>
-              <p className="text-blue-800 dark:text-blue-200 mt-1">
+              <p className="text-[var(--info)] dark:text-blue-200 mt-1">
                 Use this page to change client limits, score weights, and order
                 guardrails. Use the Issued Adjustments tab when you need to
                 create or apply a post-sale adjustment balance.
@@ -349,15 +349,15 @@ export default function CreditSettingsPage({
 
         {/* Signal Weights Tab */}
         <TabsContent value="weights" className="space-y-6">
-          <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
+          <Card className="border-blue-200 dark:border-blue-800 bg-[var(--info-bg)] dark:bg-blue-950">
             <CardContent className="pt-6">
               <div className="flex gap-3">
-                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <Info className="h-5 w-5 text-[var(--info)] flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
                   <p className="font-medium text-blue-900 dark:text-blue-100">
                     How the capacity model works
                   </p>
-                  <p className="text-blue-800 dark:text-blue-200 mt-1">
+                  <p className="text-[var(--info)] dark:text-blue-200 mt-1">
                     Each signal is scored 0-100. The score is multiplied by its
                     weight to determine how much it influences recommended
                     client capacity. All weights must sum to 100%.
@@ -407,11 +407,11 @@ export default function CreditSettingsPage({
               ))}
 
               <div
-                className={`flex items-center justify-between p-4 rounded-lg ${weightsValid ? "bg-green-50 dark:bg-green-950 border border-green-200" : "bg-red-50 dark:bg-red-950 border border-red-200"}`}
+                className={`flex items-center justify-between p-4 rounded-lg ${weightsValid ? "bg-[var(--success-bg)] dark:bg-green-950 border border-green-200" : "bg-red-50 dark:bg-red-950 border border-red-200"}`}
               >
                 <div className="flex items-center gap-2">
                   {weightsValid ? (
-                    <Check className="h-5 w-5 text-green-600" />
+                    <Check className="h-5 w-5 text-[var(--success)]" />
                   ) : (
                     <AlertCircle className="h-5 w-5 text-red-600" />
                   )}
@@ -419,7 +419,7 @@ export default function CreditSettingsPage({
                 </div>
                 <div className="flex items-center gap-2">
                   <span
-                    className={`text-2xl font-bold ${weightsValid ? "text-green-600" : "text-red-600"}`}
+                    className={`text-2xl font-bold ${weightsValid ? "text-[var(--success)]" : "text-red-600"}`}
                   >
                     {weightsSum.toFixed(0)}%
                   </span>
@@ -468,9 +468,9 @@ export default function CreditSettingsPage({
         {/* Visibility & Enforcement Tab */}
         <TabsContent value="visibility" className="space-y-6">
           {hasVisibilityChanges && (
-            <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 rounded-lg">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <span className="text-sm text-yellow-800 dark:text-yellow-200">
+            <div className="flex items-center gap-2 p-3 bg-[var(--warning-bg)] dark:bg-yellow-950 border border-yellow-200 rounded-lg">
+              <AlertCircle className="h-4 w-4 text-[var(--warning)]" />
+              <span className="text-sm text-[var(--warning)] dark:text-yellow-200">
                 You have unsaved changes
               </span>
             </div>
@@ -596,7 +596,7 @@ export default function CreditSettingsPage({
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
-                            className="bg-yellow-50 text-yellow-700"
+                            className="bg-[var(--warning-bg)] text-[var(--warning)]"
                           >
                             Warning
                           </Badge>
@@ -607,7 +607,7 @@ export default function CreditSettingsPage({
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
-                            className="bg-orange-50 text-orange-700"
+                            className="bg-[var(--warning-bg)] text-[var(--warning)]"
                           >
                             Soft Block
                           </Badge>

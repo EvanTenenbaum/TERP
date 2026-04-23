@@ -87,12 +87,12 @@ export const AvailableCashWidget = memo(function AvailableCashWidget() {
               className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
               onClick={() => setLocation("/accounting/cash-locations")}
             >
-              <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30">
-                <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[var(--success-bg)] dark:bg-green-900/30">
+                <DollarSign className="h-5 w-5 text-[var(--success)] dark:text-green-400" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Cash on Hand</p>
-                <p className="text-lg font-semibold text-green-600 dark:text-green-400 font-mono">
+                <p className="text-lg font-semibold text-[var(--success)] dark:text-green-400 font-mono">
                   {formatCurrency(data.totalCashOnHand)}
                 </p>
               </div>

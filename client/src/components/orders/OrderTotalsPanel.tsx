@@ -36,10 +36,10 @@ export function OrderTotalsPanel({
 
   const getMarginColor = (percent: number) => {
     if (percent < 0) return "text-red-600";
-    if (percent < 5) return "text-orange-600";
-    if (percent < 15) return "text-yellow-600";
-    if (percent < 30) return "text-green-600";
-    return "text-green-700";
+    if (percent < 5) return "text-[var(--warning)]";
+    if (percent < 15) return "text-[var(--warning)]";
+    if (percent < 30) return "text-[var(--success)]";
+    return "text-[var(--success)]";
   };
 
   return (
@@ -102,7 +102,7 @@ export function OrderTotalsPanel({
                 {totals.adjustmentAmount < 0 ? "Discount" : "Markup"}
               </span>
               <span
-                className={`font-medium ${totals.adjustmentAmount < 0 ? "text-red-600" : "text-green-600"}`}
+                className={`font-medium ${totals.adjustmentAmount < 0 ? "text-red-600" : "text-[var(--success)]"}`}
               >
                 {totals.adjustmentAmount < 0 ? "-" : "+"}
                 {fmt(Math.abs(totals.adjustmentAmount))}

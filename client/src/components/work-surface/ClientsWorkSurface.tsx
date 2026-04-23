@@ -421,7 +421,7 @@ function ClientInspectorContent({
               <InspectorField label="Email Handle">
                 <a
                   href={`mailto:${client.email}`}
-                  className="flex items-center gap-2 text-blue-600 hover:underline"
+                  className="flex items-center gap-2 text-[var(--info)] hover:underline"
                 >
                   <Mail className="h-4 w-4" />
                   {client.email}
@@ -433,7 +433,7 @@ function ClientInspectorContent({
               <InspectorField label="Phone or Messaging Handle">
                 <a
                   href={`tel:${client.phone}`}
-                  className="flex items-center gap-2 text-blue-600 hover:underline"
+                  className="flex items-center gap-2 text-[var(--info)] hover:underline"
                 >
                   <Phone className="h-4 w-4" />
                   {client.phone}
@@ -487,7 +487,7 @@ function ClientInspectorContent({
           </div>
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">All Time Value</p>
-            <p className="font-semibold text-green-600">
+            <p className="font-semibold text-[var(--success)]">
               {formatCurrency(client.lifetimeValue)}
             </p>
           </div>
@@ -1242,7 +1242,7 @@ export function ClientsWorkSurface() {
                           .filter(Boolean)
                           .join(" · ") || "-"}
                       </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
+                      <TableCell className="text-right font-medium text-[var(--success)]">
                         {formatCurrency(client.lifetimeValue)}
                       </TableCell>
                       <TableCell

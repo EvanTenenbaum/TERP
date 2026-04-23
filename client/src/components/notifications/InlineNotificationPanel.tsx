@@ -474,13 +474,13 @@ export const InlineToast = React.memo(function InlineToast({
       className={cn(
         "flex items-start gap-3 p-4 rounded-lg border shadow-sm",
         notification.type === "success" &&
-          "bg-green-50 border-green-200 dark:bg-green-950/20",
+          "bg-[var(--success-bg)] border-green-200 dark:bg-green-950/20",
         notification.type === "error" &&
           "bg-red-50 border-red-200 dark:bg-red-950/20",
         notification.type === "warning" &&
           "bg-amber-50 border-amber-200 dark:bg-amber-950/20",
         notification.type === "info" &&
-          "bg-blue-50 border-blue-200 dark:bg-blue-950/20",
+          "bg-[var(--info-bg)] border-blue-200 dark:bg-blue-950/20",
         className
       )}
     >

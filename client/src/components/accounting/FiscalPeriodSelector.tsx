@@ -83,7 +83,7 @@ export function FiscalPeriodSelector({
         return (
           <Badge
             variant="outline"
-            className="ml-2 bg-green-100 text-green-700 border-green-200"
+            className="ml-2 bg-[var(--success-bg)] text-[var(--success)] border-green-200"
           >
             Open
           </Badge>
@@ -147,7 +147,7 @@ export function FiscalPeriodSelector({
                 key={period.id}
                 value={period.id.toString()}
                 className={cn(
-                  isCurrent && "bg-blue-50 font-medium",
+                  isCurrent && "bg-[var(--info-bg)] font-medium",
                   isPeriodLocked && "opacity-60",
                   isPeriodClosed && "opacity-80"
                 )}
@@ -165,7 +165,7 @@ export function FiscalPeriodSelector({
                       {isCurrent && (
                         <Badge
                           variant="outline"
-                          className="bg-blue-100 text-blue-700 border-blue-200 text-xs"
+                          className="bg-[var(--info-bg)] text-[var(--info)] border-blue-200 text-xs"
                         >
                           Current
                         </Badge>

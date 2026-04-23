@@ -26,13 +26,13 @@ const STATUS_CONFIG: Record<BatchStatus, StatusConfig> = {
   LIVE: {
     label: "Live",
     badgeClassName:
-      "bg-green-100 text-green-800 border-green-200 hover:bg-green-200",
+      "bg-[var(--success-bg)] text-[var(--success)] border-green-200 hover:bg-green-200",
     description: "Available for sale",
   },
   ON_HOLD: {
     label: "On Hold",
     badgeClassName:
-      "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-200",
+      "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200 hover:bg-yellow-200",
     description: "Temporarily withheld",
   },
   QUARANTINED: {
@@ -43,7 +43,7 @@ const STATUS_CONFIG: Record<BatchStatus, StatusConfig> = {
   SOLD_OUT: {
     label: "Sold Out",
     badgeClassName:
-      "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200",
+      "bg-[var(--info-bg)] text-[var(--info)] border-blue-200 hover:bg-blue-200",
     description: "Fully depleted",
   },
   CLOSED: {

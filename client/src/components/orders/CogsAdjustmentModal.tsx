@@ -58,10 +58,10 @@ export function CogsAdjustmentModal({
 
   // Get margin color
   const getMarginColor = (percent: number) => {
-    if (percent >= 70) return "text-green-600";
+    if (percent >= 70) return "text-[var(--success)]";
     if (percent >= 50) return "text-green-500";
-    if (percent >= 30) return "text-yellow-600";
-    if (percent >= 15) return "text-orange-600";
+    if (percent >= 30) return "text-[var(--warning)]";
+    if (percent >= 15) return "text-[var(--warning)]";
     return "text-red-600";
   };
 
@@ -89,12 +89,12 @@ export function CogsAdjustmentModal({
 
         <div className="space-y-4">
           {/* Smart Suggestion */}
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="p-3 bg-[var(--info-bg)] border border-blue-200 rounded-lg">
             <div className="flex items-start gap-2">
-              <Lightbulb className="h-5 w-5 text-blue-600 mt-0.5" />
+              <Lightbulb className="h-5 w-5 text-[var(--info)] mt-0.5" />
               <div className="flex-1">
                 <p className="text-sm font-medium text-blue-900">Smart Suggestion</p>
-                <p className="text-xs text-blue-700 mt-1">
+                <p className="text-xs text-[var(--info)] mt-1">
                   {item.cogsMode === "RANGE"
                     ? "Using midpoint of COGS range"
                     : "Using fixed COGS from batch"}
@@ -183,11 +183,11 @@ export function CogsAdjustmentModal({
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Unit Margin</p>
-                <p className="font-semibold text-green-600">${newMargin.toFixed(2)}</p>
+                <p className="font-semibold text-[var(--success)]">${newMargin.toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-muted-foreground">Line Margin</p>
-                <p className="font-semibold text-green-600">
+                <p className="font-semibold text-[var(--success)]">
                   ${(item.quantity * newMargin).toFixed(2)}
                 </p>
               </div>

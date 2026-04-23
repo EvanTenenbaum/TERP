@@ -1785,7 +1785,7 @@ export function ProductIntakeSlicePage() {
                 </ul>
               </div>
             ) : (
-              <div className="rounded border border-green-200 bg-green-50 p-3 text-green-700 flex items-center gap-2">
+              <div className="rounded border border-green-200 bg-[var(--success-bg)] p-3 text-[var(--success)] flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4" />
                 No blocking errors. Ready to receive.
               </div>

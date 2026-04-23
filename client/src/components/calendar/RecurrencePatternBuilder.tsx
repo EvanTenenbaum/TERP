@@ -263,7 +263,7 @@ export default function RecurrencePatternBuilder({
                   endCount: undefined,
                 })
               }
-              className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 border-gray-300 text-[var(--info)] focus:ring-blue-500"
             />
             <span className="text-sm text-gray-600">Never</span>
           </label>
@@ -275,7 +275,7 @@ export default function RecurrencePatternBuilder({
               onChange={() =>
                 updatePattern({ endType: "date", endCount: undefined })
               }
-              className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 border-gray-300 text-[var(--info)] focus:ring-blue-500"
             />
             <span className="text-sm text-gray-600">On date</span>
             {localPattern.endType === "date" && (
@@ -296,7 +296,7 @@ export default function RecurrencePatternBuilder({
               onChange={() =>
                 updatePattern({ endType: "count", endDate: undefined })
               }
-              className="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="h-4 w-4 border-gray-300 text-[var(--info)] focus:ring-blue-500"
             />
             <span className="text-sm text-gray-600">After</span>
             {localPattern.endType === "count" && (
@@ -321,7 +321,7 @@ export default function RecurrencePatternBuilder({
       </div>
 
       {/* Summary */}
-      <div className="rounded-md bg-blue-50 border border-blue-200 p-3 text-sm text-blue-800">
+      <div className="rounded-md bg-[var(--info-bg)] border border-blue-200 p-3 text-sm text-[var(--info)]">
         {getSummary()}
       </div>
     </div>

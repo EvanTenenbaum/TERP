@@ -362,8 +362,8 @@ export const ShrinkageReport = memo(function ShrinkageReport({
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-orange-100 rounded-lg">
-                    <Package className="h-6 w-6 text-orange-600" />
+                  <div className="p-3 bg-[var(--warning-bg)] rounded-lg">
+                    <Package className="h-6 w-6 text-[var(--warning)]" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">
@@ -379,14 +379,14 @@ export const ShrinkageReport = memo(function ShrinkageReport({
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-yellow-100 rounded-lg">
-                    <AlertCircle className="h-6 w-6 text-yellow-600" />
+                  <div className="p-3 bg-[var(--warning-bg)] rounded-lg">
+                    <AlertCircle className="h-6 w-6 text-[var(--warning)]" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">
                       Suspicious Events
                     </p>
-                    <p className="text-2xl font-bold text-yellow-600">
+                    <p className="text-2xl font-bold text-[var(--warning)]">
                       {data?.summary.suspiciousEvents || 0}
                     </p>
                   </div>
@@ -537,7 +537,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                             className={`${
                               item.reason === "THEFT" || item.reason === "LOST"
                                 ? "bg-red-100 text-red-700 border-red-200"
-                                : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                : "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200"
                             }`}
                           >
                             {item.reason}

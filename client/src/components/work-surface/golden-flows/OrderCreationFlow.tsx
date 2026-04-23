@@ -191,7 +191,7 @@ function StepIndicator({
                 "flex items-center gap-3 p-3 rounded-lg transition-colors",
                 isActive && "bg-primary text-primary-foreground",
                 isCompleted &&
-                  "bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer",
+                  "bg-[var(--success-bg)] text-[var(--success)] hover:bg-green-200 cursor-pointer",
                 !isActive && !isCompleted && "bg-muted text-muted-foreground",
                 !isClickable && !isActive && "cursor-not-allowed"
               )}
@@ -396,7 +396,7 @@ function QuantityPricingStep({
                           className={cn(
                             "font-semibold",
                             margin > 0
-                              ? "text-green-600"
+                              ? "text-[var(--success)]"
                               : margin < 0
                                 ? "text-red-600"
                                 : ""
@@ -563,7 +563,7 @@ function ReviewStep({
             <span
               className={cn(
                 "font-medium",
-                margin > 0 ? "text-green-600" : "text-red-600"
+                margin > 0 ? "text-[var(--success)]" : "text-red-600"
               )}
             >
               {margin}%

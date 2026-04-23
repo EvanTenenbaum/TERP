@@ -320,7 +320,7 @@ export default function PhotographyPage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[var(--success)]">
               {queue?.stats?.completedToday || 0}
             </div>
           </CardContent>

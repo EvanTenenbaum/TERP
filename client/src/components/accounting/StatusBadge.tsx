@@ -72,7 +72,7 @@ export function StatusBadge({
         case "SENT":
           return {
             label: "Sent",
-            className: "bg-blue-100 text-blue-900 border-blue-400",
+            className: "bg-[var(--info-bg)] text-blue-900 border-blue-400",
           };
         case "VIEWED":
           return {
@@ -82,12 +82,12 @@ export function StatusBadge({
         case "PARTIAL":
           return {
             label: "Partial",
-            className: "bg-yellow-100 text-yellow-900 border-yellow-500",
+            className: "bg-[var(--warning-bg)] text-yellow-900 border-yellow-500",
           };
         case "PAID":
           return {
             label: "Paid",
-            className: "bg-green-100 text-green-900 border-green-400",
+            className: "bg-[var(--success-bg)] text-green-900 border-green-400",
           };
         case "OVERDUE":
           return {
@@ -118,7 +118,7 @@ export function StatusBadge({
         case "PENDING":
           return {
             label: "Pending",
-            className: "bg-blue-100 text-blue-900 border-blue-400",
+            className: "bg-[var(--info-bg)] text-blue-900 border-blue-400",
           };
         case "APPROVED":
           return {
@@ -128,12 +128,12 @@ export function StatusBadge({
         case "PARTIAL":
           return {
             label: "Partial",
-            className: "bg-yellow-100 text-yellow-900 border-yellow-500",
+            className: "bg-[var(--warning-bg)] text-yellow-900 border-yellow-500",
           };
         case "PAID":
           return {
             label: "Paid",
-            className: "bg-green-100 text-green-900 border-green-400",
+            className: "bg-[var(--success-bg)] text-green-900 border-green-400",
           };
         case "OVERDUE":
           return {
@@ -159,12 +159,12 @@ export function StatusBadge({
         case "RECEIVED":
           return {
             label: "Received",
-            className: "bg-green-100 text-green-900 border-green-400",
+            className: "bg-[var(--success-bg)] text-green-900 border-green-400",
           };
         case "SENT":
           return {
             label: "Sent",
-            className: "bg-blue-100 text-blue-900 border-blue-400",
+            className: "bg-[var(--info-bg)] text-blue-900 border-blue-400",
           };
         default:
           return {
@@ -180,12 +180,12 @@ export function StatusBadge({
         case "CASH":
           return {
             label: "Cash",
-            className: "bg-green-100 text-green-900 border-green-400",
+            className: "bg-[var(--success-bg)] text-green-900 border-green-400",
           };
         case "CHECK":
           return {
             label: "Check",
-            className: "bg-blue-100 text-blue-900 border-blue-400",
+            className: "bg-[var(--info-bg)] text-blue-900 border-blue-400",
           };
         case "WIRE":
           return {
@@ -200,7 +200,7 @@ export function StatusBadge({
         case "CREDIT_CARD":
           return {
             label: "Credit Card",
-            className: "bg-orange-100 text-orange-900 border-orange-400",
+            className: "bg-[var(--warning-bg)] text-orange-900 border-orange-400",
           };
         case "DEBIT_CARD":
           return {

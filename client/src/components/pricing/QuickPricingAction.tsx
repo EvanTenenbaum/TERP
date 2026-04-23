@@ -78,9 +78,9 @@ export function QuickPricingAction({
 
   const getMarginColor = (percent: number) => {
     if (percent < 0) return "text-red-600";
-    if (percent < 10) return "text-yellow-600";
-    if (percent < 20) return "text-green-600";
-    return "text-green-700";
+    if (percent < 10) return "text-[var(--warning)]";
+    if (percent < 20) return "text-[var(--success)]";
+    return "text-[var(--success)]";
   };
 
   // Quick discount presets
@@ -126,7 +126,7 @@ export function QuickPricingAction({
                     hasAdjustment
                       ? adjustmentType === "DISCOUNT"
                         ? "text-red-600"
-                        : "text-green-600"
+                        : "text-[var(--success)]"
                       : ""
                   }
                 >
@@ -183,7 +183,7 @@ export function QuickPricingAction({
                   hasAdjustment
                     ? adjustmentType === "DISCOUNT"
                       ? "text-red-600"
-                      : "text-green-600"
+                      : "text-[var(--success)]"
                     : ""
                 }
               >

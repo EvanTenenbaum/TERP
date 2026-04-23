@@ -59,16 +59,16 @@ const STATUS_CONFIG = {
   INTERESTED: {
     label: "Interested / Negotiate",
     icon: "💭",
-    color: "border-blue-400 bg-blue-50",
+    color: "border-blue-400 bg-[var(--info-bg)]",
     headerBg: "bg-blue-500",
-    badge: "bg-blue-100 text-blue-800",
+    badge: "bg-[var(--info-bg)] text-[var(--info)]",
   },
   TO_PURCHASE: {
     label: "Ready to Purchase",
     icon: "🛒",
-    color: "border-green-400 bg-green-50",
+    color: "border-green-400 bg-[var(--success-bg)]",
     headerBg: "bg-green-500",
-    badge: "bg-green-100 text-green-800",
+    badge: "bg-[var(--success-bg)] text-[var(--success)]",
   },
 };
 
@@ -287,19 +287,19 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
             </div>
             <div className="text-center">
               <div className="text-xs text-gray-500">Interested</div>
-              <div className="text-lg font-bold text-blue-600">
+              <div className="text-lg font-bold text-[var(--info)]">
                 {totals?.interestedCount || 0}
               </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-gray-500">To Buy</div>
-              <div className="text-lg font-bold text-green-600">
+              <div className="text-lg font-bold text-[var(--success)]">
                 {totals?.toPurchaseCount || 0}
               </div>
             </div>
             <div className="text-center border-l pl-6">
               <div className="text-xs text-gray-500">Purchase Value</div>
-              <div className="text-xl font-bold text-green-600">
+              <div className="text-xl font-bold text-[var(--success)]">
                 ${totals?.toPurchaseValue?.toFixed(2) || "0.00"}
               </div>
             </div>
@@ -372,7 +372,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                         <span
                           className={`px-2 py-0.5 text-xs rounded-full ${
                             isPending
-                              ? "bg-yellow-100 text-yellow-800"
+                              ? "bg-[var(--warning-bg)] text-[var(--warning)]"
                               : "bg-purple-100 text-purple-800"
                           }`}
                         >

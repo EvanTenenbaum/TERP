@@ -139,7 +139,7 @@ const BILL_STATUS_TABS: Array<{ value: BillStatusTab; label: string }> = [
 
 // Bill-specific status overrides for AP-only workflow states
 const BILL_STATUS_OVERRIDES: Record<string, string> = {
-  PENDING: "bg-blue-50 text-blue-700 border border-blue-200",
+  PENDING: "bg-[var(--info-bg)] text-[var(--info)] border border-blue-200",
   APPROVED: "bg-purple-50 text-purple-700 border border-purple-200",
   VOID: "bg-neutral-100 text-neutral-500 border border-neutral-200",
 };
@@ -153,9 +153,9 @@ function getBillStatusLabel(status: string): string {
 }
 
 const AP_AGING_TOKENS: Record<string, string> = {
-  current: "bg-green-50 border-green-200 text-green-700",
-  "30": "bg-yellow-50 border-yellow-200 text-yellow-700",
-  "60": "bg-orange-50 border-orange-200 text-orange-700",
+  current: "bg-[var(--success-bg)] border-green-200 text-[var(--success)]",
+  "30": "bg-[var(--warning-bg)] border-yellow-200 text-[var(--warning)]",
+  "60": "bg-[var(--warning-bg)] border-orange-200 text-[var(--warning)]",
   "90": "bg-red-50 border-red-200 text-red-700",
   "90+": "bg-red-100 border-red-300 text-red-800",
 };
@@ -303,7 +303,7 @@ const billColumnDefs: ColDef<BillGridRow>[] = [
     headerName: "Vendor",
     flex: 1.4,
     minWidth: 180,
-    cellClass: "powersheet-cell--locked text-blue-600 cursor-pointer",
+    cellClass: "powersheet-cell--locked text-[var(--info)] cursor-pointer",
   },
   {
     field: "billDate",
@@ -640,7 +640,7 @@ export function BillsSurface() {
         </Badge>
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-blue-50 text-blue-700 border-blue-200"
+          className="text-[9px] py-0 px-1.5 bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
         >
           {apSummary.billCount} total
         </Badge>
@@ -793,7 +793,7 @@ export function BillsSurface() {
             <InspectorSection title="Overview" defaultOpen>
               <InspectorField label="Vendor">
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-blue-600">
+                  <p className="text-sm font-medium text-[var(--info)]">
                     {selectedRow.vendorName}
                   </p>
                   <Button
@@ -844,7 +844,7 @@ export function BillsSurface() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Paid</span>
-                  <span className="font-mono text-green-600">
+                  <span className="font-mono text-[var(--success)]">
                     {formatCurrency(selectedRow.amountPaid)}
                   </span>
                 </div>
@@ -912,12 +912,12 @@ export function BillsSurface() {
             {/* Vendor AP Context — key differentiator */}
             {vendorAPContext && (
               <InspectorSection title="Vendor AP Context" defaultOpen>
-                <div className="p-2 bg-orange-50 border border-orange-200 rounded-md space-y-2">
+                <div className="p-2 bg-[var(--warning-bg)] border border-orange-200 rounded-md space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">
                       Total owed to {vendorAPContext.vendorName}
                     </span>
-                    <span className="font-mono font-bold text-orange-700">
+                    <span className="font-mono font-bold text-[var(--warning)]">
                       {formatCurrency(vendorAPContext.totalOwed)}
                     </span>
                   </div>

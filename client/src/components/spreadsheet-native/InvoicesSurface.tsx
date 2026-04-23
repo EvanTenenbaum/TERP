@@ -398,7 +398,7 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
       const display = params.value ?? "-";
       if (!params.data) return display;
       const due = parseFloat(params.data.amountDue);
-      const color = due > 0 ? "text-red-600" : "text-green-600";
+      const color = due > 0 ? "text-red-600" : "text-[var(--success)]";
       return <span className={`${color} font-mono`}>{display}</span>;
     },
   },
@@ -442,9 +442,9 @@ const ledgerColumnDefs: ColDef<LedgerGridRow>[] = [
     cellRenderer: (params: { value: string }) => {
       if (!params.value) return "";
       const cfgMap: Record<string, string> = {
-        SALE: LEDGER_TYPE_TOKENS.INVOICE ?? "bg-blue-100 text-blue-700",
+        SALE: LEDGER_TYPE_TOKENS.INVOICE ?? "bg-[var(--info-bg)] text-[var(--info)]",
         PAYMENT_RECEIVED:
-          LEDGER_TYPE_TOKENS.PAYMENT ?? "bg-green-100 text-green-700",
+          LEDGER_TYPE_TOKENS.PAYMENT ?? "bg-[var(--success-bg)] text-[var(--success)]",
         CREDIT: LEDGER_TYPE_TOKENS.CREDIT ?? "bg-teal-100 text-teal-700",
         DEBIT: LEDGER_TYPE_TOKENS.REFUND ?? "bg-red-100 text-red-700",
       };
@@ -747,7 +747,7 @@ export function InvoicesSurface() {
         count: data.currentCount ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS.current ??
-          "bg-green-50 border-green-200 text-green-700",
+          "bg-[var(--success-bg)] border-green-200 text-[var(--success)]",
       },
       {
         key: "30",
@@ -756,7 +756,7 @@ export function InvoicesSurface() {
         count: data.days30Count ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS["30"] ??
-          "bg-yellow-50 border-yellow-200 text-yellow-700",
+          "bg-[var(--warning-bg)] border-yellow-200 text-[var(--warning)]",
       },
       {
         key: "60",
@@ -765,7 +765,7 @@ export function InvoicesSurface() {
         count: data.days60Count ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS["60"] ??
-          "bg-orange-50 border-orange-200 text-orange-700",
+          "bg-[var(--warning-bg)] border-orange-200 text-[var(--warning)]",
       },
       {
         key: "90",
@@ -1120,7 +1120,7 @@ export function InvoicesSurface() {
         {/* KPI badges */}
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-green-50 text-green-700 border-green-200"
+          className="text-[9px] py-0 px-1.5 bg-[var(--success-bg)] text-[var(--success)] border-green-200"
         >
           {formatCurrencyCompact(summaryTotals.totalOutstanding)} AR
         </Badge>
@@ -1132,7 +1132,7 @@ export function InvoicesSurface() {
         </Badge>
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-blue-50 text-blue-700 border-blue-200"
+          className="text-[9px] py-0 px-1.5 bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
         >
           {summaryTotals.totalInvoices} total
         </Badge>
@@ -1499,7 +1499,7 @@ export function InvoicesSurface() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Paid</span>
-                  <span className="font-mono text-green-600">
+                  <span className="font-mono text-[var(--success)]">
                     {formatCurrency(selectedRow.amountPaid)}
                   </span>
                 </div>
@@ -1669,7 +1669,7 @@ export function InvoicesSurface() {
 
       {/* ── 5. Client Ledger Sub-View (collapsible) ── */}
       {selectedRow && (
-        <div className="mx-2 mb-1.5 p-2 bg-blue-50/40 border border-blue-200 rounded-md">
+        <div className="mx-2 mb-1.5 p-2 bg-[var(--info-bg)]/40 border border-blue-200 rounded-md">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <Button
               variant="ghost"
@@ -2080,7 +2080,7 @@ export function InvoicesSurface() {
                     className={cn(
                       "text-[10px]",
                       adjustmentForm.transactionType === "CREDIT"
-                        ? "bg-green-50 text-green-700"
+                        ? "bg-[var(--success-bg)] text-[var(--success)]"
                         : "bg-red-50 text-red-700"
                     )}
                   >

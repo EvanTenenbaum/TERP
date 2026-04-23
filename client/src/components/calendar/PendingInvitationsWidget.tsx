@@ -48,7 +48,7 @@ export default function PendingInvitationsWidget() {
     return (
       <div className="rounded-lg border bg-white p-6 shadow-sm">
         <div className="mb-4 flex items-center gap-3">
-          <Mail className="h-5 w-5 text-blue-600" />
+          <Mail className="h-5 w-5 text-[var(--info)]" />
           <h3 className="text-lg font-semibold text-gray-900">
             Pending Invitations
           </h3>
@@ -62,12 +62,12 @@ export default function PendingInvitationsWidget() {
     <div className="rounded-lg border bg-white p-6 shadow-sm">
       <div className="mb-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Mail className="h-5 w-5 text-blue-600" />
+          <Mail className="h-5 w-5 text-[var(--info)]" />
           <h3 className="text-lg font-semibold text-gray-900">
             Pending Invitations
           </h3>
         </div>
-        <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+        <span className="rounded-full bg-[var(--info-bg)] px-2.5 py-0.5 text-xs font-medium text-[var(--info)]">
           {pendingInvitations.length}
         </span>
       </div>

@@ -72,10 +72,10 @@ const TYPE_TABS: Array<{ value: TypeTab; label: string }> = [
 ];
 
 const TYPE_BADGE_STYLES: Record<string, string> = {
-  DEPOSIT: "bg-green-100 text-green-700 border-green-200",
+  DEPOSIT: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
   WITHDRAWAL: "bg-red-100 text-red-700 border-red-200",
-  TRANSFER: "bg-blue-100 text-blue-700 border-blue-200",
-  FEE: "bg-orange-100 text-orange-700 border-orange-200",
+  TRANSFER: "bg-[var(--info-bg)] text-[var(--info)] border-blue-200",
+  FEE: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200",
 };
 
 const formatCurrency = fmtCurrency;
@@ -416,7 +416,7 @@ export function BankTransactionsSurface() {
         {/* KPI badges */}
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-green-50 text-green-700 border-green-200"
+          className="text-[9px] py-0 px-1.5 bg-[var(--success-bg)] text-[var(--success)] border-green-200"
           data-testid="kpi-deposits"
         >
           {formatCurrency(deposits)} deposits

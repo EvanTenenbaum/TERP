@@ -123,10 +123,10 @@ function VendorTypeBadges({ vendor }: { vendor: Vendor }) {
   const badges: { label: string; className: string }[] = [];
 
   // Always show Supplier badge for vendors
-  badges.push({ label: "Supplier", className: "bg-green-100 text-green-800" });
+  badges.push({ label: "Supplier", className: "bg-[var(--success-bg)] text-[var(--success)]" });
 
   if (vendor.isBuyer)
-    badges.push({ label: "Customer", className: "bg-blue-100 text-blue-800" });
+    badges.push({ label: "Customer", className: "bg-[var(--info-bg)] text-[var(--info)]" });
   if (vendor.isBrand)
     badges.push({ label: "Brand", className: "bg-purple-100 text-purple-800" });
 
@@ -193,7 +193,7 @@ function VendorInspectorContent({
           <InspectorField label="Email">
             <a
               href={`mailto:${vendor.email}`}
-              className="flex items-center gap-2 text-blue-600 hover:underline"
+              className="flex items-center gap-2 text-[var(--info)] hover:underline"
             >
               <Mail className="h-4 w-4" />
               {vendor.email}
@@ -205,7 +205,7 @@ function VendorInspectorContent({
           <InspectorField label="Phone">
             <a
               href={`tel:${vendor.phone}`}
-              className="flex items-center gap-2 text-blue-600 hover:underline"
+              className="flex items-center gap-2 text-[var(--info)] hover:underline"
             >
               <Phone className="h-4 w-4" />
               {vendor.phone}
@@ -228,7 +228,7 @@ function VendorInspectorContent({
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">All Time Value</p>
-            <p className="font-semibold text-green-600">
+            <p className="font-semibold text-[var(--success)]">
               {formatCurrency(vendor.lifetimeValue)}
             </p>
           </div>
@@ -674,7 +674,7 @@ export function VendorsWorkSurface() {
                       <TableCell className="text-sm text-muted-foreground">
                         {vendor.email || vendor.phone || "-"}
                       </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
+                      <TableCell className="text-right font-medium text-[var(--success)]">
                         {formatCurrency(vendor.lifetimeValue)}
                       </TableCell>
                       <TableCell className="text-right">

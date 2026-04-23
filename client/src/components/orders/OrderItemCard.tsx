@@ -53,10 +53,10 @@ export const OrderItemCard = memo(function OrderItemCard({
 
   // Get margin color
   const getMarginColor = (percent: number) => {
-    if (percent >= 70) return "bg-green-100 text-green-700 border-green-300";
-    if (percent >= 50) return "bg-green-50 text-green-600 border-green-200";
-    if (percent >= 30) return "bg-yellow-50 text-yellow-700 border-yellow-200";
-    if (percent >= 15) return "bg-orange-50 text-orange-700 border-orange-200";
+    if (percent >= 70) return "bg-[var(--success-bg)] text-[var(--success)] border-green-300";
+    if (percent >= 50) return "bg-[var(--success-bg)] text-[var(--success)] border-green-200";
+    if (percent >= 30) return "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200";
+    if (percent >= 15) return "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200";
     return "bg-red-50 text-red-700 border-red-200";
   };
 
@@ -131,7 +131,7 @@ export const OrderItemCard = memo(function OrderItemCard({
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Unit Margin</span>
-                <span className="font-medium text-green-600">
+                <span className="font-medium text-[var(--success)]">
                   ${(item.unitPrice - (item.unitCogs || 0)).toFixed(2)}
                 </span>
               </div>

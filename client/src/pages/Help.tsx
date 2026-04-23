@@ -235,7 +235,7 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <BookOpen className="w-8 h-8 text-blue-600" />
+            <BookOpen className="w-8 h-8 text-[var(--info)]" />
             <h1 className="text-3xl font-bold text-gray-900">
               TERP Help Center
             </h1>
@@ -272,8 +272,8 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                 className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all cursor-pointer"
               >
                 <div className="flex items-start gap-4 overflow-hidden">
-                  <div className="p-3 bg-blue-50 rounded-lg flex-shrink-0">
-                    <Icon className="w-6 h-6 text-blue-600" />
+                  <div className="p-3 bg-[var(--info-bg)] rounded-lg flex-shrink-0">
+                    <Icon className="w-6 h-6 text-[var(--info)]" />
                   </div>
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-start justify-between gap-2">
@@ -295,7 +295,7 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                           key={`topic-${topic.substring(0, 30)}`}
                           className="flex items-start gap-2"
                         >
-                          <span className="text-blue-600 mt-1">•</span>
+                          <span className="text-[var(--info)] mt-1">•</span>
                           <span className="text-sm text-gray-700">{topic}</span>
                         </li>
                       ))}
@@ -398,7 +398,7 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                   <a
                     href="/TERP_Training_Guide.md"
                     download
-                    className="inline-flex items-center gap-2 px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+                    className="inline-flex items-center gap-2 px-6 py-3 border-2 border-blue-600 text-[var(--info)] rounded-lg hover:bg-[var(--info-bg)] transition-colors font-medium"
                     onClick={e => e.stopPropagation()}
                   >
                     <FileText className="w-5 h-5" />

@@ -154,11 +154,11 @@ export default function LiveShoppingPage({ onBack }: LiveShoppingPageProps) {
       <div className="container mx-auto px-4 py-6 space-y-6">
         {/* Active Session Card */}
         {activeSession && (
-          <Card className="border-green-200 bg-green-50/50">
+          <Card className="border-green-200 bg-[var(--success-bg)]/50">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Radio className="h-5 w-5 text-green-600 animate-pulse" />
-                <CardTitle className="text-green-800">
+                <Radio className="h-5 w-5 text-[var(--success)] animate-pulse" />
+                <CardTitle className="text-[var(--success)]">
                   Active Session Available
                 </CardTitle>
               </div>
@@ -173,7 +173,7 @@ export default function LiveShoppingPage({ onBack }: LiveShoppingPageProps) {
                   <p className="text-sm text-muted-foreground">
                     Host: {activeSession.hostName}
                   </p>
-                  <p className="text-xs text-green-600 font-medium mt-1">
+                  <p className="text-xs text-[var(--success)] font-medium mt-1">
                     Status: {activeSession.status}
                   </p>
                 </div>
@@ -244,16 +244,16 @@ export default function LiveShoppingPage({ onBack }: LiveShoppingPageProps) {
                   Mark items you want to see up close
                 </p>
               </div>
-              <div className="flex flex-col items-center text-center p-4 rounded-lg bg-blue-50">
+              <div className="flex flex-col items-center text-center p-4 rounded-lg bg-[var(--info-bg)]">
                 <div className="text-3xl mb-2">2</div>
-                <h3 className="font-medium text-blue-800">Show Interest</h3>
+                <h3 className="font-medium text-[var(--info)]">Show Interest</h3>
                 <p className="text-sm text-muted-foreground">
                   Discuss pricing and negotiate
                 </p>
               </div>
-              <div className="flex flex-col items-center text-center p-4 rounded-lg bg-green-50">
+              <div className="flex flex-col items-center text-center p-4 rounded-lg bg-[var(--success-bg)]">
                 <div className="text-3xl mb-2">3</div>
-                <h3 className="font-medium text-green-800">Ready to Buy</h3>
+                <h3 className="font-medium text-[var(--success)]">Ready to Buy</h3>
                 <p className="text-sm text-muted-foreground">
                   Confirm items for your order
                 </p>

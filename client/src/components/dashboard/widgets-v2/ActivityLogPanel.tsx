@@ -35,13 +35,13 @@ const activityIcons = {
 };
 
 const activityColors = {
-  CREATED: "text-green-600",
-  UPDATED: "text-blue-600",
+  CREATED: "text-[var(--success)]",
+  UPDATED: "text-[var(--info)]",
   COMMENTED: "text-purple-600",
-  SHARED: "text-orange-600",
+  SHARED: "text-[var(--warning)]",
   ARCHIVED: "text-gray-600",
-  RESTORED: "text-green-600",
-  PINNED: "text-yellow-600",
+  RESTORED: "text-[var(--success)]",
+  PINNED: "text-[var(--warning)]",
   UNPINNED: "text-gray-600",
   TEMPLATE_APPLIED: "text-indigo-600",
 };

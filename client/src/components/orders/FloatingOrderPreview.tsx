@@ -112,9 +112,9 @@ export function FloatingOrderPreview({
   }, [items, subtotal]);
 
   const getMarginColor = (percent: number) => {
-    if (percent >= 50) return "text-green-600";
-    if (percent >= 30) return "text-yellow-600";
-    if (percent >= 15) return "text-orange-600";
+    if (percent >= 50) return "text-[var(--success)]";
+    if (percent >= 30) return "text-[var(--warning)]";
+    if (percent >= 15) return "text-[var(--warning)]";
     return "text-red-600";
   };
 
@@ -444,7 +444,7 @@ export function FloatingOrderPreview({
                 <span className="text-muted-foreground">{adjustmentLabel}</span>
                 <span
                   className={
-                    adjustmentAmount < 0 ? "text-red-600" : "text-green-600"
+                    adjustmentAmount < 0 ? "text-red-600" : "text-[var(--success)]"
                   }
                 >
                   {adjustmentAmount < 0 ? "-" : "+"}
@@ -474,7 +474,7 @@ export function FloatingOrderPreview({
                 {renderMargin ? (
                   <div className="flex justify-between">
                     <span>Est. Profit:</span>
-                    <span className="text-green-600">
+                    <span className="text-[var(--success)]">
                       {fmt(metrics.totalMargin)}
                     </span>
                   </div>

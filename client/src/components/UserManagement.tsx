@@ -274,7 +274,7 @@ export function UserManagement() {
             <div className="flex items-center gap-2">
               {authError.type === "NOT_LOGGED_IN" ||
               authError.type === "SESSION_EXPIRED" ? (
-                <LogIn className="h-5 w-5 text-yellow-600" />
+                <LogIn className="h-5 w-5 text-[var(--warning)]" />
               ) : (
                 <Lock className="h-5 w-5 text-destructive" />
               )}

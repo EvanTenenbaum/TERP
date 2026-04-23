@@ -74,8 +74,8 @@ export default function AppointmentRequestModal({
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      approved: "bg-green-100 text-green-800 border-green-200",
+      pending: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200",
+      approved: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
       rejected: "bg-red-100 text-red-800 border-red-200",
       cancelled: "bg-gray-100 text-gray-800 border-gray-200",
     };
@@ -167,7 +167,7 @@ export default function AppointmentRequestModal({
                     <Mail className="h-4 w-4" />
                     <a
                       href={`mailto:${request.clientEmail}`}
-                      className="text-blue-600 hover:underline"
+                      className="text-[var(--info)] hover:underline"
                     >
                       {request.clientEmail}
                     </a>
@@ -178,7 +178,7 @@ export default function AppointmentRequestModal({
                     <Phone className="h-4 w-4" />
                     <a
                       href={`tel:${request.clientPhone}`}
-                      className="text-blue-600 hover:underline"
+                      className="text-[var(--info)] hover:underline"
                     >
                       {request.clientPhone}
                     </a>

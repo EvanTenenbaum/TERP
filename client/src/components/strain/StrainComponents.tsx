@@ -258,8 +258,8 @@ export function StrainCategoryBadge({
 
   const colors = {
     indica: "bg-purple-100 text-purple-800 border-purple-200",
-    sativa: "bg-green-100 text-green-800 border-green-200",
-    hybrid: "bg-blue-100 text-blue-800 border-blue-200",
+    sativa: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
+    hybrid: "bg-[var(--info-bg)] text-[var(--info)] border-blue-200",
   };
 
   const colorClass =

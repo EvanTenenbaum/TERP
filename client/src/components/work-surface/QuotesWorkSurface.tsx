@@ -151,7 +151,7 @@ const STATUS_CONFIG: Record<string, { icon: ReactNode; color: string }> = {
   },
   SENT: {
     icon: <Clock className="h-4 w-4" />,
-    color: "bg-blue-100 text-blue-800",
+    color: "bg-[var(--info-bg)] text-[var(--info)]",
   },
   VIEWED: {
     icon: <CheckCircle2 className="h-4 w-4" />,
@@ -159,7 +159,7 @@ const STATUS_CONFIG: Record<string, { icon: ReactNode; color: string }> = {
   },
   CONVERTED: {
     icon: <CheckCircle2 className="h-4 w-4" />,
-    color: "bg-green-100 text-green-800",
+    color: "bg-[var(--success-bg)] text-[var(--success)]",
   },
   REJECTED: {
     icon: <XCircle className="h-4 w-4" />,
@@ -167,7 +167,7 @@ const STATUS_CONFIG: Record<string, { icon: ReactNode; color: string }> = {
   },
   EXPIRED: {
     icon: <AlertTriangle className="h-4 w-4" />,
-    color: "bg-orange-100 text-orange-800",
+    color: "bg-[var(--warning-bg)] text-[var(--warning)]",
   },
 };
 
@@ -375,7 +375,7 @@ function QuoteInspectorContent({
             </div>
           )}
           {parseFloat(quote.discount) > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
+            <div className="flex justify-between text-sm text-[var(--success)]">
               <span>Discount</span>
               <span className="font-mono">
                 -{formatCurrency(quote.discount)}

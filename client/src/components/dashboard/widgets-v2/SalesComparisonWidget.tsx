@@ -96,7 +96,7 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
                       data.weekly.prior7Days
                     );
                     const color =
-                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                      variance.amount >= 0 ? "text-[var(--success)]" : "text-red-600";
                     return (
                       <span className={color}>
                         {variance.amount >= 0 ? "+" : ""}
@@ -126,7 +126,7 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
                       data.monthly.prior30Days
                     );
                     const color =
-                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                      variance.amount >= 0 ? "text-[var(--success)]" : "text-red-600";
                     return (
                       <span className={color}>
                         {variance.amount >= 0 ? "+" : ""}
@@ -156,7 +156,7 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
                       data.sixMonth.prior6Months
                     );
                     const color =
-                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                      variance.amount >= 0 ? "text-[var(--success)]" : "text-red-600";
                     const bgColor =
                       variance.amount < 0 ? "bg-red-50 dark:bg-red-950/20" : "";
                     return (
@@ -188,7 +188,7 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
                       data.yearly.prior365
                     );
                     const color =
-                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                      variance.amount >= 0 ? "text-[var(--success)]" : "text-red-600";
                     const bgColor =
                       variance.amount < 0 ? "bg-red-50 dark:bg-red-950/20" : "";
                     return (

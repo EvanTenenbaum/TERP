@@ -390,8 +390,8 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
                 </div>
               )}
               {selectedOrderId && !orderDetails && (
-                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="text-sm text-yellow-800">
+                <div className="mt-2 p-3 bg-[var(--warning-bg)] border border-yellow-200 rounded-lg">
+                  <div className="text-sm text-[var(--warning)]">
                     Loading order details...
                   </div>
                 </div>

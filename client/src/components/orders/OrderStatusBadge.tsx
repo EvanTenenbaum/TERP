@@ -41,11 +41,11 @@ const STATUS_CONFIG: Record<
   },
   CONFIRMED: {
     label: "Confirmed",
-    className: "bg-blue-100 text-blue-900 border-blue-400",
+    className: "bg-[var(--info-bg)] text-blue-900 border-blue-400",
   },
   PENDING: {
     label: "Pending",
-    className: "bg-yellow-100 text-yellow-900 border-yellow-500",
+    className: "bg-[var(--warning-bg)] text-yellow-900 border-yellow-500",
   },
   READY: {
     label: "Ready",
@@ -57,11 +57,11 @@ const STATUS_CONFIG: Record<
   },
   DELIVERED: {
     label: "Delivered",
-    className: "bg-green-100 text-green-900 border-green-400",
+    className: "bg-[var(--success-bg)] text-green-900 border-green-400",
   },
   RETURNED: {
     label: "Returned",
-    className: "bg-orange-100 text-orange-900 border-orange-400",
+    className: "bg-[var(--warning-bg)] text-orange-900 border-orange-400",
   },
   RESTOCKED: {
     label: "Restocked",

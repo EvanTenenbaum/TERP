@@ -43,19 +43,19 @@ interface PointsDisplayProps {
 const TRANSACTION_STYLES = {
   EARNED_ACHIEVEMENT: {
     icon: Award,
-    color: "text-yellow-600",
-    bg: "bg-yellow-50",
+    color: "text-[var(--warning)]",
+    bg: "bg-[var(--warning-bg)]",
   },
   EARNED_PURCHASE: {
     icon: TrendingUp,
-    color: "text-green-600",
-    bg: "bg-green-50",
+    color: "text-[var(--success)]",
+    bg: "bg-[var(--success-bg)]",
   },
-  EARNED_REFERRAL: { icon: Users, color: "text-blue-600", bg: "bg-blue-50" },
+  EARNED_REFERRAL: { icon: Users, color: "text-[var(--info)]", bg: "bg-[var(--info-bg)]" },
   EARNED_BONUS: { icon: Gift, color: "text-purple-600", bg: "bg-purple-50" },
   REDEEMED: { icon: Gift, color: "text-red-600", bg: "bg-red-50" },
   EXPIRED: { icon: Clock, color: "text-gray-600", bg: "bg-gray-50" },
-  ADJUSTED: { icon: TrendingUp, color: "text-orange-600", bg: "bg-orange-50" },
+  ADJUSTED: { icon: TrendingUp, color: "text-[var(--warning)]", bg: "bg-[var(--warning-bg)]" },
 };
 
 export const PointsDisplay = React.memo(function PointsDisplay({
@@ -111,8 +111,8 @@ export const PointsDisplay = React.memo(function PointsDisplay({
             </div>
 
             {/* Lifetime Earned */}
-            <div className="bg-green-50 dark:bg-green-950 rounded-lg p-4 text-center">
-              <div className="text-xl font-semibold text-green-700 dark:text-green-300">
+            <div className="bg-[var(--success-bg)] dark:bg-green-950 rounded-lg p-4 text-center">
+              <div className="text-xl font-semibold text-[var(--success)] dark:text-green-300">
                 {(balance?.lifetimeEarned ?? 0).toLocaleString()}
               </div>
               <div className="text-xs text-muted-foreground">
@@ -121,8 +121,8 @@ export const PointsDisplay = React.memo(function PointsDisplay({
             </div>
 
             {/* Lifetime Redeemed */}
-            <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4 text-center">
-              <div className="text-xl font-semibold text-blue-700 dark:text-blue-300">
+            <div className="bg-[var(--info-bg)] dark:bg-blue-950 rounded-lg p-4 text-center">
+              <div className="text-xl font-semibold text-[var(--info)] dark:text-blue-300">
                 {(balance?.lifetimeRedeemed ?? 0).toLocaleString()}
               </div>
               <div className="text-xs text-muted-foreground">Redeemed</div>
@@ -262,7 +262,7 @@ const PointsHistoryItem = React.memo(function PointsHistoryItem({
         <div
           className={cn(
             "font-semibold",
-            isPositive ? "text-green-600" : "text-red-600"
+            isPositive ? "text-[var(--success)]" : "text-red-600"
           )}
         >
           {isPositive ? "+" : ""}

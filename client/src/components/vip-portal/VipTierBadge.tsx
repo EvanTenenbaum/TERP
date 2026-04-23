@@ -416,7 +416,7 @@ function BenefitItem({ label, active }: { label: string; active: boolean }) {
     <div
       className={cn(
         "flex items-center gap-2 p-2 rounded text-sm",
-        active ? "bg-green-50 text-green-700" : "bg-muted text-muted-foreground"
+        active ? "bg-[var(--success-bg)] text-[var(--success)]" : "bg-muted text-muted-foreground"
       )}
     >
       <div

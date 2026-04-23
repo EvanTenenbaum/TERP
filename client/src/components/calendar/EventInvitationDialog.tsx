@@ -158,7 +158,7 @@ export default function EventInvitationDialog({
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-3">
-            <UserPlus className="h-6 w-6 text-blue-600" />
+            <UserPlus className="h-6 w-6 text-[var(--info)]" />
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
                 Send Invitations
@@ -223,7 +223,7 @@ export default function EventInvitationDialog({
                   onClick={() => setInviteeType("USER")}
                   className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium ${
                     inviteeType === "USER"
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      ? "border-blue-500 bg-[var(--info-bg)] text-[var(--info)]"
                       : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >
@@ -233,7 +233,7 @@ export default function EventInvitationDialog({
                   onClick={() => setInviteeType("CLIENT")}
                   className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium ${
                     inviteeType === "CLIENT"
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      ? "border-blue-500 bg-[var(--info-bg)] text-[var(--info)]"
                       : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >
@@ -243,7 +243,7 @@ export default function EventInvitationDialog({
                   onClick={() => setInviteeType("EXTERNAL")}
                   className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium ${
                     inviteeType === "EXTERNAL"
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      ? "border-blue-500 bg-[var(--info-bg)] text-[var(--info)]"
                       : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >

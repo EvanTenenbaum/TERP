@@ -162,7 +162,7 @@ export function COGSInput({
     <Popover open={isEditing} onOpenChange={setIsEditing}>
       <PopoverTrigger asChild>
         <div className="flex items-center justify-end gap-2 cursor-pointer hover:bg-muted px-2 py-1 rounded">
-          <span className={isOverridden ? "font-semibold text-orange-600" : ""}>
+          <span className={isOverridden ? "font-semibold text-[var(--warning)]" : ""}>
             {currency(value)}
           </span>
           <Badge variant="outline" className="text-xs">

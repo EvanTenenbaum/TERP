@@ -110,7 +110,7 @@ const RankBadge = React.memo(function RankBadge({ rank }: { rank: number }) {
     return (
       <div className="flex items-center gap-1">
         <Trophy className="h-5 w-5 text-yellow-500" />
-        <span className="font-bold text-yellow-600">1st</span>
+        <span className="font-bold text-[var(--warning)]">1st</span>
       </div>
     );
   }
@@ -142,7 +142,7 @@ const TrendIndicator = React.memo(function TrendIndicator({
 }) {
   if (trend === "up") {
     return (
-      <div className="flex items-center gap-1 text-green-600">
+      <div className="flex items-center gap-1 text-[var(--success)]">
         <TrendingUp className="h-4 w-4" />
         <span className="text-xs">+{amount}</span>
       </div>

@@ -35,12 +35,12 @@ const statusConfig: Record<
   },
   LOW: {
     label: "Low Stock",
-    className: "bg-orange-100 text-orange-900 border-orange-400",
+    className: "bg-[var(--warning-bg)] text-orange-900 border-orange-400",
     icon: AlertTriangle,
   },
   OPTIMAL: {
     label: "Optimal",
-    className: "bg-green-100 text-green-900 border-green-400",
+    className: "bg-[var(--success-bg)] text-green-900 border-green-400",
     icon: CheckCircle,
   },
   OUT_OF_STOCK: {

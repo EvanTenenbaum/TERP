@@ -458,15 +458,15 @@ export default function CalendarPage() {
             {/* Event Type Legend */}
             <div className="mb-4 flex flex-wrap gap-4 rounded-lg border border-border bg-card p-3">
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded border-l-4 border-green-500 bg-green-100"></div>
+                <div className="h-4 w-4 rounded border-l-4 border-green-500 bg-[var(--success-bg)]"></div>
                 <span className="text-sm text-foreground">Intake Appointments</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded border-l-4 border-blue-500 bg-blue-100"></div>
+                <div className="h-4 w-4 rounded border-l-4 border-blue-500 bg-[var(--info-bg)]"></div>
                 <span className="text-sm text-foreground">Order Deliveries</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 rounded border-l-4 border-orange-500 bg-orange-100"></div>
+                <div className="h-4 w-4 rounded border-l-4 border-orange-500 bg-[var(--warning-bg)]"></div>
                 <span className="text-sm text-foreground">Payment Due</span>
               </div>
             </div>

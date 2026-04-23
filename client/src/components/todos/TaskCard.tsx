@@ -37,9 +37,9 @@ interface TaskCardProps {
 }
 
 const PRIORITY_COLORS = {
-  low: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
-  high: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+  low: "bg-[var(--info-bg)] text-[var(--info)] dark:bg-blue-900 dark:text-blue-300",
+  medium: "bg-[var(--warning-bg)] text-[var(--warning)] dark:bg-yellow-900 dark:text-yellow-300",
+  high: "bg-[var(--warning-bg)] text-[var(--warning)] dark:bg-orange-900 dark:text-orange-300",
   urgent: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };
 
@@ -140,7 +140,7 @@ export const TaskCard = memo(function TaskCard({
                   isOverdue
                     ? "text-destructive"
                     : isDueToday
-                      ? "text-orange-600 dark:text-orange-400"
+                      ? "text-[var(--warning)] dark:text-orange-400"
                       : "text-muted-foreground"
                 )}
               >

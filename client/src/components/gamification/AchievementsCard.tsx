@@ -147,8 +147,8 @@ export const AchievementsCard = React.memo(function AchievementsCard({
         {/* Markup Discount Info */}
         {achievementsData?.summary?.achievementMarkupDiscount !== undefined &&
           achievementsData.summary.achievementMarkupDiscount > 0 && (
-            <div className="mt-3 p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-              <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+            <div className="mt-3 p-3 bg-[var(--success-bg)] dark:bg-green-950 rounded-lg">
+              <div className="flex items-center gap-2 text-[var(--success)] dark:text-green-300">
                 <Star className="h-4 w-4" />
                 <span className="text-sm font-medium">
                   Achievement Bonus:{" "}

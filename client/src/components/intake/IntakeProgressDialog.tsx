@@ -29,11 +29,11 @@ interface IntakeProgressDialogProps {
 function StepIcon({ step }: { step: IntakeStep }) {
   switch (step.status) {
     case "complete":
-      return <CheckCircle2 className="h-5 w-5 text-green-600" />;
+      return <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />;
     case "failed":
       return <XCircle className="h-5 w-5 text-red-600" />;
     case "running":
-      return <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />;
+      return <Loader2 className="h-5 w-5 text-[var(--info)] animate-spin" />;
     default:
       return <Circle className="h-5 w-5 text-gray-300" />;
   }
@@ -92,7 +92,7 @@ export function IntakeProgressDialog({
           <DialogTitle className="flex items-center gap-2">
             {isSuccess && (
               <>
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
                 Intake Completed
               </>
             )}
@@ -104,7 +104,7 @@ export function IntakeProgressDialog({
             )}
             {!isSuccess && !isFailed && (
               <>
-                <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+                <Loader2 className="h-5 w-5 text-[var(--info)] animate-spin" />
                 Processing Intake...
               </>
             )}
@@ -143,8 +143,8 @@ export function IntakeProgressDialog({
         </div>
 
         {isSuccess && (
-          <div className="rounded bg-green-50 border border-green-200 p-3">
-            <p className="text-sm text-green-800">
+          <div className="rounded bg-[var(--success-bg)] border border-green-200 p-3">
+            <p className="text-sm text-[var(--success)]">
               Successfully created {progress.completedSteps.length} entities
             </p>
           </div>

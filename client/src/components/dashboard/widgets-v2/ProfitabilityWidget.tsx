@@ -19,7 +19,7 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
     return (
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-green-600" />
+          <TrendingUp className="h-5 w-5 text-[var(--success)]" />
           Profitability Analysis
         </h3>
         <div className="space-y-4">
@@ -38,7 +38,7 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
     return (
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-green-600" />
+          <TrendingUp className="h-5 w-5 text-[var(--success)]" />
           Profitability Analysis
         </h3>
         <DatabaseErrorState
@@ -61,7 +61,7 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
     return (
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-green-600" />
+          <TrendingUp className="h-5 w-5 text-[var(--success)]" />
           Profitability Analysis
         </h3>
         <EmptyState
@@ -90,7 +90,7 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
   return (
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <TrendingUp className="h-5 w-5 text-green-600" />
+        <TrendingUp className="h-5 w-5 text-[var(--success)]" />
         Profitability Analysis
       </h3>
 
@@ -101,7 +101,7 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
             <DollarSign className="h-4 w-4" />
             <span>Total Revenue</span>
           </div>
-          <div className="text-2xl font-bold text-green-600">
+          <div className="text-2xl font-bold text-[var(--success)]">
             {formatCurrency(summary.totalRevenue)}
           </div>
         </div>
@@ -111,7 +111,7 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
             <TrendingUp className="h-4 w-4" />
             <span>Gross Profit</span>
           </div>
-          <div className="text-2xl font-bold text-blue-600">
+          <div className="text-2xl font-bold text-[var(--info)]">
             {formatCurrency(summary.grossProfit)}
           </div>
         </div>
@@ -152,7 +152,7 @@ export const ProfitabilityWidget = memo(function ProfitabilityWidget() {
                   <span className="font-mono">{batch.sku}</span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-green-600 font-semibold">
+                  <span className="text-[var(--success)] font-semibold">
                     {formatCurrency(batch.grossProfit)}
                   </span>
                   <span className="text-muted-foreground text-xs">

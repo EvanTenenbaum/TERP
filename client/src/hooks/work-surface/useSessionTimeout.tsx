@@ -243,7 +243,7 @@ function SessionTimeoutDialogComponent({
           <div
             className={cn(
               "flex items-center justify-center w-24 h-24 rounded-full mb-4",
-              "bg-yellow-100 text-yellow-700"
+              "bg-[var(--warning-bg)] text-[var(--warning)]"
             )}
           >
             <Clock className="h-12 w-12" />

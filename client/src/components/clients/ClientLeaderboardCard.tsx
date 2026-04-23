@@ -87,7 +87,7 @@ const TrendIndicator = React.memo(function TrendIndicator({
 }) {
   if (trend === "up") {
     return (
-      <div className="flex items-center gap-1 text-green-600">
+      <div className="flex items-center gap-1 text-[var(--success)]">
         <TrendingUp className="h-4 w-4" />
         <span className="text-sm">Up {amount} positions</span>
       </div>

@@ -105,10 +105,10 @@ export function TransactionHistory({
     switch (type) {
       case "PAYMENT":
       case "REFUND":
-        return "text-green-600";
+        return "text-[var(--success)]";
       case "INVOICE":
       case "ORDER":
-        return "text-blue-600";
+        return "text-[var(--info)]";
       default:
         return "";
     }
@@ -269,7 +269,7 @@ export function TransactionHistory({
                         <p className="text-muted-foreground text-xs">
                           Payment Amount
                         </p>
-                        <p className="font-medium text-base text-green-600">
+                        <p className="font-medium text-base text-[var(--success)]">
                           ${tx.paymentAmount.toLocaleString()}
                         </p>
                       </div>

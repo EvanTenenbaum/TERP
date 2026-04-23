@@ -94,7 +94,7 @@ export const DataCard = memo(function DataCard({
             <div className="flex items-center gap-1 text-xs">
               {data.trend.direction === "up" && (
                 <TrendingUp
-                  className="h-3 w-3 text-green-600"
+                  className="h-3 w-3 text-[var(--success)]"
                   aria-hidden="true"
                 />
               )}
@@ -109,7 +109,7 @@ export const DataCard = memo(function DataCard({
               )}
               <span
                 className={cn(
-                  data.trend.direction === "up" && "text-green-600",
+                  data.trend.direction === "up" && "text-[var(--success)]",
                   data.trend.direction === "down" && "text-red-600",
                   data.trend.direction === "flat" && "text-gray-600"
                 )}

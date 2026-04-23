@@ -38,8 +38,8 @@ export function CreditLimitBanner({ client, orderTotal }: CreditLimitBannerProps
         icon: Info,
         title: "No Credit Limit Set",
         description: "This client doesn't have a credit limit configured. Calculate one from their profile.",
-        color: "text-blue-600",
-        bgColor: "bg-blue-50",
+        color: "text-[var(--info)]",
+        bgColor: "bg-[var(--info-bg)]",
         borderColor: "border-blue-200",
         showDetails: false,
       };
@@ -61,8 +61,8 @@ export function CreditLimitBanner({ client, orderTotal }: CreditLimitBannerProps
         icon: AlertCircle,
         title: "Credit Limit Warning",
         description: "This order will push credit utilization above 90%",
-        color: "text-orange-600",
-        bgColor: "bg-orange-50",
+        color: "text-[var(--warning)]",
+        bgColor: "bg-[var(--warning-bg)]",
         borderColor: "border-orange-200",
         showDetails: true,
       };
@@ -72,8 +72,8 @@ export function CreditLimitBanner({ client, orderTotal }: CreditLimitBannerProps
         icon: AlertTriangle,
         title: "Credit Utilization High",
         description: "This order will result in high credit utilization",
-        color: "text-yellow-600",
-        bgColor: "bg-yellow-50",
+        color: "text-[var(--warning)]",
+        bgColor: "bg-[var(--warning-bg)]",
         borderColor: "border-yellow-200",
         showDetails: true,
       };
@@ -83,8 +83,8 @@ export function CreditLimitBanner({ client, orderTotal }: CreditLimitBannerProps
         icon: CheckCircle,
         title: "Credit Available",
         description: `$${availableCredit.toFixed(2)} available after this order`,
-        color: "text-green-600",
-        bgColor: "bg-green-50",
+        color: "text-[var(--success)]",
+        bgColor: "bg-[var(--success-bg)]",
         borderColor: "border-green-200",
         showDetails: true,
       };

@@ -598,7 +598,7 @@ const findLocationOptionForRow = (
 function StatusCellRenderer({ data }: { data?: IntakeDraftRow }) {
   if (data?.status === "submitted") {
     return (
-      <div className="flex items-center gap-1 text-green-600">
+      <div className="flex items-center gap-1 text-[var(--success)]">
         <CheckCircle2 className="h-4 w-4" />
         <span>Submitted</span>
       </div>
@@ -835,13 +835,13 @@ function RowInspectorContent({
             </p>
           )}
           {row.strainId && row.productId && (
-            <div className="flex items-center gap-2 mt-1 p-1.5 bg-green-50 rounded text-xs text-green-700">
+            <div className="flex items-center gap-2 mt-1 p-1.5 bg-[var(--success-bg)] rounded text-xs text-[var(--success)]">
               <CheckCircle2 className="h-3 w-3" />
               <span>Matched to existing product (strain #{row.strainId})</span>
             </div>
           )}
           {row.item && !row.productId && (
-            <div className="flex items-center gap-2 mt-1 p-1.5 bg-yellow-50 rounded text-xs text-yellow-700">
+            <div className="flex items-center gap-2 mt-1 p-1.5 bg-[var(--warning-bg)] rounded text-xs text-[var(--warning)]">
               <AlertCircle className="h-3 w-3" />
               <span>New product — will be created on submit</span>
             </div>

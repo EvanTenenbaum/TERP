@@ -289,7 +289,7 @@ export function AccountsPayable({
                         <p className="text-muted-foreground text-xs">
                           Amount Paid
                         </p>
-                        <p className="font-medium text-green-600">
+                        <p className="font-medium text-[var(--success)]">
                           {formatCurrency(bill.amountPaid)}
                         </p>
                       </div>

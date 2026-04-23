@@ -71,9 +71,9 @@ const MEDAL_COLORS: Record<
     glow: "shadow-gray-200",
   },
   GOLD: {
-    bg: "bg-yellow-100",
+    bg: "bg-[var(--warning-bg)]",
     border: "border-yellow-400",
-    text: "text-yellow-700",
+    text: "text-[var(--warning)]",
     glow: "shadow-yellow-200",
   },
   PLATINUM: {

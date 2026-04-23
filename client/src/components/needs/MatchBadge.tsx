@@ -40,9 +40,9 @@ export function MatchBadge({
   };
 
   const getConfidenceColor = () => {
-    if (confidence >= 80) return "text-green-600";
-    if (confidence >= 60) return "text-yellow-600";
-    return "text-orange-600";
+    if (confidence >= 80) return "text-[var(--success)]";
+    if (confidence >= 60) return "text-[var(--warning)]";
+    return "text-[var(--warning)]";
   };
 
   const sizeClasses = {

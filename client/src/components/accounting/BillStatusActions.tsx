@@ -144,7 +144,7 @@ export function BillStatusActions({
               className={cn(
                 "gap-2 cursor-pointer",
                 status === "VOID" && "text-red-600",
-                status === "PAID" && "text-green-600"
+                status === "PAID" && "text-[var(--success)]"
               )}
             >
               {STATUS_ICONS[status]}

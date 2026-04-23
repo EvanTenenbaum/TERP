@@ -219,7 +219,7 @@ export function EditInvoiceDialog({
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Amount Paid:</span>
-                <span className="font-medium text-green-600">
+                <span className="font-medium text-[var(--success)]">
                   {formatCurrency(invoice.amountPaid)}
                 </span>
               </div>

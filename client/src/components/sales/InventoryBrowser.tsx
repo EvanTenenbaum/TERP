@@ -47,12 +47,12 @@ const BATCH_STATUS_CONFIG: Record<
 > = {
   AWAITING_INTAKE: {
     label: STATUS_LABELS.AWAITING_INTAKE,
-    color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    color: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200",
     warning: "Still incoming and not ready to sell",
   },
   ON_HOLD: {
     label: STATUS_LABELS.ON_HOLD,
-    color: "bg-orange-100 text-orange-800 border-orange-200",
+    color: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200",
     warning: "Temporarily unavailable",
   },
   QUARANTINED: {
@@ -62,7 +62,7 @@ const BATCH_STATUS_CONFIG: Record<
   },
   LIVE: {
     label: STATUS_LABELS.LIVE,
-    color: "bg-green-100 text-green-800 border-green-200",
+    color: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
     warning: "",
   },
   SOLD_OUT: {
@@ -693,7 +693,7 @@ export function InventoryBrowser({
                           )}
                           {/* TERP-0007: Warning for non-sellable status */}
                           {item.status && isNonSellableStatus(item.status) && (
-                            <span className="text-xs text-orange-600">
+                            <span className="text-xs text-[var(--warning)]">
                               {BATCH_STATUS_CONFIG[item.status]?.warning}
                             </span>
                           )}

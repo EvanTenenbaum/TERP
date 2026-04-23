@@ -68,7 +68,7 @@ export function RoomSidebar({
           onClick={() => onSelectRoom(null)}
           className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
             selectedRoomId === null
-              ? "bg-blue-100 text-blue-700"
+              ? "bg-[var(--info-bg)] text-[var(--info)]"
               : "hover:bg-gray-200 text-gray-700"
           }`}
         >
@@ -91,7 +91,7 @@ export function RoomSidebar({
                 onClick={() => onSelectRoom(room.id)}
                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
                   selectedRoomId === room.id
-                    ? "bg-blue-100 text-blue-700"
+                    ? "bg-[var(--info-bg)] text-[var(--info)]"
                     : "hover:bg-gray-200 text-gray-700"
                 }`}
               >
@@ -125,7 +125,7 @@ export function RoomSidebar({
                 onClick={() => onSelectRoom(room.id)}
                 className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
                   selectedRoomId === room.id
-                    ? "bg-blue-100 text-blue-700"
+                    ? "bg-[var(--info-bg)] text-[var(--info)]"
                     : "hover:bg-gray-200 text-gray-700"
                 }`}
               >
@@ -149,7 +149,7 @@ export function RoomSidebar({
             {onManageRooms && (
               <button
                 onClick={onManageRooms}
-                className="mt-2 flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm mx-auto"
+                className="mt-2 flex items-center gap-1 text-[var(--info)] hover:text-[var(--info)] text-sm mx-auto"
               >
                 <Plus className="h-4 w-4" />
                 Add Room

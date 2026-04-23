@@ -199,7 +199,7 @@ export function PriceAdjustmentDialog({
                   priceChange < 0
                     ? "text-red-600"
                     : priceChange > 0
-                      ? "text-green-600"
+                      ? "text-[var(--success)]"
                       : ""
                 }`}
               >

@@ -226,18 +226,18 @@ export const ReferralDashboard = React.memo(function ReferralDashboard({
           <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
               {/* Total Referrals */}
-              <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-4 text-center">
-                <UserPlus className="h-6 w-6 text-blue-600 dark:text-blue-400 mx-auto mb-1" />
-                <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+              <div className="bg-[var(--info-bg)] dark:bg-blue-950 rounded-lg p-4 text-center">
+                <UserPlus className="h-6 w-6 text-[var(--info)] dark:text-blue-400 mx-auto mb-1" />
+                <div className="text-2xl font-bold text-[var(--info)] dark:text-blue-300">
                   {dashboardData.totalReferrals}
                 </div>
                 <div className="text-xs text-muted-foreground">Referrals</div>
               </div>
 
               {/* Total Revenue */}
-              <div className="bg-green-50 dark:bg-green-950 rounded-lg p-4 text-center">
-                <TrendingUp className="h-6 w-6 text-green-600 dark:text-green-400 mx-auto mb-1" />
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+              <div className="bg-[var(--success-bg)] dark:bg-green-950 rounded-lg p-4 text-center">
+                <TrendingUp className="h-6 w-6 text-[var(--success)] dark:text-green-400 mx-auto mb-1" />
+                <div className="text-2xl font-bold text-[var(--success)] dark:text-green-300">
                   {formatCurrency(dashboardData.totalRevenue)}
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -257,9 +257,9 @@ export const ReferralDashboard = React.memo(function ReferralDashboard({
               </div>
 
               {/* Pending Payouts */}
-              <div className="bg-yellow-50 dark:bg-yellow-950 rounded-lg p-4 text-center">
-                <Clock className="h-6 w-6 text-yellow-600 dark:text-yellow-400 mx-auto mb-1" />
-                <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
+              <div className="bg-[var(--warning-bg)] dark:bg-yellow-950 rounded-lg p-4 text-center">
+                <Clock className="h-6 w-6 text-[var(--warning)] dark:text-yellow-400 mx-auto mb-1" />
+                <div className="text-2xl font-bold text-[var(--warning)] dark:text-yellow-300">
                   {formatCurrency(dashboardData.pendingPayouts)}
                 </div>
                 <div className="text-xs text-muted-foreground">

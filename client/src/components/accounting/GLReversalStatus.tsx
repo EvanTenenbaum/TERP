@@ -61,8 +61,8 @@ interface GLReversalStatusProps {
 const STATUS_CONFIG = {
   ACTIVE: {
     icon: CheckCircle,
-    color: "text-green-600",
-    bgColor: "bg-green-50 dark:bg-green-950/20",
+    color: "text-[var(--success)]",
+    bgColor: "bg-[var(--success-bg)] dark:bg-green-950/20",
     badge: "default" as const,
     label: "Active",
     description: "Transaction is posted to the general ledger.",
@@ -85,16 +85,16 @@ const STATUS_CONFIG = {
   },
   REVERSED: {
     icon: RotateCcw,
-    color: "text-orange-600",
-    bgColor: "bg-orange-50 dark:bg-orange-950/20",
+    color: "text-[var(--warning)]",
+    bgColor: "bg-[var(--warning-bg)] dark:bg-orange-950/20",
     badge: "secondary" as const,
     label: "Reversed",
     description: "All GL entries have been reversed.",
   },
   PARTIALLY_REVERSED: {
     icon: AlertTriangle,
-    color: "text-yellow-600",
-    bgColor: "bg-yellow-50 dark:bg-yellow-950/20",
+    color: "text-[var(--warning)]",
+    bgColor: "bg-[var(--warning-bg)] dark:bg-yellow-950/20",
     badge: "outline" as const,
     label: "Partially Reversed",
     description: "Some GL entries have been reversed, but not all.",

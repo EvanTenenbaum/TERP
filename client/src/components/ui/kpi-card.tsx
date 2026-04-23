@@ -24,7 +24,7 @@ const KpiCard = React.forwardRef<HTMLDivElement, KpiCardProps>(
   ({ className, title, value, change, icon: Icon, trend, loading, href, onAction, ...props }, ref) => {
     const getTrendColor = () => {
       if (!trend || trend === "neutral") return "text-muted-foreground";
-      return trend === "up" ? "text-green-600" : "text-red-600";
+      return trend === "up" ? "text-[var(--success)]" : "text-red-600";
     };
 
     const getTrendIcon = () => {

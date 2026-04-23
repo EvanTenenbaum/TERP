@@ -212,7 +212,7 @@ export function OfficeSupplyManager() {
             {summaryLoading ? (
               <Skeleton className="h-8 w-16" />
             ) : (
-              <div className="text-2xl font-bold text-yellow-600">
+              <div className="text-2xl font-bold text-[var(--warning)]">
                 {summaryData?.summary.belowReorder || 0}
               </div>
             )}
@@ -474,7 +474,7 @@ export function OfficeSupplyManager() {
                                     })
                                   }
                                 >
-                                  <Check className="h-4 w-4 text-green-600" />
+                                  <Check className="h-4 w-4 text-[var(--success)]" />
                                 </Button>
                                 <Button
                                   variant="ghost"

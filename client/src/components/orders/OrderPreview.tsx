@@ -128,10 +128,10 @@ export function OrderPreview({
 
   // Get margin color
   const getMarginColor = (percent: number) => {
-    if (percent >= 70) return "text-green-600";
+    if (percent >= 70) return "text-[var(--success)]";
     if (percent >= 50) return "text-green-500";
-    if (percent >= 30) return "text-yellow-600";
-    if (percent >= 15) return "text-orange-600";
+    if (percent >= 30) return "text-[var(--warning)]";
+    if (percent >= 15) return "text-[var(--warning)]";
     return "text-red-600";
   };
 
@@ -250,7 +250,7 @@ export function OrderPreview({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Margin</span>
-                    <span className="text-green-600">
+                    <span className="text-[var(--success)]">
                       ${totalMargin.toFixed(2)}
                     </span>
                   </div>

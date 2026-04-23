@@ -176,7 +176,7 @@ function mapEntriesToGridRows(items: LedgerEntry[]): LedgerGridRow[] {
 function statusCellRenderer(params: { value: string }): string {
   const status = params.value ?? "DRAFT";
   if (status === "POSTED") {
-    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium bg-green-50 text-green-700 border-green-200">POST</span>`;
+    return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium bg-[var(--success-bg)] text-[var(--success)] border-green-200">POST</span>`;
   }
   return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium bg-gray-50 text-gray-700 border-gray-200">DRAFT</span>`;
 }
@@ -561,7 +561,7 @@ export function GeneralLedgerSurface() {
         {/* Running balance display */}
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 ml-2 bg-blue-50 text-blue-700 border-blue-200"
+          className="text-[9px] py-0 px-1.5 ml-2 bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
         >
           Balance: {formatCurrency(runningBalance)}
         </Badge>
@@ -638,7 +638,7 @@ export function GeneralLedgerSurface() {
                 className={cn(
                   "text-[9px]",
                   selectedRow.isPosted
-                    ? "bg-green-100 text-green-700 border-green-200"
+                    ? "bg-[var(--success-bg)] text-[var(--success)] border-green-200"
                     : "bg-gray-100 text-gray-700 border-gray-200"
                 )}
               >
@@ -692,7 +692,7 @@ export function GeneralLedgerSurface() {
                           selectedRow.referenceId
                         ) ?? "#"
                       }
-                      className="text-sm text-blue-600 hover:underline"
+                      className="text-sm text-[var(--info)] hover:underline"
                     >
                       {selectedRow.referenceType} #{selectedRow.referenceId}
                     </a>
@@ -726,7 +726,7 @@ export function GeneralLedgerSurface() {
 
       {/* ── 4. Trial Balance support module ── */}
       {showTrialBalance && (
-        <div className="mx-2 mb-1.5 p-2 bg-blue-50/40 border border-blue-200 rounded-md">
+        <div className="mx-2 mb-1.5 p-2 bg-[var(--info-bg)]/40 border border-blue-200 rounded-md">
           <div className="flex items-center gap-2 mb-1">
             <Button
               variant="ghost"
@@ -740,7 +740,7 @@ export function GeneralLedgerSurface() {
             {trialBalanceTotals.isBalanced ? (
               <Badge
                 variant="outline"
-                className="text-[9px] py-0 px-1.5 bg-green-50 text-green-700 border-green-200"
+                className="text-[9px] py-0 px-1.5 bg-[var(--success-bg)] text-[var(--success)] border-green-200"
               >
                 Balanced
               </Badge>
@@ -804,7 +804,7 @@ export function GeneralLedgerSurface() {
                     </td>
                   </tr>
                 ))}
-                <tr className="font-bold bg-blue-100/50">
+                <tr className="font-bold bg-[var(--info-bg)]/50">
                   <td className="py-1 px-2" colSpan={2}>
                     Total
                   </td>

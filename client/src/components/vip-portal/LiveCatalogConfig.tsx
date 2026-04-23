@@ -981,7 +981,7 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
                 <TableCell>
                   {alert.currentPrice !== null ? (
                     <span
-                      className={priceDropped ? "text-green-600 font-bold" : ""}
+                      className={priceDropped ? "text-[var(--success)] font-bold" : ""}
                     >
                       ${alert.currentPrice.toFixed(2)}
                       {priceDropped && priceDropPercentage !== null && (

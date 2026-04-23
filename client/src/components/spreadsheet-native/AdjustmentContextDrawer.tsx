@@ -79,7 +79,7 @@ export function AdjustmentContextDrawer({
             <span
               className={cn(
                 "text-lg font-semibold tabular-nums",
-                delta < 0 ? "text-destructive" : "text-green-600"
+                delta < 0 ? "text-destructive" : "text-[var(--success)]"
               )}
             >
               {deltaLabel}

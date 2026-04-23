@@ -55,7 +55,7 @@ const initialFormData: StrainFormData = {
 function getCategoryColor(category: string): string {
   const colors: Record<string, string> = {
     indica: "bg-purple-100 text-purple-800",
-    sativa: "bg-green-100 text-green-800",
+    sativa: "bg-[var(--success-bg)] text-[var(--success)]",
     hybrid: "bg-amber-100 text-amber-800",
   };
   return colors[category] ?? "bg-gray-100 text-gray-800";

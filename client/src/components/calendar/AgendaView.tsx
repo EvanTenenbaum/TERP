@@ -223,9 +223,9 @@ function getPriorityBadgeClass(priority: string): string {
     case "URGENT":
       return "bg-red-100 text-red-800";
     case "HIGH":
-      return "bg-orange-100 text-orange-800";
+      return "bg-[var(--warning-bg)] text-[var(--warning)]";
     case "MEDIUM":
-      return "bg-blue-100 text-blue-800";
+      return "bg-[var(--info-bg)] text-[var(--info)]";
     case "LOW":
       return "bg-gray-100 text-gray-800";
     default:
@@ -236,11 +236,11 @@ function getPriorityBadgeClass(priority: string): string {
 function getStatusBadgeClass(status: string): string {
   switch (status) {
     case "SCHEDULED":
-      return "bg-blue-100 text-blue-800";
+      return "bg-[var(--info-bg)] text-[var(--info)]";
     case "IN_PROGRESS":
-      return "bg-yellow-100 text-yellow-800";
+      return "bg-[var(--warning-bg)] text-[var(--warning)]";
     case "COMPLETED":
-      return "bg-green-100 text-green-800";
+      return "bg-[var(--success-bg)] text-[var(--success)]";
     case "CANCELLED":
       return "bg-gray-100 text-gray-800";
     default:

@@ -160,7 +160,7 @@ export default function FiscalPeriods({
         badge = (
           <Badge
             variant="outline"
-            className="bg-green-100 text-green-700 border-green-200"
+            className="bg-[var(--success-bg)] text-[var(--success)] border-green-200"
           >
             Open
           </Badge>
@@ -196,7 +196,7 @@ export default function FiscalPeriods({
         {isCurrent && (
           <Badge
             variant="outline"
-            className="bg-blue-100 text-blue-700 border-blue-200"
+            className="bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
           >
             Current
           </Badge>
@@ -314,7 +314,7 @@ export default function FiscalPeriods({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Open</CardTitle>
-            <CalendarIcon className="h-4 w-4 text-green-600" />
+            <CalendarIcon className="h-4 w-4 text-[var(--success)]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{openPeriods}</div>
@@ -401,7 +401,7 @@ export default function FiscalPeriods({
                     return (
                       <TableRow
                         key={period.id}
-                        className={cn(isCurrent && "bg-blue-50")}
+                        className={cn(isCurrent && "bg-[var(--info-bg)]")}
                       >
                         <TableCell className="font-medium">
                           {period.periodName}

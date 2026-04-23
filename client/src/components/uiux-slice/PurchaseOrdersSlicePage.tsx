@@ -73,10 +73,10 @@ import { recordFrictionEvent } from "@/lib/navigation/frictionTelemetry";
 
 const statusColor: Record<string, string> = {
   DRAFT: "bg-slate-100 text-slate-800",
-  SENT: "bg-blue-100 text-blue-800",
+  SENT: "bg-[var(--info-bg)] text-[var(--info)]",
   CONFIRMED: "bg-emerald-100 text-emerald-800",
   RECEIVING: "bg-amber-100 text-amber-800",
-  RECEIVED: "bg-green-100 text-green-800",
+  RECEIVED: "bg-[var(--success-bg)] text-[var(--success)]",
   CANCELLED: "bg-red-100 text-red-800",
 };
 

@@ -48,17 +48,17 @@ const statusConfig: Record<
   },
   confirmed: {
     label: "Confirmed",
-    color: "bg-blue-100 text-blue-800",
+    color: "bg-[var(--info-bg)] text-[var(--info)]",
     icon: CheckCircle,
   },
   in_transit: {
     label: "In Transit",
-    color: "bg-yellow-100 text-yellow-800",
+    color: "bg-[var(--warning-bg)] text-[var(--warning)]",
     icon: Truck,
   },
   delivered: {
     label: "Delivered",
-    color: "bg-green-100 text-green-800",
+    color: "bg-[var(--success-bg)] text-[var(--success)]",
     icon: Package,
   },
   delayed: {
@@ -139,7 +139,7 @@ export function DeliveryScheduleWidget({
         onClick={compact ? () => setExpanded(!expanded) : undefined}
       >
         <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-          <Truck className="h-5 w-5 text-blue-600" />
+          <Truck className="h-5 w-5 text-[var(--info)]" />
           Deliveries
           {overdue.length > 0 && (
             <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -178,7 +178,7 @@ export function DeliveryScheduleWidget({
               onClick={() => setActiveTab("upcoming")}
               className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === "upcoming"
-                  ? "text-blue-600 border-b-2 border-blue-600"
+                  ? "text-[var(--info)] border-b-2 border-blue-600"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
@@ -337,7 +337,7 @@ function DeliveryItem({
               </span>
             )}
             {delivery.trackingNumber && (
-              <span className="text-blue-600">{delivery.trackingNumber}</span>
+              <span className="text-[var(--info)]">{delivery.trackingNumber}</span>
             )}
           </div>
 
@@ -357,7 +357,7 @@ function DeliveryItem({
           {delivery.status === "pending" && (
             <button
               onClick={() => onMarkInTransit(delivery.id)}
-              className="px-3 py-1.5 text-xs font-medium text-yellow-700 bg-yellow-100 hover:bg-yellow-200 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-[var(--warning)] bg-[var(--warning-bg)] hover:bg-yellow-200 rounded-lg transition-colors"
             >
               In Transit
             </button>

@@ -59,13 +59,13 @@ const MOVEMENT_TYPE_CONFIG: Record<
   INTAKE: {
     icon: ArrowDown,
     label: "Intake",
-    color: "bg-green-100 text-green-700",
+    color: "bg-[var(--success-bg)] text-[var(--success)]",
     direction: "in",
   },
   SALE: {
     icon: ArrowUp,
     label: "Sales Order",
-    color: "bg-blue-100 text-blue-700",
+    color: "bg-[var(--info-bg)] text-[var(--info)]",
     direction: "out",
   },
   REFUND_RETURN: {
@@ -77,7 +77,7 @@ const MOVEMENT_TYPE_CONFIG: Record<
   ADJUSTMENT: {
     icon: ArrowLeftRight,
     label: "Adjustment",
-    color: "bg-yellow-100 text-yellow-700",
+    color: "bg-[var(--warning-bg)] text-[var(--warning)]",
     direction: "neutral",
   },
   QUARANTINE: {
@@ -89,7 +89,7 @@ const MOVEMENT_TYPE_CONFIG: Record<
   RELEASE_FROM_QUARANTINE: {
     icon: Package,
     label: "Release",
-    color: "bg-green-100 text-green-700",
+    color: "bg-[var(--success-bg)] text-[var(--success)]",
     direction: "in",
   },
   DISPOSAL: {
@@ -101,7 +101,7 @@ const MOVEMENT_TYPE_CONFIG: Record<
   TRANSFER: {
     icon: ArrowLeftRight,
     label: "Transfer",
-    color: "bg-orange-100 text-orange-700",
+    color: "bg-[var(--warning-bg)] text-[var(--warning)]",
     direction: "neutral",
   },
   SAMPLE: {
@@ -195,7 +195,7 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
                       <p
                         className={`text-sm font-mono font-bold ${
                           mov.quantityChange > 0
-                            ? "text-green-700"
+                            ? "text-[var(--success)]"
                             : "text-red-700"
                         }`}
                       >
@@ -348,7 +348,7 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
                         <span
                           className={`font-mono font-bold ${
                             mov.quantityChange > 0
-                              ? "text-green-600"
+                              ? "text-[var(--success)]"
                               : "text-red-600"
                           }`}
                         >

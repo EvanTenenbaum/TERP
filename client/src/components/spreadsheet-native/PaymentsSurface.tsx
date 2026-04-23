@@ -168,7 +168,7 @@ const columnDefs: ColDef<PaymentGridRow>[] = [
       if (!params.value || params.value === "-") return "-";
       const color =
         params.value === "RECEIVED"
-          ? "text-green-700 bg-green-50 border-green-200"
+          ? "text-[var(--success)] bg-[var(--success-bg)] border-green-200"
           : "text-red-700 bg-red-50 border-red-200";
       return `<span class="inline-flex items-center px-2 py-0.5 rounded border text-xs font-medium ${color}">${params.value}</span>`;
     },
@@ -594,13 +594,13 @@ export function PaymentsSurface() {
         {/* KPI badges */}
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-blue-50 text-blue-700 border-blue-200"
+          className="text-[9px] py-0 px-1.5 bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
         >
           {kpiTotals.totalCount} total
         </Badge>
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-green-50 text-green-700 border-green-200"
+          className="text-[9px] py-0 px-1.5 bg-[var(--success-bg)] text-[var(--success)] border-green-200"
         >
           {formatCurrencyCompact(kpiTotals.totalReceived)} received
         </Badge>
@@ -637,12 +637,12 @@ export function PaymentsSurface() {
 
       {routeParams.orderId !== null && (
         <div
-          className="mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-blue-200 bg-blue-50/70 px-2 py-1.5"
+          className="mx-2 my-1.5 flex flex-wrap items-center gap-2 rounded-md border border-blue-200 bg-[var(--info-bg)]/70 px-2 py-1.5"
           data-testid="payments-order-handoff-banner"
         >
           <Badge
             variant="outline"
-            className="text-[9px] bg-blue-100 text-blue-800 border-blue-200"
+            className="text-[9px] bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
           >
             Sales handoff
           </Badge>
@@ -772,7 +772,7 @@ export function PaymentsSurface() {
               variant="outline"
               className={
                 selectedRow.paymentType === "RECEIVED"
-                  ? "bg-green-50 text-green-700 border-green-200"
+                  ? "bg-[var(--success-bg)] text-[var(--success)] border-green-200"
                   : "bg-red-50 text-red-700 border-red-200"
               }
             >
@@ -819,7 +819,7 @@ export function PaymentsSurface() {
                 variant="outline"
                 className={
                   selectedRow.paymentType === "RECEIVED"
-                    ? "bg-green-50 text-green-700 border-green-200"
+                    ? "bg-[var(--success-bg)] text-[var(--success)] border-green-200"
                     : "bg-red-50 text-red-700 border-red-200"
                 }
               >
@@ -833,7 +833,7 @@ export function PaymentsSurface() {
               <p
                 className={`font-mono font-semibold ${
                   selectedRow.paymentType === "RECEIVED"
-                    ? "text-green-700"
+                    ? "text-[var(--success)]"
                     : selectedRow.paymentType === "SENT"
                       ? "text-red-700"
                       : ""
@@ -855,7 +855,7 @@ export function PaymentsSurface() {
             </InspectorField>
             {selectedRow.invoiceId !== null && (
               <InspectorField label="Invoice">
-                <p className="font-mono text-blue-600 cursor-pointer hover:underline">
+                <p className="font-mono text-[var(--info)] cursor-pointer hover:underline">
                   #{selectedRow.invoiceId}
                 </p>
               </InspectorField>

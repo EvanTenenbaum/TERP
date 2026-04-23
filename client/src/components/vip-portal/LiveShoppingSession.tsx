@@ -74,8 +74,8 @@ const STATUS_CONFIG = {
     label: "Interested",
     shortLabel: "Interest",
     icon: "💭",
-    color: "bg-blue-50 border-blue-200",
-    headerColor: "bg-blue-100 text-blue-800",
+    color: "bg-[var(--info-bg)] border-blue-200",
+    headerColor: "bg-[var(--info-bg)] text-[var(--info)]",
     buttonColor: "bg-blue-500 hover:bg-blue-600",
     description: "I'm interested, let's discuss",
   },
@@ -83,8 +83,8 @@ const STATUS_CONFIG = {
     label: "To Purchase",
     shortLabel: "Buy",
     icon: "🛒",
-    color: "bg-green-50 border-green-200",
-    headerColor: "bg-green-100 text-green-800",
+    color: "bg-[var(--success-bg)] border-green-200",
+    headerColor: "bg-[var(--success-bg)] text-[var(--success)]",
     buttonColor: "bg-green-500 hover:bg-green-600",
     description: "I want to buy this",
   },
@@ -457,7 +457,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
               <span
                 className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${
                   sseConnected
-                    ? "bg-green-100 text-green-700"
+                    ? "bg-[var(--success-bg)] text-[var(--success)]"
                     : "bg-gray-100 text-gray-500"
                 }`}
               >
@@ -477,7 +477,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
             <div className="flex items-center gap-4">
               <div className="text-right">
                 <div className="text-sm text-gray-500">Ready to Buy</div>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-[var(--success)]">
                   ${totals?.toPurchaseValue?.toFixed(2) || "0.00"}
                 </div>
               </div>
@@ -655,7 +655,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
               <span className="text-gray-600">
                 {totals?.toPurchaseCount} items ready to purchase
               </span>
-              <span className="ml-4 text-2xl font-bold text-green-600">
+              <span className="ml-4 text-2xl font-bold text-[var(--success)]">
                 ${totals?.toPurchaseValue?.toFixed(2)}
               </span>
             </div>
@@ -888,7 +888,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
         item.isHighlighted
           ? "ring-2 ring-indigo-400 border-indigo-300"
           : "border-gray-200"
-      } ${priceAnimation ? "animate-pulse bg-yellow-50" : ""}`}
+      } ${priceAnimation ? "animate-pulse bg-[var(--warning-bg)]" : ""}`}
     >
       {/* Product Info */}
       <div className="flex justify-between items-start mb-2">
@@ -902,11 +902,11 @@ const ItemCard: React.FC<ItemCardProps> = ({
             <span
               className={`inline-block mt-1 px-2 py-0.5 text-xs rounded-full ${
                 negotiationStatus === "PENDING"
-                  ? "bg-yellow-100 text-yellow-800"
+                  ? "bg-[var(--warning-bg)] text-[var(--warning)]"
                   : negotiationStatus === "COUNTER_OFFERED"
                     ? "bg-purple-100 text-purple-800"
                     : negotiationStatus === "ACCEPTED"
-                      ? "bg-green-100 text-green-800"
+                      ? "bg-[var(--success-bg)] text-[var(--success)]"
                       : "bg-red-100 text-red-800"
               }`}
             >
@@ -937,7 +937,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
           <span
             className={`text-lg font-bold transition-all duration-300 ${
               priceAnimation === "down"
-                ? "text-green-600 animate-pulse"
+                ? "text-[var(--success)] animate-pulse"
                 : priceAnimation === "up"
                   ? "text-red-600 animate-pulse"
                   : "text-gray-900"

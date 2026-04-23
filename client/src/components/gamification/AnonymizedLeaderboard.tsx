@@ -119,7 +119,7 @@ const RankBadge = React.memo(function RankBadge({
 
   if (rank === 1) {
     return (
-      <div className={cn(baseClasses, "bg-yellow-100 text-yellow-700")}>
+      <div className={cn(baseClasses, "bg-[var(--warning-bg)] text-[var(--warning)]")}>
         <Trophy className="h-4 w-4" />
       </div>
     );
@@ -160,7 +160,7 @@ const RankChange = React.memo(function RankChange({
   }
   if (change > 0) {
     return (
-      <span className="text-green-600 flex items-center gap-1">
+      <span className="text-[var(--success)] flex items-center gap-1">
         <TrendingUp className="h-4 w-4" />
         <span className="text-xs">+{change}</span>
       </span>

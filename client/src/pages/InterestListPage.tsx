@@ -371,7 +371,7 @@ export default function InterestListPage() {
             <Package className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[var(--success)]">
               {stats?.matchCount || totalMatches}
             </div>
           </CardContent>

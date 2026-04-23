@@ -174,7 +174,7 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
                   />
                 )}
                 {opp.potentialRevenue && (
-                  <p className="text-xs font-medium text-green-600">
+                  <p className="text-xs font-medium text-[var(--success)]">
                     ${parseFloat(opp.potentialRevenue).toFixed(2)}
                   </p>
                 )}

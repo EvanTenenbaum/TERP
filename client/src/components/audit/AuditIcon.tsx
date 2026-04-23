@@ -105,7 +105,7 @@ export function AuditIcon({
               onClick={handleClick}
               className={cn(
                 buttonSizeClasses[size],
-                "text-gray-400 hover:text-blue-600 hover:bg-blue-50",
+                "text-gray-400 hover:text-[var(--info)] hover:bg-[var(--info-bg)]",
                 className
               )}
             >
@@ -226,7 +226,7 @@ function AuditTrailModal({
                       {log.oldValue}
                     </span>
                     {" → "}
-                    <span className="text-green-600">{log.newValue}</span>
+                    <span className="text-[var(--success)]">{log.newValue}</span>
                   </div>
                 )}
                 {log.details && (

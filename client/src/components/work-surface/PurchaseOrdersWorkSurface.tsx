@@ -306,9 +306,9 @@ const PAYMENT_TERMS_OPTIONS = [
 // TER-670: Updated to WCAG 2.2 AA-compliant color combinations (-900 text on -100 bg).
 const PO_STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-800",
-  SENT: "bg-blue-100 text-blue-900",
-  CONFIRMED: "bg-green-100 text-green-900",
-  RECEIVING: "bg-yellow-100 text-yellow-900",
+  SENT: "bg-[var(--info-bg)] text-blue-900",
+  CONFIRMED: "bg-[var(--success-bg)] text-green-900",
+  RECEIVING: "bg-[var(--warning-bg)] text-yellow-900",
   RECEIVED: "bg-purple-100 text-purple-900",
   CANCELLED: "bg-red-100 text-red-900",
 };
@@ -537,7 +537,7 @@ function POInspectorContent({
                   </div>
                   {item.quantityReceived !== undefined &&
                     item.quantityReceived > 0 && (
-                      <p className="text-xs text-green-600 mt-1">
+                      <p className="text-xs text-[var(--success)] mt-1">
                         Received: {item.quantityReceived}
                       </p>
                     )}

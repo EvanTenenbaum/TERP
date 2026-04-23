@@ -19,11 +19,11 @@ export function ReconciliationSummary() {
 
   if (isLoading) {
     return (
-      <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+      <Card className="border-blue-200 bg-[var(--info-bg)]/60 shadow-sm">
         <CardHeader>
           <Badge
             variant="outline"
-            className="w-fit border-blue-300 bg-white/80 text-blue-700"
+            className="w-fit border-blue-300 bg-white/80 text-[var(--info)]"
           >
             Reconciliation State
           </Badge>
@@ -46,11 +46,11 @@ export function ReconciliationSummary() {
     totalUnrecordedPayments;
 
   return (
-    <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+    <Card className="border-blue-200 bg-[var(--info-bg)]/60 shadow-sm">
       <CardHeader className="space-y-2">
         <Badge
           variant="outline"
-          className="w-fit border-blue-300 bg-white/80 text-blue-700"
+          className="w-fit border-blue-300 bg-white/80 text-[var(--info)]"
         >
           Reconciliation State
         </Badge>
@@ -75,11 +75,11 @@ export function ReconciliationSummary() {
           </div>
 
           {/* Unrecorded Payments */}
-          <div className="rounded-md border border-orange-200 bg-orange-50 p-3">
+          <div className="rounded-md border border-orange-200 bg-[var(--warning-bg)] p-3">
             <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
               Unrecorded Payments
             </p>
-            <p className="mt-2 text-2xl font-semibold text-orange-700">
+            <p className="mt-2 text-2xl font-semibold text-[var(--warning)]">
               {totalUnrecordedPayments}
             </p>
             <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
@@ -172,9 +172,9 @@ export function ReconciliationSummary() {
             </div>
           </div>
         ) : (
-          <div className="rounded-md border border-green-200 bg-green-50 p-3">
+          <div className="rounded-md border border-green-200 bg-[var(--success-bg)] p-3">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
               <p className="text-sm font-semibold text-green-900">
                 All reconciliation items are current
               </p>

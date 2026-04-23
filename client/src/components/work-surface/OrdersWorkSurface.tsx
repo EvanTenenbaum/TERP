@@ -857,7 +857,7 @@ function OrderInspectorContent({
                 canProcessReturns && (
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-orange-600 hover:text-orange-700"
+                    className="w-full justify-start text-[var(--warning)] hover:text-[var(--warning)]"
                     onClick={() => onProcessReturn(order.id)}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />

@@ -125,8 +125,8 @@ export function AuditModal({
               {formatCurrency(data.currentBalance)}
             </p>
           </div>
-          <div className="rounded-lg bg-blue-50 p-3">
-            <p className="text-sm text-blue-600">Formula</p>
+          <div className="rounded-lg bg-[var(--info-bg)] p-3">
+            <p className="text-sm text-[var(--info)]">Formula</p>
             <p className="text-sm font-mono">{data.formula}</p>
           </div>
         </div>
@@ -164,7 +164,7 @@ export function AuditModal({
                 </TableCell>
                 <TableCell>{t.createdBy}</TableCell>
                 <TableCell
-                  className={`text-right ${t.amount >= 0 ? "text-red-600" : "text-green-600"}`}
+                  className={`text-right ${t.amount >= 0 ? "text-red-600" : "text-[var(--success)]"}`}
                 >
                   {t.amount >= 0 ? "+" : ""}
                   {formatCurrency(t.amount)}
@@ -219,14 +219,14 @@ export function AuditModal({
             <p className="text-sm text-amber-600">Reserved</p>
             <p className="text-2xl font-bold">{data.reservedQuantity}</p>
           </div>
-          <div className="rounded-lg bg-green-50 p-3">
-            <p className="text-sm text-green-600">Available</p>
+          <div className="rounded-lg bg-[var(--success-bg)] p-3">
+            <p className="text-sm text-[var(--success)]">Available</p>
             <p className="text-2xl font-bold">{data.availableQuantity}</p>
           </div>
         </div>
 
-        <div className="mb-2 rounded-lg bg-blue-50 p-3">
-          <p className="text-sm text-blue-600">Formula</p>
+        <div className="mb-2 rounded-lg bg-[var(--info-bg)] p-3">
+          <p className="text-sm text-[var(--info)]">Formula</p>
           <p className="text-sm font-mono">{data.formula}</p>
         </div>
 
@@ -253,7 +253,7 @@ export function AuditModal({
                 <TableCell>{m.description}</TableCell>
                 <TableCell>{m.createdBy}</TableCell>
                 <TableCell
-                  className={`text-right ${m.quantity >= 0 ? "text-green-600" : "text-red-600"}`}
+                  className={`text-right ${m.quantity >= 0 ? "text-[var(--success)]" : "text-red-600"}`}
                 >
                   {m.quantity >= 0 ? "+" : ""}
                   {m.quantity}
@@ -282,8 +282,8 @@ export function AuditModal({
               {formatCurrency(data.calculation.total)}
             </p>
           </div>
-          <div className="rounded-lg bg-green-50 p-3">
-            <p className="text-sm text-green-600">Amount Paid</p>
+          <div className="rounded-lg bg-[var(--success-bg)] p-3">
+            <p className="text-sm text-[var(--success)]">Amount Paid</p>
             <p className="text-2xl font-bold">
               {formatCurrency(data.calculation.amountPaid)}
             </p>
@@ -296,8 +296,8 @@ export function AuditModal({
           </div>
         </div>
 
-        <div className="mb-4 rounded-lg bg-blue-50 p-3">
-          <p className="text-sm text-blue-600">Formula</p>
+        <div className="mb-4 rounded-lg bg-[var(--info-bg)] p-3">
+          <p className="text-sm text-[var(--info)]">Formula</p>
           <p className="text-sm font-mono">{data.formula}</p>
         </div>
 
@@ -374,7 +374,7 @@ export function AuditModal({
                     <TableCell>{formatDate(p.date)}</TableCell>
                     <TableCell>{p.method}</TableCell>
                     <TableCell>{p.createdBy}</TableCell>
-                    <TableCell className="text-right text-green-600">
+                    <TableCell className="text-right text-[var(--success)]">
                       {formatCurrency(p.amount)}
                     </TableCell>
                   </TableRow>
@@ -400,8 +400,8 @@ export function AuditModal({
               {formatCurrency(data.currentBalance)}
             </p>
           </div>
-          <div className="rounded-lg bg-blue-50 p-3">
-            <p className="text-sm text-blue-600">Formula</p>
+          <div className="rounded-lg bg-[var(--info-bg)] p-3">
+            <p className="text-sm text-[var(--info)]">Formula</p>
             <p className="text-sm font-mono">{data.formula}</p>
           </div>
         </div>
@@ -439,7 +439,7 @@ export function AuditModal({
                 </TableCell>
                 <TableCell>{t.createdBy}</TableCell>
                 <TableCell
-                  className={`text-right ${t.amount >= 0 ? "text-red-600" : "text-green-600"}`}
+                  className={`text-right ${t.amount >= 0 ? "text-red-600" : "text-[var(--success)]"}`}
                 >
                   {t.amount >= 0 ? "+" : ""}
                   {formatCurrency(t.amount)}
@@ -466,7 +466,7 @@ export function AuditModal({
       <DialogContent className="w-full sm:max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Calculator className="h-5 w-5 text-blue-600" />
+            <Calculator className="h-5 w-5 text-[var(--info)]" />
             {getTitle()}
           </DialogTitle>
         </DialogHeader>

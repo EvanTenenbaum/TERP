@@ -88,7 +88,7 @@ export const CashFlowWidget = memo(function CashFlowWidget() {
                 onClick={() => setLocation("/accounting/invoices")}
               >
                 <TableCell className="font-medium">Cash Collected</TableCell>
-                <TableCell className="text-right font-mono text-green-600">
+                <TableCell className="text-right font-mono text-[var(--success)]">
                   {formatCurrency(data.cashCollected)}
                 </TableCell>
               </TableRow>

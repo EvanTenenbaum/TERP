@@ -299,11 +299,11 @@ export default function AccountingDashboard({
       )}
 
       <div className="grid gap-3 xl:grid-cols-[1.5fr_1fr]">
-        <Card className="border-green-200 bg-green-50/60 shadow-sm">
+        <Card className="border-green-200 bg-[var(--success-bg)]/60 shadow-sm">
           <CardHeader className="space-y-2">
             <Badge
               variant="outline"
-              className="w-fit border-green-300 bg-white/80 text-green-700"
+              className="w-fit border-green-300 bg-white/80 text-[var(--success)]"
             >
               Record Payment
             </Badge>
@@ -316,7 +316,7 @@ export default function AccountingDashboard({
                       Record incoming cash against open invoices first.
                     </CardDescription>
                   </div>
-                  <ArrowDownCircle className="h-5 w-5 text-green-600" />
+                  <ArrowDownCircle className="h-5 w-5 text-[var(--success)]" />
                 </div>
                 <div className="mt-2 space-y-1">
                   <p className="text-lg font-semibold text-emerald-700">
@@ -333,7 +333,7 @@ export default function AccountingDashboard({
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <Badge
                     variant="outline"
-                    className="border-green-200 bg-green-50 text-green-700"
+                    className="border-green-200 bg-[var(--success-bg)] text-[var(--success)]"
                   >
                     Primary action lives above
                   </Badge>

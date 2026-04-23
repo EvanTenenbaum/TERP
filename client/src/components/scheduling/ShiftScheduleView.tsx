@@ -35,8 +35,8 @@ type ShiftStatus =
   | "cancelled";
 
 const shiftStatusColors: Record<ShiftStatus, string> = {
-  scheduled: "bg-blue-100 border-blue-300 text-blue-800",
-  started: "bg-green-100 border-green-300 text-green-800",
+  scheduled: "bg-[var(--info-bg)] border-blue-300 text-[var(--info)]",
+  started: "bg-[var(--success-bg)] border-green-300 text-[var(--success)]",
   completed: "bg-gray-100 border-gray-300 text-gray-800",
   absent: "bg-red-100 border-red-300 text-red-800",
   cancelled: "bg-gray-100 border-gray-200 text-gray-500",
@@ -166,7 +166,7 @@ export function ShiftScheduleView({ userId }: ShiftScheduleViewProps) {
             key={day.toISOString()}
             className={`text-center py-2 border-r last:border-r-0 ${
               isSameDay(day, new Date())
-                ? "bg-blue-50 text-blue-700"
+                ? "bg-[var(--info-bg)] text-[var(--info)]"
                 : "text-gray-700"
             }`}
           >

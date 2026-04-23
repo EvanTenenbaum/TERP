@@ -714,7 +714,7 @@ function OverrideManagement({
                           <Button
                             size="sm"
                             variant="outline"
-                            className="bg-green-50 hover:bg-green-100 text-green-700"
+                            className="bg-[var(--success-bg)] hover:bg-[var(--success-bg)] text-[var(--success)]"
                             onClick={() =>
                               handleSetUserOverride(user.openId, true)
                             }
@@ -772,7 +772,7 @@ function OverrideManagement({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="bg-green-50 hover:bg-green-100 text-green-700"
+                    className="bg-[var(--success-bg)] hover:bg-[var(--success-bg)] text-[var(--success)]"
                     onClick={() => handleSetUserOverride(selectedUserId, true)}
                     disabled={
                       !selectedUserId || setUserOverrideMutation.isPending
@@ -852,7 +852,7 @@ function OverrideManagement({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+                              className="h-8 w-8 p-0 text-[var(--success)] hover:text-[var(--success)] hover:bg-[var(--success-bg)]"
                               onClick={() =>
                                 handleSetRoleOverride(role.id, true)
                               }

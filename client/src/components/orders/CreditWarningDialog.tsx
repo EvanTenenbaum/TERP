@@ -104,7 +104,7 @@ export function CreditWarningDialog({
             {isHardBlock ? (
               <XCircle className="h-5 w-5 text-red-600" />
             ) : (
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <AlertTriangle className="h-5 w-5 text-[var(--warning)]" />
             )}
             {isHardBlock ? "Order Blocked" : "Credit Limit Warning"}
           </DialogTitle>
@@ -126,9 +126,9 @@ export function CreditWarningDialog({
 
           {/* Warning Message */}
           {creditCheck.warning && (
-            <div className="flex gap-2 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
-              <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+            <div className="flex gap-2 p-3 bg-[var(--warning-bg)] dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <AlertTriangle className="h-4 w-4 text-[var(--warning)] flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-[var(--warning)] dark:text-yellow-200">
                 {creditCheck.warning}
               </p>
             </div>
@@ -183,9 +183,9 @@ export function CreditWarningDialog({
 
           {/* Info for WARNING mode */}
           {creditCheck.enforcementMode === "WARNING" && !isHardBlock && (
-            <div className="flex gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-              <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-800 dark:text-blue-200">
+            <div className="flex gap-2 p-3 bg-[var(--info-bg)] dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <Info className="h-4 w-4 text-[var(--info)] flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-[var(--info)] dark:text-blue-200">
                 You can proceed with this order. The warning is for your
                 awareness.
               </p>

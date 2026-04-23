@@ -85,13 +85,13 @@ export const CreditIndicator = React.memo(function CreditIndicator({
       };
     if (utilization >= 75)
       return {
-        color: "text-yellow-600",
+        color: "text-[var(--warning)]",
         bgColor: "bg-yellow-600",
         label: "Warning",
         icon: AlertCircle,
       };
     return {
-      color: "text-green-600",
+      color: "text-[var(--success)]",
       bgColor: "bg-green-600",
       label: "Good",
       icon: CheckCircle,
@@ -147,7 +147,7 @@ export const CreditIndicator = React.memo(function CreditIndicator({
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Headroom:</span>
               <span
-                className={`font-medium ${availableCredit < 0 ? "text-red-600" : "text-green-600"}`}
+                className={`font-medium ${availableCredit < 0 ? "text-red-600" : "text-[var(--success)]"}`}
               >
                 {formatCurrency(availableCredit)}
               </span>

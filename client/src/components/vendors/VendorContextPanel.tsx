@@ -114,7 +114,7 @@ function VendorInfoSection({
         </div>
         <div className="text-right">
           <div className="text-sm text-muted-foreground">All Time Value</div>
-          <div className="text-xl font-bold text-green-600">
+          <div className="text-xl font-bold text-[var(--success)]">
             {formatCurrency(vendor.totalLifetimeValue)}
           </div>
         </div>
@@ -126,7 +126,7 @@ function VendorInfoSection({
             <Mail className="h-4 w-4 text-muted-foreground" />
             <a
               href={`mailto:${vendor.contactEmail}`}
-              className="text-blue-600 hover:underline"
+              className="text-[var(--info)] hover:underline"
             >
               {vendor.contactEmail}
             </a>
@@ -137,7 +137,7 @@ function VendorInfoSection({
             <Phone className="h-4 w-4 text-muted-foreground" />
             <a
               href={`tel:${vendor.contactPhone}`}
-              className="text-blue-600 hover:underline"
+              className="text-[var(--info)] hover:underline"
             >
               {vendor.contactPhone}
             </a>
@@ -200,9 +200,9 @@ function MetricsCards({
         <div
           className={`text-lg font-bold ${
             metrics.overallSellThroughRate >= 70
-              ? "text-green-600"
+              ? "text-[var(--success)]"
               : metrics.overallSellThroughRate >= 50
-                ? "text-yellow-600"
+                ? "text-[var(--warning)]"
                 : "text-red-600"
           }`}
         >
@@ -214,7 +214,7 @@ function MetricsCards({
           <DollarSign className="h-3 w-3" />
           Revenue
         </div>
-        <div className="text-lg font-bold text-green-600">
+        <div className="text-lg font-bold text-[var(--success)]">
           {formatCurrency(metrics.totalRevenue)}
         </div>
       </Card>
@@ -292,9 +292,9 @@ function ProductPerformanceTab({
                 <span
                   className={
                     product.sellThroughRate >= 70
-                      ? "text-green-600"
+                      ? "text-[var(--success)]"
                       : product.sellThroughRate >= 50
-                        ? "text-yellow-600"
+                        ? "text-[var(--warning)]"
                         : "text-red-600"
                   }
                 >
@@ -400,7 +400,7 @@ function ActiveInventoryTab({
                     item.daysOld > 90
                       ? "text-red-600"
                       : item.daysOld > 60
-                        ? "text-yellow-600"
+                        ? "text-[var(--warning)]"
                         : undefined
                   }
                 >

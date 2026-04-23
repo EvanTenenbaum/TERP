@@ -399,7 +399,7 @@ export const SampleList = React.memo(function SampleList({
                       </div>
                     )}
                     {sample.vendorReturnTrackingNumber && (
-                      <div className="text-xs text-blue-600">
+                      <div className="text-xs text-[var(--info)]">
                         Tracking: {sample.vendorReturnTrackingNumber}
                       </div>
                     )}

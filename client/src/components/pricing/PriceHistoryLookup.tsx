@@ -407,7 +407,7 @@ export function PriceHistoryLookup({
           <div className="space-y-1">
             <p className="text-sm text-muted-foreground">Suggested Price</p>
             <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-green-600">
+              <span className="text-2xl font-bold text-[var(--success)]">
                 {fmt(purchaseData?.suggestedPrice)}
               </span>
               <div className="flex items-center gap-1">

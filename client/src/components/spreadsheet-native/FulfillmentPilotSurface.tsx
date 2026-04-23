@@ -304,9 +304,9 @@ function ItemRow({ item, isSelected, onToggle, onInspect }: ItemRowProps) {
       className={cn(
         "group flex items-center gap-3 p-3 rounded-lg border transition-all min-h-[44px] cursor-pointer",
         item.isPacked
-          ? "bg-green-50 border-green-200 cursor-default"
+          ? "bg-[var(--success-bg)] border-green-200 cursor-default"
           : isSelected
-            ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200"
+            ? "bg-[var(--info-bg)] border-blue-300 ring-2 ring-blue-200"
             : "bg-white hover:bg-gray-50 border-border"
       )}
     >
@@ -354,7 +354,7 @@ function ItemRow({ item, isSelected, onToggle, onInspect }: ItemRowProps) {
       {item.isPacked && item.bagIdentifier && (
         <Badge
           variant="outline"
-          className="bg-green-100 text-green-700 border-green-200"
+          className="bg-[var(--success-bg)] text-[var(--success)] border-green-200"
         >
           {item.bagIdentifier}
         </Badge>
@@ -558,25 +558,25 @@ function ItemInspector({ item, isOpen, onClose }: ItemInspectorProps) {
 
       <InspectorSection title="Pack Status">
         {item.isPacked ? (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center gap-2 text-green-700 mb-1">
+          <div className="p-3 bg-[var(--success-bg)] border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2 text-[var(--success)] mb-1">
               <PackageCheck className="w-5 h-5" />
               <span className="font-medium">Packed</span>
             </div>
             {item.bagIdentifier && (
-              <p className="text-sm text-green-600">
+              <p className="text-sm text-[var(--success)]">
                 Bag: {item.bagIdentifier}
               </p>
             )}
             {item.packedAt && (
-              <p className="text-sm text-green-600">
+              <p className="text-sm text-[var(--success)]">
                 At: {new Date(item.packedAt).toLocaleString()}
               </p>
             )}
           </div>
         ) : (
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center gap-2 text-yellow-700">
+          <div className="p-3 bg-[var(--warning-bg)] border border-yellow-200 rounded-lg">
+            <div className="flex items-center gap-2 text-[var(--warning)]">
               <Clock className="w-5 h-5" />
               <span className="font-medium">Not Packed</span>
             </div>
@@ -1255,23 +1255,23 @@ export function FulfillmentPilotSurface({
           })}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-            <div className="text-xl font-bold text-yellow-700">
+          <div className="text-center p-3 bg-[var(--warning-bg)] rounded-lg border border-yellow-100">
+            <div className="text-xl font-bold text-[var(--warning)]">
               {statusCounts.pending}
             </div>
-            <div className="text-xs text-yellow-600">Pending</div>
+            <div className="text-xs text-[var(--warning)]">Pending</div>
           </div>
-          <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
-            <div className="text-xl font-bold text-blue-700">
+          <div className="text-center p-3 bg-[var(--info-bg)] rounded-lg border border-blue-100">
+            <div className="text-xl font-bold text-[var(--info)]">
               {statusCounts.partial}
             </div>
-            <div className="text-xs text-blue-600">Partial</div>
+            <div className="text-xs text-[var(--info)]">Partial</div>
           </div>
-          <div className="text-center p-3 bg-green-50 rounded-lg border border-green-100">
-            <div className="text-xl font-bold text-green-700">
+          <div className="text-center p-3 bg-[var(--success-bg)] rounded-lg border border-green-100">
+            <div className="text-xl font-bold text-[var(--success)]">
               {statusCounts.ready}
             </div>
-            <div className="text-xs text-green-600">Ready</div>
+            <div className="text-xs text-[var(--success)]">Ready</div>
           </div>
           <div className="text-center p-3 bg-slate-50 rounded-lg border border-slate-100">
             <div className="text-xl font-bold text-slate-700">

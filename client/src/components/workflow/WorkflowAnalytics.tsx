@@ -38,8 +38,8 @@ export function WorkflowAnalytics() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <BarChart3 className="h-5 w-5 text-blue-600" />
+            <div className="p-2 bg-[var(--info-bg)] rounded-lg">
+              <BarChart3 className="h-5 w-5 text-[var(--info)]" />
             </div>
             <div>
               <div className="text-sm text-gray-600">Total Batches</div>
@@ -50,8 +50,8 @@ export function WorkflowAnalytics() {
 
         <Card className="p-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <TrendingUp className="h-5 w-5 text-green-600" />
+            <div className="p-2 bg-[var(--success-bg)] rounded-lg">
+              <TrendingUp className="h-5 w-5 text-[var(--success)]" />
             </div>
             <div>
               <div className="text-sm text-gray-600">Active Statuses</div>

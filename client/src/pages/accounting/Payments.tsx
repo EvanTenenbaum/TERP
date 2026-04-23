@@ -199,10 +199,10 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Received</CardTitle>
-            <ArrowDownCircle className="h-4 w-4 text-green-600" />
+            <ArrowDownCircle className="h-4 w-4 text-[var(--success)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[var(--success)]">
               {formatCurrency(totalReceived)}
             </div>
           </CardContent>

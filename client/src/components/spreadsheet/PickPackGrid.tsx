@@ -19,9 +19,9 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 
 const statusColors: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800",
-  PARTIAL: "bg-blue-100 text-blue-800",
-  READY: "bg-green-100 text-green-800",
+  PENDING: "bg-[var(--warning-bg)] text-[var(--warning)]",
+  PARTIAL: "bg-[var(--info-bg)] text-[var(--info)]",
+  READY: "bg-[var(--success-bg)] text-[var(--success)]",
   SHIPPED: "bg-slate-100 text-slate-800",
 };
 
@@ -431,11 +431,11 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
               getRowId={params => String(params.data.orderId)}
               suppressLoadingOverlay={!isLoading}
               rowClassRules={{
-                "bg-yellow-50": params =>
+                "bg-[var(--warning-bg)]": params =>
                   params.data?.pickPackStatus === "PENDING",
-                "bg-blue-50": params =>
+                "bg-[var(--info-bg)]": params =>
                   params.data?.pickPackStatus === "PARTIAL",
-                "bg-green-50": params =>
+                "bg-[var(--success-bg)]": params =>
                   params.data?.pickPackStatus === "READY",
                 "bg-slate-50": params =>
                   params.data?.pickPackStatus === "SHIPPED",

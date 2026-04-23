@@ -93,8 +93,8 @@ export function PricingContextPanel({
 
   const getUtilizationColor = (percent: number) => {
     if (percent >= 90) return "text-red-600";
-    if (percent >= 75) return "text-yellow-600";
-    return "text-green-600";
+    if (percent >= 75) return "text-[var(--warning)]";
+    return "text-[var(--success)]";
   };
 
   const getProgressColor = (percent: number) => {
@@ -208,7 +208,7 @@ export function PricingContextPanel({
               {creditStatus.isHighUtilization &&
                 !creditStatus.exceedsCredit && (
                   <Alert>
-                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <AlertTriangle className="h-4 w-4 text-[var(--warning)]" />
                     <AlertDescription>
                       Credit utilization at{" "}
                       <strong>
@@ -395,7 +395,7 @@ export function PricingContextPanel({
             {/* Oldest Debt Warning */}
             {client.oldestDebtDays > 30 && (
               <Alert>
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertTriangle className="h-4 w-4 text-[var(--warning)]" />
                 <AlertDescription>
                   Oldest outstanding debt:{" "}
                   <strong>{client.oldestDebtDays}</strong> days old

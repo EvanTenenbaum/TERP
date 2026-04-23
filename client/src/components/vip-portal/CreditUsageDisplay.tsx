@@ -63,8 +63,8 @@ export function CreditUsageDisplay({
     if (percentage >= 80)
       return { status: "warning", color: "text-amber-600", bg: "bg-amber-50" };
     if (percentage >= 50)
-      return { status: "moderate", color: "text-blue-600", bg: "bg-blue-50" };
-    return { status: "good", color: "text-green-600", bg: "bg-green-50" };
+      return { status: "moderate", color: "text-[var(--info)]", bg: "bg-[var(--info-bg)]" };
+    return { status: "good", color: "text-[var(--success)]", bg: "bg-[var(--success-bg)]" };
   };
 
   const utilizationStatus = getUtilizationStatus(creditUsage.utilizationPercentage);
@@ -142,22 +142,22 @@ export function CreditUsageDisplay({
 
           {/* Credit Stats Grid */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 rounded-lg bg-green-50 border border-green-200">
-              <div className="flex items-center gap-2 text-green-700 mb-1">
+            <div className="p-3 rounded-lg bg-[var(--success-bg)] border border-green-200">
+              <div className="flex items-center gap-2 text-[var(--success)] mb-1">
                 <CheckCircle className="h-4 w-4" />
                 <span className="text-sm font-medium">Available</span>
               </div>
-              <span className="text-xl font-bold text-green-700">
+              <span className="text-xl font-bold text-[var(--success)]">
                 ${creditUsage.availableCredit.toLocaleString()}
               </span>
             </div>
 
-            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-              <div className="flex items-center gap-2 text-blue-700 mb-1">
+            <div className="p-3 rounded-lg bg-[var(--info-bg)] border border-blue-200">
+              <div className="flex items-center gap-2 text-[var(--info)] mb-1">
                 <CreditCard className="h-4 w-4" />
                 <span className="text-sm font-medium">Outstanding</span>
               </div>
-              <span className="text-xl font-bold text-blue-700">
+              <span className="text-xl font-bold text-[var(--info)]">
                 ${creditUsage.usedCredit.toLocaleString()}
               </span>
             </div>
@@ -232,7 +232,7 @@ export function CreditUsageDisplay({
 
           <div className="p-4 rounded-lg bg-card border">
             <div className="text-sm text-muted-foreground mb-1">Used Credit</div>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-[var(--info)]">
               ${creditUsage.usedCredit.toLocaleString()}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
@@ -240,9 +240,9 @@ export function CreditUsageDisplay({
             </div>
           </div>
 
-          <div className={cn("p-4 rounded-lg border", creditUsage.overCreditLimit ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200")}>
+          <div className={cn("p-4 rounded-lg border", creditUsage.overCreditLimit ? "bg-red-50 border-red-200" : "bg-[var(--success-bg)] border-green-200")}>
             <div className="text-sm text-muted-foreground mb-1">Available</div>
-            <div className={cn("text-2xl font-bold", creditUsage.overCreditLimit ? "text-red-600" : "text-green-600")}>
+            <div className={cn("text-2xl font-bold", creditUsage.overCreditLimit ? "text-red-600" : "text-[var(--success)]")}>
               ${creditUsage.availableCredit.toLocaleString()}
             </div>
             <div className="text-xs text-muted-foreground mt-1">

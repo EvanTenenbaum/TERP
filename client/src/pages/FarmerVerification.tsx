@@ -86,17 +86,17 @@ function IntakeStatusBadge({ status }: { status: ReceiptStatus }) {
   > = {
     PENDING: {
       label: "Pending Verification",
-      className: "bg-yellow-100 text-yellow-800 border-yellow-200",
+      className: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200",
       icon: <Clock className="h-3 w-3" />,
     },
     FARMER_VERIFIED: {
       label: "Verified by You",
-      className: "bg-green-100 text-green-800 border-green-200",
+      className: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
       icon: <CheckCircle2 className="h-3 w-3" />,
     },
     STACKER_VERIFIED: {
       label: "Processing",
-      className: "bg-blue-100 text-blue-800 border-blue-200",
+      className: "bg-[var(--info-bg)] text-[var(--info)] border-blue-200",
       icon: <Check className="h-3 w-3" />,
     },
     FINALIZED: {
@@ -338,12 +338,12 @@ export default function FarmerVerification() {
             <Separator />
 
             {alreadyVerified ? (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
-                <CheckCircle2 className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                <h3 className="font-semibold text-green-800">
+              <div className="p-4 bg-[var(--success-bg)] border border-green-200 rounded-lg text-center">
+                <CheckCircle2 className="h-8 w-8 text-[var(--success)] mx-auto mb-2" />
+                <h3 className="font-semibold text-[var(--success)]">
                   Already Verified
                 </h3>
-                <p className="text-sm text-green-600 mt-1">
+                <p className="text-sm text-[var(--success)] mt-1">
                   {receipt.farmerVerifiedAt
                     ? `Verified on ${format(new Date(receipt.farmerVerifiedAt), "MMMM d, yyyy at h:mm a")}`
                     : "This receipt has been verified."}
@@ -351,11 +351,11 @@ export default function FarmerVerification() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h3 className="font-semibold text-blue-800 mb-2">
+                <div className="p-4 bg-[var(--info-bg)] border border-blue-200 rounded-lg">
+                  <h3 className="font-semibold text-[var(--info)] mb-2">
                     Verification Required
                   </h3>
-                  <p className="text-sm text-blue-600">
+                  <p className="text-sm text-[var(--info)]">
                     Please review the items above and confirm that they match
                     your delivery.
                   </p>

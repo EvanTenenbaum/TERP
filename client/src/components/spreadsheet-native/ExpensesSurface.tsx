@@ -459,7 +459,7 @@ export function ExpensesSurface() {
         </Badge>
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-blue-50 text-blue-700 border-blue-200"
+          className="text-[9px] py-0 px-1.5 bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
           data-testid="kpi-entries"
         >
           {totalEntries} entries

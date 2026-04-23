@@ -165,7 +165,7 @@ export default function BankTransactions({ embedded }: { embedded?: boolean } = 
     > = {
       DEPOSIT: {
         icon: ArrowDownCircle,
-        className: "bg-green-100 text-green-700 border-green-200",
+        className: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
         label: "Deposit",
       },
       WITHDRAWAL: {
@@ -175,12 +175,12 @@ export default function BankTransactions({ embedded }: { embedded?: boolean } = 
       },
       TRANSFER: {
         icon: ArrowDownCircle,
-        className: "bg-blue-100 text-blue-700 border-blue-200",
+        className: "bg-[var(--info-bg)] text-[var(--info)] border-blue-200",
         label: "Transfer",
       },
       FEE: {
         icon: ArrowUpCircle,
-        className: "bg-orange-100 text-orange-700 border-orange-200",
+        className: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200",
         label: "Fee",
       },
     };
@@ -232,10 +232,10 @@ export default function BankTransactions({ embedded }: { embedded?: boolean } = 
             <CardTitle className="text-sm font-medium">
               Total Deposits
             </CardTitle>
-            <ArrowDownCircle className="h-4 w-4 text-green-600" />
+            <ArrowDownCircle className="h-4 w-4 text-[var(--success)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[var(--success)]">
               {formatCurrency(totalDeposits)}
             </div>
           </CardContent>
@@ -350,7 +350,7 @@ export default function BankTransactions({ embedded }: { embedded?: boolean } = 
                         {tx.isReconciled ? (
                           <Badge
                             variant="outline"
-                            className="bg-green-100 text-green-700 border-green-200"
+                            className="bg-[var(--success-bg)] text-[var(--success)] border-green-200"
                           >
                             <CheckCircle className="mr-1 h-3 w-3" />
                             Yes

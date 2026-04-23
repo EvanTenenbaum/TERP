@@ -147,7 +147,7 @@ export function SchedulingPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Calendar className="h-7 w-7 text-blue-600" />
+              <Calendar className="h-7 w-7 text-[var(--info)]" />
               Scheduling
             </h1>
 
@@ -157,7 +157,7 @@ export function SchedulingPage() {
                 onClick={() => setTabMode("calendar")}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   tabMode === "calendar"
-                    ? "bg-white text-blue-600 shadow-sm"
+                    ? "bg-white text-[var(--info)] shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
               >
@@ -179,7 +179,7 @@ export function SchedulingPage() {
                 onClick={() => setTabMode("deliveries")}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   tabMode === "deliveries"
-                    ? "bg-white text-green-600 shadow-sm"
+                    ? "bg-white text-[var(--success)] shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
               >
@@ -197,7 +197,7 @@ export function SchedulingPage() {
                   onClick={() => setViewMode("day")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     viewMode === "day"
-                      ? "bg-white text-blue-600 shadow-sm"
+                      ? "bg-white text-[var(--info)] shadow-sm"
                       : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
@@ -207,7 +207,7 @@ export function SchedulingPage() {
                   onClick={() => setViewMode("week")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     viewMode === "week"
-                      ? "bg-white text-blue-600 shadow-sm"
+                      ? "bg-white text-[var(--info)] shadow-sm"
                       : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
@@ -217,7 +217,7 @@ export function SchedulingPage() {
                   onClick={() => setViewMode("month")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                     viewMode === "month"
-                      ? "bg-white text-blue-600 shadow-sm"
+                      ? "bg-white text-[var(--info)] shadow-sm"
                       : "text-gray-600 hover:text-gray-900"
                   }`}
                 >
@@ -391,7 +391,7 @@ function WeekView({
             key={day.toISOString()}
             onClick={() => onDayClick(day)}
             className={`p-2 text-center border-r last:border-r-0 cursor-pointer hover:bg-gray-100 ${
-              isToday(day) ? "bg-blue-50" : ""
+              isToday(day) ? "bg-[var(--info-bg)]" : ""
             }`}
           >
             <div className="text-xs font-medium text-gray-500 uppercase">
@@ -399,7 +399,7 @@ function WeekView({
             </div>
             <div
               className={`text-lg font-semibold ${
-                isToday(day) ? "text-blue-600" : "text-gray-900"
+                isToday(day) ? "text-[var(--info)]" : "text-gray-900"
               }`}
             >
               {format(day, "d")}
@@ -529,12 +529,12 @@ function MonthView({
                 onClick={() => onDayClick(day)}
                 className={`min-h-[100px] p-2 border-r last:border-r-0 cursor-pointer hover:bg-gray-50 ${
                   !isCurrentMonth ? "bg-gray-50" : ""
-                } ${isToday(day) ? "bg-blue-50" : ""}`}
+                } ${isToday(day) ? "bg-[var(--info-bg)]" : ""}`}
               >
                 <div
                   className={`text-sm font-medium mb-1 ${
                     isToday(day)
-                      ? "text-blue-600"
+                      ? "text-[var(--info)]"
                       : isCurrentMonth
                         ? "text-gray-900"
                         : "text-gray-400"

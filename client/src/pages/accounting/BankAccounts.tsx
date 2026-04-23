@@ -43,10 +43,10 @@ export default function BankAccounts({
 
   const getAccountTypeBadge = (type: string) => {
     const colors: Record<string, string> = {
-      CHECKING: "bg-blue-100 text-blue-700 border-blue-200",
-      SAVINGS: "bg-green-100 text-green-700 border-green-200",
+      CHECKING: "bg-[var(--info-bg)] text-[var(--info)] border-blue-200",
+      SAVINGS: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
       CREDIT_CARD: "bg-purple-100 text-purple-700 border-purple-200",
-      MONEY_MARKET: "bg-orange-100 text-orange-700 border-orange-200",
+      MONEY_MARKET: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200",
       OTHER: "bg-gray-100 text-gray-700 border-gray-200",
     };
 
@@ -100,7 +100,7 @@ export default function BankAccounts({
             <CardTitle className="text-sm font-medium">
               Active Accounts
             </CardTitle>
-            <Building2 className="h-4 w-4 text-green-600" />
+            <Building2 className="h-4 w-4 text-[var(--success)]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{activeAccounts}</div>
@@ -173,7 +173,7 @@ export default function BankAccounts({
                         {account.isActive ? (
                           <Badge
                             variant="outline"
-                            className="bg-green-100 text-green-700 border-green-200"
+                            className="bg-[var(--success-bg)] text-[var(--success)] border-green-200"
                           >
                             Active
                           </Badge>

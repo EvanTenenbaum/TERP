@@ -100,7 +100,7 @@ export const CashCollectedLeaderboard = memo(
                     <TableCell className="font-medium">
                       {client.customerName}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-green-600">
+                    <TableCell className="text-right font-mono text-[var(--success)]">
                       {formatCurrency(client.cashCollected)}
                     </TableCell>
                   </TableRow>

@@ -274,7 +274,7 @@ export function RoomBookingModal({
                         }}
                         className={`px-2 py-1 text-xs rounded border ${
                           startTime === slot.startTime.substring(0, 5)
-                            ? "bg-blue-100 border-blue-300 text-blue-700"
+                            ? "bg-[var(--info-bg)] border-blue-300 text-[var(--info)]"
                             : "bg-gray-50 border-gray-200 hover:bg-gray-100"
                         }`}
                       >

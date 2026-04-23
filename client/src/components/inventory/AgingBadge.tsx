@@ -33,20 +33,20 @@ const bracketConfig: Record<
 > = {
   FRESH: {
     label: "Fresh",
-    className: "bg-green-100 text-green-700 border-green-200",
-    bgClassName: "bg-green-50",
+    className: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
+    bgClassName: "bg-[var(--success-bg)]",
     icon: Leaf,
   },
   MODERATE: {
     label: "Moderate",
-    className: "bg-yellow-100 text-yellow-700 border-yellow-200",
-    bgClassName: "bg-yellow-50",
+    className: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200",
+    bgClassName: "bg-[var(--warning-bg)]",
     icon: Clock,
   },
   AGING: {
     label: "Aging",
-    className: "bg-orange-100 text-orange-700 border-orange-200",
-    bgClassName: "bg-orange-50",
+    className: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200",
+    bgClassName: "bg-[var(--warning-bg)]",
     icon: AlertTriangle,
   },
   CRITICAL: {
@@ -72,7 +72,7 @@ export function getAgeBracket(ageDays: number): AgeBracket {
  */
 export function getAgingRowClass(ageDays: number): string {
   if (ageDays > 14) return "bg-red-50/50"; // Red highlight for >2 weeks
-  if (ageDays > 7) return "bg-yellow-50/50"; // Yellow highlight for 1-2 weeks
+  if (ageDays > 7) return "bg-[var(--warning-bg)]/50"; // Yellow highlight for 1-2 weeks
   return ""; // No highlight for fresh
 }
 
@@ -96,7 +96,7 @@ export function AgingBadge({
           ageDays > 14
             ? "text-red-600 font-semibold"
             : ageDays > 7
-              ? "text-yellow-600"
+              ? "text-[var(--warning)]"
               : "text-muted-foreground"
         )}
       >

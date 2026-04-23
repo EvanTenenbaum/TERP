@@ -222,7 +222,7 @@ function OrderListRow({
       data-testid="order-queue-row"
       className={cn(
         "p-4 border-b cursor-pointer transition-colors",
-        isSelected && "bg-blue-50 border-l-4 border-l-blue-500",
+        isSelected && "bg-[var(--info-bg)] border-l-4 border-l-blue-500",
         isFocused &&
           !isSelected &&
           "bg-gray-100 ring-2 ring-inset ring-blue-400",
@@ -279,9 +279,9 @@ function ItemRow({
       className={cn(
         "p-3 border rounded-lg transition-all",
         item.isPacked
-          ? "bg-green-50 border-green-200 cursor-default"
+          ? "bg-[var(--success-bg)] border-green-200 cursor-default"
           : isSelected
-            ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200 cursor-pointer"
+            ? "bg-[var(--info-bg)] border-blue-300 ring-2 ring-blue-200 cursor-pointer"
             : "bg-white hover:bg-gray-50 cursor-pointer",
         isFocused && "ring-2 ring-blue-400"
       )}
@@ -324,7 +324,7 @@ function ItemRow({
         {item.isPacked && item.bagIdentifier && (
           <Badge
             variant="outline"
-            className="bg-green-100 text-green-700 border-green-200"
+            className="bg-[var(--success-bg)] text-[var(--success)] border-green-200"
           >
             {item.bagIdentifier}
           </Badge>
@@ -398,25 +398,25 @@ function ItemInspector({ item, onClose }: ItemInspectorProps) {
         <div>
           <h4 className="text-sm font-medium text-gray-500 mb-2">Status</h4>
           {item.isPacked ? (
-            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center gap-2 text-green-700">
+            <div className="p-3 bg-[var(--success-bg)] border border-green-200 rounded-lg">
+              <div className="flex items-center gap-2 text-[var(--success)]">
                 <PackageCheck className="w-5 h-5" />
                 <span className="font-medium">Packed</span>
               </div>
               {item.bagIdentifier && (
-                <p className="text-sm text-green-600 mt-1">
+                <p className="text-sm text-[var(--success)] mt-1">
                   Bag: {item.bagIdentifier}
                 </p>
               )}
               {item.packedAt && (
-                <p className="text-sm text-green-600 mt-1">
+                <p className="text-sm text-[var(--success)] mt-1">
                   Packed: {new Date(item.packedAt).toLocaleString()}
                 </p>
               )}
             </div>
           ) : (
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center gap-2 text-yellow-700">
+            <div className="p-3 bg-[var(--warning-bg)] border border-yellow-200 rounded-lg">
+              <div className="flex items-center gap-2 text-[var(--warning)]">
                 <Clock className="w-5 h-5" />
                 <span className="font-medium">Not Packed</span>
               </div>
@@ -1209,7 +1209,7 @@ export function PickPackWorkSurface() {
               className="text-xl font-bold text-gray-900 flex items-center gap-2"
               data-testid="pick-pack-header"
             >
-              <Package className="w-6 h-6 text-blue-600" />
+              <Package className="w-6 h-6 text-[var(--info)]" />
               Shipping
             </h2>
             <div className="flex items-center gap-2">
@@ -1230,23 +1230,23 @@ export function PickPackWorkSurface() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-            <div className="text-center p-2 bg-yellow-50 rounded-lg">
-              <div className="text-lg font-bold text-yellow-600">
+            <div className="text-center p-2 bg-[var(--warning-bg)] rounded-lg">
+              <div className="text-lg font-bold text-[var(--warning)]">
                 {statusCounts.pending}
               </div>
-              <div className="text-xs text-yellow-700">Pending</div>
+              <div className="text-xs text-[var(--warning)]">Pending</div>
             </div>
-            <div className="text-center p-2 bg-blue-50 rounded-lg">
-              <div className="text-lg font-bold text-blue-600">
+            <div className="text-center p-2 bg-[var(--info-bg)] rounded-lg">
+              <div className="text-lg font-bold text-[var(--info)]">
                 {statusCounts.partial}
               </div>
-              <div className="text-xs text-blue-700">Partial</div>
+              <div className="text-xs text-[var(--info)]">Partial</div>
             </div>
-            <div className="text-center p-2 bg-green-50 rounded-lg">
-              <div className="text-lg font-bold text-green-600">
+            <div className="text-center p-2 bg-[var(--success-bg)] rounded-lg">
+              <div className="text-lg font-bold text-[var(--success)]">
                 {statusCounts.ready}
               </div>
-              <div className="text-xs text-green-700">Ready</div>
+              <div className="text-xs text-[var(--success)]">Ready</div>
             </div>
             <div className="text-center p-2 bg-slate-50 rounded-lg">
               <div className="text-lg font-bold text-slate-600">

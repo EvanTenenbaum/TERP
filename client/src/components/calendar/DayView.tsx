@@ -174,9 +174,9 @@ function getEventColorClass(event: Event): string {
   if (event.priority === "URGENT") {
     return "bg-red-100 text-red-800";
   } else if (event.priority === "HIGH") {
-    return "bg-orange-100 text-orange-800";
+    return "bg-[var(--warning-bg)] text-[var(--warning)]";
   } else if (event.priority === "MEDIUM") {
-    return "bg-blue-100 text-blue-800";
+    return "bg-[var(--info-bg)] text-[var(--info)]";
   } else {
     return "bg-gray-100 text-gray-800";
   }

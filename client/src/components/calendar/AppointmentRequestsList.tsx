@@ -141,8 +141,8 @@ export default function AppointmentRequestsList({
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      approved: "bg-green-100 text-green-800",
+      pending: "bg-[var(--warning-bg)] text-[var(--warning)]",
+      approved: "bg-[var(--success-bg)] text-[var(--success)]",
       rejected: "bg-red-100 text-red-800",
       cancelled: "bg-gray-100 text-gray-800",
     };
@@ -257,7 +257,7 @@ export default function AppointmentRequestsList({
                     <button
                       onClick={(e) => handleQuickApprove(e, request.id)}
                       disabled={approveMutation.isPending}
-                      className="rounded-md bg-green-50 p-2 text-green-600 hover:bg-green-100 disabled:opacity-50"
+                      className="rounded-md bg-[var(--success-bg)] p-2 text-[var(--success)] hover:bg-[var(--success-bg)] disabled:opacity-50"
                       title="Approve"
                     >
                       <Check className="h-5 w-5" />

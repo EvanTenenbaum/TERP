@@ -294,7 +294,7 @@ export function RoomManagementModal({
                     <button
                       type="button"
                       onClick={addFeature}
-                      className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                      className="px-3 py-2 text-[var(--info)] hover:bg-[var(--info-bg)] rounded-lg"
                     >
                       <Plus className="h-5 w-5" />
                     </button>
@@ -343,7 +343,7 @@ export function RoomManagementModal({
             ) : (
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors mb-6"
+                className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-[var(--info)] transition-colors mb-6"
               >
                 <Plus className="h-5 w-5" />
                 Add New Room
@@ -472,7 +472,7 @@ function RoomCard({ room, onEdit, onDelete }: RoomCardProps) {
       <div className="flex items-center gap-1">
         <button
           onClick={() => onEdit(room)}
-          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          className="p-2 text-gray-500 hover:text-[var(--info)] hover:bg-[var(--info-bg)] rounded-lg transition-colors"
           title="Edit"
         >
           <Edit2 className="h-4 w-4" />

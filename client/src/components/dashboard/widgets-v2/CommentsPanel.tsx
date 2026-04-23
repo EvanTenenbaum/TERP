@@ -97,7 +97,7 @@ export const CommentsPanel = memo(function CommentsPanel({ noteId }: CommentsPan
                         {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
                       </span>
                       {comment.isResolved && (
-                        <span className="inline-flex items-center gap-1 text-xs text-green-600">
+                        <span className="inline-flex items-center gap-1 text-xs text-[var(--success)]">
                           <Check className="h-3 w-3" />
                           Resolved
                         </span>

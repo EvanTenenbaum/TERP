@@ -249,7 +249,7 @@ export function InlinePriceEditor({
                   <SelectContent>
                     <SelectItem value="decrease">
                       <div className="flex items-center gap-2">
-                        <TrendingDown className="w-3 h-3 text-green-600" />
+                        <TrendingDown className="w-3 h-3 text-[var(--success)]" />
                         Decrease
                       </div>
                     </SelectItem>
@@ -306,7 +306,7 @@ export function InlinePriceEditor({
                 <span className="text-sm font-medium">New Price</span>
                 <span className={cn(
                   'font-mono font-bold text-lg',
-                  newPrice < currentPrice && 'text-green-600',
+                  newPrice < currentPrice && 'text-[var(--success)]',
                   newPrice > currentPrice && 'text-red-600'
                 )}>
                   {formatCurrency(newPrice)}
@@ -315,7 +315,7 @@ export function InlinePriceEditor({
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Change</span>
                 <Badge variant="outline" className={cn(
-                  priceChange < 0 && 'bg-green-50 text-green-700 border-green-200',
+                  priceChange < 0 && 'bg-[var(--success-bg)] text-[var(--success)] border-green-200',
                   priceChange > 0 && 'bg-red-50 text-red-700 border-red-200'
                 )}>
                   {priceChange > 0 ? '+' : ''}{formatCurrency(priceChange)} ({changePercent.toFixed(1)}%)
@@ -329,7 +329,7 @@ export function InlinePriceEditor({
                   </span>
                   <span className={cn(
                     newMargin < currentMargin && 'text-amber-600',
-                    newMargin > currentMargin && 'text-green-600'
+                    newMargin > currentMargin && 'text-[var(--success)]'
                   )}>
                     {formatPercent(currentMargin)} → {formatPercent(newMargin)}
                   </span>

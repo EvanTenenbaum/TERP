@@ -101,7 +101,7 @@ export function ReferralCreditsPanel({
     <>
       <Card className="border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 shadow-md">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-green-700">
+          <CardTitle className="flex items-center gap-2 text-[var(--success)]">
             <Gift className="h-5 w-5" />
             Referral Credits Available
           </CardTitle>
@@ -112,13 +112,13 @@ export function ReferralCreditsPanel({
             {creditsData.totalAvailable > 0 && (
               <div className="flex items-center justify-between bg-white rounded-lg p-3 border border-green-200">
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-green-600 font-medium mb-1">
+                  <p className="text-xs uppercase tracking-wide text-[var(--success)] font-medium mb-1">
                     Available Credits
                   </p>
-                  <p className="text-2xl font-bold text-green-700">
+                  <p className="text-2xl font-bold text-[var(--success)]">
                     {formatCurrency(creditsData.totalAvailable)}
                   </p>
-                  <p className="text-sm text-green-600">
+                  <p className="text-sm text-[var(--success)]">
                     From {availableCredits.length} referral{availableCredits.length !== 1 ? "s" : ""}
                   </p>
                 </div>
@@ -126,7 +126,7 @@ export function ReferralCreditsPanel({
                   <Button
                     variant="outline"
                     onClick={() => setShowConfirmDialog(true)}
-                    className="border-green-600 text-green-600 hover:bg-green-100"
+                    className="border-green-600 text-[var(--success)] hover:bg-[var(--success-bg)]"
                   >
                     <Info className="mr-2 h-4 w-4" />
                     View Credits
@@ -145,7 +145,7 @@ export function ReferralCreditsPanel({
 
             {/* Preview Mode Info */}
             {isPreviewMode && creditsData.totalAvailable > 0 && (
-              <div className="flex items-center gap-2 text-green-600 bg-green-100 rounded-md p-2">
+              <div className="flex items-center gap-2 text-[var(--success)] bg-[var(--success-bg)] rounded-md p-2">
                 <Info className="h-4 w-4 flex-shrink-0" />
                 <span className="text-sm">
                   Credits can be applied after order is finalized
@@ -168,10 +168,10 @@ export function ReferralCreditsPanel({
               {availableCredits.slice(0, 3).map((credit) => (
                 <div
                   key={credit.id}
-                  className="flex items-center justify-between text-sm text-green-600"
+                  className="flex items-center justify-between text-sm text-[var(--success)]"
                 >
                   <span>From: {credit.referredClientName}</span>
-                  <Badge variant="outline" className="bg-green-100">
+                  <Badge variant="outline" className="bg-[var(--success-bg)]">
                     {formatCurrency(credit.creditAmount)}
                   </Badge>
                 </div>
@@ -208,7 +208,7 @@ export function ReferralCreditsPanel({
                   isPreviewMode ? "cursor-default" : "cursor-pointer"
                 } transition-colors ${
                   selectedCreditIds.includes(credit.id)
-                    ? "border-green-500 bg-green-50"
+                    ? "border-green-500 bg-[var(--success-bg)]"
                     : "border-gray-200 hover:border-green-300"
                 }`}
                 onClick={() => !isPreviewMode && toggleCreditSelection(credit.id)}
@@ -220,11 +220,11 @@ export function ReferralCreditsPanel({
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-green-600">
+                  <span className="font-semibold text-[var(--success)]">
                     {formatCurrency(credit.creditAmount)}
                   </span>
                   {!isPreviewMode && selectedCreditIds.includes(credit.id) && (
-                    <Check className="h-5 w-5 text-green-600" />
+                    <Check className="h-5 w-5 text-[var(--success)]" />
                   )}
                 </div>
               </div>
@@ -235,7 +235,7 @@ export function ReferralCreditsPanel({
                 <span>Order Total:</span>
                 <span>{formatCurrency(orderTotal)}</span>
               </div>
-              <div className="flex justify-between text-sm text-green-600">
+              <div className="flex justify-between text-sm text-[var(--success)]">
                 <span>{isPreviewMode ? "Available Credits:" : "Credits to Apply:"}</span>
                 <span>
                   -{formatCurrency(

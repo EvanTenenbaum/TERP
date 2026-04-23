@@ -433,7 +433,7 @@ export function PurchasePatternsWidget({
                     <span className="text-sm text-muted-foreground">
                       Due Soon (7d)
                     </span>
-                    <span className="text-2xl font-bold text-orange-600">
+                    <span className="text-2xl font-bold text-[var(--warning)]">
                       {
                         clientPredictions.filter(
                           (p: ReorderPrediction) =>

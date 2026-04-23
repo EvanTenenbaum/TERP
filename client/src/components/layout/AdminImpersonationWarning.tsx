@@ -70,7 +70,7 @@ export function AdminImpersonationWarning() {
               variant="secondary"
               size="sm"
               onClick={handleViewSession}
-              className="bg-white text-orange-700 hover:bg-orange-50 font-semibold text-xs h-7 px-3"
+              className="bg-white text-[var(--warning)] hover:bg-[var(--warning-bg)] font-semibold text-xs h-7 px-3"
             >
               <ExternalLink className="h-3.5 w-3.5 mr-1" />
               <span className="hidden sm:inline">View Session</span>

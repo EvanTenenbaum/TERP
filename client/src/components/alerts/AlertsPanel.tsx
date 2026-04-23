@@ -43,17 +43,17 @@ const SEVERITY_CONFIG = {
     label: "Critical",
   },
   HIGH: {
-    color: "bg-orange-100 text-orange-700 border-orange-200",
+    color: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200",
     icon: AlertTriangle,
     label: "High",
   },
   MEDIUM: {
-    color: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    color: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200",
     icon: AlertTriangle,
     label: "Medium",
   },
   LOW: {
-    color: "bg-blue-100 text-blue-700 border-blue-200",
+    color: "bg-[var(--info-bg)] text-[var(--info)] border-blue-200",
     icon: Package,
     label: "Low",
   },

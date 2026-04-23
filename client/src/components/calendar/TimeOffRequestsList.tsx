@@ -189,8 +189,8 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      approved: "bg-green-100 text-green-800",
+      pending: "bg-[var(--warning-bg)] text-[var(--warning)]",
+      approved: "bg-[var(--success-bg)] text-[var(--success)]",
       rejected: "bg-red-100 text-red-800",
     };
     return (
@@ -269,7 +269,7 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
 
       {/* My pending requests indicator */}
       {myPendingCount && myPendingCount.count > 0 && statusFilter !== "pending" && (
-        <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
+        <div className="rounded-lg bg-[var(--warning-bg)] border border-yellow-200 p-3 text-sm text-[var(--warning)]">
           You have {myPendingCount.count} pending time-off request(s).{" "}
           <button
             onClick={() => setStatusFilter("pending")}
@@ -347,7 +347,7 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
                         <button
                           onClick={() => handleApprove(request.id)}
                           disabled={approveMutation.isPending}
-                          className="rounded-md bg-green-50 p-2 text-green-600 hover:bg-green-100 disabled:opacity-50"
+                          className="rounded-md bg-[var(--success-bg)] p-2 text-[var(--success)] hover:bg-[var(--success-bg)] disabled:opacity-50"
                           title="Approve"
                         >
                           <Check className="h-5 w-5" />
