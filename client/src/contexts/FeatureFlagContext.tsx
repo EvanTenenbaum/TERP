@@ -133,3 +133,21 @@ export function useModuleEnabled(module: string): {
 } {
   return useFeatureFlag(module);
 }
+
+/**
+ * Safely check if a feature flag is enabled without requiring
+ * {@link FeatureFlagProvider} to be present in the React tree.
+ *
+ * Unlike {@link useFeatureFlag}, this hook returns `false` (disabled) when
+ * there is no {@link FeatureFlagContext} above the caller. This is useful
+ * for low-level/shared components that can be rendered both inside the
+ * authenticated app shell (where the provider is mounted) and inside
+ * isolated unit-test harnesses (where it typically is not).
+ *
+ * @param key - The feature flag key to check
+ * @returns `true` when the flag is enabled, `false` otherwise
+ */
+export function useOptionalFeatureFlag(key: string): boolean {
+  const context = useContext(FeatureFlagContext);
+  return context?.flags[key] ?? false;
+}

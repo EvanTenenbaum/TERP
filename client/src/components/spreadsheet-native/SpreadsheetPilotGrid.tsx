@@ -26,17 +26,131 @@ import type {
   RowClickedEvent,
   SendToClipboardParams,
   SelectionChangedEvent,
+  ValueFormatterParams,
 } from "ag-grid-community";
 import { themeAlpine } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
+import { useOptionalFeatureFlag } from "@/contexts/FeatureFlagContext";
+import { FEATURE_FLAGS } from "@/lib/constants/featureFlags";
 import { cn } from "@/lib/utils";
 import type {
   PowersheetSelectionSet,
   PowersheetSelectionSummary,
 } from "@/lib/powersheet/contracts";
+
+/**
+ * Recognized numeric cell data types for which `SpreadsheetPilotGrid`
+ * auto-applies right-alignment, tabular-nums styling, and locale-aware
+ * value formatters when the {@link FEATURE_FLAGS.uxV2Grid} flag is
+ * enabled.
+ */
+const NUMERIC_CELL_DATA_TYPES = ["currency", "number", "percent"] as const;
+type NumericCellDataType = (typeof NUMERIC_CELL_DATA_TYPES)[number];
+
+function isNumericCellDataType(
+  value: ColDef["cellDataType"]
+): value is NumericCellDataType {
+  return (
+    typeof value === "string" &&
+    (NUMERIC_CELL_DATA_TYPES as readonly string[]).includes(value)
+  );
+}
+
+const USD_CURRENCY_FORMATTER = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+const PERCENT_NUMBER_FORMATTER = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+function coerceToFiniteNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const num = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function formatCurrencyValue(params: ValueFormatterParams): string {
+  const num = coerceToFiniteNumber(params.value);
+  if (num === null) {
+    return params.value === null || params.value === undefined
+      ? ""
+      : String(params.value);
+  }
+  return USD_CURRENCY_FORMATTER.format(num);
+}
+
+function formatPercentValue(params: ValueFormatterParams): string {
+  const num = coerceToFiniteNumber(params.value);
+  if (num === null) {
+    return params.value === null || params.value === undefined
+      ? ""
+      : String(params.value);
+  }
+  return `${PERCENT_NUMBER_FORMATTER.format(num)}%`;
+}
+
+const NUMERIC_CELL_CLASS = "text-right font-mono tabular-nums";
+const NUMERIC_HEADER_CLASS = "text-right";
+
+/**
+ * Apply numeric column defaults (right-alignment, tabular-nums styling,
+ * and locale-aware value formatters) to any ColDef whose `cellDataType`
+ * is one of {@link NUMERIC_CELL_DATA_TYPES}.
+ *
+ * Existing explicit `cellClass` / `valueFormatter` on a ColDef are
+ * preserved — defaults are only applied where those fields are
+ * `undefined` on the incoming column definition.
+ */
+function applyNumericColumnDefaults<Row extends object>(
+  columnDefs: ColDef<Row>[]
+): ColDef<Row>[] {
+  let changed = false;
+  const nextDefs = columnDefs.map(colDef => {
+    if (!isNumericCellDataType(colDef.cellDataType)) {
+      return colDef;
+    }
+
+    const dataType: NumericCellDataType = colDef.cellDataType;
+    const next: ColDef<Row> = { ...colDef };
+    let mutated = false;
+
+    if (next.cellClass === undefined) {
+      next.cellClass = NUMERIC_CELL_CLASS;
+      mutated = true;
+    }
+    if (next.headerClass === undefined) {
+      next.headerClass = NUMERIC_HEADER_CLASS;
+      mutated = true;
+    }
+    if (next.valueFormatter === undefined) {
+      if (dataType === "currency") {
+        next.valueFormatter = formatCurrencyValue;
+        mutated = true;
+      } else if (dataType === "percent") {
+        next.valueFormatter = formatPercentValue;
+        mutated = true;
+      }
+    }
+
+    if (mutated) {
+      changed = true;
+      return next;
+    }
+    return colDef;
+  });
+
+  return changed ? nextDefs : columnDefs;
+}
 
 export type SpreadsheetPilotGridSelectionMode = "single-row" | "cell-range";
 
@@ -398,6 +512,17 @@ export function SpreadsheetPilotGrid<Row extends object>({
     [allowColumnReorder, suppressKeyboardEvent]
   );
 
+  const numericDefaultsEnabled = useOptionalFeatureFlag(
+    FEATURE_FLAGS.uxV2Grid
+  );
+
+  const effectiveColumnDefs = useMemo<ColDef<Row>[]>(() => {
+    if (!numericDefaultsEnabled) {
+      return columnDefs;
+    }
+    return applyNumericColumnDefaults(columnDefs);
+  }, [columnDefs, numericDefaultsEnabled]);
+
   const emitSelectedRowChange = useCallback(
     (row: Row | null) => {
       const nextId = row ? getRowId(row) : null;
@@ -576,7 +701,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
             <AgGridReact<Row>
               theme={themeAlpine}
               rowData={rows}
-              columnDefs={columnDefs}
+              columnDefs={effectiveColumnDefs}
               defaultColDef={defaultColDef}
               rowHeight={rowHeightProp ?? 28}
               headerHeight={32}
