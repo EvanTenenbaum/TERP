@@ -5,3 +5,4 @@
  */
 
 export { FeatureFlag, ModuleGate, RequireFeature } from "./FeatureFlag";
+export { UX_V2_FLAGS, isUxV2FlagEnabled, type UxV2FlagKey } from "./uxV2Flags";
