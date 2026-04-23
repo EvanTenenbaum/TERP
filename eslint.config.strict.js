@@ -160,6 +160,12 @@ export default [
       // TER-1291 — prefer SpreadsheetPilotGrid / AgGridReactCompat over direct
       // `ag-grid-react` imports. Will flip to `error` after sunset grids migrate.
       'terp/prefer-powersheet-grid': 'warn',
+
+      // TER-1315 — forbid non-canonical terminology (Customer/Buyer/Sales Order/
+      // Vendor Invoice/Item/Inventory Line) in JSX text. Warn initially so the
+      // codemod can clean up existing occurrences; flip to `error` once the
+      // tree is clean.
+      'terp/no-restricted-glossary': 'warn',
     },
     settings: {
       react: {

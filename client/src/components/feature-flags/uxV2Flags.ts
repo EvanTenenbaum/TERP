@@ -12,6 +12,13 @@
  *   the legacy `@/components/ui/sheet` drawer. When disabled, call sites
  *   should fall back to the existing Sheet component. Default when flag is
  *   absent from the server response: **disabled** (safe default).
+ * - `ux.v2.glossary` — Gates the TER-1315 glossary rollout. When enabled,
+ *   surfaces swap any remaining non-canonical terminology (Customer/Buyer/
+ *   Sales Order/Vendor Invoice/Item/Inventory Line) for the canonical forms
+ *   defined in `client/src/config/glossary.ts`. The codemod + ESLint rule
+ *   `terp/no-restricted-glossary` enforce the same contract at build time;
+ *   the flag lets product control the runtime rollout window. Default when
+ *   absent: **disabled**.
  *
  * Add new UX v2 flags to `UX_V2_FLAGS` below; do NOT hard-code flag strings
  * at call sites.
@@ -25,6 +32,8 @@
 export const UX_V2_FLAGS = {
   /** Enforced ManusSheet drawer primitive (TER-1294). */
   DRAWER: "ux.v2.drawer",
+  /** Canonical terminology rollout (TER-1315). */
+  GLOSSARY: "ux.v2.glossary",
 } as const;
 
 export type UxV2FlagKey = (typeof UX_V2_FLAGS)[keyof typeof UX_V2_FLAGS];

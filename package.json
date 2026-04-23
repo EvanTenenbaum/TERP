@@ -151,6 +151,8 @@
     "capability:extract": "tsx scripts/extract-worksurface-capabilities.ts",
     "proof:await-staging-build": "tsx scripts/await-staging-build.ts",
     "pre-commit:review": "tsx scripts/pre-commit-review.ts",
+    "codemod:glossary": "tsx scripts/codemods/codemod-glossary.ts",
+    "codemod:glossary:dry-run": "tsx scripts/codemods/codemod-glossary.ts --dry-run",
     "test:schema": "vitest run tests/integration/schema-verification.test.ts",
     "test:schema:ci": "pnpm test:env:up && pnpm test:db:reset && vitest run tests/integration/schema-verification.test.ts && pnpm test:env:down",
     "test:e2e": "playwright test",
