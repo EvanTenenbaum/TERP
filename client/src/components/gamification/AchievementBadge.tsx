@@ -56,31 +56,27 @@ interface AchievementBadgeProps {
 // Medal color schemes
 const MEDAL_COLORS: Record<
   MedalType,
-  { bg: string; border: string; text: string; glow: string }
+  { bg: string; border: string; text: string }
 > = {
   BRONZE: {
     bg: "bg-amber-100",
     border: "border-amber-400",
     text: "text-amber-700",
-    glow: "shadow-amber-200",
   },
   SILVER: {
     bg: "bg-gray-100",
     border: "border-gray-400",
     text: "text-gray-600",
-    glow: "shadow-gray-200",
   },
   GOLD: {
     bg: "bg-[var(--warning-bg)]",
     border: "border-yellow-400",
     text: "text-[var(--warning)]",
-    glow: "shadow-yellow-200",
   },
   PLATINUM: {
     bg: "bg-purple-100",
     border: "border-purple-400",
     text: "text-purple-700",
-    glow: "shadow-purple-200",
   },
 };
 
@@ -143,7 +139,6 @@ export const AchievementBadge = React.memo(function AchievementBadge({
         colors.bg,
         colors.border,
         colors.text,
-        colors.glow,
         sizeConfig.container,
         isPinned && "ring-2 ring-primary ring-offset-2",
         onClick && "cursor-pointer"
