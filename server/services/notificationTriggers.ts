@@ -19,6 +19,57 @@ import type {
 } from "./notificationRepository";
 
 // ============================================================================
+// ROUTE BUILDERS (workspace-aware navigation)
+// ============================================================================
+
+/**
+ * Build workspace paths that match the actual routes in App.tsx
+ * These match the patterns in client/src/lib/workspaceRoutes.ts
+ */
+function buildWorkspacePath(
+  basePath: string,
+  tab?: string,
+  params?: Record<string, string | number | boolean | null | undefined>
+): string {
+  const search = new URLSearchParams();
+
+  if (tab) {
+    search.set("tab", tab);
+  }
+
+  for (const [key, value] of Object.entries(params ?? {})) {
+    if (value === null || value === undefined || value === "") {
+      continue;
+    }
+    search.set(key, String(value));
+  }
+
+  const query = search.toString();
+  return `${basePath}${query ? `?${query}` : ""}`;
+}
+
+function buildSalesWorkspacePath(
+  tab?: string,
+  params?: Record<string, string | number | boolean | null | undefined>
+): string {
+  return buildWorkspacePath("/sales", tab, params);
+}
+
+function buildAccountingWorkspacePath(
+  tab?: string,
+  params?: Record<string, string | number | boolean | null | undefined>
+): string {
+  return buildWorkspacePath("/accounting", tab, params);
+}
+
+function buildOperationsWorkspacePath(
+  tab?: string,
+  params?: Record<string, string | number | boolean | null | undefined>
+): string {
+  return buildWorkspacePath("/inventory", tab, params);
+}
+
+// ============================================================================
 // TYPE DEFINITIONS
 // ============================================================================
 
@@ -167,7 +218,7 @@ async function getSalesUserIds(): Promise<number[]> {
   const admins = await getAdminUserIds();
   const sales = await getUserIdsByRoleName("Sales Rep");
   const salesManagers = await getUserIdsByRoleName("Sales Manager");
-  return [...new Set([...admins, ...sales, ...salesManagers])];
+  return Array.from(new Set([...admins, ...sales, ...salesManagers]));
 }
 
 /**
@@ -176,7 +227,7 @@ async function getSalesUserIds(): Promise<number[]> {
 async function getAccountingUserIds(): Promise<number[]> {
   const admins = await getAdminUserIds();
   const accounting = await getUserIdsByRoleName("Accountant");
-  return [...new Set([...admins, ...accounting])];
+  return Array.from(new Set([...admins, ...accounting]));
 }
 
 /**
@@ -185,7 +236,7 @@ async function getAccountingUserIds(): Promise<number[]> {
 async function getInventoryUserIds(): Promise<number[]> {
   const admins = await getAdminUserIds();
   const inventory = await getUserIdsByRoleName("Inventory Manager");
-  return [...new Set([...admins, ...inventory])];
+  return Array.from(new Set([...admins, ...inventory]));
 }
 
 // ============================================================================
@@ -210,7 +261,7 @@ export async function onOrderCreated(order: OrderInfo): Promise<void> {
         type: "info" as NotificationType,
         title: "New Order Created",
         message: `Order ${order.orderNumber} created for ${order.clientName || `Client #${order.clientId}`}${order.total ? ` - $${order.total}` : ""}`,
-        link: `/orders/${order.id}`,
+        link: buildSalesWorkspacePath("orders", { id: order.id }),
         category: "order" as NotificationCategory,
         metadata: {
           entityType: "order",
@@ -228,7 +279,7 @@ export async function onOrderCreated(order: OrderInfo): Promise<void> {
       type: "info" as NotificationType,
       title: "Order Received",
       message: `Your order ${order.orderNumber} has been received and is being processed.`,
-      link: `/orders`,
+      link: buildSalesWorkspacePath("orders"),
       category: "order" as NotificationCategory,
       channels: ["in_app"],
       metadata: {
@@ -268,7 +319,7 @@ export async function onOrderConfirmed(order: OrderInfo): Promise<void> {
       type: "success" as NotificationType,
       title: "Order Confirmed",
       message: `Your order ${order.orderNumber} has been confirmed.`,
-      link: `/orders`,
+      link: buildSalesWorkspacePath("orders"),
       category: "order" as NotificationCategory,
       channels: ["in_app", "email"],
       metadata: {
@@ -308,7 +359,7 @@ export async function onOrderShipped(order: OrderInfo): Promise<void> {
       type: "info" as NotificationType,
       title: "Order Shipped",
       message: `Your order ${order.orderNumber} has been shipped.`,
-      link: `/orders`,
+      link: buildSalesWorkspacePath("orders"),
       category: "order" as NotificationCategory,
       channels: ["in_app", "email"],
       metadata: {
@@ -348,7 +399,7 @@ export async function onOrderDelivered(order: OrderInfo): Promise<void> {
       type: "success" as NotificationType,
       title: "Order Delivered",
       message: `Your order ${order.orderNumber} has been delivered.`,
-      link: `/orders`,
+      link: buildSalesWorkspacePath("orders"),
       category: "order" as NotificationCategory,
       channels: ["in_app", "email"],
       metadata: {
@@ -392,7 +443,7 @@ export async function onInvoiceCreated(invoice: InvoiceInfo): Promise<void> {
       type: "info" as NotificationType,
       title: "New Invoice",
       message: `Invoice ${invoice.invoiceNumber} for $${invoice.totalAmount || "0.00"} has been created.`,
-      link: `/invoices`,
+      link: buildAccountingWorkspacePath("invoices"),
       category: "order" as NotificationCategory,
       channels: ["in_app", "email"],
       metadata: {
@@ -409,7 +460,7 @@ export async function onInvoiceCreated(invoice: InvoiceInfo): Promise<void> {
         type: "info" as NotificationType,
         title: "Invoice Created",
         message: `Invoice ${invoice.invoiceNumber} created for ${invoice.clientName || `Client #${invoice.clientId}`}`,
-        link: `/invoices/${invoice.id}`,
+        link: buildAccountingWorkspacePath("invoices", { id: invoice.id }),
         category: "order" as NotificationCategory,
         metadata: {
           entityType: "invoice",
@@ -450,7 +501,7 @@ export async function onInvoiceOverdue(invoice: InvoiceInfo): Promise<void> {
         type: "warning" as NotificationType,
         title: "Invoice Overdue",
         message: `Invoice ${invoice.invoiceNumber} for ${invoice.clientName || `Client #${invoice.clientId}`} is overdue. Amount due: $${invoice.amountDue || "0.00"}`,
-        link: `/invoices/${invoice.id}`,
+        link: buildAccountingWorkspacePath("invoices", { id: invoice.id }),
         category: "order" as NotificationCategory,
         metadata: {
           entityType: "invoice",
@@ -468,7 +519,7 @@ export async function onInvoiceOverdue(invoice: InvoiceInfo): Promise<void> {
       type: "warning" as NotificationType,
       title: "Invoice Overdue",
       message: `Your invoice ${invoice.invoiceNumber} is now overdue. Amount due: $${invoice.amountDue || "0.00"}`,
-      link: `/invoices`,
+      link: buildAccountingWorkspacePath("invoices"),
       category: "order" as NotificationCategory,
       channels: ["in_app", "email"],
       metadata: {
@@ -514,7 +565,7 @@ export async function onPaymentReceived(payment: PaymentInfo): Promise<void> {
         type: "success" as NotificationType,
         title: "Payment Received",
         message: `Payment of $${payment.amount} received from ${payment.clientName || `Client #${payment.clientId}`}${payment.invoiceNumber ? ` for Invoice ${payment.invoiceNumber}` : ""}`,
-        link: `/payments/${payment.id}`,
+        link: buildAccountingWorkspacePath("payments", { id: payment.id }),
         category: "order" as NotificationCategory,
         metadata: {
           entityType: "payment",
@@ -532,7 +583,7 @@ export async function onPaymentReceived(payment: PaymentInfo): Promise<void> {
       type: "success" as NotificationType,
       title: "Payment Received",
       message: `Your payment of $${payment.amount} has been received. Thank you!`,
-      link: `/payments`,
+      link: buildAccountingWorkspacePath("payments"),
       category: "order" as NotificationCategory,
       channels: ["in_app"],
       metadata: {
@@ -577,7 +628,7 @@ export async function onInventoryLow(batch: BatchInfo): Promise<void> {
         type: "warning" as NotificationType,
         title: "Low Inventory Alert",
         message: `${batch.productName || batch.batchCode || `Batch #${batch.id}`} is running low: ${batch.quantity} remaining${batch.lowStockThreshold ? ` (threshold: ${batch.lowStockThreshold})` : ""}`,
-        link: `/inventory/${batch.id}`,
+        link: buildOperationsWorkspacePath("inventory", { batchId: batch.id }),
         category: "system" as NotificationCategory,
         metadata: {
           entityType: "batch",
@@ -620,7 +671,7 @@ export async function onBatchReceived(batch: BatchInfo): Promise<void> {
         type: "info" as NotificationType,
         title: "New Batch Received",
         message: `New batch ${batch.batchCode || `#${batch.id}`} received: ${batch.productName || "Product"} - Qty: ${batch.quantity}`,
-        link: `/inventory/${batch.id}`,
+        link: buildOperationsWorkspacePath("inventory", { batchId: batch.id }),
         category: "system" as NotificationCategory,
         metadata: {
           entityType: "batch",
@@ -664,7 +715,7 @@ export async function onTaskAssigned(task: TaskInfo): Promise<void> {
       type: "info" as NotificationType,
       title: "Task Assigned",
       message: `You have been assigned: ${task.title}${task.dueDate ? ` (Due: ${new Date(task.dueDate).toLocaleDateString()})` : ""}`,
-      link: `/tasks/${task.id}`,
+      link: "/notifications",
       category: "system" as NotificationCategory,
       channels: ["in_app"],
       metadata: {
@@ -702,7 +753,7 @@ export async function onTaskDueSoon(task: TaskInfo): Promise<void> {
       type: "warning" as NotificationType,
       title: "Task Due Soon",
       message: `Task "${task.title}" is due ${task.dueDate ? `on ${new Date(task.dueDate).toLocaleDateString()}` : "soon"}`,
-      link: `/tasks/${task.id}`,
+      link: "/notifications",
       category: "system" as NotificationCategory,
       channels: ["in_app"],
       metadata: {
@@ -810,7 +861,7 @@ export async function onCreditIssued(credit: CreditInfo): Promise<void> {
       type: "success" as NotificationType,
       title: "Credit Issued",
       message: `A credit of $${credit.creditAmount} has been issued to your account${credit.reason ? `: ${credit.reason}` : ""}`,
-      link: `/credits`,
+      link: "/credits?tab=adjustments",
       category: "order" as NotificationCategory,
       channels: ["in_app", "email"],
       metadata: {
@@ -828,7 +879,7 @@ export async function onCreditIssued(credit: CreditInfo): Promise<void> {
         type: "info" as NotificationType,
         title: "Credit Issued",
         message: `Credit ${credit.creditNumber} for $${credit.creditAmount} issued to ${credit.clientName || `Client #${credit.clientId}`}`,
-        link: `/credits/${credit.id}`,
+        link: `/credits?tab=adjustments&id=${credit.id}`,
         category: "order" as NotificationCategory,
         metadata: {
           entityType: "credit",
@@ -875,7 +926,7 @@ export async function onInterestListSubmitted(
         type: "info" as NotificationType,
         title: "New Interest List",
         message: `${interestList.clientName || `Client #${interestList.clientId}`} submitted an interest list with ${interestList.itemCount} items${interestList.totalValue ? ` ($${interestList.totalValue})` : ""}`,
-        link: `/vip-portal/interest-lists/${interestList.id}`,
+        link: `/clients/${interestList.clientId}/vip-portal-config`,
         category: "order" as NotificationCategory,
         metadata: {
           entityType: "interest_list",
