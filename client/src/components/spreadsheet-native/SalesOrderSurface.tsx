@@ -1527,20 +1527,34 @@ export function SalesOrderSurface({
             </div>
           </div>
         ) : (
-          <div className="flex flex-1 flex-col gap-1 px-1">
+          <div className="flex min-h-0 flex-1 flex-col gap-1 px-1">
             <AdaptiveSplitLayout
-              primary={inventoryPanel}
-              secondary={documentPanel}
-              autoSaveId="sales-order-surface-layout-v2"
+              primary={
+                <AdaptiveSplitLayout
+                  primary={inventoryPanel}
+                  secondary={documentPanel}
+                  autoSaveId="sales-order-surface-layout-v2"
+                  direction="vertical"
+                  primaryDefaultSize={55}
+                  primaryMinSize={20}
+                  secondaryMinSize={20}
+                  desktopClassName="h-full"
+                  primaryPanelClassName="min-h-0"
+                  secondaryPanelClassName="min-h-0"
+                />
+              }
+              secondary={documentControlsBand}
+              autoSaveId="sales-order-surface-tables-controls-v1"
               direction="vertical"
-              primaryDefaultSize={55}
-              primaryMinSize={20}
-              secondaryMinSize={20}
+              primaryDefaultSize={72}
+              primaryMinSize={35}
+              secondaryDefaultSize={28}
+              secondaryMinSize={18}
               desktopClassName="min-h-[720px] flex-1"
-              primaryPanelClassName="min-h-0"
-              secondaryPanelClassName="min-h-0"
+              primaryPanelClassName="min-h-0 h-full"
+              secondaryPanelClassName="min-h-0 overflow-y-auto"
+              mobileClassName="space-y-1"
             />
-            {documentControlsBand}
           </div>
         )
       ) : (
