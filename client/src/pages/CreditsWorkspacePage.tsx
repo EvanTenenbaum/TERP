@@ -201,21 +201,9 @@ export default function CreditsWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={CREDITS_WORKSPACE.title}
-      description={CREDITS_WORKSPACE.description}
-      section="Finance"
       activeTab={activeTab}
       tabs={CREDITS_WORKSPACE.tabs}
       onTabChange={tab => setActiveTab(tab)}
-      meta={[
-        {
-          label: "Capacity",
-          value: "Client limits, exposure, and order guardrails",
-        },
-        {
-          label: "Adjustments",
-          value: "Issued adjustments that can be applied back to invoices",
-        },
-      ]}
       commandStrip={
         <>
           <Button

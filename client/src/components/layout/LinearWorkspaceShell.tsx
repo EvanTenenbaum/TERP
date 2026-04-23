@@ -16,7 +16,7 @@ export interface LinearWorkspaceTab<T extends string = string> {
 
 interface LinearWorkspaceShellProps<T extends string> {
   title: string;
-  description: string;
+  description?: string;
   activeTab: T;
   tabs: readonly LinearWorkspaceTab<T>[];
   onTabChange: (tab: T) => void;
@@ -133,26 +133,7 @@ export function LinearWorkspaceShell<T extends string>({
       {showHeader && (
         <header className="linear-workspace-header">
           <div className="linear-workspace-title-wrap">
-            <p className="linear-workspace-eyebrow">
-              {section ? (
-                <>
-                  <span className="linear-workspace-eyebrow-section">
-                    {section}
-                  </span>
-                  <span className="linear-workspace-eyebrow-sep" aria-hidden>
-                    {" "}
-                    /{" "}
-                  </span>
-                </>
-              ) : null}
-              Workspace
-            </p>
-            <div>
-              <h1 className="linear-workspace-title">{title}</h1>
-              {description ? (
-                <p className="linear-workspace-description">{description}</p>
-              ) : null}
-            </div>
+            <h1 className="linear-workspace-title">{title}</h1>
           </div>
           {showMeta && (
             <div
