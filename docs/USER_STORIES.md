@@ -1,8 +1,8 @@
 # TERP User Stories
 
 > **Source:** `docs/FUNCTIONAL_BASELINE.md` + `docs/FUNCTIONAL_BASELINE_RUNTIME.md`  
-> **Generated:** 2026-04-23  
-> **Coverage:** Every user-facing function, flow, tab, action, and conditional state documented in the functional baseline.  
+> **Generated:** 2026-04-23 | **Revised:** 2026-04-23  
+> **Coverage:** Every user-facing function, flow, tab, action, and conditional state documented in the functional baseline. Revised per QA: 30 stories updated, 34 new stories added.  
 > **Format:** `As a [role], I want to [action], so that [outcome].`
 >
 > **Roles used:**
@@ -103,7 +103,7 @@
 
 **US-002** — As any staff member, I want to be redirected to my original destination after login, so that I don't lose my place when my session expires.
 
-**US-003** — As any staff member, I want to log out and have my session fully revoked, so that no one else can access my account from this device.
+**US-003** — As any staff member, I want to log out and have my session fully revoked, so that my account is immediately inaccessible from all devices and browsers.
 
 **US-004** — As an Admin, I want to revoke all active sessions for a specific user, so that I can immediately lock out a compromised or offboarded account.
 
@@ -193,7 +193,7 @@
 
 **US-041** — As a Sales Rep, I want keyboard shortcuts in the orders grid (Click to select, Shift+Click to extend, Ctrl+Click to multi-select, Ctrl+C to copy, Ctrl+A to select all), so that I can work the queue at spreadsheet speed.
 
-**US-042** — As a Sales Manager, I want to see all draft and confirmed orders in a single queue with status chips, so that I can monitor the team's sales pipeline.
+**US-042** — As any Staff, I want to see all draft and confirmed orders in a single queue with a Stage column (Draft / Confirmed), so that the full team can monitor the sales pipeline.
 
 ---
 
@@ -203,11 +203,11 @@
 
 **US-044** — As a Sales Rep, I want to create a new quote from the Quotes tab, so that I can capture client intent before committing to an order.
 
-**US-045** — As a Sales Rep, I want to filter quotes by status (Draft, Sent, Converted), so that I can focus on the quotes that need my attention.
+**US-045** — As a Sales Rep, I want to filter quotes by status (Unsent, Sent, Converted), so that I can focus on the quotes that need my attention.
 
 **US-046** — As a Sales Rep, I want to convert an accepted quote into a confirmed sales order, so that the quoting-to-order handoff is seamless.
 
-**US-047** — As a Sales Rep, I want quote status to progress through Draft → Sent → Accepted/Rejected, so that I can track where each quote is in the client's decision process.
+**US-047** — As a Sales Rep, I want quote status to progress through `QUOTE_DRAFT` (Unsent) → `QUOTE_SENT` (Sent) → `CONVERTED` (promoted to Sale) or `REJECTED`, so that I can track where each quote is in the client's decision process and hand it off to an order when the client accepts.
 
 ---
 
@@ -243,7 +243,7 @@
 
 **US-058** — As a Sales Rep, I want to save catalogue drafts, so that I can build them iteratively without losing progress.
 
-**US-059** — As a Sales Rep, I want to share a catalogue via a token-based public link that strips internal fields (vendor, COGS, base price, markup), so that clients only see the information appropriate for them.
+**US-059** — As a Sales Rep, I want to share a catalogue via a token-based public link that strips internal fields (vendor, batchSku, COGS, base price, markup, appliedRules), so that clients only see the information appropriate for them.
 
 **US-060** — As a Sales Rep, I want to convert a catalogue directly into a Sales Order or Quote from the sales-sheets surface, so that I don't have to re-enter line items.
 
@@ -269,7 +269,7 @@
 
 ## 10. Order Creation Flow
 
-**US-068** — As a Sales Rep, I want multiple entry points to create a new order (sidebar quick action, orders queue CTA, Ctrl+N hotkey, "N" hotkey, command palette, client profile, matchmaking match, interest list), so that I can start an order from wherever I'm working.
+**US-068** — As a Sales Rep, I want multiple entry points to create a new order (sidebar quick action, orders queue CTA, Ctrl+N hotkey, "N" hotkey, command palette, client profile, matchmaking match, interest list, and a shared sales catalogue), so that I can start an order from wherever I'm working.
 
 **US-069** — As a Sales Rep, I want to search for and select an existing client from a combobox, or quick-create a new client inline, so that I don't leave the order surface to add a new client.
 
@@ -345,7 +345,7 @@
 
 **US-099** — As an Inventory Manager, I want to click a PO row to launch the receiving draft editor (deep-linked via `?draftId=`), so that I can complete a PO-linked receiving without manual data re-entry.
 
-**US-100** — As an Inventory Manager, I want to record per-line received quantities, shortages, discrepancies, sample toggles, and location routing inside the receiving draft, so that the intake is accurate and fully documented.
+**US-100** — As an Inventory Manager, I want to record per-line received quantities, shortages, discrepancies, sample toggles, location routing, and notes inside the receiving draft, so that the intake is accurate and fully documented.
 
 **US-101** — As an Inventory Manager, I want to submit the receiving draft to create intake receipt rows, update PO item quantities, and create inventory batches, so that the system reflects what was actually received.
 
@@ -433,7 +433,7 @@
 
 **US-131** — As a Procurement Manager, I want to split a PO, so that I can receive partial deliveries as separate transactions.
 
-**US-132** — As a Procurement Manager, I want to see the PO status progress: Draft → Confirmed → Receiving → Received, so that I know the exact state of every procurement.
+**US-132** — As a Procurement Manager, I want to see the PO status progress: Draft → Confirmed → Sent → Receiving → Received, so that I know the exact state of every procurement.
 
 **US-133** — As a Procurement Manager, I want an "Expected Today" quick-filter that shows POs with an expected delivery date ≤ end of day, so that I can prioritize what needs to be received today.
 
@@ -443,7 +443,7 @@
 
 **US-136** — As a Procurement Manager, I want to initiate receiving from the PO row (which routes to the receiving surface with `draftId`), so that the PO-to-inventory handoff is one click.
 
-**US-137** — As a Supplier, I want to receive harvest/intake reminder emails, so that I'm prepared for expected delivery dates.
+**US-137** — As a Procurement Manager, I want to send harvest/intake reminder emails to suppliers via the system (`vendorReminders` router), so that suppliers are proactively notified of upcoming expected delivery dates without manual outreach.
 
 ---
 
@@ -455,7 +455,7 @@
 
 **US-140** — As a Sales Rep, I want to quick-add a new client from the directory, so that I can onboard a new buyer without navigating away from my current context.
 
-**US-141** — As a Sales Manager, I want to see aggregate stats on the clients list (Total, With Debt, LTV), so that I can gauge the health of the customer base.
+**US-141** — As any Staff, I want to see aggregate stats on the clients list (Total, With Debt, LTV), so that customer base health is visible across the team.
 
 ---
 
@@ -545,7 +545,7 @@
 
 ## 29. Demand & Supply — Matchmaking
 
-**US-168** — As a Sales Rep, I want a matchmaking hub showing client needs, supplier supply, and AI-suggested matches with score badges side-by-side, so that I can identify and act on supply-demand opportunities.
+**US-168** — As a Sales Rep, I want a matchmaking hub showing client needs, supplier supply, and algorithm-suggested matches with score badges side-by-side, so that I can identify and act on supply-demand opportunities.
 
 **US-169** — As a Sales Rep, I want to filter matches by strain, category, grade, and price, so that I can narrow down to the most relevant opportunities.
 
@@ -627,7 +627,7 @@
 
 **US-198** — As an Accounting Manager, I want to perform a GL reversal on an invoice (admin-permissioned), so that incorrectly posted accounting entries can be corrected.
 
-**US-199** — As an Accounting Manager, I want to deep-link to a specific invoice via `?invoiceId=`, so that links from other surfaces open the right invoice directly.
+**US-199** — As an Accounting Manager, I want to deep-link to a specific payment record on the Payments surface via `?invoiceId=`, `?orderId=`, or `?paymentId=`, so that links from invoices and orders open the correct payment record directly.
 
 ---
 
@@ -637,7 +637,7 @@
 
 **US-201** — As an Accounting Manager, I want to create a bill (vendor, line items, amount, due date), so that supplier invoices are formally entered.
 
-**US-202** — As an Accounting Manager, I want the bill state machine to progress: Draft → Pending → Approved → Paid, with Voided as a terminal state, so that every bill has a clear approval and payment path.
+**US-202** — As an Accounting Manager, I want the bill state machine to progress: Draft → Pending → Approved → Partial → Paid, with Overdue and Voided as additional statuses, so that every bill has a clear approval and payment path.
 
 **US-203** — As an Accounting Manager, I want a status timeline (BillStatusTimeline) on the bill detail sheet, so that I can audit every state change.
 
@@ -659,7 +659,7 @@
 
 **US-210** — As an Accounting Manager, I want to support crypto payments, so that non-traditional settlement methods are recorded in the system.
 
-**US-211** — As an Accounting Manager, I want to configure payment terms per client (Consignment, Cash, COD), so that the system enforces the agreed payment structure.
+**US-211** — As a Sales Manager, I want to configure payment terms per client or per order (Consignment, Cash, COD) via `paymentTerms.*`, so that the system enforces the agreed settlement structure at the point of order creation.
 
 **US-212** — As an Accounting Manager, I want to record transaction fees alongside a payment, so that all cost-of-collection is captured.
 
@@ -771,7 +771,7 @@
 
 **US-250** — As an Accounting Manager, I want to write off bad debt (permission-gated) and restore it if a client later pays, so that uncollectable receivables are properly handled.
 
-**US-251** — As a Sales Manager, I want credit visibility gated so that only authorized users see credit fields in order creation and client profiles, so that sensitive financial data is protected.
+**US-251** — As the Owner or Admin, I want credit visibility gated (`creditVisibilitySettings`) so that only authorized users see credit fields in order creation and client profiles, so that sensitive margin and credit data is protected from front-line staff.
 
 ---
 
@@ -799,11 +799,11 @@
 
 ## 47. COGS Settings
 
-**US-259** — As the Owner, I want to configure the global COGS calculation mode (Fixed or Range with LOW/MID/HIGH basis), so that cost accounting is consistently applied across all transactions.
+**US-259** — As the Owner, I want to configure the global COGS calculation mode on the COGS Settings page (`/settings/cogs` → Global Settings tab) — choosing between Fixed cost or Range-based (LOW/MID/HIGH basis) — so that cost accounting is consistently applied across all transactions.
 
-**US-260** — As the Owner, I want to set per-client COGS overrides, so that negotiated cost structures are enforced for specific clients.
+**US-260** — As the Owner, I want to set per-client COGS overrides on the COGS Settings Client Adjustments tab, so that individually negotiated cost structures are enforced for specific clients without altering global defaults.
 
-**US-261** — As the Owner, I want to control COGS display mode (Admin Only, etc.), so that margin information is visible only to authorized users.
+**US-261** — As the Owner, I want to configure who sees COGS and margin information (COGS Display Mode — e.g. Admin Only) in Organization Settings, so that sensitive cost data is restricted to authorized finance users.
 
 ---
 
@@ -847,13 +847,15 @@
 
 **US-276** — As a Manager, I want to view and manage team time-off requests from the Time Off tab, so that scheduling conflicts are visible before they happen.
 
-**US-277** — As any Staff, I want pending invitation and time-off counts to appear on calendar tab labels, so that action items are visible without clicking each tab.
+**US-276a** — As any Staff, I want a Calendar Invitations tab showing pending event invitations for me (`PendingInvitationsWidget`), so that I can accept or decline event invitations without leaving the calendar.
+
+**US-277** — As any Staff, I want pending appointment request counts and time-off request counts to appear on the Requests and Time Off tab labels respectively, so that action items are visible without clicking each tab.
 
 ---
 
 ## 51. Scheduling
 
-**US-278** — As an Operations Manager, I want a scheduling surface for rooms, shifts, and deliveries with week/month/day views, so that physical resource allocation is centrally managed.
+**US-278** — As an Operations Manager, I want a scheduling surface with Calendar, Shifts, and Deliveries tabs (plus week/month/day calendar views), so that physical resource allocation is centrally managed.
 
 **US-279** — As an Operations Manager, I want to create and manage room bookings (admin can also manage room definitions), so that meeting rooms and lab spaces are reserved without double-booking.
 
@@ -887,7 +889,7 @@
 
 **US-290** — As any Staff, I want alerts for low-stock, needs-matching, and workflow events in the Alerts tab, so that business exceptions surface without requiring me to check multiple surfaces.
 
-**US-291** — As any Staff, I want to configure my notification preferences (in-app, email, appointment reminders, order updates, system alerts) and reset to defaults, so that I receive only the notifications relevant to my role.
+**US-291** — As any Staff, I want the Notifications Hub Alerts tab to surface low-stock, needs-matching, and workflow alerts (distinct from system notifications), so that business exceptions surface without checking multiple surfaces. *(Notification preference toggles live in My Account — see US-337.)*
 
 ---
 
@@ -951,7 +953,7 @@
 
 ## 58. Settings — Access Control (Users & RBAC)
 
-**US-313** — As an Admin, I want to create new users with username, password, display name, and initial role, so that new employees have system access on day one.
+**US-313** — As an Admin, I want to create new users with username (min 3 chars), password (min 8 chars), and display name, so that new employees have system access on day one.
 
 **US-314** — As an Admin, I want to reset any user's password, so that I can handle locked-out employees without database access.
 
@@ -975,7 +977,9 @@
 
 **US-322** — As an Admin, I want to manage product categories and subcategories, so that the product catalog is consistently organized.
 
-**US-323** — As an Admin, I want to manage grades and tags, so that products can be classified with the attributes the business uses.
+**US-323** — As an Admin, I want to manage product tags (including tag hierarchies and tag groups via `advancedTagFeatures`), so that products can be classified with flexible, multi-level attributes.
+
+**US-323a** — As an Admin, I want to manage product grades in Settings → Master Data (`productGrades` router), and control grade field visibility and requirement in Organization Settings, so that quality tiers are consistently applied across intake, inventory, and orders.
 
 **US-324** — As an Admin, I want to manage tag hierarchies and tag groups, so that the tagging system reflects complex product classification schemes.
 
@@ -1013,7 +1017,7 @@
 
 **US-335** — As any Staff, I want to update my profile name and email, so that my identity in the system is current.
 
-**US-336** — As any Staff, I want to change my password (requiring my current password), so that I can rotate credentials on my own schedule.
+**US-336** — As any Staff, I want to change my password (requires current password; new password min 8 chars on account change), so that I can rotate credentials on my own schedule.
 
 **US-337** — As any Staff, I want to set my notification preferences (in-app, email, appointment reminders, order updates, system alerts), so that I receive only the alerts I care about.
 
@@ -1101,7 +1105,7 @@
 
 **US-365** — As an Admin, I want the impersonation session to be stored in sessionStorage (tab-specific), so that it ends automatically when the tab is closed.
 
-**US-366** — As an Auditor, I want all impersonation sessions logged in `vipPortalAdmin.audit`, so that there's a complete record of when and why admin access was used.
+**US-366** — As an Auditor, I want to view the VIP impersonation audit log (`vipPortalAdmin.audit`), so that I can review a complete record of when and by whom admin access to a client's portal was used.
 
 ---
 
@@ -1127,9 +1131,11 @@
 
 **US-374** — As any Staff, I want a keyboard shortcuts modal accessible via "?" that lists all shortcuts grouped by Navigation, Actions, Quick Navigation, and Command Palette, so that I can learn the shortcuts without documentation.
 
-**US-375** — As any Staff, I want toast notifications (success, error, info) to appear and auto-dismiss globally, so that I know the result of every action without watching the UI for state changes.
+**US-375** — As any Staff, I want toast notifications (success, error, info) to appear globally — success toasts dismiss automatically, error toasts persist until manually closed — so that I know the result of every action without watching the UI for state changes.
 
-**US-376** — As any Staff, I want page-level error boundaries that reset on navigation, and component-level boundaries on dashboard widgets, so that isolated failures don't cascade into full-page crashes.
+**US-376** — As any Staff, I want page-level error boundaries (`PageErrorBoundary`, keyed on location) that reset automatically when I navigate to a different route, so that a single page crash doesn't strand me in a broken state.
+
+**US-376a** — As the Owner, I want each dashboard widget wrapped in its own `ComponentErrorBoundary`, so that a single failing widget (e.g. a broken KPI card) doesn't take down the entire dashboard — other panels remain usable.
 
 ---
 
@@ -1145,14 +1151,151 @@
 
 **US-381** — As an Admin, I want a /help page with a searchable, categorized help catalog (Dashboard, Inventory, Sales & Orders, Clients, Analytics, Accounting), so that users have in-app documentation without leaving the system.
 
-**US-382** — As any Staff, I want a friendly 404 page with a "Go Home" button when I navigate to a non-existent route, so that routing errors are recoverable without a browser back-button.
+**US-382** — As any Staff, I want a friendly 404 page with a "Go Home" button when I navigate to a non-existent route, so that routing errors are recoverable via the Go Home button without needing the browser back button.
 
 **US-383** — As an Admin, I want receipt generation for orders, so that clients receive formatted proof-of-purchase.
 
 **US-384** — As any Staff, I want service billing (billable services separate from product sales), so that non-inventory revenue is captured.
 
-**US-385** — As any Staff, I want the system to validate all mutations with Zod schemas and return typed errors on failure, so that invalid data never corrupts business records.
+**AC-001 (Acceptance Criterion — not a user story)** — All tRPC mutations are Zod-validated server-side and return typed `TRPCError` on failure. Invalid data is rejected at the API boundary and never persisted. This constraint applies to all user-facing mutations across the system.
 
 ---
 
-*End of user stories — 385 stories across 72 domain areas.*
+
+---
+
+## 73. Additional Stories (US-386 to US-420)
+
+*New stories addressing missing coverage identified in QA review.*
+
+---
+
+### Command Palette and Navigation
+
+**US-386** -- As any Staff, I want the Command Palette to show a "Recently Opened" group with the top 5 previously visited pages (excluding the current page, pulled from useRecentPages), so that I can return to recent work in one keystroke.
+
+**US-387** -- As any Staff, I want to press `I` (not in an input) to navigate instantly to Inventory, and `C` to navigate to Customers, so that the most common operational jumps require no mouse interaction.
+
+**US-388** -- As any Staff, I want to press `?` to open the keyboard shortcuts reference modal, so that I can discover shortcuts without leaving my current context.
+
+---
+
+### Inventory
+
+**US-389** -- As an Inventory Manager, I want to initiate an inter-location warehouse transfer (moving a batch or partial quantity between two warehouse locations via warehouseTransfers), so that physical stock moves are reflected in the system immediately.
+
+**US-390** -- As an Inventory Manager, I want to roll back or reset a receiving draft via the reset action in the receiving draft editor, so that I can discard a partially-entered receipt and start fresh without corrupting the PO record.
+
+---
+
+### Sales
+
+**US-391** -- As a Sales Rep, I want the Quotes tab to offer a spreadsheet-native mode toggle (QuotesPilotSurface), so that I can choose between the classic quotes list and the sheet-native surface that matches the Orders tab experience.
+
+**US-392** -- As a Sales Rep, I want the Returns tab to offer a spreadsheet-native mode toggle (ReturnsPilotSurface), so that I can process returns in the same spreadsheet-first workflow used across the rest of the sales workspace.
+
+---
+
+### Procurement
+
+**US-393** -- As a Procurement Manager, I want to initiate a vendor return from a received PO (selecting items and quantities to return to the supplier), so that supplier-side discrepancies and defective product are formally documented and tracked in vendorReturns.
+
+**US-394** -- As a Procurement Manager, I want to add line-item fees (separate from deposits) to a Purchase Order, so that all costs associated with a procurement -- including handling, freight, and brokerage fees -- are captured on the PO before it is confirmed.
+
+---
+
+### Accounting
+
+**US-395** -- As an Accounting Manager, I want a GL Reversal Viewer on the accounting dashboard (GLReversalViewer component), so that I can see and act on pending GL reversals without navigating to the General Ledger tab.
+
+**US-396** -- As an Accounting Manager, I want to filter the General Ledger by Trial Balance view, so that I can see account-level debit and credit totals for any period without exporting to a spreadsheet.
+
+**US-397** -- As an Accounting Manager, I want to deep-link directly to a specific bill via ?billId= on the Bills surface, so that links from notifications and dashboard alerts open the correct bill record immediately.
+
+**US-398** -- As an Accounting Manager, I want to export the expenses list to CSV from the Expenses surface, so that I can share expense reports with external accountants or import into payroll systems.
+
+**US-399** -- As an Accounting Manager, I want to see expense category breakdown cards on the Expenses surface (in addition to the main table), so that I can see spending by category at a glance without filtering.
+
+**US-400** -- As an Accounting Manager, I want a vendor payables alert panel that surfaces suppliers who have sold-out batches with outstanding balances (vendorPayables, MEET-005), so that I am proactively reminded to pay suppliers whose product has already been sold.
+
+**US-401** -- As an Accounting Manager, I want to record non-inventory service billing (serviceBilling, MEET-009) -- billable services that appear on invoices but do not deplete batch inventory -- so that consulting, brokerage, and service revenue is captured in the ERP alongside product revenue.
+
+---
+
+### Client Profile and Credits
+
+**US-402** -- As an Accounting Manager, I want to see a Consignment Range Panel on the client Money tab showing the consignment window and terms for supplier-side clients, so that consignment payment obligations are visible in the client financial context.
+
+**US-403** -- As a Sales Rep, I want Receive Money and Pay Money quick-action buttons in the client profile header, so that I can initiate a payment or receipt from the client profile without navigating to the Accounting workspace.
+
+**US-404** -- As an Accounting Manager, I want to restore a bad debt write-off when a previously written-off client pays (badDebt restore action), so that recovered receivables are correctly re-entered into the books rather than creating a duplicate record.
+
+**US-405** -- As a Sales Manager, I want a referral credits management surface where I can view and configure referral credit rules and track earned credits across all clients (referralCredits, referralCreditSettings), so that the referral program is managed in one place rather than being visible only at order-creation time.
+
+**US-406** -- As an Auditor, I want to view the credit audit log (creditAuditLog) for any client, so that I can trace every credit limit change, adjustment, and override approval with actor and timestamp.
+
+---
+
+### Calendar
+
+**US-407** -- As any Staff, I want a dedicated Calendar Invitations tab (PendingInvitationsWidget) showing event invitations sent to me, so that I can accept or decline meeting requests without leaving the calendar.
+
+---
+
+### Scheduling
+
+**US-408** -- As an Operations Manager, I want the Scheduling page to surface a Today Appointments panel and a Live Queue panel, so that I can see what is happening right now on the operations floor without building a filtered calendar query.
+
+---
+
+### Account
+
+**US-409** -- As any Staff, I want to set theme (light/dark), regional settings (timezone and date format), and language (default: English) in My Account, so that my personal display preferences persist across sessions.
+
+---
+
+### Feature Flags
+
+**US-410** -- As an Admin, I want to create a new feature flag from the Feature Flags settings page using a create-flag dialog, so that new pilot features can be registered in the system without a code deploy.
+
+---
+
+### VIP Portal
+
+**US-411** -- As a VIP Client, I want access to a Credit Center module in my portal (when enabled via vipPortalConfigurations), so that I can see my current credit balance, utilization, and credit history with the supplier.
+
+**US-412** -- As the Owner or Admin, I want to configure VIP tier rules and thresholds (vipTiers router, FEAT-019), so that clients are automatically assigned to tiers based on their business volume and loyalty metrics.
+
+**US-413** -- As a VIP Client, I want to receive VIP-specific alerts (vipAlerts), so that I am notified of events relevant to my account (new catalogue items, appointment confirmations, invoice due dates) within the portal.
+
+---
+
+### Slice-v1-lab Pages
+
+**US-414** -- As a Developer or Designer, I want the /slice-v1-lab/purchase-orders page to provide a PO queue with column toggle (GridColumnsPopover), create PO CTA, drawer detail view with line items and receiving launch, and history dialog, so that the slice-v1 layout can be evaluated as a candidate for future PO surface redesigns.
+
+**US-415** -- As a Developer or Designer, I want the /slice-v1-lab/product-intake page to provide a detailed receiving draft editor with source PO summary, per-line received qty, shortages, samples, location selector, history, gallery, waypoints, and discrepancy tracking, so that the slice-v1 layout can be evaluated for intake workflows.
+
+**US-416** -- As a Developer or Designer, I want the /slice-v1-lab/inventory page to provide a slice-lab inventory browser with columns for SKU, product, status, on-hand, cost, supplier, and images plus drawer detail and grid preferences, so that the layout can be evaluated against the current inventory browse surface.
+
+---
+
+### Operations
+
+**US-417** -- As any Staff, I want to manage office supply needs through the system (officeSupply router, MEET-055), so that internal supply requests are tracked in the same ERP used for product operations.
+
+---
+
+### Todo Lists
+
+**US-418** -- As any Staff, I want to navigate from a todo list card on the Notifications Todos tab directly to that list detail page (/todos/:listId), so that I can view and manage individual tasks without staying inside the hub.
+
+---
+
+### Error Handling
+
+**US-419** -- As the Owner, I want each dashboard widget isolated in its own ComponentErrorBoundary so that a crash in one widget (for example a failed KPI query) leaves all other panels functional and clearly shows only the affected panel error rather than a full-page failure.
+
+---
+
+*Total: 419 user stories across 73 domain areas + AC-001 (technical acceptance criterion).*
