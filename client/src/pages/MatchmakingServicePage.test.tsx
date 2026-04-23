@@ -269,6 +269,27 @@ describe("MatchmakingServicePage - Button Navigation", () => {
     expect(screen.getAllByText(/5 lbs available/i).length).toBeGreaterThan(0);
   });
 
+  it("shows real supplier name when vendorName is provided (TER-973)", () => {
+    // Update mock to include a real vendor name
+    mockSupplyItems = [
+      {
+        id: 88,
+        vendorName: "Green Valley Farms",
+        category: "Flower",
+        grade: "A+",
+        productName: "Wedding Cake",
+        buyerCount: 2,
+        quantityAvailable: "10",
+        unitPrice: "1500",
+      },
+    ];
+
+    render(<MatchmakingServicePage />);
+
+    expect(screen.getByText("Supplier: Green Valley Farms")).toBeInTheDocument();
+    expect(screen.queryByText("Supplier: Unknown supplier")).not.toBeInTheDocument();
+  });
+
   it("disables Reserve when no active buyer needs exist", () => {
     render(<MatchmakingServicePage />);
 

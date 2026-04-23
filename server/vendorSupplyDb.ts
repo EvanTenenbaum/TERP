@@ -1,6 +1,6 @@
 import { eq, and, desc, sql, isNull } from "drizzle-orm";
 import { getDb } from "./db";
-import { vendorSupply } from "../drizzle/schema";
+import { vendorSupply, vendors } from "../drizzle/schema";
 import { logger } from "./_core/logger";
 import type { VendorSupply, InsertVendorSupply } from "../drizzle/schema";
 
@@ -246,17 +246,60 @@ export async function deleteVendorSupply(id: number): Promise<boolean> {
 /**
  * Get vendor supply with match indicators
  * @param filters - Optional filters
- * @returns Array of vendor supply items with buyer counts
+ * @returns Array of vendor supply items with buyer counts and vendor names
  */
 export async function getVendorSupplyWithMatches(filters?: {
   status?: "AVAILABLE" | "RESERVED" | "PURCHASED" | "EXPIRED";
   vendorId?: number;
-}): Promise<Array<VendorSupply & { buyerCount: number }>> {
+}): Promise<Array<VendorSupply & { buyerCount: number; vendorName: string | null }>> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
 
   try {
-    const supplies = await getVendorSupply(filters);
+    // TER-973: Join with vendors table to get supplier names
+    // PARTY-004: Exclude soft-deleted records from both tables
+    const conditions = [isNull(vendorSupply.deletedAt)];
+    if (filters?.status) {
+      conditions.push(eq(vendorSupply.status, filters.status));
+    }
+    if (filters?.vendorId) {
+      conditions.push(eq(vendorSupply.vendorId, filters.vendorId));
+    }
+
+    const supplies = await db
+      .select({
+        // Spread all vendorSupply fields
+        id: vendorSupply.id,
+        vendorId: vendorSupply.vendorId,
+        strain: vendorSupply.strain,
+        productName: vendorSupply.productName,
+        strainType: vendorSupply.strainType,
+        category: vendorSupply.category,
+        subcategory: vendorSupply.subcategory,
+        grade: vendorSupply.grade,
+        quantityAvailable: vendorSupply.quantityAvailable,
+        unitPrice: vendorSupply.unitPrice,
+        status: vendorSupply.status,
+        availableUntil: vendorSupply.availableUntil,
+        reservedAt: vendorSupply.reservedAt,
+        purchasedAt: vendorSupply.purchasedAt,
+        notes: vendorSupply.notes,
+        internalNotes: vendorSupply.internalNotes,
+        createdBy: vendorSupply.createdBy,
+        createdByClientId: vendorSupply.createdByClientId,
+        createdAt: vendorSupply.createdAt,
+        updatedAt: vendorSupply.updatedAt,
+        deletedAt: vendorSupply.deletedAt,
+        // Join vendor name
+        vendorName: vendors.name,
+      })
+      .from(vendorSupply)
+      .leftJoin(
+        vendors,
+        and(eq(vendorSupply.vendorId, vendors.id), isNull(vendors.deletedAt))
+      )
+      .where(and(...conditions))
+      .orderBy(desc(vendorSupply.createdAt));
 
     // TER-1198: the previous implementation called
     // `findBuyersForVendorSupply(supply.id)` per row, which issued several
