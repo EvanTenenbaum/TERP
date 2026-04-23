@@ -439,6 +439,70 @@
     font-weight: 600;
   }
 
+  /**
+   * UX v2 two-level tab rail (TER-1305).
+   *
+   * The `.linear-workspace-group-row` sits above the existing tab row when
+   * `tabGroups` is supplied to `LinearWorkspaceShell` and the
+   * `ux.v2.workspace-tabs` feature flag is enabled. Styling mirrors the
+   * primary tab row (card background, bottom border seam) so the two rails
+   * read as a single header stack.
+   */
+  .linear-workspace-group-row {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 1rem;
+    background: var(--card);
+    border-bottom: 1px solid
+      color-mix(in oklab, var(--border) 76%, transparent);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+  }
+
+  .linear-workspace-shell[data-density="compact"]
+    .linear-workspace-group-row {
+    padding: 0.35rem 0.85rem;
+    gap: 0.25rem;
+  }
+
+  .linear-workspace-group-trigger {
+    flex: 0 0 auto;
+    min-width: max-content;
+    padding: 0.3rem 0.75rem;
+    border-radius: 9999px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted-foreground);
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background 0.15s,
+      color 0.15s,
+      border-color 0.15s;
+  }
+
+  .linear-workspace-group-trigger:hover {
+    color: var(--foreground);
+    background: color-mix(in oklab, var(--muted) 70%, transparent);
+  }
+
+  .linear-workspace-group-trigger[data-state="active"] {
+    background: color-mix(in oklab, var(--muted) 85%, transparent);
+    color: var(--foreground);
+    border-color: color-mix(in oklab, var(--border) 80%, transparent);
+    font-weight: 600;
+  }
+
+  .linear-workspace-group-trigger:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
   .linear-workspace-command-strip {
     margin-left: auto;
     display: inline-flex;
