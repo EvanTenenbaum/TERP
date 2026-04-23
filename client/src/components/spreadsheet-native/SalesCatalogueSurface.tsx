@@ -152,6 +152,70 @@ const escapeHtml = (value: string) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+/**
+ * Sanitize an image URL before injecting it into the print window HTML.
+ *
+ * Only absolute http(s) URLs and same-origin relative paths are accepted.
+ * Anything else (javascript:, data:text/html, vbscript:, file:, mailto:, …)
+ * is rejected to prevent script injection via the printable catalogue.
+ *
+ * Returns the normalized URL string on success, or `null` when the URL is
+ * empty, malformed, or uses a disallowed scheme. Callers should render a
+ * fallback when `null` is returned. A `console.warn` is emitted on rejection
+ * so print issues are debuggable without leaking the raw value into markup.
+ */
+export const sanitizePrintImageUrl = (rawUrl: unknown): string | null => {
+  if (typeof rawUrl !== "string") {
+    return null;
+  }
+  const trimmed = rawUrl.trim();
+  if (trimmed.length === 0) {
+    return null;
+  }
+
+  // Allow same-origin relative URLs (no scheme, no authority hijack).
+  // Explicitly reject protocol-relative (`//evil.example`) so hosts cannot
+  // be smuggled in via the current page's protocol.
+  if (trimmed.startsWith("//")) {
+    console.warn(
+      "[SalesCatalogue] Rejected protocol-relative image URL from print output"
+    );
+    return null;
+  }
+  if (
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("./") ||
+    trimmed.startsWith("../")
+  ) {
+    return trimmed;
+  }
+
+  const base =
+    typeof window !== "undefined" && window.location?.origin
+      ? window.location.origin
+      : "http://localhost";
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed, base);
+  } catch {
+    console.warn(
+      "[SalesCatalogue] Rejected unparsable image URL from print output"
+    );
+    return null;
+  }
+
+  const protocol = parsed.protocol.toLowerCase();
+  if (protocol !== "http:" && protocol !== "https:") {
+    console.warn(
+      `[SalesCatalogue] Rejected unsafe image URL scheme "${protocol}" from print output`
+    );
+    return null;
+  }
+
+  return parsed.toString();
+};
+
 export function buildCatalogueCsv(items: PricedInventoryItem[]) {
   return [
     "Product,Category,Qty,Retail Price",
@@ -257,11 +321,13 @@ function buildPrintableCatalogueHtml({
         <article class="catalogue-row">
           ${
             includeImages
-              ? `<div class="catalogue-image">${
-                  item.imageUrl
-                    ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name)}" />`
-                    : `<div class="catalogue-image-fallback">No image</div>`
-                }</div>`
+              ? (() => {
+                  const safeImageUrl = sanitizePrintImageUrl(item.imageUrl);
+                  const imageMarkup = safeImageUrl
+                    ? `<img src="${escapeHtml(safeImageUrl)}" alt="${escapeHtml(item.name)}" />`
+                    : `<div class="catalogue-image-fallback">No image</div>`;
+                  return `<div class="catalogue-image">${imageMarkup}</div>`;
+                })()
               : ""
           }
           <div class="catalogue-copy">
@@ -1264,25 +1330,43 @@ export function SalesCatalogueSurface() {
     toast.success("JSON exported");
   }, [draftFileName, selectedItems]);
 
-  const handlePrintCatalogue = useCallback(() => {
-    if (selectedItems.length === 0) return;
+  const openCataloguePrintWindow = useCallback((): boolean => {
+    if (selectedItems.length === 0) {
+      toast.error("Add items to the catalogue before printing");
+      return false;
+    }
 
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Allow pop-ups to print the catalogue");
-      return;
+      return false;
     }
 
-    printWindow.document.write(
-      buildPrintableCatalogueHtml({
-        title: draftFileName || "Sales Catalogue",
-        clientName: selectedClientName,
-        items: selectedItems,
-        includeImages: includeImagesInPreview,
-        totalValue: totalSheetValue,
-      })
-    );
-    printWindow.document.close();
+    try {
+      printWindow.document.write(
+        buildPrintableCatalogueHtml({
+          title: draftFileName || "Sales Catalogue",
+          clientName: selectedClientName,
+          items: selectedItems,
+          includeImages: includeImagesInPreview,
+          totalValue: totalSheetValue,
+        })
+      );
+      printWindow.document.close();
+      return true;
+    } catch (error) {
+      console.error("Failed to prepare catalogue print window", error);
+      toast.error(
+        "Failed to prepare print dialog: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
+      try {
+        printWindow.close();
+      } catch {
+        // ignore — the window may already be closed
+      }
+      return false;
+    }
   }, [
     draftFileName,
     includeImagesInPreview,
@@ -1291,10 +1375,17 @@ export function SalesCatalogueSurface() {
     totalSheetValue,
   ]);
 
+  const handlePrintCatalogue = useCallback(() => {
+    if (openCataloguePrintWindow()) {
+      toast.success("Print dialog opened");
+    }
+  }, [openCataloguePrintWindow]);
+
   const handleExportPdf = useCallback(() => {
-    handlePrintCatalogue();
-    toast.success("Print dialog opened. Use Save as PDF to export.");
-  }, [handlePrintCatalogue]);
+    if (openCataloguePrintWindow()) {
+      toast.success("Print dialog opened. Use 'Save as PDF' to export.");
+    }
+  }, [openCataloguePrintWindow]);
 
   const handleCopyForChat = useCallback(async () => {
     if (!navigator.clipboard?.writeText) {
@@ -1446,9 +1537,22 @@ export function SalesCatalogueSurface() {
   }, [inventoryQuery.data, selectedPreviewItem]);
 
   const handleOpenSharePreview = useCallback(async () => {
+    const hadCachedShareUrl = Boolean(draft.lastShareUrl);
     const shareUrl = draft.lastShareUrl ?? (await draft.generateShareLink());
-    if (!shareUrl) return;
-    window.open(shareUrl, "_blank", "noopener,noreferrer");
+    if (!shareUrl) {
+      // If we had a cached URL, generateShareLink was not called, so surface
+      // our own failure toast. Otherwise generateShareLink already toasted.
+      if (hadCachedShareUrl) {
+        toast.error("Shared view link is unavailable — regenerate the link");
+      }
+      return;
+    }
+    const opened = window.open(shareUrl, "_blank", "noopener,noreferrer");
+    if (!opened) {
+      toast.error("Allow pop-ups to open the shared view");
+      return;
+    }
+    toast.success("Shared view opened in a new tab");
   }, [draft]);
 
   const navigateToOrder = useCallback(
