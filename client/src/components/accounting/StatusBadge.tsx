@@ -72,7 +72,7 @@ export function StatusBadge({
         case "SENT":
           return {
             label: "Sent",
-            className: "bg-[var(--info-bg)] text-blue-900 border-blue-400",
+            className: "bg-[var(--info-bg)] text-[var(--info)] border-blue-400",
           };
         case "VIEWED":
           return {
@@ -82,17 +82,17 @@ export function StatusBadge({
         case "PARTIAL":
           return {
             label: "Partial",
-            className: "bg-[var(--warning-bg)] text-yellow-900 border-yellow-500",
+            className: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-500",
           };
         case "PAID":
           return {
             label: "Paid",
-            className: "bg-[var(--success-bg)] text-green-900 border-green-400",
+            className: "bg-[var(--success-bg)] text-[var(--success)] border-green-400",
           };
         case "OVERDUE":
           return {
             label: "Overdue",
-            className: "bg-red-100 text-red-900 border-red-400",
+            className: "bg-destructive/10 text-destructive border-red-400",
           };
         case "VOID":
           return {
@@ -118,7 +118,7 @@ export function StatusBadge({
         case "PENDING":
           return {
             label: "Pending",
-            className: "bg-[var(--info-bg)] text-blue-900 border-blue-400",
+            className: "bg-[var(--info-bg)] text-[var(--info)] border-blue-400",
           };
         case "APPROVED":
           return {
@@ -128,17 +128,17 @@ export function StatusBadge({
         case "PARTIAL":
           return {
             label: "Partial",
-            className: "bg-[var(--warning-bg)] text-yellow-900 border-yellow-500",
+            className: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-500",
           };
         case "PAID":
           return {
             label: "Paid",
-            className: "bg-[var(--success-bg)] text-green-900 border-green-400",
+            className: "bg-[var(--success-bg)] text-[var(--success)] border-green-400",
           };
         case "OVERDUE":
           return {
             label: "Overdue",
-            className: "bg-red-100 text-red-900 border-red-400",
+            className: "bg-destructive/10 text-destructive border-red-400",
           };
         case "VOID":
           return {
@@ -159,12 +159,12 @@ export function StatusBadge({
         case "RECEIVED":
           return {
             label: "Received",
-            className: "bg-[var(--success-bg)] text-green-900 border-green-400",
+            className: "bg-[var(--success-bg)] text-[var(--success)] border-green-400",
           };
         case "SENT":
           return {
             label: "Sent",
-            className: "bg-[var(--info-bg)] text-blue-900 border-blue-400",
+            className: "bg-[var(--info-bg)] text-[var(--info)] border-blue-400",
           };
         default:
           return {
@@ -180,17 +180,17 @@ export function StatusBadge({
         case "CASH":
           return {
             label: "Cash",
-            className: "bg-[var(--success-bg)] text-green-900 border-green-400",
+            className: "bg-[var(--success-bg)] text-[var(--success)] border-green-400",
           };
         case "CHECK":
           return {
             label: "Check",
-            className: "bg-[var(--info-bg)] text-blue-900 border-blue-400",
+            className: "bg-[var(--info-bg)] text-[var(--info)] border-blue-400",
           };
         case "WIRE":
           return {
             label: "Wire",
-            className: "bg-purple-100 text-purple-900 border-purple-400",
+            className: "bg-muted text-primary border-purple-400",
           };
         case "ACH":
           return {
@@ -200,7 +200,7 @@ export function StatusBadge({
         case "CREDIT_CARD":
           return {
             label: "Credit Card",
-            className: "bg-[var(--warning-bg)] text-orange-900 border-orange-400",
+            className: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-400",
           };
         case "DEBIT_CARD":
           return {

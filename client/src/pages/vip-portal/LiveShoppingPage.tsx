@@ -180,7 +180,7 @@ export default function LiveShoppingPage({ onBack }: LiveShoppingPageProps) {
                 <Button
                   size="lg"
                   onClick={handleEnterSession}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-[var(--success)] hover:bg-[var(--success)]"
                 >
                   <ShoppingCart className="h-4 w-4 mr-2" />
                   Enter Session

@@ -38,7 +38,7 @@ import { formatDistanceToNow } from "date-fns";
 
 const SEVERITY_CONFIG = {
   CRITICAL: {
-    color: "bg-red-100 text-red-700 border-red-200",
+    color: "bg-destructive/10 text-destructive border-red-200",
     icon: AlertCircle,
     label: "Critical",
   },
@@ -132,7 +132,7 @@ export const AlertsPanel = memo(function AlertsPanel({
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
             {stats && stats.totalAlerts > 0 && (
-              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-destructive text-white text-xs flex items-center justify-center">
                 {stats.totalAlerts > 99 ? "99+" : stats.totalAlerts}
               </span>
             )}
@@ -154,7 +154,7 @@ export const AlertsPanel = memo(function AlertsPanel({
               </div>
             ) : alerts?.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground">
-                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                <CheckCircle className="h-8 w-8 mx-auto mb-2 text-[var(--success)]" />
                 <p>No active alerts</p>
               </div>
             ) : (
@@ -233,19 +233,19 @@ export const AlertsPanel = memo(function AlertsPanel({
         <CardContent>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-500" />
+              <AlertCircle className="h-4 w-4 text-destructive" />
               <span>Out of Stock: {stats?.outOfStockCount || 0}</span>
             </div>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              <AlertTriangle className="h-4 w-4 text-[var(--warning)]" />
               <span>Critical: {stats?.criticalStockCount || 0}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Package className="h-4 w-4 text-yellow-500" />
+              <Package className="h-4 w-4 text-[var(--warning)]" />
               <span>Low Stock: {stats?.lowStockCount || 0}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-blue-500" />
+              <Users className="h-4 w-4 text-[var(--info)]" />
               <span>Needs: {stats?.pendingNeedsCount || 0}</span>
             </div>
           </div>
@@ -304,7 +304,7 @@ export const AlertsPanel = memo(function AlertsPanel({
                 </div>
               ) : alerts?.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
-                  <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500" />
+                  <CheckCircle className="h-12 w-12 mx-auto mb-3 text-[var(--success)]" />
                   <p className="font-medium">No active alerts</p>
                   <p className="text-sm">Everything looks good!</p>
                 </div>

@@ -56,7 +56,7 @@ export function CommunicationTimeline({
       },
       EMAIL: {
         label: "Email",
-        className: "bg-purple-100 text-purple-800 border-purple-300",
+        className: "bg-muted text-primary border-purple-300",
       },
       MEETING: {
         label: "Meeting",

@@ -299,10 +299,10 @@ export function PriceHistoryLookup({
               <Truck className="h-3 w-3 mr-1" />
               {fmt(purchaseData?.suggestedPrice)}
               {priceTrend === "UP" && (
-                <TrendingUp className="h-3 w-3 ml-1 text-red-500" />
+                <TrendingUp className="h-3 w-3 ml-1 text-destructive" />
               )}
               {priceTrend === "DOWN" && (
-                <TrendingDown className="h-3 w-3 ml-1 text-green-500" />
+                <TrendingDown className="h-3 w-3 ml-1 text-[var(--success)]" />
               )}
               <ChevronDown className="h-3 w-3 ml-1" />
             </Button>
@@ -355,14 +355,14 @@ export function PriceHistoryLookup({
                 <div className="flex items-center gap-1">
                   {priceTrend === "UP" && (
                     <>
-                      <TrendingUp className="h-3 w-3 text-red-500" />
-                      <span className="text-red-500">Rising</span>
+                      <TrendingUp className="h-3 w-3 text-destructive" />
+                      <span className="text-destructive">Rising</span>
                     </>
                   )}
                   {priceTrend === "DOWN" && (
                     <>
-                      <TrendingDown className="h-3 w-3 text-green-500" />
-                      <span className="text-green-500">Falling</span>
+                      <TrendingDown className="h-3 w-3 text-[var(--success)]" />
+                      <span className="text-[var(--success)]">Falling</span>
                     </>
                   )}
                   {priceTrend === "STABLE" && (
@@ -418,7 +418,7 @@ export function PriceHistoryLookup({
                   </Badge>
                 )}
                 {priceTrend === "DOWN" && (
-                  <Badge className="flex items-center gap-1 bg-green-600">
+                  <Badge className="flex items-center gap-1 bg-[var(--success)]">
                     <TrendingDown className="h-3 w-3" />
                     Falling
                   </Badge>

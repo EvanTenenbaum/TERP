@@ -57,7 +57,7 @@ export const OrderItemCard = memo(function OrderItemCard({
     if (percent >= 50) return "bg-[var(--success-bg)] text-[var(--success)] border-green-200";
     if (percent >= 30) return "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200";
     if (percent >= 15) return "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200";
-    return "bg-red-50 text-red-700 border-red-200";
+    return "bg-destructive/10 text-destructive border-red-200";
   };
 
   const handleSaveName = () => {

@@ -31,7 +31,7 @@ function StepIcon({ step }: { step: IntakeStep }) {
     case "complete":
       return <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />;
     case "failed":
-      return <XCircle className="h-5 w-5 text-red-600" />;
+      return <XCircle className="h-5 w-5 text-destructive" />;
     case "running":
       return <Loader2 className="h-5 w-5 text-[var(--info)] animate-spin" />;
     default:
@@ -98,7 +98,7 @@ export function IntakeProgressDialog({
             )}
             {isFailed && (
               <>
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <AlertTriangle className="h-5 w-5 text-destructive" />
                 Intake Failed
               </>
             )}
@@ -112,7 +112,7 @@ export function IntakeProgressDialog({
           <DialogDescription>
             {isSuccess && "All steps completed successfully."}
             {isFailed && (
-              <span className="text-red-600">
+              <span className="text-destructive">
                 {error || "Transaction failed. You can roll back the completed steps."}
               </span>
             )}
@@ -132,7 +132,7 @@ export function IntakeProgressDialog({
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">{step.label}</p>
                 {step.error && (
-                  <p className="text-xs text-red-600 mt-1">{step.error}</p>
+                  <p className="text-xs text-destructive mt-1">{step.error}</p>
                 )}
                 {step.status === "complete" && step.entityId && (
                   <p className="text-xs text-gray-500 mt-1">ID: {step.entityId}</p>

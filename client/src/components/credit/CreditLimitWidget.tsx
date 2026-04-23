@@ -230,20 +230,20 @@ export function CreditLimitWidget({
     if (trend > 0)
       return <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-[var(--success)]" />;
     if (trend < 0)
-      return <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-red-600" />;
+      return <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />;
     return <Minus className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />;
   };
 
   const getHealthColor = (score: number) => {
     if (score >= 80) return "text-[var(--success)]";
     if (score >= 60) return "text-[var(--warning)]";
-    return "text-red-600";
+    return "text-destructive";
   };
 
   const getTrendBadge = (trend: string) => {
     if (trend === "IMPROVING")
       return (
-        <Badge variant="default" className="bg-green-600 text-xs">
+        <Badge variant="default" className="bg-[var(--success)] text-xs">
           ↑
         </Badge>
       );
@@ -272,7 +272,7 @@ export function CreditLimitWidget({
       );
     }
     return (
-      <Badge variant="default" className="bg-blue-600 text-xs">
+      <Badge variant="default" className="bg-[var(--info)] text-xs">
         Active
       </Badge>
     );
@@ -382,9 +382,9 @@ export function CreditLimitWidget({
 
             {/* Plain English Explanation */}
             {"explanation" in data && data.explanation && (
-              <div className="flex gap-2 p-3 bg-[var(--info-bg)] dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex gap-2 p-3 bg-[var(--info-bg)] dark:bg-[var(--info)] rounded-lg border border-blue-200 dark:border-blue-800">
                 <Info className="h-4 w-4 text-[var(--info)] flex-shrink-0 mt-0.5" />
-                <div className="text-xs sm:text-sm text-blue-900 dark:text-blue-100">
+                <div className="text-xs sm:text-sm text-[var(--info)] dark:text-blue-100">
                   {"explanation" in data ? data.explanation : ""}
                 </div>
               </div>
@@ -453,7 +453,7 @@ export function CreditLimitWidget({
                         <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
                           <div className="font-medium">Total Weight</div>
                           <div
-                            className={`text-lg font-bold ${weightsValid ? "text-[var(--success)]" : "text-red-600"}`}
+                            className={`text-lg font-bold ${weightsValid ? "text-[var(--success)]" : "text-destructive"}`}
                           >
                             {weightsSum.toFixed(0)}%
                             {weightsValid ? (
@@ -517,10 +517,10 @@ export function CreditLimitWidget({
                       <div
                         className={`absolute left-0 top-0 h-full transition-all ${
                           signal.score >= 80
-                            ? "bg-green-600"
+                            ? "bg-[var(--success)]"
                             : signal.score >= 60
-                              ? "bg-yellow-600"
-                              : "bg-red-600"
+                              ? "bg-[var(--warning)]"
+                              : "bg-destructive"
                         }`}
                         style={{ width: `${signal.score}%` }}
                       />
@@ -532,10 +532,10 @@ export function CreditLimitWidget({
 
             {/* Learning Mode Warning */}
             {data.mode === "LEARNING" && (
-              <div className="flex gap-2 p-3 bg-[var(--warning-bg)] dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <div className="flex gap-2 p-3 bg-[var(--warning-bg)] dark:bg-[var(--warning)] rounded-lg border border-yellow-200 dark:border-yellow-800">
                 <AlertCircle className="h-4 w-4 text-[var(--warning)] flex-shrink-0 mt-0.5" />
                 <div className="text-xs">
-                  <div className="font-medium text-yellow-900 dark:text-yellow-100">
+                  <div className="font-medium text-[var(--warning)] dark:text-yellow-100">
                     Learning Mode
                   </div>
                   <div className="text-[var(--warning)] dark:text-yellow-200 mt-0.5">

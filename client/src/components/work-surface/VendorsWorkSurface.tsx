@@ -128,7 +128,7 @@ function VendorTypeBadges({ vendor }: { vendor: Vendor }) {
   if (vendor.isBuyer)
     badges.push({ label: "Customer", className: "bg-[var(--info-bg)] text-[var(--info)]" });
   if (vendor.isBrand)
-    badges.push({ label: "Brand", className: "bg-purple-100 text-purple-800" });
+    badges.push({ label: "Brand", className: "bg-muted text-primary" });
 
   return (
     <div className="space-y-1">
@@ -248,7 +248,7 @@ function VendorInspectorContent({
               className={cn(
                 "font-semibold",
                 parseFloat(String(vendor.currentDebt || 0)) > 0 &&
-                  "text-red-600"
+                  "text-destructive"
               )}
             >
               {formatCurrency(vendor.currentDebt)}

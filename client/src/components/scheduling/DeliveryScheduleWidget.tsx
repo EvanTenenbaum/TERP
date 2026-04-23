@@ -63,7 +63,7 @@ const statusConfig: Record<
   },
   delayed: {
     label: "Delayed",
-    color: "bg-red-100 text-red-800",
+    color: "bg-destructive/10 text-destructive",
     icon: AlertTriangle,
   },
   cancelled: {
@@ -142,7 +142,7 @@ export function DeliveryScheduleWidget({
           <Truck className="h-5 w-5 text-[var(--info)]" />
           Deliveries
           {overdue.length > 0 && (
-            <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span className="bg-destructive/10 text-destructive text-xs font-medium px-2 py-0.5 rounded-full flex items-center gap-1">
               <AlertTriangle className="h-3 w-3" />
               {overdue.length} overdue
             </span>
@@ -188,7 +188,7 @@ export function DeliveryScheduleWidget({
               onClick={() => setActiveTab("overdue")}
               className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === "overdue"
-                  ? "text-red-600 border-b-2 border-red-600"
+                  ? "text-destructive border-b-2 border-red-600"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
@@ -227,7 +227,7 @@ export function DeliveryScheduleWidget({
               )
             ) : overdue.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                <CheckCircle className="h-12 w-12 mx-auto mb-3 text-green-500 opacity-50" />
+                <CheckCircle className="h-12 w-12 mx-auto mb-3 text-[var(--success)] opacity-50" />
                 <p>No overdue deliveries</p>
               </div>
             ) : (
@@ -301,7 +301,7 @@ function DeliveryItem({
   return (
     <div
       className={`p-3 hover:bg-gray-50 transition-colors ${
-        isOverdue ? "bg-red-50" : ""
+        isOverdue ? "bg-destructive/10" : ""
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -313,7 +313,7 @@ function DeliveryItem({
             </span>
             <span
               className={`text-sm ${
-                isOverdue ? "text-red-600 font-medium" : "text-gray-500"
+                isOverdue ? "text-destructive font-medium" : "text-gray-500"
               }`}
             >
               {getDateLabel()}
@@ -357,7 +357,7 @@ function DeliveryItem({
           {delivery.status === "pending" && (
             <button
               onClick={() => onMarkInTransit(delivery.id)}
-              className="px-3 py-1.5 text-xs font-medium text-[var(--warning)] bg-[var(--warning-bg)] hover:bg-yellow-200 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-[var(--warning)] bg-[var(--warning-bg)] hover:bg-[var(--warning-bg)] rounded-lg transition-colors"
             >
               In Transit
             </button>
@@ -367,7 +367,7 @@ function DeliveryItem({
           ) && (
             <button
               onClick={() => onMarkDelivered(delivery.id)}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-[var(--success)] hover:bg-[var(--success)] rounded-lg transition-colors"
             >
               Delivered
             </button>

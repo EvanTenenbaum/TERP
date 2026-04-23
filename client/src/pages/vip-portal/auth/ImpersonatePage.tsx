@@ -104,7 +104,7 @@ export default function ImpersonatePage() {
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
             )}
             {state === "success" && (
-              <CheckCircle className="h-12 w-12 text-green-500" />
+              <CheckCircle className="h-12 w-12 text-[var(--success)]" />
             )}
             {(state === "error" || state === "expired" || state === "invalid") && (
               <AlertTriangle className="h-12 w-12 text-destructive" />

@@ -191,7 +191,7 @@ function StepIndicator({
                 "flex items-center gap-3 p-3 rounded-lg transition-colors",
                 isActive && "bg-primary text-primary-foreground",
                 isCompleted &&
-                  "bg-[var(--success-bg)] text-[var(--success)] hover:bg-green-200 cursor-pointer",
+                  "bg-[var(--success-bg)] text-[var(--success)] hover:bg-[var(--success-bg)] cursor-pointer",
                 !isActive && !isCompleted && "bg-muted text-muted-foreground",
                 !isClickable && !isActive && "cursor-not-allowed"
               )}
@@ -200,7 +200,7 @@ function StepIndicator({
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center",
                   isActive && "bg-primary-foreground/20",
-                  isCompleted && "bg-green-600 text-white",
+                  isCompleted && "bg-[var(--success)] text-white",
                   !isActive && !isCompleted && "bg-muted-foreground/20"
                 )}
               >
@@ -398,7 +398,7 @@ function QuantityPricingStep({
                             margin > 0
                               ? "text-[var(--success)]"
                               : margin < 0
-                                ? "text-red-600"
+                                ? "text-destructive"
                                 : ""
                           )}
                         >
@@ -563,7 +563,7 @@ function ReviewStep({
             <span
               className={cn(
                 "font-medium",
-                margin > 0 ? "text-[var(--success)]" : "text-red-600"
+                margin > 0 ? "text-[var(--success)]" : "text-destructive"
               )}
             >
               {margin}%

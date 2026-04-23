@@ -132,7 +132,7 @@ export function MarginInput({
   };
 
   const getMarginColor = (percent: number) => {
-    if (percent < 0) return "text-red-600";
+    if (percent < 0) return "text-destructive";
     if (percent < 5) return "text-[var(--warning)]";
     if (percent < 15) return "text-[var(--warning)]";
     if (percent < 30) return "text-[var(--success)]";

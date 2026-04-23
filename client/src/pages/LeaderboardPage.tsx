@@ -109,7 +109,7 @@ const RankBadge = React.memo(function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) {
     return (
       <div className="flex items-center gap-1">
-        <Trophy className="h-5 w-5 text-yellow-500" />
+        <Trophy className="h-5 w-5 text-[var(--warning)]" />
         <span className="font-bold text-[var(--warning)]">1st</span>
       </div>
     );
@@ -150,7 +150,7 @@ const TrendIndicator = React.memo(function TrendIndicator({
   }
   if (trend === "down") {
     return (
-      <div className="flex items-center gap-1 text-red-600">
+      <div className="flex items-center gap-1 text-destructive">
         <TrendingDown className="h-4 w-4" />
         <span className="text-xs">-{Math.abs(amount)}</span>
       </div>
@@ -344,7 +344,7 @@ export const LeaderboardPage = React.memo(function LeaderboardPage() {
 
                 {/* Error State */}
                 {error && (
-                  <div className="text-center py-8 text-red-600">
+                  <div className="text-center py-8 text-destructive">
                     <p>Error loading leaderboard: {error.message}</p>
                     <Button
                       variant="outline"

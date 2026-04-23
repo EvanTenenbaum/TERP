@@ -14,14 +14,14 @@ export interface WorkQueueItem {
 }
 
 const URGENCY_STYLES: Record<WorkQueueItem["urgency"], string> = {
-  critical: "border-l-red-500 bg-red-50/40",
+  critical: "border-l-red-500 bg-destructive/10/40",
   warning: "border-l-amber-400 bg-amber-50/30",
   info: "border-l-sky-400 bg-sky-50/30",
   ok: "border-l-emerald-400 bg-emerald-50/30",
 };
 
 const URGENCY_COUNT_STYLES: Record<WorkQueueItem["urgency"], string> = {
-  critical: "text-red-600 font-bold",
+  critical: "text-destructive font-bold",
   warning: "text-amber-700 font-semibold",
   info: "text-sky-700 font-medium",
   ok: "text-emerald-700 font-medium",

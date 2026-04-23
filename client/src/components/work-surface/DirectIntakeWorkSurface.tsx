@@ -409,7 +409,7 @@ const getInlineErrorCellClass = (
   field: keyof IntakeFieldErrorMap
 ) =>
   row?.fieldErrors?.[field]
-    ? "border-l-2 border-red-400 bg-red-50/70"
+    ? "border-l-2 border-red-400 bg-destructive/10/70"
     : undefined;
 
 const getMissingCostCellClass = (row: IntakeGridRow | undefined) =>
@@ -435,7 +435,7 @@ function StatusCellRenderer({ data }: { data?: IntakeGridRow }) {
   if (status === "error") {
     return (
       <div
-        className="flex items-center gap-1 text-red-600"
+        className="flex items-center gap-1 text-destructive"
         title={errorMessage}
       >
         <AlertCircle className="h-4 w-4" />
@@ -574,7 +574,7 @@ function RowInspectorContent({
             ))}
           </datalist>
           {validation.getFieldState("vendorName").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("vendorName").error}
             </p>
           )}
@@ -595,7 +595,7 @@ function RowInspectorContent({
             placeholder="Enter brand or farmer name"
           />
           {validation.getFieldState("brandName").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("brandName").error}
             </p>
           )}
@@ -671,7 +671,7 @@ function RowInspectorContent({
             ))}
           </datalist>
           {validation.getFieldState("item").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("item").error}
             </p>
           )}
@@ -719,7 +719,7 @@ function RowInspectorContent({
               )}
             />
             {validation.getFieldState("qty").showError && (
-              <p className="text-xs text-red-500 mt-1">
+              <p className="text-xs text-destructive mt-1">
                 {validation.getFieldState("qty").error}
               </p>
             )}
@@ -764,7 +764,7 @@ function RowInspectorContent({
               )}
             />
             {validation.getFieldState("cogs").showError && (
-              <p className="text-xs text-red-500 mt-1">
+              <p className="text-xs text-destructive mt-1">
                 {validation.getFieldState("cogs").error}
               </p>
             )}
@@ -789,7 +789,7 @@ function RowInspectorContent({
                 )}
               />
               {validation.getFieldState("cogsMin").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("cogsMin").error}
                 </p>
               )}
@@ -812,7 +812,7 @@ function RowInspectorContent({
                 )}
               />
               {validation.getFieldState("cogsMax").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("cogsMax").error}
                 </p>
               )}
@@ -878,7 +878,7 @@ function RowInspectorContent({
             </SelectContent>
           </Select>
           {validation.getFieldState("site").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("site").error}
             </p>
           )}
@@ -2301,7 +2301,7 @@ export function DirectIntakeWorkSurface() {
           <Badge variant="outline">Submitted {submittedCount}</Badge>
           <Badge
             variant="outline"
-            className={cn(errorCount > 0 && "border-red-200 text-red-600")}
+            className={cn(errorCount > 0 && "border-red-200 text-destructive")}
           >
             Errors {errorCount}
           </Badge>
@@ -2544,7 +2544,7 @@ export function DirectIntakeWorkSurface() {
           </div>
         </div>
         {selectedRow?.status === "error" && selectedRow.errorMessage && (
-          <p className="mt-2 text-xs font-medium text-red-600">
+          <p className="mt-2 text-xs font-medium text-destructive">
             {selectedRow.errorMessage}
           </p>
         )}
@@ -2735,7 +2735,7 @@ export function DirectIntakeWorkSurface() {
                 getRowId={params => params.data.id}
                 rowClassRules={{
                   "bg-[var(--success-bg)]": params => params.data?.status === "submitted",
-                  "bg-red-50": params => params.data?.status === "error",
+                  "bg-destructive/10": params => params.data?.status === "error",
                 }}
               />
             </div>

@@ -212,11 +212,11 @@ export default function ChartOfAccounts({ embedded }: { embedded?: boolean } = {
       case "ASSET":
         return "bg-[var(--success-bg)] text-[var(--success)] border-green-200";
       case "LIABILITY":
-        return "bg-red-100 text-red-700 border-red-200";
+        return "bg-destructive/10 text-destructive border-red-200";
       case "EQUITY":
         return "bg-[var(--info-bg)] text-[var(--info)] border-blue-200";
       case "REVENUE":
-        return "bg-purple-100 text-purple-700 border-purple-200";
+        return "bg-muted text-primary border-purple-200";
       case "EXPENSE":
         return "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200";
     }

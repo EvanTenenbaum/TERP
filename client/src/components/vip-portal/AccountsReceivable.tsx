@@ -91,13 +91,13 @@ export function AccountsReceivable({
   const getStatusIcon = (status: ReceivableStatus) => {
     switch (status) {
       case "PAID":
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-[var(--success)]" />;
       case "OVERDUE":
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return <AlertCircle className="h-4 w-4 text-destructive" />;
       case "PARTIAL":
-        return <Clock className="h-4 w-4 text-yellow-500" />;
+        return <Clock className="h-4 w-4 text-[var(--warning)]" />;
       default:
-        return <FileText className="h-4 w-4 text-blue-500" />;
+        return <FileText className="h-4 w-4 text-[var(--info)]" />;
     }
   };
 

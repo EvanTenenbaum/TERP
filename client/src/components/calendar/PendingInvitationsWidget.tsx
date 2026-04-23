@@ -106,7 +106,7 @@ export default function PendingInvitationsWidget() {
               <button
                 onClick={() => handleAccept(invitation.id)}
                 disabled={respondToInvitation.isPending}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--success)] px-3 py-2 text-sm font-medium text-white hover:bg-[var(--success)] disabled:opacity-50"
               >
                 <CheckCircle className="h-4 w-4" />
                 Accept

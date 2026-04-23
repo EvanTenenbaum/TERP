@@ -67,8 +67,8 @@ const BRACKET_CONFIG = {
   critical: {
     label: "Critical (30+d)",
     icon: AlertCircle,
-    color: "text-red-600",
-    bgColor: "bg-red-50",
+    color: "text-destructive",
+    bgColor: "bg-destructive/10",
     borderColor: "border-red-200",
   },
 };
@@ -285,7 +285,7 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
         {data.topAgingItems && data.topAgingItems.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-500" />
+              <AlertCircle className="h-4 w-4 text-destructive" />
               Top 5 Oldest Items
             </h4>
             <div className="space-y-2">
@@ -306,7 +306,7 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
                       variant="outline"
                       className={
                         item.ageDays > 30
-                          ? "bg-red-100 text-red-700 border-red-200"
+                          ? "bg-destructive/10 text-destructive border-red-200"
                           : item.ageDays > 14
                             ? "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200"
                             : "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200"

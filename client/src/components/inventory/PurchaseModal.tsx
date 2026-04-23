@@ -549,7 +549,7 @@ export function PurchaseModal({
               required
             />
             {formData.quantity && parseFloat(formData.quantity) <= 0 && (
-              <p className="text-sm text-red-500">
+              <p className="text-sm text-destructive">
                 Quantity must be greater than 0
               </p>
             )}

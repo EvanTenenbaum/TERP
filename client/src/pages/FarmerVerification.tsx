@@ -201,7 +201,7 @@ export default function FarmerVerification() {
           <Card>
             <CardHeader className="text-center">
               <div className="flex justify-center mb-4">
-                <XCircle className="h-12 w-12 text-red-500" />
+                <XCircle className="h-12 w-12 text-destructive" />
               </div>
               <CardTitle>Receipt Not Found</CardTitle>
               <CardDescription>

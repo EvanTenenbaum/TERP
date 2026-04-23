@@ -134,7 +134,7 @@ export function ClientPreview({
               {showAdjustment && adjustmentAmount !== 0 && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">{adjustmentLabel}</span>
-                  <span className={adjustmentAmount < 0 ? "text-red-600" : "text-[var(--success)]"}>
+                  <span className={adjustmentAmount < 0 ? "text-destructive" : "text-[var(--success)]"}>
                     {adjustmentAmount < 0 ? "-" : "+"}
                     {fmt(Math.abs(adjustmentAmount))}
                   </span>

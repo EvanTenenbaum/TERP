@@ -46,7 +46,7 @@ export const InventoryCard = memo(function InventoryCard({
       case "ON_HOLD":
         return "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200";
       case "QUARANTINED":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-destructive/10 text-destructive border-red-200";
       case "SOLD_OUT":
         return "bg-gray-100 text-gray-800 border-gray-200";
       case "CLOSED":

@@ -73,7 +73,7 @@ const TYPE_TABS: Array<{ value: TypeTab; label: string }> = [
 
 const TYPE_BADGE_STYLES: Record<string, string> = {
   DEPOSIT: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
-  WITHDRAWAL: "bg-red-100 text-red-700 border-red-200",
+  WITHDRAWAL: "bg-destructive/10 text-destructive border-red-200",
   TRANSFER: "bg-[var(--info-bg)] text-[var(--info)] border-blue-200",
   FEE: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200",
 };
@@ -423,7 +423,7 @@ export function BankTransactionsSurface() {
         </Badge>
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-red-50 text-red-700 border-red-200"
+          className="text-[9px] py-0 px-1.5 bg-destructive/10 text-destructive border-red-200"
           data-testid="kpi-withdrawals"
         >
           {formatCurrency(withdrawals)} withdrawals

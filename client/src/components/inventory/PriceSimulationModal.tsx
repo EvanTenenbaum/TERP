@@ -78,7 +78,7 @@ export function PriceSimulationModal({
   const formatDelta = (value: number, isCurrency: boolean = true) => {
     const formatted = isCurrency ? formatCurrency(Math.abs(value)) : formatPercent(Math.abs(value));
     const sign = value >= 0 ? '+' : '-';
-    const color = value >= 0 ? 'text-[var(--success)]' : 'text-red-600';
+    const color = value >= 0 ? 'text-[var(--success)]' : 'text-destructive';
     return <span className={color}>{sign}{formatted}</span>;
   };
 

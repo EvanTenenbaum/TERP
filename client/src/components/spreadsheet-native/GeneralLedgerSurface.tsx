@@ -229,7 +229,7 @@ const glColumnDefs: ColDef<LedgerGridRow>[] = [
     cellRenderer: (params: { value: string; data?: LedgerGridRow }) => {
       if (!params.data || params.data.creditNum <= 0)
         return params.value ?? "-";
-      return `<span class="text-red-600">${params.value}</span>`;
+      return `<span class="text-destructive">${params.value}</span>`;
     },
   },
   {
@@ -665,7 +665,7 @@ export function GeneralLedgerSurface() {
                 </p>
               </InspectorField>
               <InspectorField label="Credit">
-                <p className="text-sm font-mono text-red-600">
+                <p className="text-sm font-mono text-destructive">
                   {selectedRow.credit}
                 </p>
               </InspectorField>
@@ -747,7 +747,7 @@ export function GeneralLedgerSurface() {
             ) : (
               <Badge
                 variant="outline"
-                className="text-[9px] py-0 px-1.5 bg-red-50 text-red-700 border-red-200"
+                className="text-[9px] py-0 px-1.5 bg-destructive/10 text-destructive border-red-200"
               >
                 Out of Balance
               </Badge>
@@ -875,7 +875,7 @@ export function GeneralLedgerSurface() {
               htmlFor="reverse-reason"
               className="text-sm font-medium mb-1.5 block"
             >
-              Reason for reversal <span className="text-red-500">*</span>
+              Reason for reversal <span className="text-destructive">*</span>
             </label>
             <Textarea
               id="reverse-reason"

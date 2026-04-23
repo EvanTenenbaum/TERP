@@ -762,7 +762,7 @@ function InterestListDetailModal({
                     <TableCell>${item.priceAtInterest}</TableCell>
                     <TableCell>
                       {item.priceChanged ? (
-                        <span className="font-bold text-red-600">
+                        <span className="font-bold text-destructive">
                           ${item.currentPrice}
                         </span>
                       ) : (
@@ -771,7 +771,7 @@ function InterestListDetailModal({
                     </TableCell>
                     <TableCell>
                       {item.quantityChanged ? (
-                        <span className="font-bold text-red-600">
+                        <span className="font-bold text-destructive">
                           {item.currentQuantity} lbs
                         </span>
                       ) : (
@@ -999,7 +999,7 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
                     priceDropped ? (
                       <Badge
                         variant={getStatusBadgeVariant("triggered")}
-                        className="bg-green-600"
+                        className="bg-[var(--success)]"
                       >
                         <CheckCircle className="h-3 w-3 mr-1" />
                         Triggered

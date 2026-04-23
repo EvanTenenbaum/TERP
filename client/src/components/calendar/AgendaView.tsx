@@ -221,7 +221,7 @@ function formatTime(time: string): string {
 function getPriorityBadgeClass(priority: string): string {
   switch (priority) {
     case "URGENT":
-      return "bg-red-100 text-red-800";
+      return "bg-destructive/10 text-destructive";
     case "HIGH":
       return "bg-[var(--warning-bg)] text-[var(--warning)]";
     case "MEDIUM":

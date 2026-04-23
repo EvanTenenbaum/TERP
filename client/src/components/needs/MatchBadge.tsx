@@ -70,9 +70,9 @@ export function MatchBadge({
  */
 export function MatchIndicator({ confidence }: { confidence: number }) {
   const getColor = () => {
-    if (confidence >= 80) return "bg-green-500";
-    if (confidence >= 60) return "bg-yellow-500";
-    return "bg-orange-500";
+    if (confidence >= 80) return "bg-[var(--success)]";
+    if (confidence >= 60) return "bg-[var(--warning)]";
+    return "bg-[var(--warning)]";
   };
 
   return (

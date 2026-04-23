@@ -191,7 +191,7 @@ export function ClientInterestWidget({ batchId }: ClientInterestWidgetProps) {
                         key={`reason-${reason.substring(0, 40)}`}
                         className="flex items-start gap-1"
                       >
-                        <span className="text-green-500">✓</span>
+                        <span className="text-[var(--success)]">✓</span>
                         <span>{reason}</span>
                       </li>
                     ))}

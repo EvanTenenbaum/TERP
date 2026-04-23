@@ -767,7 +767,7 @@ function OrderInspectorContent({
               </Button>
               <Button
                 variant="outline"
-                className="w-full justify-start text-red-600 hover:text-red-700"
+                className="w-full justify-start text-destructive hover:text-destructive"
                 data-testid="delete-draft-btn"
                 onClick={() => onDelete(order.id)}
               >

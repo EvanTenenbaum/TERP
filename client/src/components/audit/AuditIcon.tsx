@@ -222,7 +222,7 @@ function AuditTrailModal({
                 )}
                 {log.oldValue !== undefined && log.newValue !== undefined && (
                   <div className="mt-2 text-sm">
-                    <span className="text-red-600 line-through">
+                    <span className="text-destructive line-through">
                       {log.oldValue}
                     </span>
                     {" → "}

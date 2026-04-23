@@ -426,7 +426,7 @@ export default function CalendarPage() {
             <Inbox className="h-4 w-4" />
             <span className="hidden sm:inline">Requests</span>
             {pendingRequestCount && pendingRequestCount.count > 0 && (
-              <span className="inline-flex items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-xs font-bold text-white">
+              <span className="inline-flex items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 text-xs font-bold text-white">
                 {pendingRequestCount.count}
               </span>
             )}
@@ -442,7 +442,7 @@ export default function CalendarPage() {
             <Palmtree className="h-4 w-4" />
             <span className="hidden sm:inline">Time Off</span>
             {teamTimeOffCount && teamTimeOffCount.count > 0 && (
-              <span className="inline-flex items-center justify-center rounded-full bg-orange-500 px-1.5 py-0.5 text-xs font-bold text-white">
+              <span className="inline-flex items-center justify-center rounded-full bg-[var(--warning)] px-1.5 py-0.5 text-xs font-bold text-white">
                 {teamTimeOffCount.count}
               </span>
             )}

@@ -301,7 +301,7 @@ export default function GeneralLedger({ embedded }: { embedded?: boolean } = {})
               {formatCurrency(totalCredits)}
             </div>
             {Math.abs(totalDebits - totalCredits) > 0.01 && (
-              <p className="text-xs text-red-600 mt-1">
+              <p className="text-xs text-destructive mt-1">
                 Out of balance by{" "}
                 {formatCurrency(Math.abs(totalDebits - totalCredits))}
               </p>

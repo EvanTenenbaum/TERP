@@ -148,7 +148,7 @@ function WorkflowStep({
           state === "current" &&
             "bg-primary/15 text-primary ring-1 ring-primary/30",
           state === "upcoming" && "bg-muted text-muted-foreground",
-          state === "terminal" && "bg-red-100 text-red-700"
+          state === "terminal" && "bg-destructive/10 text-destructive"
         )}
       >
         {step.icon}

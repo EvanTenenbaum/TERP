@@ -53,7 +53,7 @@ export default function InvitationStatusBadge({
     },
     DECLINED: {
       label: "Declined",
-      color: "bg-red-100 text-red-700 border-red-300",
+      color: "bg-destructive/10 text-destructive border-red-300",
       icon: XCircle,
     },
     AUTO_ACCEPTED: {

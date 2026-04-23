@@ -40,7 +40,7 @@ const RankDisplay = React.memo(function RankDisplay({
   percentile: number;
 }) {
   const getRankIcon = () => {
-    if (rank === 1) return <Trophy className="h-8 w-8 text-yellow-500" />;
+    if (rank === 1) return <Trophy className="h-8 w-8 text-[var(--warning)]" />;
     if (rank === 2) return <Medal className="h-8 w-8 text-gray-400" />;
     if (rank === 3) return <Award className="h-8 w-8 text-amber-600" />;
     return <Target className="h-8 w-8 text-muted-foreground" />;
@@ -95,7 +95,7 @@ const TrendIndicator = React.memo(function TrendIndicator({
   }
   if (trend === "down") {
     return (
-      <div className="flex items-center gap-1 text-red-600">
+      <div className="flex items-center gap-1 text-destructive">
         <TrendingDown className="h-4 w-4" />
         <span className="text-sm">Down {Math.abs(amount)} positions</span>
       </div>

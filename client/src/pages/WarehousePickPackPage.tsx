@@ -387,7 +387,7 @@ const WarehousePickPackPage: React.FC = () => {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
-                    className="bg-green-500 h-3 rounded-full transition-all"
+                    className="bg-[var(--success)] h-3 rounded-full transition-all"
                     style={{
                       width: `${
                         (orderDetails.summary.packedItems /
@@ -400,7 +400,7 @@ const WarehousePickPackPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="text-red-600">Failed to load order details</div>
+            <div className="text-destructive">Failed to load order details</div>
           )}
         </div>
       </div>
@@ -557,7 +557,7 @@ const WarehousePickPackPage: React.FC = () => {
               <Button
                 onClick={handleMarkReady}
                 disabled={markReadyMutation.isPending}
-                className="flex-1 min-h-[56px] text-base bg-green-600 hover:bg-green-700"
+                className="flex-1 min-h-[56px] text-base bg-[var(--success)] hover:bg-[var(--success)]"
               >
                 <Truck className="w-5 h-5 mr-2" />
                 Mark Ready for Fulfillment

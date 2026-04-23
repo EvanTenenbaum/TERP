@@ -422,7 +422,7 @@ function BenefitItem({ label, active }: { label: string; active: boolean }) {
       <div
         className={cn(
           "h-2 w-2 rounded-full",
-          active ? "bg-green-500" : "bg-muted-foreground"
+          active ? "bg-[var(--success)]" : "bg-muted-foreground"
         )}
       />
       {label}

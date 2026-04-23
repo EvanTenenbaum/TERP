@@ -134,7 +134,7 @@ export function ReferralCreditsPanel({
                 ) : (
                   <Button
                     onClick={() => setShowConfirmDialog(true)}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-[var(--success)] hover:bg-[var(--success)]"
                   >
                     <DollarSign className="mr-2 h-4 w-4" />
                     Apply Credits
@@ -177,7 +177,7 @@ export function ReferralCreditsPanel({
                 </div>
               ))}
               {availableCredits.length > 3 && (
-                <p className="text-xs text-green-500">
+                <p className="text-xs text-[var(--success)]">
                   +{availableCredits.length - 3} more credits
                 </p>
               )}
@@ -274,7 +274,7 @@ export function ReferralCreditsPanel({
               <Button
                 onClick={handleApplyCredits}
                 disabled={applyCredits.isPending}
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-[var(--success)] hover:bg-[var(--success)]"
               >
                 {applyCredits.isPending ? "Applying..." : "Apply Credits"}
               </Button>

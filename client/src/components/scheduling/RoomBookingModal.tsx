@@ -246,7 +246,7 @@ export function RoomBookingModal({
 
             {/* Conflict Warning */}
             {hasConflict && (
-              <div className="flex items-center gap-2 p-3 bg-red-50 text-red-700 rounded-lg">
+              <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg">
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
                 <span className="text-sm">
                   This time slot conflicts with an existing booking
@@ -369,7 +369,7 @@ export function RoomBookingModal({
               <button
                 type="submit"
                 disabled={!roomId || hasConflict || createBooking.isPending}
-                className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-white bg-[var(--info)] hover:bg-[var(--info)] rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {createBooking.isPending ? "Booking..." : "Book Room"}
               </button>

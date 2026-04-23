@@ -51,8 +51,8 @@ const bracketConfig: Record<
   },
   CRITICAL: {
     label: "Critical",
-    className: "bg-red-100 text-red-700 border-red-200",
-    bgClassName: "bg-red-50",
+    className: "bg-destructive/10 text-destructive border-red-200",
+    bgClassName: "bg-destructive/10",
     icon: AlertCircle,
   },
 };
@@ -71,7 +71,7 @@ export function getAgeBracket(ageDays: number): AgeBracket {
  * Get row highlight class based on aging (for table rows)
  */
 export function getAgingRowClass(ageDays: number): string {
-  if (ageDays > 14) return "bg-red-50/50"; // Red highlight for >2 weeks
+  if (ageDays > 14) return "bg-destructive/10/50"; // Red highlight for >2 weeks
   if (ageDays > 7) return "bg-[var(--warning-bg)]/50"; // Yellow highlight for 1-2 weeks
   return ""; // No highlight for fresh
 }
@@ -94,7 +94,7 @@ export function AgingBadge({
         className={cn(
           "inline-flex items-center gap-1 text-sm",
           ageDays > 14
-            ? "text-red-600 font-semibold"
+            ? "text-destructive font-semibold"
             : ageDays > 7
               ? "text-[var(--warning)]"
               : "text-muted-foreground"

@@ -60,7 +60,7 @@ const statusConfig: Record<
   },
   no_show: {
     label: "No Show",
-    color: "bg-red-100 text-red-800",
+    color: "bg-destructive/10 text-destructive",
     icon: XCircle,
   },
 };
@@ -318,7 +318,7 @@ function AppointmentCard({
                 const eventId = appointment.event?.id;
                 if (eventId) onCheckIn(eventId, appointment.client?.id);
               }}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-[var(--info)] hover:bg-[var(--info)] rounded-lg transition-colors"
             >
               Check In
             </button>
@@ -330,7 +330,7 @@ function AppointmentCard({
                 const checkInId = appointment.checkIn?.id;
                 if (checkInId) onStatusChange(checkInId, "in_progress");
               }}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-[var(--success)] hover:bg-[var(--success)] rounded-lg transition-colors"
             >
               Start
             </button>
@@ -355,7 +355,7 @@ function AppointmentCard({
                   const checkInId = appointment.checkIn?.id;
                   if (checkInId) onStatusChange(checkInId, "no_show");
                 }}
-                className="px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
               >
                 No Show
               </button>

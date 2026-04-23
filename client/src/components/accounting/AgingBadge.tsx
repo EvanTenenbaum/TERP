@@ -49,12 +49,12 @@ export function AgingBadge({
       case "90":
         return {
           label: "90 Days",
-          className: "bg-red-100 text-red-700 border-red-200",
+          className: "bg-destructive/10 text-destructive border-red-200",
         };
       case "90+":
         return {
           label: "90+ Days",
-          className: "bg-red-200 text-red-800 border-red-300 font-semibold",
+          className: "bg-destructive/10 text-destructive border-red-300 font-semibold",
         };
       default:
         return {

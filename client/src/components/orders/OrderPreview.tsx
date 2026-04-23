@@ -129,10 +129,10 @@ export function OrderPreview({
   // Get margin color
   const getMarginColor = (percent: number) => {
     if (percent >= 70) return "text-[var(--success)]";
-    if (percent >= 50) return "text-green-500";
+    if (percent >= 50) return "text-[var(--success)]";
     if (percent >= 30) return "text-[var(--warning)]";
     if (percent >= 15) return "text-[var(--warning)]";
-    return "text-red-600";
+    return "text-destructive";
   };
 
   const handleSave = () => {

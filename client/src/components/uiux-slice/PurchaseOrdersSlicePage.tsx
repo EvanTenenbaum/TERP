@@ -77,7 +77,7 @@ const statusColor: Record<string, string> = {
   CONFIRMED: "bg-emerald-100 text-emerald-800",
   RECEIVING: "bg-amber-100 text-amber-800",
   RECEIVED: "bg-[var(--success-bg)] text-[var(--success)]",
-  CANCELLED: "bg-red-100 text-red-800",
+  CANCELLED: "bg-destructive/10 text-destructive",
 };
 
 const defaultColumns: GridColumnOption[] = [

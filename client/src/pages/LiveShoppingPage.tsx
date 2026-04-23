@@ -305,7 +305,7 @@ export default function LiveShoppingPage() {
             <CardTitle className="text-sm font-medium">
               Active Sessions
             </CardTitle>
-            <Play className="h-4 w-4 text-green-500" />
+            <Play className="h-4 w-4 text-[var(--success)]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -316,7 +316,7 @@ export default function LiveShoppingPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Scheduled</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-500" />
+            <Calendar className="h-4 w-4 text-[var(--info)]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -338,7 +338,7 @@ export default function LiveShoppingPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Converted</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-purple-500" />
+            <ShoppingCart className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

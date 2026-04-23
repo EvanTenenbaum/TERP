@@ -10,9 +10,9 @@ interface TimeOffRequestFormProps {
 }
 
 const TIME_OFF_TYPES = [
-  { value: "vacation", label: "Vacation", color: "bg-blue-500" },
-  { value: "sick", label: "Sick Leave", color: "bg-red-500" },
-  { value: "personal", label: "Personal Time", color: "bg-purple-500" },
+  { value: "vacation", label: "Vacation", color: "bg-[var(--info)]" },
+  { value: "sick", label: "Sick Leave", color: "bg-destructive" },
+  { value: "personal", label: "Personal Time", color: "bg-primary" },
 ];
 
 export default function TimeOffRequestForm({
@@ -226,7 +226,7 @@ export default function TimeOffRequestForm({
             <button
               type="submit"
               disabled={requestMutation.isPending}
-              className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 rounded-md bg-[var(--info)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--info)] disabled:opacity-50"
             >
               {requestMutation.isPending ? "Submitting..." : "Submit Request"}
             </button>

@@ -30,17 +30,17 @@ const statusConfig: Record<
 > = {
   CRITICAL: {
     label: "Critical",
-    className: "bg-red-100 text-red-900 border-red-400",
+    className: "bg-destructive/10 text-destructive border-red-400",
     icon: AlertCircle,
   },
   LOW: {
     label: "Low Stock",
-    className: "bg-[var(--warning-bg)] text-orange-900 border-orange-400",
+    className: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-400",
     icon: AlertTriangle,
   },
   OPTIMAL: {
     label: "Optimal",
-    className: "bg-[var(--success-bg)] text-green-900 border-green-400",
+    className: "bg-[var(--success-bg)] text-[var(--success)] border-green-400",
     icon: CheckCircle,
   },
   OUT_OF_STOCK: {

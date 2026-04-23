@@ -52,8 +52,8 @@ const TRANSACTION_STYLES = {
     bg: "bg-[var(--success-bg)]",
   },
   EARNED_REFERRAL: { icon: Users, color: "text-[var(--info)]", bg: "bg-[var(--info-bg)]" },
-  EARNED_BONUS: { icon: Gift, color: "text-purple-600", bg: "bg-purple-50" },
-  REDEEMED: { icon: Gift, color: "text-red-600", bg: "bg-red-50" },
+  EARNED_BONUS: { icon: Gift, color: "text-primary", bg: "bg-muted" },
+  REDEEMED: { icon: Gift, color: "text-destructive", bg: "bg-destructive/10" },
   EXPIRED: { icon: Clock, color: "text-gray-600", bg: "bg-gray-50" },
   ADJUSTED: { icon: TrendingUp, color: "text-[var(--warning)]", bg: "bg-[var(--warning-bg)]" },
 };
@@ -82,7 +82,7 @@ export const PointsDisplay = React.memo(function PointsDisplay({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Coins className="h-5 w-5 text-yellow-500" />
+              <Coins className="h-5 w-5 text-[var(--warning)]" />
               Reward Points
             </CardTitle>
             {!compact && (
@@ -111,7 +111,7 @@ export const PointsDisplay = React.memo(function PointsDisplay({
             </div>
 
             {/* Lifetime Earned */}
-            <div className="bg-[var(--success-bg)] dark:bg-green-950 rounded-lg p-4 text-center">
+            <div className="bg-[var(--success-bg)] dark:bg-[var(--success)] rounded-lg p-4 text-center">
               <div className="text-xl font-semibold text-[var(--success)] dark:text-green-300">
                 {(balance?.lifetimeEarned ?? 0).toLocaleString()}
               </div>
@@ -121,7 +121,7 @@ export const PointsDisplay = React.memo(function PointsDisplay({
             </div>
 
             {/* Lifetime Redeemed */}
-            <div className="bg-[var(--info-bg)] dark:bg-blue-950 rounded-lg p-4 text-center">
+            <div className="bg-[var(--info-bg)] dark:bg-[var(--info)] rounded-lg p-4 text-center">
               <div className="text-xl font-semibold text-[var(--info)] dark:text-blue-300">
                 {(balance?.lifetimeRedeemed ?? 0).toLocaleString()}
               </div>
@@ -262,7 +262,7 @@ const PointsHistoryItem = React.memo(function PointsHistoryItem({
         <div
           className={cn(
             "font-semibold",
-            isPositive ? "text-[var(--success)]" : "text-red-600"
+            isPositive ? "text-[var(--success)]" : "text-destructive"
           )}
         >
           {isPositive ? "+" : ""}

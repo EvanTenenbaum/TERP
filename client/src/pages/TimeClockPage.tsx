@@ -293,7 +293,7 @@ export default function TimeClockPage() {
                   size="lg"
                   onClick={handleClockIn}
                   disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-[var(--success)] hover:bg-[var(--success)]"
                 >
                   {clockIn.isPending ? (
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
@@ -503,7 +503,7 @@ export default function TimeClockPage() {
                         }
                         className={
                           entry.status === "approved"
-                            ? "bg-green-500"
+                            ? "bg-[var(--success)]"
                             : entry.status === "active"
                               ? "bg-[var(--info-bg)] text-[var(--info)]"
                               : ""

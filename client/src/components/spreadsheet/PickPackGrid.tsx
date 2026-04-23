@@ -39,7 +39,7 @@ const ProgressCellRenderer = (params: ICellRendererParams<PickPackGridRow>) => {
     <div className="flex items-center gap-2">
       <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
         <div
-          className="h-full bg-green-500 transition-all"
+          className="h-full bg-[var(--success)] transition-all"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -305,17 +305,17 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
           {/* Stats */}
           <div className="flex gap-3 text-sm">
             <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4 text-yellow-500" />
+              <Clock className="h-4 w-4 text-[var(--warning)]" />
               <span className="text-muted-foreground">Pending:</span>
               <span className="font-semibold">{stats.pending}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Loader2 className="h-4 w-4 text-blue-500" />
+              <Loader2 className="h-4 w-4 text-[var(--info)]" />
               <span className="text-muted-foreground">Partial:</span>
               <span className="font-semibold">{stats.partial}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Package className="h-4 w-4 text-green-500" />
+              <Package className="h-4 w-4 text-[var(--success)]" />
               <span className="text-muted-foreground">Ready:</span>
               <span className="font-semibold">{stats.ready}</span>
             </div>

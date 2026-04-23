@@ -76,7 +76,7 @@ type NotificationCategory = "all" | "fyi" | "action";
 const getNotificationIcon = (type: string) => {
   switch (type) {
     case "success":
-      return <CheckCircle className="h-4 w-4 text-green-500" />;
+      return <CheckCircle className="h-4 w-4 text-[var(--success)]" />;
     case "error":
       return <AlertCircle className="h-4 w-4 text-destructive" />;
     case "warning":
@@ -474,13 +474,13 @@ export const InlineToast = React.memo(function InlineToast({
       className={cn(
         "flex items-start gap-3 p-4 rounded-lg border shadow-sm",
         notification.type === "success" &&
-          "bg-[var(--success-bg)] border-green-200 dark:bg-green-950/20",
+          "bg-[var(--success-bg)] border-green-200 dark:bg-[var(--success)]/20",
         notification.type === "error" &&
-          "bg-red-50 border-red-200 dark:bg-red-950/20",
+          "bg-destructive/10 border-red-200 dark:bg-destructive/20",
         notification.type === "warning" &&
           "bg-amber-50 border-amber-200 dark:bg-amber-950/20",
         notification.type === "info" &&
-          "bg-[var(--info-bg)] border-blue-200 dark:bg-blue-950/20",
+          "bg-[var(--info-bg)] border-blue-200 dark:bg-[var(--info)]/20",
         className
       )}
     >

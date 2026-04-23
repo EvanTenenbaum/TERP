@@ -109,7 +109,7 @@ function ProfitabilitySection({ batchId }: { batchId: number }) {
   }
 
   const profitColor =
-    profitability.grossProfit >= 0 ? "text-[var(--success)]" : "text-red-600";
+    profitability.grossProfit >= 0 ? "text-[var(--success)]" : "text-destructive";
 
   return (
     <div className="space-y-3">

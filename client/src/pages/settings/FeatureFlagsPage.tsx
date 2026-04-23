@@ -726,7 +726,7 @@ function OverrideManagement({
                           <Button
                             size="sm"
                             variant="outline"
-                            className="bg-red-50 hover:bg-red-100 text-red-700"
+                            className="bg-destructive/10 hover:bg-destructive/10 text-destructive"
                             onClick={() =>
                               handleSetUserOverride(user.openId, false)
                             }
@@ -784,7 +784,7 @@ function OverrideManagement({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="bg-red-50 hover:bg-red-100 text-red-700"
+                    className="bg-destructive/10 hover:bg-destructive/10 text-destructive"
                     onClick={() => handleSetUserOverride(selectedUserId, false)}
                     disabled={
                       !selectedUserId || setUserOverrideMutation.isPending
@@ -833,7 +833,7 @@ function OverrideManagement({
                         <TableCell>
                           {override ? (
                             override.enabled ? (
-                              <Badge className="bg-green-500">
+                              <Badge className="bg-[var(--success)]">
                                 <Check className="h-3 w-3 mr-1" />
                                 Enabled
                               </Badge>
@@ -864,7 +864,7 @@ function OverrideManagement({
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                               onClick={() =>
                                 handleSetRoleOverride(role.id, false)
                               }

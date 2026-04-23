@@ -97,7 +97,7 @@ export const CashFlowWidget = memo(function CashFlowWidget() {
                 onClick={() => setLocation("/accounting/bills")}
               >
                 <TableCell className="font-medium">Cash Spent</TableCell>
-                <TableCell className="text-right font-mono text-red-600">
+                <TableCell className="text-right font-mono text-destructive">
                   {formatCurrency(data.cashSpent)}
                 </TableCell>
               </TableRow>

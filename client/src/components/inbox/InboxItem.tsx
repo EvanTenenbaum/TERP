@@ -47,9 +47,9 @@ const SOURCE_ICONS = {
 };
 
 const STATUS_COLORS = {
-  unread: "bg-blue-500",
-  seen: "bg-yellow-500",
-  completed: "bg-green-500",
+  unread: "bg-[var(--info)]",
+  seen: "bg-[var(--warning)]",
+  completed: "bg-[var(--success)]",
 };
 
 export function buildInboxEntityRoute(
@@ -161,7 +161,7 @@ export const InboxItem = memo(function InboxItem({ item }: InboxItemProps) {
     <div
       className={cn(
         "p-4 hover:bg-muted/50 cursor-pointer transition-colors relative",
-        item.status === "unread" && "bg-[var(--info-bg)]/50 dark:bg-blue-950/20"
+        item.status === "unread" && "bg-[var(--info-bg)]/50 dark:bg-[var(--info)]/20"
       )}
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}

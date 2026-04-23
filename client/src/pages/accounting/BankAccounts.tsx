@@ -45,7 +45,7 @@ export default function BankAccounts({
     const colors: Record<string, string> = {
       CHECKING: "bg-[var(--info-bg)] text-[var(--info)] border-blue-200",
       SAVINGS: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
-      CREDIT_CARD: "bg-purple-100 text-purple-700 border-purple-200",
+      CREDIT_CARD: "bg-muted text-primary border-purple-200",
       MONEY_MARKET: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200",
       OTHER: "bg-gray-100 text-gray-700 border-gray-200",
     };

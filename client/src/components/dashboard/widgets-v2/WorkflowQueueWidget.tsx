@@ -75,12 +75,12 @@ export const WorkflowQueueWidget = memo(function WorkflowQueueWidget() {
           <div className="space-y-3">
             {/* Total Summary */}
             <div className="flex items-center justify-between p-3 bg-[var(--info-bg)] rounded-lg border border-blue-200">
-              <span className="font-semibold text-blue-900">
+              <span className="font-semibold text-[var(--info)]">
                 Total Batches in Queue
               </span>
               <Badge
                 variant="secondary"
-                className="text-lg font-bold bg-blue-600 text-white"
+                className="text-lg font-bold bg-[var(--info)] text-white"
               >
                 {totalBatches}
               </Badge>

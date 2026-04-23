@@ -155,7 +155,7 @@ const STATUS_CONFIG: Record<string, { icon: ReactNode; color: string }> = {
   },
   VIEWED: {
     icon: <CheckCircle2 className="h-4 w-4" />,
-    color: "bg-purple-100 text-purple-800",
+    color: "bg-muted text-primary",
   },
   CONVERTED: {
     icon: <CheckCircle2 className="h-4 w-4" />,
@@ -163,7 +163,7 @@ const STATUS_CONFIG: Record<string, { icon: ReactNode; color: string }> = {
   },
   REJECTED: {
     icon: <XCircle className="h-4 w-4" />,
-    color: "bg-red-100 text-red-800",
+    color: "bg-destructive/10 text-destructive",
   },
   EXPIRED: {
     icon: <AlertTriangle className="h-4 w-4" />,
@@ -443,7 +443,7 @@ function QuoteInspectorContent({
           {effectiveStatus === "UNSENT" && (
             <Button
               variant="outline"
-              className="w-full justify-start text-red-600 hover:text-red-700"
+              className="w-full justify-start text-destructive hover:text-destructive"
               onClick={() => onDelete(quote.id)}
             >
               <Trash2 className="h-4 w-4 mr-2" />

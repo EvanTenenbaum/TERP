@@ -145,7 +145,7 @@ export const ReferralDashboard = React.memo(function ReferralDashboard({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-500" />
+              <Users className="h-5 w-5 text-[var(--info)]" />
               Referral Program
             </CardTitle>
             <CardDescription>
@@ -173,7 +173,7 @@ export const ReferralDashboard = React.memo(function ReferralDashboard({
                 />
                 {copied && (
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <Check className="h-5 w-5 text-green-500" />
+                    <Check className="h-5 w-5 text-[var(--success)]" />
                   </div>
                 )}
               </div>
@@ -215,7 +215,7 @@ export const ReferralDashboard = React.memo(function ReferralDashboard({
 
         {/* Error State */}
         {error && (
-          <div className="text-center py-6 text-red-600">
+          <div className="text-center py-6 text-destructive">
             <AlertCircle className="h-8 w-8 mx-auto mb-2" />
             <p>Error loading referral data: {error.message}</p>
           </div>
@@ -226,7 +226,7 @@ export const ReferralDashboard = React.memo(function ReferralDashboard({
           <>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
               {/* Total Referrals */}
-              <div className="bg-[var(--info-bg)] dark:bg-blue-950 rounded-lg p-4 text-center">
+              <div className="bg-[var(--info-bg)] dark:bg-[var(--info)] rounded-lg p-4 text-center">
                 <UserPlus className="h-6 w-6 text-[var(--info)] dark:text-blue-400 mx-auto mb-1" />
                 <div className="text-2xl font-bold text-[var(--info)] dark:text-blue-300">
                   {dashboardData.totalReferrals}
@@ -235,7 +235,7 @@ export const ReferralDashboard = React.memo(function ReferralDashboard({
               </div>
 
               {/* Total Revenue */}
-              <div className="bg-[var(--success-bg)] dark:bg-green-950 rounded-lg p-4 text-center">
+              <div className="bg-[var(--success-bg)] dark:bg-[var(--success)] rounded-lg p-4 text-center">
                 <TrendingUp className="h-6 w-6 text-[var(--success)] dark:text-green-400 mx-auto mb-1" />
                 <div className="text-2xl font-bold text-[var(--success)] dark:text-green-300">
                   {formatCurrency(dashboardData.totalRevenue)}
@@ -246,9 +246,9 @@ export const ReferralDashboard = React.memo(function ReferralDashboard({
               </div>
 
               {/* Total Earned */}
-              <div className="bg-purple-50 dark:bg-purple-950 rounded-lg p-4 text-center">
-                <Gift className="h-6 w-6 text-purple-600 dark:text-purple-400 mx-auto mb-1" />
-                <div className="text-2xl font-bold text-purple-700 dark:text-purple-300">
+              <div className="bg-muted dark:bg-primary rounded-lg p-4 text-center">
+                <Gift className="h-6 w-6 text-primary dark:text-purple-400 mx-auto mb-1" />
+                <div className="text-2xl font-bold text-primary dark:text-purple-300">
                   {formatCurrency(dashboardData.totalEarned)}
                 </div>
                 <div className="text-xs text-muted-foreground">
@@ -257,7 +257,7 @@ export const ReferralDashboard = React.memo(function ReferralDashboard({
               </div>
 
               {/* Pending Payouts */}
-              <div className="bg-[var(--warning-bg)] dark:bg-yellow-950 rounded-lg p-4 text-center">
+              <div className="bg-[var(--warning-bg)] dark:bg-[var(--warning)] rounded-lg p-4 text-center">
                 <Clock className="h-6 w-6 text-[var(--warning)] dark:text-yellow-400 mx-auto mb-1" />
                 <div className="text-2xl font-bold text-[var(--warning)] dark:text-yellow-300">
                   {formatCurrency(dashboardData.pendingPayouts)}

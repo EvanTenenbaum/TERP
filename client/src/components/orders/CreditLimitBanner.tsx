@@ -50,8 +50,8 @@ export function CreditLimitBanner({ client, orderTotal }: CreditLimitBannerProps
         icon: XCircle,
         title: "Credit Limit Exceeded",
         description: `This order will exceed the credit limit by $${(newExposure - creditLimit).toFixed(2)}`,
-        color: "text-red-600",
-        bgColor: "bg-red-50",
+        color: "text-destructive",
+        bgColor: "bg-destructive/10",
         borderColor: "border-red-200",
         showDetails: true,
       };

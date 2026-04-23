@@ -18,7 +18,7 @@ export default function SessionEndedPage() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4">
-            <CheckCircle className="h-12 w-12 text-green-500" />
+            <CheckCircle className="h-12 w-12 text-[var(--success)]" />
           </div>
           <CardTitle>Session Ended</CardTitle>
           <CardDescription>

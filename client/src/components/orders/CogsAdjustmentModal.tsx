@@ -59,10 +59,10 @@ export function CogsAdjustmentModal({
   // Get margin color
   const getMarginColor = (percent: number) => {
     if (percent >= 70) return "text-[var(--success)]";
-    if (percent >= 50) return "text-green-500";
+    if (percent >= 50) return "text-[var(--success)]";
     if (percent >= 30) return "text-[var(--warning)]";
     if (percent >= 15) return "text-[var(--warning)]";
-    return "text-red-600";
+    return "text-destructive";
   };
 
   const handleSave = () => {
@@ -93,14 +93,14 @@ export function CogsAdjustmentModal({
             <div className="flex items-start gap-2">
               <Lightbulb className="h-5 w-5 text-[var(--info)] mt-0.5" />
               <div className="flex-1">
-                <p className="text-sm font-medium text-blue-900">Smart Suggestion</p>
+                <p className="text-sm font-medium text-[var(--info)]">Smart Suggestion</p>
                 <p className="text-xs text-[var(--info)] mt-1">
                   {item.cogsMode === "RANGE"
                     ? "Using midpoint of COGS range"
                     : "Using fixed COGS from batch"}
                 </p>
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-lg font-bold text-blue-900">
+                  <span className="text-lg font-bold text-[var(--info)]">
                     ${smartSuggestion.toFixed(2)}
                   </span>
                   {customCogs !== smartSuggestion && (

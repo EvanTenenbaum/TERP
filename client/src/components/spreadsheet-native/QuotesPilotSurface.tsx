@@ -331,14 +331,14 @@ const STATUS_ICON_MAP: Record<QuoteStatus, ReactNode> = {
 
 const STATUS_COLOR_MAP: Record<QuoteStatus, string> = {
   UNSENT: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-  SENT: "bg-[var(--info-bg)] text-[var(--info)] dark:bg-blue-900 dark:text-blue-200",
+  SENT: "bg-[var(--info-bg)] text-[var(--info)] dark:bg-[var(--info)] dark:text-blue-200",
   VIEWED:
-    "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    "bg-muted text-primary dark:bg-primary dark:text-purple-200",
   CONVERTED:
-    "bg-[var(--success-bg)] text-[var(--success)] dark:bg-green-900 dark:text-green-200",
-  REJECTED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    "bg-[var(--success-bg)] text-[var(--success)] dark:bg-[var(--success)] dark:text-green-200",
+  REJECTED: "bg-destructive/10 text-destructive dark:bg-destructive dark:text-red-200",
   EXPIRED:
-    "bg-[var(--warning-bg)] text-[var(--warning)] dark:bg-orange-900 dark:text-orange-200",
+    "bg-[var(--warning-bg)] text-[var(--warning)] dark:bg-[var(--warning)] dark:text-orange-200",
 };
 
 function QuoteStatusBadge({ status }: { status: QuoteStatus }) {
@@ -557,7 +557,7 @@ function QuoteInspectorContent({
             <Button
               variant="outline"
               size="sm"
-              className="w-full justify-start text-red-600 hover:text-red-700 dark:text-red-400"
+              className="w-full justify-start text-destructive hover:text-destructive dark:text-red-400"
               onClick={() => onDelete(quote.id)}
             >
               <Trash2 className="h-3.5 w-3.5 mr-2" />
@@ -1071,7 +1071,7 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
             variant="outline"
             disabled={selectedStatus !== "UNSENT" || actionsBlocked}
             onClick={() => selectedQuoteId && handleDelete(selectedQuoteId)}
-            className="text-red-600 hover:text-red-700 dark:text-red-400"
+            className="text-destructive hover:text-destructive dark:text-red-400"
           >
             <Trash2 className="mr-2 h-3.5 w-3.5" />
             Delete

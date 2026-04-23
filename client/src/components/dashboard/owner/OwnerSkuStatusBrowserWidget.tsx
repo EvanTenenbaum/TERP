@@ -26,24 +26,24 @@ const STATUS_CONFIG: Record<BatchStatus, StatusConfig> = {
   LIVE: {
     label: "Live",
     badgeClassName:
-      "bg-[var(--success-bg)] text-[var(--success)] border-green-200 hover:bg-green-200",
+      "bg-[var(--success-bg)] text-[var(--success)] border-green-200 hover:bg-[var(--success-bg)]",
     description: "Available for sale",
   },
   ON_HOLD: {
     label: "On Hold",
     badgeClassName:
-      "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200 hover:bg-yellow-200",
+      "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200 hover:bg-[var(--warning-bg)]",
     description: "Temporarily withheld",
   },
   QUARANTINED: {
     label: "Quarantined",
-    badgeClassName: "bg-red-100 text-red-800 border-red-200 hover:bg-red-200",
+    badgeClassName: "bg-destructive/10 text-destructive border-red-200 hover:bg-destructive/10",
     description: "Under investigation",
   },
   SOLD_OUT: {
     label: "Sold Out",
     badgeClassName:
-      "bg-[var(--info-bg)] text-[var(--info)] border-blue-200 hover:bg-blue-200",
+      "bg-[var(--info-bg)] text-[var(--info)] border-blue-200 hover:bg-[var(--info-bg)]",
     description: "Fully depleted",
   },
   CLOSED: {
@@ -55,7 +55,7 @@ const STATUS_CONFIG: Record<BatchStatus, StatusConfig> = {
   AWAITING_INTAKE: {
     label: "Awaiting Intake",
     badgeClassName:
-      "bg-purple-100 text-purple-800 border-purple-200 hover:bg-purple-200",
+      "bg-muted text-primary border-purple-200 hover:bg-muted",
     description: "Not yet received",
   },
 };

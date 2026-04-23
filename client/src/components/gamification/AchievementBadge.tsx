@@ -74,9 +74,9 @@ const MEDAL_COLORS: Record<
     text: "text-[var(--warning)]",
   },
   PLATINUM: {
-    bg: "bg-purple-100",
+    bg: "bg-muted",
     border: "border-purple-400",
-    text: "text-purple-700",
+    text: "text-primary",
   },
 };
 
@@ -152,8 +152,8 @@ export const AchievementBadge = React.memo(function AchievementBadge({
         className={cn(
           "absolute -bottom-1 -right-1 rounded-full flex items-center justify-center",
           "text-[8px] font-bold",
-          medal === "PLATINUM" && "bg-purple-500 text-white w-4 h-4",
-          medal === "GOLD" && "bg-yellow-500 text-white w-4 h-4",
+          medal === "PLATINUM" && "bg-primary text-white w-4 h-4",
+          medal === "GOLD" && "bg-[var(--warning)] text-white w-4 h-4",
           medal === "SILVER" && "bg-gray-400 text-white w-4 h-4",
           medal === "BRONZE" && "bg-amber-600 text-white w-4 h-4"
         )}

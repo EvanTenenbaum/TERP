@@ -103,7 +103,7 @@ export function DashboardStats({
       <Card 
         className={`p-6 cursor-pointer transition-colors ${
           activeFilter === "LOW_STOCK" 
-            ? "bg-purple-50 border-purple-300 ring-2 ring-purple-500" 
+            ? "bg-muted border-purple-300 ring-2 ring-purple-500" 
             : "hover:bg-muted/50"
         }`}
         onClick={() => onFilterChange(activeFilter === "LOW_STOCK" ? null : "LOW_STOCK")}
@@ -116,7 +116,7 @@ export function DashboardStats({
               ≤100 units available
             </p>
           </div>
-          <Package className="h-8 w-8 text-purple-600" />
+          <Package className="h-8 w-8 text-primary" />
         </div>
       </Card>
     </div>

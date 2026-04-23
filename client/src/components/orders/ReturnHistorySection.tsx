@@ -35,7 +35,7 @@ export function ReturnHistorySection({ orderId }: ReturnHistorySectionProps) {
 
   const getReasonColor = (reason: string) => {
     const colors: Record<string, string> = {
-      DEFECTIVE: 'bg-red-100 text-red-800 border-red-300',
+      DEFECTIVE: 'bg-destructive/10 text-destructive border-red-300',
       WRONG_ITEM: 'bg-[var(--warning-bg)] text-[var(--warning)] border-orange-300',
       NOT_AS_DESCRIBED: 'bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-300',
       CUSTOMER_CHANGED_MIND: 'bg-[var(--info-bg)] text-[var(--info)] border-blue-300',

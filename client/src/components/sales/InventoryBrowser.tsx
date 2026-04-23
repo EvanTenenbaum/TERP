@@ -57,7 +57,7 @@ const BATCH_STATUS_CONFIG: Record<
   },
   QUARANTINED: {
     label: STATUS_LABELS.QUARANTINED,
-    color: "bg-red-100 text-red-800 border-red-200",
+    color: "bg-destructive/10 text-destructive border-red-200",
     warning: "Blocked pending quality review",
   },
   LIVE: {

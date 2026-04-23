@@ -258,7 +258,7 @@ function StepIndicator({
                 "flex items-center gap-2 p-2 rounded-lg transition-colors",
                 isActive && "bg-primary text-primary-foreground",
                 isCompleted &&
-                  "bg-[var(--success-bg)] text-[var(--success)] hover:bg-green-200 cursor-pointer",
+                  "bg-[var(--success-bg)] text-[var(--success)] hover:bg-[var(--success-bg)] cursor-pointer",
                 !isActive && !isCompleted && "bg-muted text-muted-foreground",
                 !isClickable && !isActive && "cursor-not-allowed"
               )}
@@ -267,7 +267,7 @@ function StepIndicator({
                 className={cn(
                   "w-6 h-6 rounded-full flex items-center justify-center text-xs",
                   isActive && "bg-primary-foreground/20",
-                  isCompleted && "bg-green-600 text-white"
+                  isCompleted && "bg-[var(--success)] text-white"
                 )}
               >
                 {isCompleted ? <Check className="h-3 w-3" /> : step.id}
@@ -580,7 +580,7 @@ function AdjustmentsStep({
                   variant="ghost"
                   size="icon"
                   onClick={() => removeCharge(index)}
-                  className="text-red-600 hover:text-red-700"
+                  className="text-destructive hover:text-destructive"
                 >
                   <Minus className="h-4 w-4" />
                 </Button>

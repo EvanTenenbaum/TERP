@@ -245,7 +245,7 @@ export default function PricingRulesPage() {
   const getAdjustmentIcon = (type: string) => {
     if (type.includes("MARKUP"))
       return <TrendingUp className="h-4 w-4 text-[var(--success)]" />;
-    return <TrendingDown className="h-4 w-4 text-red-600" />;
+    return <TrendingDown className="h-4 w-4 text-destructive" />;
   };
 
   // Get adjustment badge

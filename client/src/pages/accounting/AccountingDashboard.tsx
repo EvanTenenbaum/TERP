@@ -227,7 +227,7 @@ export default function AccountingDashboard({
                 {formatCurrency(arSummary?.totalAR)}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                <span className={overdueInvoiceCount > 0 ? "text-red-600 font-bold" : ""}>
+                <span className={overdueInvoiceCount > 0 ? "text-destructive font-bold" : ""}>
                   {overdueInvoiceCount} overdue invoice
                   {overdueInvoiceCount === 1 ? "" : "s"}
                 </span>{" "}
@@ -238,11 +238,11 @@ export default function AccountingDashboard({
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
                 Payables
               </p>
-              <p className="mt-2 text-2xl font-semibold text-red-600">
+              <p className="mt-2 text-2xl font-semibold text-destructive">
                 {formatCurrency(apSummary?.totalAP)}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                <span className={overdueBillCount > 0 ? "text-red-600 font-bold" : ""}>
+                <span className={overdueBillCount > 0 ? "text-destructive font-bold" : ""}>
                   {overdueBillCount} overdue bill
                   {overdueBillCount === 1 ? "" : "s"}
                 </span>{" "}
@@ -271,15 +271,15 @@ export default function AccountingDashboard({
       {hasPermission("accounting:manage") && <ReconciliationSummary />}
 
       {overdueInvoiceCount > OVERDUE_ALERT_THRESHOLD && (
-        <Card className="border-red-200 bg-red-50/70 shadow-sm">
+        <Card className="border-red-200 bg-destructive/10/70 shadow-sm">
           <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="mt-0.5 h-5 w-5 text-red-600" />
+              <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
               <div>
-                <p className="text-sm font-semibold text-red-900">
+                <p className="text-sm font-semibold text-destructive">
                   {overdueInvoiceCount} overdue invoices need attention
                 </p>
-                <p className="text-sm text-red-800/80">
+                <p className="text-sm text-destructive/80">
                   The overdue queue is above the alert threshold of{" "}
                   {OVERDUE_ALERT_THRESHOLD}. Work oldest items first or open the
                   invoice queue now.
@@ -323,7 +323,7 @@ export default function AccountingDashboard({
                     {formatCurrency(arSummary?.totalAR)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    <span className={overdueInvoiceCount > 0 ? "text-red-600 font-bold" : ""}>
+                    <span className={overdueInvoiceCount > 0 ? "text-destructive font-bold" : ""}>
                       {overdueInvoiceCount} overdue invoice
                       {overdueInvoiceCount === 1 ? "" : "s"}
                     </span>{" "}
@@ -358,11 +358,11 @@ export default function AccountingDashboard({
                   <ArrowUpCircle className="h-5 w-5 text-amber-600" />
                 </div>
                 <div className="mt-2 space-y-1">
-                  <p className="text-lg font-semibold text-red-600">
+                  <p className="text-lg font-semibold text-destructive">
                     {formatCurrency(apSummary?.totalAP)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    <span className={overdueBillCount > 0 ? "text-red-600 font-bold" : ""}>
+                    <span className={overdueBillCount > 0 ? "text-destructive font-bold" : ""}>
                       {overdueBillCount} overdue bill
                       {overdueBillCount === 1 ? "" : "s"}
                     </span>{" "}
@@ -568,7 +568,7 @@ export default function AccountingDashboard({
                         </p>
                       </div>
                     </div>
-                    <span className="text-sm font-mono font-bold text-red-600">
+                    <span className="text-sm font-mono font-bold text-destructive">
                       {formatCurrency(debtor.totalOwed)}
                     </span>
                   </div>
@@ -610,7 +610,7 @@ export default function AccountingDashboard({
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-sm font-mono font-bold text-red-600">
+                      <span className="text-sm font-mono font-bold text-destructive">
                         {formatCurrency(vendor.totalOwed)}
                       </span>
                       <p className="text-xs text-muted-foreground">
@@ -638,14 +638,14 @@ export default function AccountingDashboard({
               value="overdue-invoices"
               className="flex items-center gap-2"
             >
-              <AlertTriangle className="h-4 w-4 text-red-500" />
+              <AlertTriangle className="h-4 w-4 text-destructive" />
               Overdue Invoices ({overdueInvoices?.pagination?.total || 0})
             </TabsTrigger>
             <TabsTrigger
               value="overdue-bills"
               className="flex items-center gap-2"
             >
-              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              <AlertTriangle className="h-4 w-4 text-[var(--warning)]" />
               Overdue Bills ({overdueBills?.pagination?.total || 0})
             </TabsTrigger>
           </TabsList>
@@ -729,7 +729,7 @@ export default function AccountingDashboard({
                             {invoice.daysOverdue} days
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right font-mono font-bold text-red-600">
+                        <TableCell className="text-right font-mono font-bold text-destructive">
                           {formatCurrency(invoice.amountDue)}
                         </TableCell>
                       </TableRow>
@@ -798,7 +798,7 @@ export default function AccountingDashboard({
                             {bill.daysOverdue} days
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right font-mono font-bold text-red-600">
+                        <TableCell className="text-right font-mono font-bold text-destructive">
                           {formatCurrency(bill.amountDue)}
                         </TableCell>
                       </TableRow>

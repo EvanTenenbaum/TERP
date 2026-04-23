@@ -168,7 +168,7 @@ export function SchedulingPage() {
                 onClick={() => setTabMode("shifts")}
                 className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   tabMode === "shifts"
-                    ? "bg-white text-purple-600 shadow-sm"
+                    ? "bg-white text-primary shadow-sm"
                     : "text-gray-600 hover:text-gray-900"
                 }`}
               >
@@ -253,7 +253,7 @@ export function SchedulingPage() {
                   setSelectedDate(new Date());
                   setShowBookingModal(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-[var(--info)] text-white rounded-lg hover:bg-[var(--info)] transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Book Room

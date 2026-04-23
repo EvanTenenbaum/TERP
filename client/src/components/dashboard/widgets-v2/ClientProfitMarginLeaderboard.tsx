@@ -82,7 +82,7 @@ export const ClientProfitMarginLeaderboard = memo(
                             ? "text-[var(--success)]"
                             : client.profitMargin >= 30
                               ? "text-[var(--warning)]"
-                              : "text-red-600"
+                              : "text-destructive"
                         }
                       >
                         {formatPercent(client.profitMargin)}

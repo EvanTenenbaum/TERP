@@ -111,7 +111,7 @@ export const OwnerCashDecisionPanel = memo(function OwnerCashDecisionPanel() {
                 "rounded-lg p-3 text-sm font-medium flex items-center gap-2",
                 data.availableCash >= 0
                   ? "bg-[var(--success-bg)] text-[var(--success)] border border-green-200"
-                  : "bg-red-50 text-red-800 border border-red-200"
+                  : "bg-destructive/10 text-destructive border border-red-200"
               )}
             >
               {data.availableCash >= 0 ? (
@@ -128,7 +128,7 @@ export const OwnerCashDecisionPanel = memo(function OwnerCashDecisionPanel() {
               className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
               onClick={() => setLocation("/accounting/cash-locations")}
             >
-              <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[var(--success-bg)] dark:bg-green-900/30">
+              <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[var(--success-bg)] dark:bg-[var(--success)]/30">
                 <DollarSign className="h-5 w-5 text-[var(--success)] dark:text-green-400" />
               </div>
               <div className="flex-1">

@@ -156,7 +156,7 @@ export function CogsEditModal({
                       Profit Impact:
                     </span>
                     <span
-                      className={`font-medium ${impact.profitImpact < 0 ? "text-red-600" : "text-[var(--success)]"}`}
+                      className={`font-medium ${impact.profitImpact < 0 ? "text-destructive" : "text-[var(--success)]"}`}
                     >
                       {formatCurrency(impact.profitImpact)}
                     </span>
@@ -259,7 +259,7 @@ export function CogsEditModal({
                 sale(s) and change profit by{" "}
                 <strong
                   className={
-                    impact.profitImpact < 0 ? "text-red-600" : "text-[var(--success)]"
+                    impact.profitImpact < 0 ? "text-destructive" : "text-[var(--success)]"
                   }
                 >
                   {formatCurrency(impact.profitImpact)}

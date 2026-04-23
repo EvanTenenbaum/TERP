@@ -352,7 +352,7 @@ function ClientInspectorContent({
                 )}
               />
               {validation.getFieldState("name").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("name").error}
                 </p>
               )}
@@ -373,7 +373,7 @@ function ClientInspectorContent({
                 )}
               />
               {validation.getFieldState("email").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("email").error}
                 </p>
               )}
@@ -479,7 +479,7 @@ function ClientInspectorContent({
               className={cn(
                 "font-semibold",
                 parseFloat(String(client.currentDebt || 0)) > 0 &&
-                  "text-red-600"
+                  "text-destructive"
               )}
             >
               {formatCurrency(client.currentDebt)}
@@ -538,7 +538,7 @@ function ClientInspectorContent({
             <Button
               type="button"
               variant="outline"
-              className="w-full justify-start text-red-600 hover:text-red-700"
+              className="w-full justify-start text-destructive hover:text-destructive"
               data-testid="archive-client-btn"
               onClick={e => {
                 e.stopPropagation();
@@ -1249,7 +1249,7 @@ export function ClientsWorkSurface() {
                         className={cn(
                           "text-right font-medium",
                           parseFloat(String(client.currentDebt || 0)) > 0 &&
-                            "text-red-600"
+                            "text-destructive"
                         )}
                       >
                         {formatCurrency(client.currentDebt)}

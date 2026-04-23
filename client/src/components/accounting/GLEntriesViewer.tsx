@@ -182,7 +182,7 @@ export function GLEntriesViewer({
                   entry.isReversed
                     ? "opacity-50 line-through"
                     : entry.isReversal
-                      ? "bg-[var(--warning-bg)] dark:bg-orange-950/20"
+                      ? "bg-[var(--warning-bg)] dark:bg-[var(--warning)]/20"
                       : ""
                 }
               >
@@ -243,8 +243,8 @@ export function GLEntriesViewer({
                   <div className="flex items-center justify-end gap-1">
                     {parseFloat(entry.credit) > 0 && (
                       <>
-                        <ArrowDownRight className="h-3 w-3 text-red-600" />
-                        <span className="text-red-700 dark:text-red-400">
+                        <ArrowDownRight className="h-3 w-3 text-destructive" />
+                        <span className="text-destructive dark:text-red-400">
                           {formatCurrency(entry.credit)}
                         </span>
                       </>

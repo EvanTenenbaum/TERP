@@ -341,7 +341,7 @@ export function useConcurrentEditDetection<T extends VersionedEntity>(
         >
           <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[var(--warning-bg)] dark:bg-yellow-900 flex items-center justify-center">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[var(--warning-bg)] dark:bg-[var(--warning)] flex items-center justify-center">
                 <svg
                   className="w-5 h-5 text-[var(--warning)] dark:text-yellow-400"
                   fill="none"
@@ -384,7 +384,7 @@ export function useConcurrentEditDetection<T extends VersionedEntity>(
               <button
                 onClick={() => resolveConflict("refresh")}
                 disabled={isResolving}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full px-4 py-2 bg-[var(--info)] text-white rounded-md hover:bg-[var(--info)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isResolving ? "Refreshing..." : "Refresh & Review Changes"}
               </button>

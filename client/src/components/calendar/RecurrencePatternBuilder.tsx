@@ -130,7 +130,7 @@ export default function RecurrencePatternBuilder({
             onClick={() => updatePattern({ frequency: freq })}
             className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
               localPattern.frequency === freq
-                ? "bg-blue-600 text-white"
+                ? "bg-[var(--info)] text-white"
                 : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
             }`}
           >
@@ -170,7 +170,7 @@ export default function RecurrencePatternBuilder({
                 title={day.fullLabel}
                 className={`h-9 w-9 rounded-full text-sm font-medium transition-colors ${
                   localPattern.daysOfWeek?.includes(day.value)
-                    ? "bg-blue-600 text-white"
+                    ? "bg-[var(--info)] text-white"
                     : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
                 }`}
               >

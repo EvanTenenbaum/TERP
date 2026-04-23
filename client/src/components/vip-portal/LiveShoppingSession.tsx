@@ -76,7 +76,7 @@ const STATUS_CONFIG = {
     icon: "💭",
     color: "bg-[var(--info-bg)] border-blue-200",
     headerColor: "bg-[var(--info-bg)] text-[var(--info)]",
-    buttonColor: "bg-blue-500 hover:bg-blue-600",
+    buttonColor: "bg-[var(--info)] hover:bg-[var(--info)]",
     description: "I'm interested, let's discuss",
   },
   TO_PURCHASE: {
@@ -85,7 +85,7 @@ const STATUS_CONFIG = {
     icon: "🛒",
     color: "bg-[var(--success-bg)] border-green-200",
     headerColor: "bg-[var(--success-bg)] text-[var(--success)]",
-    buttonColor: "bg-green-500 hover:bg-green-600",
+    buttonColor: "bg-[var(--success)] hover:bg-[var(--success)]",
     description: "I want to buy this",
   },
 };
@@ -662,7 +662,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
             <button
               onClick={handleRequestCheckout}
               disabled={requestCheckoutMutation.isPending}
-              className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-semibold shadow-lg transition-all disabled:opacity-50"
+              className="bg-[var(--success)] hover:bg-[var(--success)] text-white px-8 py-3 rounded-lg font-semibold shadow-lg transition-all disabled:opacity-50"
             >
               {requestCheckoutMutation.isPending
                 ? "Notifying..."
@@ -762,7 +762,7 @@ export const LiveShoppingSession: React.FC<LiveShoppingSessionProps> = ({
               <button
                 onClick={submitNegotiation}
                 disabled={requestNegotiationMutation.isPending}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-[var(--info)] text-white rounded-lg hover:bg-[var(--info)] disabled:opacity-50"
               >
                 {requestNegotiationMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mx-auto" />
@@ -904,10 +904,10 @@ const ItemCard: React.FC<ItemCardProps> = ({
                 negotiationStatus === "PENDING"
                   ? "bg-[var(--warning-bg)] text-[var(--warning)]"
                   : negotiationStatus === "COUNTER_OFFERED"
-                    ? "bg-purple-100 text-purple-800"
+                    ? "bg-muted text-primary"
                     : negotiationStatus === "ACCEPTED"
                       ? "bg-[var(--success-bg)] text-[var(--success)]"
-                      : "bg-red-100 text-red-800"
+                      : "bg-destructive/10 text-destructive"
               }`}
             >
               {negotiationStatus === "PENDING" && "Negotiating..."}
@@ -919,7 +919,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
         </div>
         <button
           onClick={() => onRemove(item.id)}
-          className="text-gray-400 hover:text-red-500 ml-2"
+          className="text-gray-400 hover:text-destructive ml-2"
         >
           ✕
         </button>
@@ -939,7 +939,7 @@ const ItemCard: React.FC<ItemCardProps> = ({
               priceAnimation === "down"
                 ? "text-[var(--success)] animate-pulse"
                 : priceAnimation === "up"
-                  ? "text-red-600 animate-pulse"
+                  ? "text-destructive animate-pulse"
                   : "text-gray-900"
             }`}
           >
@@ -955,13 +955,13 @@ const ItemCard: React.FC<ItemCardProps> = ({
 
       {/* Counter Offer Notice */}
       {hasCounterOffer && negotiationData?.counterPrice && (
-        <div className="mb-3 p-2 bg-purple-50 border border-purple-200 rounded-lg">
-          <p className="text-xs text-purple-800 font-medium mb-2">
+        <div className="mb-3 p-2 bg-muted border border-purple-200 rounded-lg">
+          <p className="text-xs text-primary font-medium mb-2">
             Staff Counter-Offer: ${negotiationData.counterPrice.toFixed(2)}
           </p>
           <button
             onClick={() => onAcceptCounterOffer(item.id)}
-            className="w-full px-3 py-1.5 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+            className="w-full px-3 py-1.5 bg-primary text-white text-xs rounded hover:bg-primary"
           >
             Accept Counter-Offer
           </button>

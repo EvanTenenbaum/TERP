@@ -217,7 +217,7 @@ function QueueItem({
         {onStart && (
           <button
             onClick={() => onStart(item.id)}
-            className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center gap-1"
+            className="px-3 py-1.5 text-xs font-medium text-white bg-[var(--success)] hover:bg-[var(--success)] rounded-lg transition-colors flex items-center gap-1"
           >
             <PlayCircle className="h-3 w-3" />
             Start

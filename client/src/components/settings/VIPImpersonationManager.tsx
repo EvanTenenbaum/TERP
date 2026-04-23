@@ -193,7 +193,7 @@ export function VIPImpersonationManager() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "ACTIVE":
-        return <Badge className="bg-green-500">Active</Badge>;
+        return <Badge className="bg-[var(--success)]">Active</Badge>;
       case "ENDED":
         return <Badge variant="secondary">Ended</Badge>;
       case "REVOKED":

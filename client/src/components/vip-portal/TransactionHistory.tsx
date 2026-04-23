@@ -70,15 +70,15 @@ export function TransactionHistory({
   const getTransactionIcon = (type: string) => {
     switch (type) {
       case "INVOICE":
-        return <FileText className="h-4 w-4 text-blue-500" />;
+        return <FileText className="h-4 w-4 text-[var(--info)]" />;
       case "PAYMENT":
-        return <DollarSign className="h-4 w-4 text-green-500" />;
+        return <DollarSign className="h-4 w-4 text-[var(--success)]" />;
       case "QUOTE":
-        return <FileCheck className="h-4 w-4 text-purple-500" />;
+        return <FileCheck className="h-4 w-4 text-primary" />;
       case "ORDER":
-        return <ShoppingCart className="h-4 w-4 text-orange-500" />;
+        return <ShoppingCart className="h-4 w-4 text-[var(--warning)]" />;
       case "REFUND":
-        return <RefreshCw className="h-4 w-4 text-red-500" />;
+        return <RefreshCw className="h-4 w-4 text-destructive" />;
       case "CREDIT":
         return <CreditCard className="h-4 w-4 text-teal-500" />;
       default:

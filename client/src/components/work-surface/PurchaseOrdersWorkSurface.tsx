@@ -306,11 +306,11 @@ const PAYMENT_TERMS_OPTIONS = [
 // TER-670: Updated to WCAG 2.2 AA-compliant color combinations (-900 text on -100 bg).
 const PO_STATUS_COLORS: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-800",
-  SENT: "bg-[var(--info-bg)] text-blue-900",
-  CONFIRMED: "bg-[var(--success-bg)] text-green-900",
-  RECEIVING: "bg-[var(--warning-bg)] text-yellow-900",
-  RECEIVED: "bg-purple-100 text-purple-900",
-  CANCELLED: "bg-red-100 text-red-900",
+  SENT: "bg-[var(--info-bg)] text-[var(--info)]",
+  CONFIRMED: "bg-[var(--success-bg)] text-[var(--success)]",
+  RECEIVING: "bg-[var(--warning-bg)] text-[var(--warning)]",
+  RECEIVED: "bg-muted text-primary",
+  CANCELLED: "bg-destructive/10 text-destructive",
 };
 
 const PO_STATUSES = [
@@ -1839,7 +1839,7 @@ export function PurchaseOrdersWorkSurface() {
                   placeholder="Select supplier"
                 />
                 {supplierValidationError && (
-                  <p className="text-xs text-red-500 mt-1">
+                  <p className="text-xs text-destructive mt-1">
                     {supplierValidationError}
                   </p>
                 )}
@@ -2343,7 +2343,7 @@ export function PurchaseOrdersWorkSurface() {
                               )}
                             </div>
                             {poDraftFieldErrors[item.tempId]?.productName && (
-                              <p className="text-xs text-red-500">
+                              <p className="text-xs text-destructive">
                                 {poDraftFieldErrors[item.tempId]?.productName}
                               </p>
                             )}
@@ -2445,7 +2445,7 @@ export function PurchaseOrdersWorkSurface() {
                             />
                             {poDraftFieldErrors[item.tempId]
                               ?.quantityOrdered && (
-                              <p className="mt-1 text-xs text-red-500 text-right">
+                              <p className="mt-1 text-xs text-destructive text-right">
                                 {
                                   poDraftFieldErrors[item.tempId]
                                     ?.quantityOrdered
@@ -2541,7 +2541,7 @@ export function PurchaseOrdersWorkSurface() {
                                   }
                                 />
                                 {poDraftFieldErrors[item.tempId]?.unitCost && (
-                                  <p className="mt-1 text-xs text-red-500 text-right">
+                                  <p className="mt-1 text-xs text-destructive text-right">
                                     {poDraftFieldErrors[item.tempId]?.unitCost}
                                   </p>
                                 )}
@@ -2579,7 +2579,7 @@ export function PurchaseOrdersWorkSurface() {
                                   />
                                   {poDraftFieldErrors[item.tempId]
                                     ?.unitCostMin && (
-                                    <p className="mt-1 text-xs text-red-500">
+                                    <p className="mt-1 text-xs text-destructive">
                                       {
                                         poDraftFieldErrors[item.tempId]
                                           ?.unitCostMin
@@ -2618,7 +2618,7 @@ export function PurchaseOrdersWorkSurface() {
                                   />
                                   {poDraftFieldErrors[item.tempId]
                                     ?.unitCostMax && (
-                                    <p className="mt-1 text-xs text-red-500">
+                                    <p className="mt-1 text-xs text-destructive">
                                       {
                                         poDraftFieldErrors[item.tempId]
                                           ?.unitCostMax

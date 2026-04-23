@@ -453,7 +453,7 @@ export function UnitTypesManager() {
   const categoryColors: Record<string, string> = {
     WEIGHT: "bg-[var(--info-bg)] text-[var(--info)]",
     COUNT: "bg-[var(--success-bg)] text-[var(--success)]",
-    VOLUME: "bg-purple-100 text-purple-800",
+    VOLUME: "bg-muted text-primary",
     PACKAGED: "bg-[var(--warning-bg)] text-[var(--warning)]",
   };
 

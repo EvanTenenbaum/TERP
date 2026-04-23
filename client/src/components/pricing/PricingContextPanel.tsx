@@ -92,15 +92,15 @@ export function PricingContextPanel({
     `$${value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   const getUtilizationColor = (percent: number) => {
-    if (percent >= 90) return "text-red-600";
+    if (percent >= 90) return "text-destructive";
     if (percent >= 75) return "text-[var(--warning)]";
     return "text-[var(--success)]";
   };
 
   const getProgressColor = (percent: number) => {
-    if (percent >= 90) return "bg-red-600";
-    if (percent >= 75) return "bg-yellow-600";
-    return "bg-green-600";
+    if (percent >= 90) return "bg-destructive";
+    if (percent >= 75) return "bg-[var(--warning)]";
+    return "bg-[var(--success)]";
   };
 
   if (isLoading) {

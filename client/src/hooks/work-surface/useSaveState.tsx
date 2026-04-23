@@ -118,8 +118,8 @@ function SaveStateIndicatorComponent({ state, className }: IndicatorProps) {
       case "error":
         return {
           icon: AlertCircle,
-          color: "text-red-600",
-          bgColor: "bg-red-50",
+          color: "text-destructive",
+          bgColor: "bg-destructive/10",
           label: state.message || "Needs attention",
           ariaLabel: `Error: ${state.message || "Changes could not be saved"}`,
         };

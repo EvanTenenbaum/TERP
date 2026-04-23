@@ -255,7 +255,7 @@ export function InlinePriceEditor({
                     </SelectItem>
                     <SelectItem value="increase">
                       <div className="flex items-center gap-2">
-                        <TrendingUp className="w-3 h-3 text-red-600" />
+                        <TrendingUp className="w-3 h-3 text-destructive" />
                         Increase
                       </div>
                     </SelectItem>
@@ -307,7 +307,7 @@ export function InlinePriceEditor({
                 <span className={cn(
                   'font-mono font-bold text-lg',
                   newPrice < currentPrice && 'text-[var(--success)]',
-                  newPrice > currentPrice && 'text-red-600'
+                  newPrice > currentPrice && 'text-destructive'
                 )}>
                   {formatCurrency(newPrice)}
                 </span>
@@ -316,7 +316,7 @@ export function InlinePriceEditor({
                 <span className="text-muted-foreground">Change</span>
                 <Badge variant="outline" className={cn(
                   priceChange < 0 && 'bg-[var(--success-bg)] text-[var(--success)] border-green-200',
-                  priceChange > 0 && 'bg-red-50 text-red-700 border-red-200'
+                  priceChange > 0 && 'bg-destructive/10 text-destructive border-red-200'
                 )}>
                   {priceChange > 0 ? '+' : ''}{formatCurrency(priceChange)} ({changePercent.toFixed(1)}%)
                 </Badge>

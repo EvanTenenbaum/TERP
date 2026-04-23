@@ -371,7 +371,7 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
     cellRenderer: (params: { data?: InvoiceGridRow; value: string }) => {
       if (!params.data) return params.value ?? "-";
       if (params.data.daysOverdue > 0) {
-        return `<span class="text-red-600 font-medium">${params.value}</span> <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-xs font-medium ml-1">${params.data.daysOverdue}d</span>`;
+        return `<span class="text-destructive font-medium">${params.value}</span> <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-xs font-medium ml-1">${params.data.daysOverdue}d</span>`;
       }
       return params.value ?? "-";
     },
@@ -398,7 +398,7 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
       const display = params.value ?? "-";
       if (!params.data) return display;
       const due = parseFloat(params.data.amountDue);
-      const color = due > 0 ? "text-red-600" : "text-[var(--success)]";
+      const color = due > 0 ? "text-destructive" : "text-[var(--success)]";
       return <span className={`${color} font-mono`}>{display}</span>;
     },
   },
@@ -446,7 +446,7 @@ const ledgerColumnDefs: ColDef<LedgerGridRow>[] = [
         PAYMENT_RECEIVED:
           LEDGER_TYPE_TOKENS.PAYMENT ?? "bg-[var(--success-bg)] text-[var(--success)]",
         CREDIT: LEDGER_TYPE_TOKENS.CREDIT ?? "bg-teal-100 text-teal-700",
-        DEBIT: LEDGER_TYPE_TOKENS.REFUND ?? "bg-red-100 text-red-700",
+        DEBIT: LEDGER_TYPE_TOKENS.REFUND ?? "bg-destructive/10 text-destructive",
       };
       const cls =
         cfgMap[params.value] ?? "bg-gray-100 text-gray-700 border-gray-200";
@@ -773,7 +773,7 @@ export function InvoicesSurface() {
         amount: data.days90,
         count: data.days90Count ?? 0,
         colorClass:
-          INVOICE_AGING_TOKENS["90"] ?? "bg-red-50 border-red-200 text-red-700",
+          INVOICE_AGING_TOKENS["90"] ?? "bg-destructive/10 border-red-200 text-destructive",
       },
       {
         key: "90+",
@@ -782,7 +782,7 @@ export function InvoicesSurface() {
         count: data.days90PlusCount ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS["90+"] ??
-          "bg-red-100 border-red-300 text-red-800",
+          "bg-destructive/10 border-red-300 text-destructive",
       },
     ];
   }, [arAgingQuery.data]);
@@ -1235,7 +1235,7 @@ export function InvoicesSurface() {
           <Button
             variant="outline"
             size="sm"
-            className="h-5 text-[9px] px-2 text-red-600 hover:text-red-700"
+            className="h-5 text-[9px] px-2 text-destructive hover:text-destructive"
             disabled={!canVoid}
             onClick={handleOpenVoidDialog}
             data-testid="action-void"
@@ -1473,7 +1473,7 @@ export function InvoicesSurface() {
                   <p
                     className={
                       selectedRow.daysOverdue > 0
-                        ? "text-red-600 font-medium text-sm"
+                        ? "text-destructive font-medium text-sm"
                         : "text-sm"
                     }
                   >
@@ -1509,7 +1509,7 @@ export function InvoicesSurface() {
                   <span
                     className={cn(
                       "font-mono font-bold",
-                      selectedRow.daysOverdue > 0 && "text-red-600"
+                      selectedRow.daysOverdue > 0 && "text-destructive"
                     )}
                   >
                     {formatCurrency(selectedRow.amountDue)}
@@ -1622,7 +1622,7 @@ export function InvoicesSurface() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full justify-start h-6 text-xs text-red-600"
+                    className="w-full justify-start h-6 text-xs text-destructive"
                     onClick={handleOpenVoidDialog}
                   >
                     <XCircle className="h-3 w-3 mr-1" />
@@ -2081,7 +2081,7 @@ export function InvoicesSurface() {
                       "text-[10px]",
                       adjustmentForm.transactionType === "CREDIT"
                         ? "bg-[var(--success-bg)] text-[var(--success)]"
-                        : "bg-red-50 text-red-700"
+                        : "bg-destructive/10 text-destructive"
                     )}
                   >
                     {adjustmentForm.transactionType}

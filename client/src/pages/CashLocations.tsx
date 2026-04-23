@@ -674,14 +674,14 @@ export default function CashLocations() {
                       <span className="text-[var(--success)]">
                         In: {formatCurrency(ledgerData.summary.totalIn)}
                       </span>
-                      <span className="text-red-600">
+                      <span className="text-destructive">
                         Out: {formatCurrency(ledgerData.summary.totalOut)}
                       </span>
                       <span
                         className={
                           ledgerData.summary.netChange >= 0
                             ? "text-[var(--success)]"
-                            : "text-red-600"
+                            : "text-destructive"
                         }
                       >
                         Net: {formatCurrency(ledgerData.summary.netChange)}
@@ -757,7 +757,7 @@ export default function CashLocations() {
                                       <ArrowDownLeft className="h-4 w-4 text-[var(--success)]" />
                                     )}
                                     {tx.transactionType === "OUT" && (
-                                      <ArrowUpRight className="h-4 w-4 text-red-600" />
+                                      <ArrowUpRight className="h-4 w-4 text-destructive" />
                                     )}
                                     {tx.transactionType === "TRANSFER" && (
                                       <ArrowLeftRight className="h-4 w-4 text-[var(--info)]" />
@@ -777,7 +777,7 @@ export default function CashLocations() {
                                     ? formatCurrency(tx.amount)
                                     : "-"}
                                 </TableCell>
-                                <TableCell className="text-right font-mono text-red-600">
+                                <TableCell className="text-right font-mono text-destructive">
                                   {tx.transactionType === "OUT" ||
                                   (tx.transactionType === "TRANSFER" &&
                                     tx.transferToLocationId)
@@ -855,7 +855,7 @@ export default function CashLocations() {
                         <p className="text-sm text-muted-foreground">
                           Total Paid Out
                         </p>
-                        <p className="text-xl font-semibold font-mono text-red-600">
+                        <p className="text-xl font-semibold font-mono text-destructive">
                           -{formatCurrency(shiftData.totalPaidOut)}
                         </p>
                       </div>
@@ -900,7 +900,7 @@ export default function CashLocations() {
                                     tx.transactionType === "IN"
                                       ? "bg-[var(--success-bg)] text-[var(--success)] border-green-200"
                                       : tx.transactionType === "OUT"
-                                        ? "bg-red-100 text-red-700 border-red-200"
+                                        ? "bg-destructive/10 text-destructive border-red-200"
                                         : "bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
                                   )}
                                 >
@@ -913,7 +913,7 @@ export default function CashLocations() {
                                   "text-right font-mono",
                                   tx.transactionType === "IN"
                                     ? "text-[var(--success)]"
-                                    : "text-red-600"
+                                    : "text-destructive"
                                 )}
                               >
                                 {tx.transactionType === "IN" ? "+" : "-"}
@@ -948,7 +948,7 @@ export default function CashLocations() {
                           "font-medium",
                           shiftHistoryData.statistics.totalVariance >= 0
                             ? "text-[var(--success)]"
-                            : "text-red-600"
+                            : "text-destructive"
                         )}
                       >
                         {formatCurrency(
@@ -1022,7 +1022,7 @@ export default function CashLocations() {
                                           "h-4 w-4",
                                           shift.variance > 0
                                             ? "text-[var(--success)]"
-                                            : "text-red-600"
+                                            : "text-destructive"
                                         )}
                                       />
                                     )}
@@ -1033,7 +1033,7 @@ export default function CashLocations() {
                                           ? "text-[var(--success)]"
                                           : shift.variance > 0
                                             ? "text-[var(--success)]"
-                                            : "text-red-600"
+                                            : "text-destructive"
                                       )}
                                     >
                                       {shift.variance >= 0 ? "+" : ""}
@@ -1284,7 +1284,7 @@ export default function CashLocations() {
                   </SelectItem>
                   <SelectItem value="OUT">
                     <div className="flex items-center gap-2">
-                      <ArrowUpRight className="h-4 w-4 text-red-600" />
+                      <ArrowUpRight className="h-4 w-4 text-destructive" />
                       Cash Out
                     </div>
                   </SelectItem>
@@ -1391,10 +1391,10 @@ export default function CashLocations() {
                 className={cn(
                   "rounded-lg p-4 flex items-center gap-3",
                   parseFloat(actualCashCount) === shiftData.expectedBalance
-                    ? "bg-[var(--success-bg)] dark:bg-green-900/30"
+                    ? "bg-[var(--success-bg)] dark:bg-[var(--success)]/30"
                     : parseFloat(actualCashCount) > shiftData.expectedBalance
                       ? "bg-amber-100 dark:bg-amber-900/30"
-                      : "bg-red-100 dark:bg-red-900/30"
+                      : "bg-destructive/10 dark:bg-destructive/30"
                 )}
               >
                 {parseFloat(actualCashCount) === shiftData.expectedBalance ? (
@@ -1405,7 +1405,7 @@ export default function CashLocations() {
                       "h-5 w-5",
                       parseFloat(actualCashCount) > shiftData.expectedBalance
                         ? "text-amber-600"
-                        : "text-red-600"
+                        : "text-destructive"
                     )}
                   />
                 )}

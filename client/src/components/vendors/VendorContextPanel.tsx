@@ -203,7 +203,7 @@ function MetricsCards({
               ? "text-[var(--success)]"
               : metrics.overallSellThroughRate >= 50
                 ? "text-[var(--warning)]"
-                : "text-red-600"
+                : "text-destructive"
           }`}
         >
           {formatPercent(metrics.overallSellThroughRate)}
@@ -295,7 +295,7 @@ function ProductPerformanceTab({
                       ? "text-[var(--success)]"
                       : product.sellThroughRate >= 50
                         ? "text-[var(--warning)]"
-                        : "text-red-600"
+                        : "text-destructive"
                   }
                 >
                   {formatPercent(product.sellThroughRate)}
@@ -398,7 +398,7 @@ function ActiveInventoryTab({
                 <span
                   className={
                     item.daysOld > 90
-                      ? "text-red-600"
+                      ? "text-destructive"
                       : item.daysOld > 60
                         ? "text-[var(--warning)]"
                         : undefined
@@ -642,7 +642,7 @@ export function VendorContextPanel({
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="flex items-center gap-2 text-red-600">
+          <div className="flex items-center gap-2 text-destructive">
             <AlertCircle className="h-5 w-5" />
             <span>Failed to load vendor context: {error.message}</span>
           </div>

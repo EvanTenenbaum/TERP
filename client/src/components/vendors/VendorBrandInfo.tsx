@@ -53,14 +53,14 @@ export function VendorBrandInfoTooltip({ category }: { category?: string }) {
         <TooltipContent side="top" className="max-w-xs">
           <div className="space-y-2 text-sm">
             <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-blue-500" />
+              <Building2 className="h-4 w-4 text-[var(--info)]" />
               <span className="font-semibold">{explanation.vendorLabel}:</span>
             </div>
             <p className="text-muted-foreground ml-6">
               {explanation.vendorDescription}
             </p>
             <div className="flex items-center gap-2 mt-2">
-              <Tag className="h-4 w-4 text-green-500" />
+              <Tag className="h-4 w-4 text-[var(--success)]" />
               <span className="font-semibold">{brandLabel}:</span>
             </div>
             <p className="text-muted-foreground ml-6">
@@ -107,7 +107,7 @@ export function VendorBrandInfoCard({ category }: { category?: string }) {
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         <div className="flex items-start gap-3">
-          <Building2 className="h-5 w-5 text-blue-500 mt-0.5" />
+          <Building2 className="h-5 w-5 text-[var(--info)] mt-0.5" />
           <div>
             <div className="font-medium">{explanation.vendorLabel}</div>
             <p className="text-muted-foreground">
@@ -116,7 +116,7 @@ export function VendorBrandInfoCard({ category }: { category?: string }) {
           </div>
         </div>
         <div className="flex items-start gap-3">
-          <Tag className="h-5 w-5 text-green-500 mt-0.5" />
+          <Tag className="h-5 w-5 text-[var(--success)] mt-0.5" />
           <div>
             <div className="font-medium">{brandLabel}</div>
             <p className="text-muted-foreground">

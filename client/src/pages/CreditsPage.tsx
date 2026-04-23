@@ -87,7 +87,7 @@ const statusColors: Record<CreditStatus, string> = {
   PARTIALLY_USED: "bg-[var(--info-bg)] text-[var(--info)]",
   FULLY_USED: "bg-gray-100 text-gray-800",
   EXPIRED: "bg-[var(--warning-bg)] text-[var(--warning)]",
-  VOID: "bg-red-100 text-red-800",
+  VOID: "bg-destructive/10 text-destructive",
 };
 
 const reasonLabels: Record<CreditReason, string> = {

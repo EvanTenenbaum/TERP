@@ -69,7 +69,7 @@ export const TotalDebtWidget = memo(function TotalDebtWidget() {
                 <TableCell className="font-medium">
                   Total Debt I Owe Suppliers
                 </TableCell>
-                <TableCell className="text-right font-mono text-red-600">
+                <TableCell className="text-right font-mono text-destructive">
                   {formatCurrency(data.totalDebtIOwedToVendors)}
                 </TableCell>
               </TableRow>

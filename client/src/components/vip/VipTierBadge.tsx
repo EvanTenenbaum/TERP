@@ -60,7 +60,7 @@ const DEFAULT_TIERS: Record<string, { icon: LucideIcon; className: string }> = {
   },
   elite: {
     icon: Crown,
-    className: "bg-purple-600 hover:bg-purple-500 text-white",
+    className: "bg-primary hover:bg-primary text-white",
   },
 };
 

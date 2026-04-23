@@ -100,7 +100,7 @@ export const DataCard = memo(function DataCard({
               )}
               {data.trend.direction === "down" && (
                 <TrendingDown
-                  className="h-3 w-3 text-red-600"
+                  className="h-3 w-3 text-destructive"
                   aria-hidden="true"
                 />
               )}
@@ -110,7 +110,7 @@ export const DataCard = memo(function DataCard({
               <span
                 className={cn(
                   data.trend.direction === "up" && "text-[var(--success)]",
-                  data.trend.direction === "down" && "text-red-600",
+                  data.trend.direction === "down" && "text-destructive",
                   data.trend.direction === "flat" && "text-gray-600"
                 )}
                 aria-label={`Trend: ${formatTrend(data.trend)}`}

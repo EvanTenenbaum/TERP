@@ -334,7 +334,7 @@ export function RoomManagementModal({
                   <button
                     type="submit"
                     disabled={createRoom.isPending || updateRoom.isPending}
-                    className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
+                    className="px-4 py-2 text-white bg-[var(--info)] hover:bg-[var(--info)] rounded-lg disabled:opacity-50"
                   >
                     {editingRoom ? "Save Changes" : "Create Room"}
                   </button>
@@ -484,7 +484,7 @@ function RoomCard({ room, onEdit, onDelete }: RoomCardProps) {
                 onDelete(room.id);
                 setConfirmDelete(false);
               }}
-              className="p-2 text-white bg-red-600 hover:bg-red-700 rounded-lg"
+              className="p-2 text-white bg-destructive hover:bg-destructive rounded-lg"
               title="Confirm Delete"
             >
               <Check className="h-4 w-4" />
@@ -500,7 +500,7 @@ function RoomCard({ room, onEdit, onDelete }: RoomCardProps) {
         ) : (
           <button
             onClick={() => setConfirmDelete(true)}
-            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="p-2 text-gray-500 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
             title="Delete"
           >
             <Trash2 className="h-4 w-4" />

@@ -170,7 +170,7 @@ export default function BankTransactions({ embedded }: { embedded?: boolean } = 
       },
       WITHDRAWAL: {
         icon: ArrowUpCircle,
-        className: "bg-red-100 text-red-700 border-red-200",
+        className: "bg-destructive/10 text-destructive border-red-200",
         label: "Withdrawal",
       },
       TRANSFER: {
@@ -245,10 +245,10 @@ export default function BankTransactions({ embedded }: { embedded?: boolean } = 
             <CardTitle className="text-sm font-medium">
               Total Withdrawals
             </CardTitle>
-            <ArrowUpCircle className="h-4 w-4 text-red-600" />
+            <ArrowUpCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               {formatCurrency(totalWithdrawals)}
             </div>
           </CardContent>

@@ -140,7 +140,7 @@ const BILL_STATUS_TABS: Array<{ value: BillStatusTab; label: string }> = [
 // Bill-specific status overrides for AP-only workflow states
 const BILL_STATUS_OVERRIDES: Record<string, string> = {
   PENDING: "bg-[var(--info-bg)] text-[var(--info)] border border-blue-200",
-  APPROVED: "bg-purple-50 text-purple-700 border border-purple-200",
+  APPROVED: "bg-muted text-primary border border-purple-200",
   VOID: "bg-neutral-100 text-neutral-500 border border-neutral-200",
 };
 
@@ -156,8 +156,8 @@ const AP_AGING_TOKENS: Record<string, string> = {
   current: "bg-[var(--success-bg)] border-green-200 text-[var(--success)]",
   "30": "bg-[var(--warning-bg)] border-yellow-200 text-[var(--warning)]",
   "60": "bg-[var(--warning-bg)] border-orange-200 text-[var(--warning)]",
-  "90": "bg-red-50 border-red-200 text-red-700",
-  "90+": "bg-red-100 border-red-300 text-red-800",
+  "90": "bg-destructive/10 border-red-200 text-destructive",
+  "90+": "bg-destructive/10 border-red-300 text-destructive",
 };
 
 const registryAffordances: PowersheetAffordance[] = [
@@ -321,7 +321,7 @@ const billColumnDefs: ColDef<BillGridRow>[] = [
     cellRenderer: (params: { data?: BillGridRow; value: string }) => {
       if (!params.data) return params.value ?? "-";
       if (params.data.daysOverdue > 0) {
-        return `<span class="text-red-600 font-medium">${params.value}</span> <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-xs font-medium ml-1">${params.data.daysOverdue}d</span>`;
+        return `<span class="text-destructive font-medium">${params.value}</span> <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-xs font-medium ml-1">${params.data.daysOverdue}d</span>`;
       }
       return params.value ?? "-";
     },
@@ -345,7 +345,7 @@ const billColumnDefs: ColDef<BillGridRow>[] = [
       if (!params.data) return params.value ?? "-";
       const due = parseFloat(params.data.amountDue);
       if (due > 0) {
-        return `<span class="text-red-600 font-bold font-mono">${params.value}</span>`;
+        return `<span class="text-destructive font-bold font-mono">${params.value}</span>`;
       }
       return `<span class="font-mono">${params.value}</span>`;
     },
@@ -634,7 +634,7 @@ export function BillsSurface() {
         </Badge>
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-red-50 text-red-700 border-red-200"
+          className="text-[9px] py-0 px-1.5 bg-destructive/10 text-destructive border-red-200"
         >
           {overdueCount} overdue
         </Badge>
@@ -727,7 +727,7 @@ export function BillsSurface() {
           <Button
             variant="outline"
             size="sm"
-            className="h-5 text-[9px] px-2 text-red-600 hover:text-red-700"
+            className="h-5 text-[9px] px-2 text-destructive hover:text-destructive"
             disabled={!canVoid}
             onClick={handleVoid}
             data-testid="action-void"
@@ -818,7 +818,7 @@ export function BillsSurface() {
                   <p
                     className={
                       selectedRow.daysOverdue > 0
-                        ? "text-red-600 font-medium text-sm"
+                        ? "text-destructive font-medium text-sm"
                         : "text-sm"
                     }
                   >
@@ -854,7 +854,7 @@ export function BillsSurface() {
                   <span
                     className={cn(
                       "font-mono font-bold",
-                      parseFloat(selectedRow.amountDue) > 0 && "text-red-600"
+                      parseFloat(selectedRow.amountDue) > 0 && "text-destructive"
                     )}
                   >
                     {formatCurrency(selectedRow.amountDue)}
@@ -940,7 +940,7 @@ export function BillsSurface() {
                           className="flex justify-between text-xs"
                         >
                           <span className="font-mono">{b.billNumber}</span>
-                          <span className="font-mono text-red-600">
+                          <span className="font-mono text-destructive">
                             {formatCurrency(b.amountDue)}
                           </span>
                         </div>
@@ -982,7 +982,7 @@ export function BillsSurface() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full justify-start h-6 text-xs text-red-600"
+                    className="w-full justify-start h-6 text-xs text-destructive"
                     onClick={handleVoid}
                   >
                     <XCircle className="h-3 w-3 mr-1" />
@@ -997,7 +997,7 @@ export function BillsSurface() {
 
       {/* ── 4. AP Aging Panel (collapsible, red tone) ── */}
       {showAging && (
-        <div className="mx-2 my-1.5 p-2 bg-red-50/40 border border-red-200 rounded-md">
+        <div className="mx-2 my-1.5 p-2 bg-destructive/10/40 border border-red-200 rounded-md">
           <h3 className="font-semibold text-xs mb-1.5">AP Aging Report</h3>
           {apAgingQuery.isLoading ? (
             <p className="text-[10px] text-muted-foreground">

@@ -245,7 +245,7 @@ function OrderListRow({
       </div>
       <div className="mt-2 bg-gray-200 rounded-full h-2">
         <div
-          className="bg-green-500 h-2 rounded-full transition-all"
+          className="bg-[var(--success)] h-2 rounded-full transition-all"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -295,9 +295,9 @@ function ItemRow({
           className={cn(
             "w-5 h-5 rounded border flex items-center justify-center flex-shrink-0",
             item.isPacked
-              ? "bg-green-500 border-green-500"
+              ? "bg-[var(--success)] border-green-500"
               : isSelected
-                ? "bg-blue-500 border-blue-500"
+                ? "bg-[var(--info)] border-blue-500"
                 : "border-gray-300"
           )}
         >
@@ -492,7 +492,7 @@ function OrderInspector({
           <div className="flex items-center gap-4">
             <div className="flex-1 bg-gray-200 rounded-full h-3">
               <div
-                className="bg-green-500 h-3 rounded-full transition-all"
+                className="bg-[var(--success)] h-3 rounded-full transition-all"
                 style={{
                   width: `${
                     summary.totalItems > 0
@@ -1502,7 +1502,7 @@ export function PickPackWorkSurface() {
                   size="sm"
                   onClick={handleMarkShipped}
                   disabled={shipOrderMutation.isPending || !canManagePickPack}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-[var(--success)] hover:bg-[var(--success)]"
                   title={
                     canManagePickPack
                       ? undefined
@@ -1527,7 +1527,7 @@ export function PickPackWorkSurface() {
                     markReadyMutation.isPending ||
                     !canManagePickPack
                   }
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-[var(--success)] hover:bg-[var(--success)]"
                   title={
                     canManagePickPack
                       ? undefined

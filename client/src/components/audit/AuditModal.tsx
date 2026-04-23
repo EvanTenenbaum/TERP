@@ -164,7 +164,7 @@ export function AuditModal({
                 </TableCell>
                 <TableCell>{t.createdBy}</TableCell>
                 <TableCell
-                  className={`text-right ${t.amount >= 0 ? "text-red-600" : "text-[var(--success)]"}`}
+                  className={`text-right ${t.amount >= 0 ? "text-destructive" : "text-[var(--success)]"}`}
                 >
                   {t.amount >= 0 ? "+" : ""}
                   {formatCurrency(t.amount)}
@@ -253,7 +253,7 @@ export function AuditModal({
                 <TableCell>{m.description}</TableCell>
                 <TableCell>{m.createdBy}</TableCell>
                 <TableCell
-                  className={`text-right ${m.quantity >= 0 ? "text-[var(--success)]" : "text-red-600"}`}
+                  className={`text-right ${m.quantity >= 0 ? "text-[var(--success)]" : "text-destructive"}`}
                 >
                   {m.quantity >= 0 ? "+" : ""}
                   {m.quantity}
@@ -288,8 +288,8 @@ export function AuditModal({
               {formatCurrency(data.calculation.amountPaid)}
             </p>
           </div>
-          <div className="rounded-lg bg-red-50 p-3">
-            <p className="text-sm text-red-600">Balance Due</p>
+          <div className="rounded-lg bg-destructive/10 p-3">
+            <p className="text-sm text-destructive">Balance Due</p>
             <p className="text-2xl font-bold">
               {formatCurrency(data.calculation.balanceDue)}
             </p>
@@ -320,7 +320,7 @@ export function AuditModal({
                 <TableCell className="text-right">
                   {formatCurrency(li.unitPrice)}
                 </TableCell>
-                <TableCell className="text-right text-red-600">
+                <TableCell className="text-right text-destructive">
                   {li.discount > 0 ? `-${formatCurrency(li.discount)}` : "-"}
                 </TableCell>
                 <TableCell className="text-right font-medium">
@@ -338,10 +338,10 @@ export function AuditModal({
             {data.calculation.discount > 0 && (
               <TableRow className="bg-gray-50">
                 <TableCell colSpan={3}></TableCell>
-                <TableCell className="text-right font-medium text-red-600">
+                <TableCell className="text-right font-medium text-destructive">
                   Discount
                 </TableCell>
-                <TableCell className="text-right font-bold text-red-600">
+                <TableCell className="text-right font-bold text-destructive">
                   -{formatCurrency(data.calculation.discount)}
                 </TableCell>
               </TableRow>
@@ -439,7 +439,7 @@ export function AuditModal({
                 </TableCell>
                 <TableCell>{t.createdBy}</TableCell>
                 <TableCell
-                  className={`text-right ${t.amount >= 0 ? "text-red-600" : "text-[var(--success)]"}`}
+                  className={`text-right ${t.amount >= 0 ? "text-destructive" : "text-[var(--success)]"}`}
                 >
                   {t.amount >= 0 ? "+" : ""}
                   {formatCurrency(t.amount)}

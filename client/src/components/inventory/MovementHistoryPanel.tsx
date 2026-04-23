@@ -71,7 +71,7 @@ const MOVEMENT_TYPE_CONFIG: Record<
   REFUND_RETURN: {
     icon: ArrowDown,
     label: "Refund/Return",
-    color: "bg-purple-100 text-purple-700",
+    color: "bg-muted text-primary",
     direction: "in",
   },
   ADJUSTMENT: {
@@ -83,7 +83,7 @@ const MOVEMENT_TYPE_CONFIG: Record<
   QUARANTINE: {
     icon: AlertTriangle,
     label: "Quarantine",
-    color: "bg-red-100 text-red-700",
+    color: "bg-destructive/10 text-destructive",
     direction: "out",
   },
   RELEASE_FROM_QUARANTINE: {
@@ -95,7 +95,7 @@ const MOVEMENT_TYPE_CONFIG: Record<
   DISPOSAL: {
     icon: ArrowUp,
     label: "Disposal",
-    color: "bg-red-100 text-red-700",
+    color: "bg-destructive/10 text-destructive",
     direction: "out",
   },
   TRANSFER: {
@@ -196,7 +196,7 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
                         className={`text-sm font-mono font-bold ${
                           mov.quantityChange > 0
                             ? "text-[var(--success)]"
-                            : "text-red-700"
+                            : "text-destructive"
                         }`}
                       >
                         {formatQty(mov.quantityChange)}
@@ -349,7 +349,7 @@ export const MovementHistoryPanel = memo(function MovementHistoryPanel({
                           className={`font-mono font-bold ${
                             mov.quantityChange > 0
                               ? "text-[var(--success)]"
-                              : "text-red-600"
+                              : "text-destructive"
                           }`}
                         >
                           {formatQty(mov.quantityChange)}

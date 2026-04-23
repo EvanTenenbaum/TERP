@@ -75,7 +75,7 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
               <div
                 className={`mt-1 text-lg font-semibold ${
                   isToday
-                    ? "flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white mx-auto"
+                    ? "flex h-8 w-8 items-center justify-center rounded-full bg-[var(--info)] text-white mx-auto"
                     : "text-gray-900"
                 }`}
               >

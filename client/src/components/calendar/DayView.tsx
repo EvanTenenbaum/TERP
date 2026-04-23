@@ -172,7 +172,7 @@ function formatTime(time: string): string {
 
 function getEventColorClass(event: Event): string {
   if (event.priority === "URGENT") {
-    return "bg-red-100 text-red-800";
+    return "bg-destructive/10 text-destructive";
   } else if (event.priority === "HIGH") {
     return "bg-[var(--warning-bg)] text-[var(--warning)]";
   } else if (event.priority === "MEDIUM") {

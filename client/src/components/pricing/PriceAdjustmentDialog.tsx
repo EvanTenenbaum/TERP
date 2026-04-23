@@ -197,7 +197,7 @@ export function PriceAdjustmentDialog({
               <span
                 className={`text-xl font-bold ${
                   priceChange < 0
-                    ? "text-red-600"
+                    ? "text-destructive"
                     : priceChange > 0
                       ? "text-[var(--success)]"
                       : ""

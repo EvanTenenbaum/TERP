@@ -83,7 +83,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     label: "Low Stock",
     description: "Items with ≤100 units available",
     icon: Package,
-    color: "text-purple-600",
+    color: "text-primary",
     format: "count",
     category: "operational",
     destination: {
@@ -97,7 +97,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     label: "Quarantined Batches",
     description: "Batches in quarantine status",
     icon: AlertCircle,
-    color: "text-red-600",
+    color: "text-destructive",
     format: "count",
     category: "operational",
     destination: {
@@ -281,7 +281,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     label: "Overdue Shipments",
     description: "Orders past expected ship date",
     icon: AlertCircle,
-    color: "text-red-600",
+    color: "text-destructive",
     format: "count",
     category: "operational",
     destination: {
@@ -337,7 +337,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     label: "Accounts Payable",
     description: "Outstanding bills",
     icon: TrendingDown,
-    color: "text-red-600",
+    color: "text-destructive",
     format: "currency",
     category: "financial",
     destination: {
@@ -364,7 +364,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     label: "AR Overdue",
     description: "Overdue invoices",
     icon: AlertCircle,
-    color: "text-red-600",
+    color: "text-destructive",
     format: "currency",
     category: "financial",
     destination: {
@@ -378,7 +378,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     label: "AP Overdue",
     description: "Overdue bills",
     icon: AlertCircle,
-    color: "text-red-600",
+    color: "text-destructive",
     format: "currency",
     category: "financial",
     destination: {
@@ -406,7 +406,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     label: "Expenses MTD",
     description: "Expenses month-to-date",
     icon: TrendingDown,
-    color: "text-red-600",
+    color: "text-destructive",
     format: "currency",
     category: "financial",
     destination: {
@@ -575,7 +575,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     label: "Clients with Debt",
     description: "Clients with outstanding debt",
     icon: AlertCircle,
-    color: "text-red-600",
+    color: "text-destructive",
     format: "count",
     category: "financial",
     destination: {
@@ -603,7 +603,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     label: "Sellers",
     description: "Clients who are sellers",
     icon: Building,
-    color: "text-purple-600",
+    color: "text-primary",
     format: "count",
     category: "operational",
     destination: {
@@ -631,7 +631,7 @@ export const METRIC_CONFIGS: Record<string, MetricConfig> = {
     label: "Total Client Debt",
     description: "Combined debt across all clients",
     icon: DollarSign,
-    color: "text-red-600",
+    color: "text-destructive",
     format: "currency",
     category: "financial",
     destination: {

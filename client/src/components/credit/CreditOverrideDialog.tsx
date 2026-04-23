@@ -154,7 +154,7 @@ export const CreditOverrideDialog = React.memo(function CreditOverrideDialog({
             </div>
 
             {/* Warning */}
-            <div className="flex gap-2 p-3 bg-[var(--warning-bg)] dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
+            <div className="flex gap-2 p-3 bg-[var(--warning-bg)] dark:bg-[var(--warning)] rounded-lg border border-yellow-200 dark:border-yellow-800">
               <AlertTriangle className="h-4 w-4 text-[var(--warning)] flex-shrink-0 mt-0.5" />
               <div className="text-xs text-[var(--warning)] dark:text-yellow-200">
                 <p className="font-medium">

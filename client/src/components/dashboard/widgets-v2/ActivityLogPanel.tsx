@@ -37,7 +37,7 @@ const activityIcons = {
 const activityColors = {
   CREATED: "text-[var(--success)]",
   UPDATED: "text-[var(--info)]",
-  COMMENTED: "text-purple-600",
+  COMMENTED: "text-primary",
   SHARED: "text-[var(--warning)]",
   ARCHIVED: "text-gray-600",
   RESTORED: "text-[var(--success)]",

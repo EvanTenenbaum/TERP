@@ -106,7 +106,7 @@ function StatusBadgeCellRenderer(params: { value: PeriodStatus }) {
     return (
       <Badge
         variant="outline"
-        className="text-[9px] py-0 px-1.5 bg-red-50 text-red-700 border-red-200"
+        className="text-[9px] py-0 px-1.5 bg-destructive/10 text-destructive border-red-200"
       >
         LOCKED
       </Badge>

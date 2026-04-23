@@ -43,7 +43,7 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              <Lightbulb className="h-5 w-5 text-[var(--warning)]" />
               <CardTitle>Smart Opportunities</CardTitle>
             </div>
           </div>
@@ -66,7 +66,7 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              <Lightbulb className="h-5 w-5 text-[var(--warning)]" />
               <CardTitle>Smart Opportunities</CardTitle>
             </div>
           </div>
@@ -109,7 +109,7 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-yellow-500" />
+            <Lightbulb className="h-5 w-5 text-[var(--warning)]" />
             <CardTitle>Smart Opportunities</CardTitle>
           </div>
           <Button

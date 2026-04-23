@@ -1082,17 +1082,17 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                             !item.stillAvailable) && (
                             <div className="mt-2 space-y-1">
                               {item.priceChanged && (
-                                <p className="text-sm font-bold text-red-600">
+                                <p className="text-sm font-bold text-destructive">
                                   Price changed
                                 </p>
                               )}
                               {item.quantityChanged && (
-                                <p className="text-sm font-bold text-red-600">
+                                <p className="text-sm font-bold text-destructive">
                                   Quantity changed
                                 </p>
                               )}
                               {!item.stillAvailable && (
-                                <p className="text-sm font-bold text-red-600">
+                                <p className="text-sm font-bold text-destructive">
                                   Out of stock
                                 </p>
                               )}
@@ -1415,7 +1415,7 @@ function MyPriceAlerts() {
                 {priceDropped && (
                   <Badge
                     variant={getStatusBadgeVariant("triggered")}
-                    className="bg-green-600"
+                    className="bg-[var(--success)]"
                   >
                     <Check className="h-3 w-3 mr-1" />
                     Price Dropped!

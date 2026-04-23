@@ -55,7 +55,7 @@ const METRIC_OPTIONS: { value: MetricOption; label: string }[] = [
 
 // Helper components
 const RankIcon = React.memo(function RankIcon({ rank }: { rank: number }) {
-  if (rank === 1) return <Trophy className="h-4 w-4 text-yellow-500" />;
+  if (rank === 1) return <Trophy className="h-4 w-4 text-[var(--warning)]" />;
   if (rank === 2) return <Medal className="h-4 w-4 text-gray-400" />;
   if (rank === 3) return <Award className="h-4 w-4 text-amber-600" />;
   return (
@@ -70,9 +70,9 @@ const TrendIcon = React.memo(function TrendIcon({
 }: {
   trend: "up" | "down" | "stable";
 }) {
-  if (trend === "up") return <TrendingUp className="h-3 w-3 text-green-500" />;
+  if (trend === "up") return <TrendingUp className="h-3 w-3 text-[var(--success)]" />;
   if (trend === "down")
-    return <TrendingDown className="h-3 w-3 text-red-500" />;
+    return <TrendingDown className="h-3 w-3 text-destructive" />;
   return <Minus className="h-3 w-3 text-muted-foreground" />;
 });
 
@@ -177,7 +177,7 @@ export const LeaderboardWidget = React.memo(function LeaderboardWidget({
         {/* Error State */}
         {error && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
-            <AlertTriangle className="h-4 w-4 text-yellow-500" />
+            <AlertTriangle className="h-4 w-4 text-[var(--warning)]" />
             <span>Unable to load leaderboard</span>
           </div>
         )}

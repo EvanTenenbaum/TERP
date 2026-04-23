@@ -115,7 +115,7 @@ export function FloatingOrderPreview({
     if (percent >= 50) return "text-[var(--success)]";
     if (percent >= 30) return "text-[var(--warning)]";
     if (percent >= 15) return "text-[var(--warning)]";
-    return "text-red-600";
+    return "text-destructive";
   };
 
   const handleStartEdit = (item: LineItem) => {
@@ -444,7 +444,7 @@ export function FloatingOrderPreview({
                 <span className="text-muted-foreground">{adjustmentLabel}</span>
                 <span
                   className={
-                    adjustmentAmount < 0 ? "text-red-600" : "text-[var(--success)]"
+                    adjustmentAmount < 0 ? "text-destructive" : "text-[var(--success)]"
                   }
                 >
                   {adjustmentAmount < 0 ? "-" : "+"}

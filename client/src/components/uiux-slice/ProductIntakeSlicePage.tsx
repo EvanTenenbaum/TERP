@@ -1471,7 +1471,7 @@ export function ProductIntakeSlicePage() {
                   <td className="p-2">
                     {hasError ? (
                       <span
-                        className="inline-flex items-center text-red-600"
+                        className="inline-flex items-center text-destructive"
                         title={lineErrors.join("; ")}
                       >
                         <AlertTriangle className="h-4 w-4" />
@@ -1770,7 +1770,7 @@ export function ProductIntakeSlicePage() {
             <p>Cost: ${summary.cost.toFixed(2)}</p>
 
             {validation.errorCount > 0 ? (
-              <div className="rounded border border-red-200 bg-red-50 p-3 text-red-700 space-y-1">
+              <div className="rounded border border-red-200 bg-destructive/10 p-3 text-destructive space-y-1">
                 {/* BUG-030: List each field error by name so the user knows exactly what to fix */}
                 <p className="font-medium">
                   {validation.errorCount} blocking error

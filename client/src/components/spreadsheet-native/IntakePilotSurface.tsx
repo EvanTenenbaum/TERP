@@ -520,7 +520,7 @@ const getInlineErrorCellClass = (
   field: keyof IntakeFieldErrorMap
 ) =>
   row?.fieldErrors?.[field]
-    ? "border-l-2 border-red-400 bg-red-50/70"
+    ? "border-l-2 border-red-400 bg-destructive/10/70"
     : undefined;
 
 const getMissingCostCellClass = (row: IntakeDraftRow | undefined) =>
@@ -607,7 +607,7 @@ function StatusCellRenderer({ data }: { data?: IntakeDraftRow }) {
   if (data?.status === "error") {
     return (
       <div
-        className="flex items-center gap-1 text-red-600"
+        className="flex items-center gap-1 text-destructive"
         title={data.errorMessage}
       >
         <AlertCircle className="h-4 w-4" />
@@ -736,7 +736,7 @@ function RowInspectorContent({
             ))}
           </datalist>
           {validation.getFieldState("vendorName").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("vendorName").error}
             </p>
           )}
@@ -757,7 +757,7 @@ function RowInspectorContent({
             placeholder="Enter brand or farmer name"
           />
           {validation.getFieldState("brandName").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("brandName").error}
             </p>
           )}
@@ -830,7 +830,7 @@ function RowInspectorContent({
             ))}
           </datalist>
           {validation.getFieldState("item").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("item").error}
             </p>
           )}
@@ -874,7 +874,7 @@ function RowInspectorContent({
               )}
             />
             {validation.getFieldState("qty").showError && (
-              <p className="text-xs text-red-500 mt-1">
+              <p className="text-xs text-destructive mt-1">
                 {validation.getFieldState("qty").error}
               </p>
             )}
@@ -917,7 +917,7 @@ function RowInspectorContent({
               )}
             />
             {validation.getFieldState("cogs").showError && (
-              <p className="text-xs text-red-500 mt-1">
+              <p className="text-xs text-destructive mt-1">
                 {validation.getFieldState("cogs").error}
               </p>
             )}
@@ -942,7 +942,7 @@ function RowInspectorContent({
                 )}
               />
               {validation.getFieldState("cogsMin").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("cogsMin").error}
                 </p>
               )}
@@ -965,7 +965,7 @@ function RowInspectorContent({
                 )}
               />
               {validation.getFieldState("cogsMax").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("cogsMax").error}
                 </p>
               )}
@@ -1035,7 +1035,7 @@ function RowInspectorContent({
             </SelectContent>
           </Select>
           {validation.getFieldState("site").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("site").error}
             </p>
           )}
@@ -1141,19 +1141,19 @@ function ValidationFailureCard({ errorRows }: { errorRows: IntakeDraftRow[] }) {
 
   return (
     <div
-      className="mx-4 mb-3 rounded-lg border border-red-200 bg-red-50 p-3"
+      className="mx-4 mb-3 rounded-lg border border-red-200 bg-destructive/10 p-3"
       data-testid="intake-validation-failures"
     >
       <div className="flex items-center gap-2 mb-2">
-        <AlertCircle className="h-4 w-4 text-red-600" />
-        <span className="text-sm font-medium text-red-700">
+        <AlertCircle className="h-4 w-4 text-destructive" />
+        <span className="text-sm font-medium text-destructive">
           {errorRows.length} row{errorRows.length === 1 ? "" : "s"} failed
           validation
         </span>
       </div>
       <div className="space-y-1">
         {errorRows.map(row => (
-          <div key={row.id} className="text-xs text-red-600">
+          <div key={row.id} className="text-xs text-destructive">
             <span className="font-medium">
               {row.item || row.vendorName || "(empty row)"}
             </span>
@@ -2396,7 +2396,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
           <Badge variant="outline">Ready {pendingCount}</Badge>
           <Badge
             variant="outline"
-            className={cn(errorCount > 0 && "border-red-200 text-red-600")}
+            className={cn(errorCount > 0 && "border-red-200 text-destructive")}
           >
             {errorCount > 0
               ? `Fix needed ${errorCount}`
@@ -2428,7 +2428,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
       <div className="border-b border-border/70 bg-background px-3 py-3 md:px-4">
         {/* BUG-043: Error message anchored to top of zone, above inputs, for clear visibility */}
         {selectedRow?.status === "error" && selectedRow.errorMessage && (
-          <div className="mb-2 flex items-center gap-2 rounded border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700">
+          <div className="mb-2 flex items-center gap-2 rounded border border-red-200 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
             <AlertCircle className="h-3.5 w-3.5 shrink-0" />
             <span>{selectedRow.errorMessage}</span>
           </div>
@@ -2864,7 +2864,7 @@ export function IntakePilotSurface({ onOpenClassic }: IntakePilotSurfaceProps) {
                   <span>
                     {pendingCount} pending · {submittedCount} submitted
                     {errorCount > 0 && (
-                      <span className="text-red-600 ml-1">
+                      <span className="text-destructive ml-1">
                         · {errorCount} error{errorCount === 1 ? "" : "s"}
                       </span>
                     )}

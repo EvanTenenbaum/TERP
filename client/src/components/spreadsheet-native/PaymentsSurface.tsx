@@ -169,7 +169,7 @@ const columnDefs: ColDef<PaymentGridRow>[] = [
       const color =
         params.value === "RECEIVED"
           ? "text-[var(--success)] bg-[var(--success-bg)] border-green-200"
-          : "text-red-700 bg-red-50 border-red-200";
+          : "text-destructive bg-destructive/10 border-red-200";
       return `<span class="inline-flex items-center px-2 py-0.5 rounded border text-xs font-medium ${color}">${params.value}</span>`;
     },
   },
@@ -257,7 +257,7 @@ function VoidDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Ban className="h-5 w-5 text-red-600" />
+            <Ban className="h-5 w-5 text-destructive" />
             Void Payment
           </DialogTitle>
           <DialogDescription>
@@ -277,7 +277,7 @@ function VoidDialog({
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Amount</span>
-                <span className="font-mono font-semibold text-red-600">
+                <span className="font-mono font-semibold text-destructive">
                   {payment.amountFormatted}
                 </span>
               </div>
@@ -290,7 +290,7 @@ function VoidDialog({
             <div className="space-y-2">
               <Label htmlFor="void-reason">
                 Reason for void{" "}
-                <span className="text-red-500" aria-label="required">
+                <span className="text-destructive" aria-label="required">
                   *
                 </span>
               </Label>
@@ -646,7 +646,7 @@ export function PaymentsSurface() {
           >
             Sales handoff
           </Badge>
-          <span className="text-[11px] text-blue-900">
+          <span className="text-[11px] text-[var(--info)]">
             {orderInvoiceQuery.isLoading
               ? `Resolving order #${routeParams.orderId} into its invoice payment history...`
               : handoffInvoiceId !== null
@@ -773,7 +773,7 @@ export function PaymentsSurface() {
               className={
                 selectedRow.paymentType === "RECEIVED"
                   ? "bg-[var(--success-bg)] text-[var(--success)] border-green-200"
-                  : "bg-red-50 text-red-700 border-red-200"
+                  : "bg-destructive/10 text-destructive border-red-200"
               }
             >
               {selectedRow.paymentType}
@@ -820,7 +820,7 @@ export function PaymentsSurface() {
                 className={
                   selectedRow.paymentType === "RECEIVED"
                     ? "bg-[var(--success-bg)] text-[var(--success)] border-green-200"
-                    : "bg-red-50 text-red-700 border-red-200"
+                    : "bg-destructive/10 text-destructive border-red-200"
                 }
               >
                 {selectedRow.paymentType}
@@ -835,7 +835,7 @@ export function PaymentsSurface() {
                   selectedRow.paymentType === "RECEIVED"
                     ? "text-[var(--success)]"
                     : selectedRow.paymentType === "SENT"
-                      ? "text-red-700"
+                      ? "text-destructive"
                       : ""
                 }`}
               >
