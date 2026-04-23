@@ -1,8 +1,14 @@
 /**
  * App Breadcrumb Component
- * UX-009: Automatic breadcrumb navigation based on current route
+ * UX-009: Automatic breadcrumb navigation based on current route.
+ * TER-1297: Registry-driven breadcrumbs with async entity name resolution.
  *
- * Generates breadcrumbs from the current URL path and navigation config.
+ * - When the `ux.v2.breadcrumb-registry` feature flag is enabled, segment
+ *   titles come from the shared `@/config/routes` registry, and dynamic
+ *   detail segments (e.g. `/clients/:id`) resolve to a human-friendly name
+ *   via tRPC. Failed/unknown resolutions fall back to `#<rawId>`.
+ * - When the flag is disabled, the component preserves the legacy
+ *   `navigationItems` + `customRouteNames` lookup behaviour.
  */
 
 import React from "react";
@@ -17,6 +23,14 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { navigationItems } from "@/config/navigation";
+import {
+  buildBreadcrumbTrail,
+  type BreadcrumbTrailEntry,
+  type RouteEntityType,
+} from "@/config/routes";
+import { useFeatureFlag } from "@/hooks/useFeatureFlag";
+import { FEATURE_FLAGS } from "@/lib/constants/featureFlags";
+import { trpc } from "@/lib/trpc";
 
 interface BreadcrumbSegment {
   name: string;
@@ -26,7 +40,7 @@ interface BreadcrumbSegment {
 
 /**
  * Custom route name mappings for paths not in navigation config
- * or for dynamic route segments
+ * or for dynamic route segments. Preserved for the legacy (flag-off) path.
  */
 const customRouteNames: Record<string, string> = {
   create: "Create",
@@ -42,9 +56,9 @@ const customRouteNames: Record<string, string> = {
 };
 
 /**
- * Get display name for a route segment
+ * Get display name for a route segment (legacy path only).
  */
-function getSegmentName(segment: string, fullPath: string): string {
+function getLegacySegmentName(segment: string, fullPath: string): string {
   // Check if full path matches a navigation item
   const navItem = navigationItems.find(item => item.path === fullPath);
   if (navItem) {
@@ -68,10 +82,10 @@ function getSegmentName(segment: string, fullPath: string): string {
 }
 
 /**
- * Build breadcrumb segments from current path
+ * Legacy (flag-off) breadcrumb builder, preserved 1:1 from the pre-TER-1297
+ * implementation so we can safely roll the flag back.
  */
-function buildBreadcrumbs(pathname: string): BreadcrumbSegment[] {
-  // Don't show breadcrumbs on home page
+function buildLegacyBreadcrumbs(pathname: string): BreadcrumbSegment[] {
   if (pathname === "/") {
     return [];
   }
@@ -86,13 +100,151 @@ function buildBreadcrumbs(pathname: string): BreadcrumbSegment[] {
     const isLast = index === segments.length - 1;
 
     breadcrumbs.push({
-      name: getSegmentName(segment, currentPath),
+      name: getLegacySegmentName(segment, currentPath),
       path: currentPath,
       isLast,
     });
   });
 
   return breadcrumbs;
+}
+
+/**
+ * Attempt to resolve a single entity id to a human-friendly display name.
+ *
+ * Important: all of the tRPC `useQuery` hooks below are mounted on every
+ * render to keep hook order stable, but only the one matching `entityType`
+ * has `enabled: true`. The rest are inert. This keeps the breadcrumb free
+ * from network chatter when there is no entity segment in the current path.
+ */
+function useResolvedEntityLabel(
+  entityType: RouteEntityType | undefined,
+  rawEntityId: string | undefined
+): string | null {
+  const numericId =
+    rawEntityId !== undefined ? Number.parseInt(rawEntityId, 10) : Number.NaN;
+  const hasValidId = Number.isFinite(numericId) && numericId > 0;
+  const queryId = hasValidId ? numericId : 0;
+
+  const clientQuery = trpc.clients.getById.useQuery(
+    { clientId: queryId },
+    {
+      enabled:
+        hasValidId && (entityType === "client" || entityType === "supplier"),
+      staleTime: 5 * 60 * 1000,
+      retry: false,
+    }
+  );
+  const orderQuery = trpc.orders.getById.useQuery(
+    { id: queryId },
+    {
+      enabled: hasValidId && entityType === "order",
+      staleTime: 5 * 60 * 1000,
+      retry: false,
+    }
+  );
+  const invoiceQuery = trpc.accounting.invoices.getById.useQuery(
+    { id: queryId },
+    {
+      enabled: hasValidId && entityType === "invoice",
+      staleTime: 5 * 60 * 1000,
+      retry: false,
+    }
+  );
+  const billQuery = trpc.accounting.bills.getById.useQuery(
+    { id: queryId },
+    {
+      enabled: hasValidId && entityType === "bill",
+      staleTime: 5 * 60 * 1000,
+      retry: false,
+    }
+  );
+  const productQuery = trpc.productCatalogue.getById.useQuery(
+    { id: queryId },
+    {
+      enabled: hasValidId && entityType === "product",
+      staleTime: 5 * 60 * 1000,
+      retry: false,
+    }
+  );
+
+  if (!entityType || !hasValidId) return null;
+
+  switch (entityType) {
+    case "client":
+    case "supplier": {
+      const name = clientQuery.data?.name;
+      return typeof name === "string" && name.length > 0 ? name : null;
+    }
+    case "order": {
+      const orderNumber = orderQuery.data?.orderNumber;
+      return typeof orderNumber === "string" && orderNumber.length > 0
+        ? orderNumber
+        : null;
+    }
+    case "invoice": {
+      const invoiceData = invoiceQuery.data as
+        | { invoiceNumber?: string | null }
+        | null
+        | undefined;
+      const invoiceNumber = invoiceData?.invoiceNumber;
+      return typeof invoiceNumber === "string" && invoiceNumber.length > 0
+        ? invoiceNumber
+        : null;
+    }
+    case "bill": {
+      const billData = billQuery.data as
+        | { billNumber?: string | null }
+        | null
+        | undefined;
+      const billNumber = billData?.billNumber;
+      return typeof billNumber === "string" && billNumber.length > 0
+        ? billNumber
+        : null;
+    }
+    case "product": {
+      const productData = productQuery.data as
+        | { nameCanonical?: string | null }
+        | null
+        | undefined;
+      const productName = productData?.nameCanonical;
+      return typeof productName === "string" && productName.length > 0
+        ? productName
+        : null;
+    }
+    default:
+      return null;
+  }
+}
+
+/**
+ * Map a registry-derived trail to the flat `BreadcrumbSegment[]` used by the
+ * renderer. Applies the resolved label (if any) to the deepest entity-bearing
+ * crumb and falls back to `<title> #<id>` for other (or unresolved) segments.
+ */
+function trailToSegments(
+  trail: readonly BreadcrumbTrailEntry[],
+  resolvedFor: BreadcrumbTrailEntry | undefined,
+  resolvedLabel: string | null
+): BreadcrumbSegment[] {
+  return trail.map(crumb => {
+    if (
+      resolvedFor &&
+      resolvedLabel &&
+      crumb.path === resolvedFor.path &&
+      crumb.entityType === resolvedFor.entityType
+    ) {
+      return { name: resolvedLabel, path: crumb.path, isLast: crumb.isLast };
+    }
+    if (crumb.entityType && crumb.entityId) {
+      return {
+        name: `${crumb.title} #${crumb.entityId}`,
+        path: crumb.path,
+        isLast: crumb.isLast,
+      };
+    }
+    return { name: crumb.title, path: crumb.path, isLast: crumb.isLast };
+  });
 }
 
 interface AppBreadcrumbProps {
@@ -107,15 +259,38 @@ export const AppBreadcrumb = React.memo(function AppBreadcrumb({
   className,
 }: AppBreadcrumbProps) {
   const [location] = useLocation();
+  const { enabled: registryEnabled } = useFeatureFlag(
+    FEATURE_FLAGS.uxV2BreadcrumbRegistry
+  );
 
-  // Use custom breadcrumbs if provided, otherwise generate from path
-  const breadcrumbs = customBreadcrumbs
+  // Derive the registry-backed trail (only used when the flag is on).
+  const trail = React.useMemo<BreadcrumbTrailEntry[]>(() => {
+    if (!registryEnabled || customBreadcrumbs) return [];
+    return buildBreadcrumbTrail(location);
+  }, [registryEnabled, customBreadcrumbs, location]);
+
+  // Resolve the shallowest entity-bearing crumb so parents like
+  // `/clients/:id/ledger` still show the client name at the intermediate
+  // crumb rather than a raw id.
+  const resolvableEntry = React.useMemo(
+    () => trail.find(t => Boolean(t.entityType && t.entityId)),
+    [trail]
+  );
+  const resolvedLabel = useResolvedEntityLabel(
+    resolvableEntry?.entityType,
+    resolvableEntry?.entityId
+  );
+
+  // Compose the breadcrumb list for rendering.
+  const breadcrumbs: BreadcrumbSegment[] = customBreadcrumbs
     ? customBreadcrumbs.map((crumb, index) => ({
         name: crumb.name,
         path: crumb.path || "",
         isLast: index === customBreadcrumbs.length - 1,
       }))
-    : buildBreadcrumbs(location);
+    : registryEnabled
+      ? trailToSegments(trail, resolvableEntry, resolvedLabel)
+      : buildLegacyBreadcrumbs(location);
 
   // Don't render if no breadcrumbs (home page)
   if (breadcrumbs.length === 0) {
