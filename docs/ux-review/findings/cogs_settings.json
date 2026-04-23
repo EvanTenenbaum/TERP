@@ -1,0 +1,43 @@
+{
+  "page": "CogsSettingsPage",
+  "route": "/settings/cogs",
+  "assessment": "The page has a clean, scannable structure with a clear tab split between Global Settings and Client Adjustments, and the three channel rows (Sales Catalogue, Live Shopping, VIP Shopping) make the surface immediately intelligible. However, the page feels underbuilt: each row duplicates its own state twice (the 'Mid' dropdown and the 'Middle of range' pill say the same thing), there is no visible save affordance or autosave confirmation so users cannot tell whether changing the selector actually commits, and the settings are abstract \u2014 staff see LOW/MID/HIGH without any concrete dollar example of what selecting one does to a customer-facing price. The helpful info callout is good but is the only thing orienting the user to what they're configuring.",
+  "notable_strengths": [
+    "Clear two-tab split (Global Settings vs Client Adjustments) matches the documented mental model in the baseline.",
+    "The inline info banner explaining staff vs customer visibility of vendor ranges is exactly the right microcopy for a pricing-integrity setting.",
+    "Per-channel row layout (Sales Catalogue / Live Shopping / VIP Shopping) is scannable and leaves room for future channels."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "CogsSettingsPage",
+      "severity": "P1",
+      "title": "No save affordance \u2014 users can't tell if selection persisted",
+      "what_is_wrong": "The three channel dropdowns ('Mid' for Sales Catalogue, Live Shopping, VIP Shopping) have no adjacent Save button, no toast, no 'Saved' timestamp, and no dirty-state indicator. A user changing a dropdown has no confirmation that the change committed to the CogsGlobalSettings store.",
+      "why_it_matters": "COGS defaults drive every customer-facing price on three channels. Silent persistence (or silent failure) on a pricing control is a confidence killer and will generate support tickets asking 'did my change save'.",
+      "proposed_fix": "Add an inline 'Saved [timestamp]' microcopy to the right of each selector that updates on successful mutation, plus a transient toast ('Default basis updated for Live Shopping'). If the existing behavior is manual-save, add a sticky footer bar with 'Save changes' / 'Discard' that appears only when the form is dirty.",
+      "functionality_preserved": "Touches only feedback and footer chrome around the existing CogsGlobalSettings tab mutation \u2014 the dropdown values and their LOW/MID/HIGH options are untouched."
+    },
+    {
+      "id": "UX-2",
+      "surface": "CogsSettingsPage",
+      "severity": "P2",
+      "title": "Each row duplicates its own state",
+      "what_is_wrong": "Every channel row renders both a 'Mid' dropdown on the right and a 'Middle of range' badge next to the 'Default effective basis:' label on the left. These two elements encode identical information and always move together.",
+      "why_it_matters": "Doubled state wastes horizontal space, forces the eye to reconcile two controls, and makes the page feel like a prototype. In a pricing context it also invites 'which one is authoritative' confusion.",
+      "proposed_fix": "Keep the dropdown as the single source of truth. Replace the redundant 'Middle of range' pill with either (a) a small helper line under the channel name describing what that channel is used for (e.g. 'Prices published to the public B2B catalogue'), or (b) the current resolved dollar range for a sample SKU (e.g. '$1,240 \u2013 $1,380, selected: $1,310'). Both options reuse the row's existing left column.",
+      "functionality_preserved": "The CogsGlobalSettings selector (LOW/MID/HIGH) and the underlying vendor-range model remain the authoritative control; the pill is purely presentational and its removal does not alter any tRPC call."
+    },
+    {
+      "id": "UX-3",
+      "surface": "CogsSettingsPage",
+      "severity": "P2",
+      "title": "No page H1 and weak visual hierarchy between page and card",
+      "what_is_wrong": "The DOM capture reports H1: []. 'COGS Settings' is rendered as styled text inside the card, not as a semantic page heading, and it competes visually with the 'Range-Based COGS Defaults' card title directly below it.",
+      "why_it_matters": "Accessibility tools and keyboard users lose the landmark, and sighted users see two similarly-weighted titles stacked 150px apart, blurring whether they are on a page or inside a section.",
+      "proposed_fix": "Promote 'COGS Settings' to a true <h1> in the page header region (above the card, aligned with 'Back to Dashboard'), and demote the in-card title to a smaller section label. Keep the subtitle 'Configure cost of goods sold calculations and client-specific adjustments' attached to the H1.",
+      "functionality_preserved": "Pure typographic/semantic change \u2014 does not alter the Global Settings / Client Adjustments tab components or their routing."
+    }
+  ],
+  "redesign_sketch": "Header band outside the card: back link, then H1 'COGS Settings' with one-line subtitle. Directly below, the existing two-tab control (Global Settings | Client Adjustments) as the primary navigation. Under Global Settings, a single section 'Range-Based COGS Defaults' with the info callout kept verbatim. Below that, a 3-row table-style layout, one row per channel, with columns: (1) Channel name + one-line purpose description ('Public B2B catalogue', 'Live shopping sessions', 'VIP-only pricing'), (2) resolved preview like '$1,240 \u2013 $1,380 \u00b7 selected $1,310' computed from a representative SKU, (3) single LOW/MID/HIGH segmented control (replacing the dropdown+pill pair), (4) small 'Saved 2s ago' microcopy that appears after a successful mutation. Sticky footer with 'Save changes' / 'Discard' surfaces only when the form is dirty, so autosave vs explicit-save behavior is unambiguous either way."
+}

@@ -1,0 +1,43 @@
+{
+  "page": "ChartOfAccounts",
+  "route": "/accounting?tab=chart-of-accounts",
+  "assessment": "The Chart of Accounts reads as a near-empty AG-Grid with a single visible column (GROUP) and a huge white void below five collapsed group rows. The page tells me I have 9 accounts across 5 groups but shows zero account-level data until I hunt for the disclosure triangle on each row. The type filter chips (All Types/Asset/Liability/Equity/Revenue/Expense) duplicate the grouping that's already on-screen, and the 'Add Row' button is the only creation affordance \u2014 odd phrasing for an accounting primitive. Worst of all, the ACCOUNT NAME column is empty for every parent row, so the grid looks broken on first load.",
+  "notable_strengths": [
+    "Clear type taxonomy surfaced as both filter chips and grouped rows (Asset/Liability/Equity/Revenue/Expense) matches standard accounting mental models.",
+    "Account count + active count badges ('9 accounts', '9 active') give immediate scale context next to the section title.",
+    "Tab bar keeps Chart of Accounts in line with the rest of the Accounting module (Invoices, Bills, GL, etc.), so navigation is predictable."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "ChartOfAccounts",
+      "severity": "P1",
+      "title": "Groups are collapsed by default, hiding all 9 accounts behind disclosure triangles",
+      "what_is_wrong": "On first paint the grid shows only ASSET (3), LIABILITY (1), EQUITY (2), REVENUE (1), EXPENSE (2) rows with empty ACCOUNT NAME cells and a ~400px blank canvas below. The user must click each chevron to see any account.",
+      "why_it_matters": "Chart of Accounts is a reference table \u2014 users come here to scan or find an account, not to drill into folders. Hiding every leaf row on load makes the page feel broken and adds 5 clicks before any useful content appears.",
+      "proposed_fix": "Expand all group rows by default on initial render; persist the user's collapse/expand state per session. Keep the group header rows so totals and type context remain visible.",
+      "functionality_preserved": "Preserves the hierarchical accounts table from the baseline \u2014 expand/collapse behavior is unchanged, only the default state flips."
+    },
+    {
+      "id": "UX-2",
+      "surface": "ChartOfAccounts",
+      "severity": "P2",
+      "title": "Type filter chips duplicate the row grouping and leave no clear default action",
+      "what_is_wrong": "The chip row (All Types / Asset / Liability / Equity / Revenue / Expense) sits directly above a grid that is already grouped by the same dimension. Selecting 'Asset' would just hide the other four groups the user can already collapse.",
+      "why_it_matters": "Two controls doing the same job splits attention and makes the +Add Row button compete for the same eye-line. New users don't know whether to filter or expand.",
+      "proposed_fix": "Keep the chips (per baseline account type badges) but relabel the row 'Show only:' and collapse it into a single segmented control aligned left; move +Add Row to a primary-styled button at the top-right of the section header next to the search, matching the Add pattern used elsewhere in TERP.",
+      "functionality_preserved": "Preserves the account type filter and create action \u2014 only their placement and labelling change; no router calls removed."
+    },
+    {
+      "id": "UX-3",
+      "surface": "ChartOfAccounts",
+      "severity": "P2",
+      "title": "'+ Add Row' is the wrong verb for creating a GL account",
+      "what_is_wrong": "The primary create button reads '+ Add Row', matching grid terminology rather than accounting terminology. Next to 'Chart of Accounts' and account-type filters, it reads as generic table chrome.",
+      "why_it_matters": "Accountants expect 'New Account' / 'Add Account'. The current label makes the action look like a cosmetic grid operation, which lowers discoverability of the canonical create flow.",
+      "proposed_fix": "Rename the button to 'New Account' and, when clicked, open the existing create-account form/modal pre-filled with the currently selected type chip (e.g., Asset) as a smart default.",
+      "functionality_preserved": "Preserves the create-account capability listed in the baseline Features; only the label and default-type prefill change."
+    }
+  ],
+  "redesign_sketch": "Header: 'Chart of Accounts' H2 with inline pill badges '9 accounts \u00b7 9 active', right-aligned Search input and a primary 'New Account' button. Secondary row: 'Show only:' segmented control (All \u00b7 Asset \u00b7 Liability \u00b7 Equity \u00b7 Revenue \u00b7 Expense), left-aligned; refresh icon on the far right. Grid: full-width hierarchical table, all groups expanded by default, columns Account Name \u00b7 Code \u00b7 Type \u00b7 Balance \u00b7 Status \u00b7 Actions (\u22ef). Group header rows show 'ASSET \u2014 3 accounts' with a subtle tinted background and a collapse chevron; leaf rows indent 24px. Empty-state microcopy when a filter yields nothing: 'No Liability accounts yet. New Account \u2192'. Persist collapse state per user in session storage so power users who prefer folders aren't forced back to expanded each visit."
+}

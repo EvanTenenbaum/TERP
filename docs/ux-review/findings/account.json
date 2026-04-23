@@ -1,0 +1,43 @@
+{
+  "page": "AccountPage",
+  "route": "/account",
+  "assessment": "The page cleanly separates Profile, Security, and Preferences, and the callout directing users to System Settings is a smart disambiguation move. However, the hierarchy is noisy: 'Profile Information' appears twice back-to-back (once as an H2 section header, once as a card header with identical icon and copy), the Save Changes button reads as disabled (muted peach) when the form is actually idle/valid, and the page icon avatar is a generic placeholder rather than reflecting the logged-in user. The 'Personal' badges next to each H2 are decorative noise given every section on this page is personal by definition.",
+  "notable_strengths": [
+    "Prominent contrast banner routing org-level questions to /settings prevents the classic 'wrong settings page' dead-end.",
+    "Clear vertical stacking of Profile \u2192 Security \u2192 Preferences \u2192 Notifications matches user mental model of account self-service.",
+    "Password fields expose a visibility toggle, which is table stakes but correctly implemented."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "AccountPage",
+      "severity": "P2",
+      "title": "Duplicated 'Profile Information' header wastes vertical space",
+      "what_is_wrong": "The string 'Profile Information' appears twice within 60px of itself \u2014 once as the H2 section title with a user icon and 'Personal' tag, then again immediately inside the card as a second header with the same icon plus the subtitle 'Update your personal information'. Same pattern likely repeats for Security ('Change Password' card inside 'Security' H2).",
+      "why_it_matters": "Doubled headers push the actual Name/Email fields below the fold on laptop viewports and make the page feel like a low-effort form dump rather than a polished settings surface.",
+      "proposed_fix": "Keep the outer H2 ('Profile Information' with icon and 'Personal' tag) as the section anchor and strip the redundant inner card header, promoting the subtitle 'Update your personal information' to sit directly under the H2. Apply the same collapse to Security \u2192 Change Password.",
+      "functionality_preserved": "Preserves the Profile and Security sections defined in the AccountPage baseline \u2014 only removes a duplicate visual label; no fields, actions, or routes change."
+    },
+    {
+      "id": "UX-2",
+      "surface": "AccountPage",
+      "severity": "P2",
+      "title": "Save Changes button reads as disabled when form is valid",
+      "what_is_wrong": "The 'Save Changes' button under the Profile form renders in a muted peach/tan with low-contrast white text, visually identical to a disabled state, even though Name and Email are populated with valid values.",
+      "why_it_matters": "Users will hesitate or assume the form is locked, slowing a routine 'fix my name' task and eroding trust in button states elsewhere in the app.",
+      "proposed_fix": "Reserve the muted peach exclusively for the disabled/pristine state (no dirty fields) and use the app's saturated primary brand color for the active/dirty state. Additionally, disable the button by default until a field actually changes, then enable with full-contrast styling.",
+      "functionality_preserved": "Preserves the Profile save action wired to the existing profile-update mutation \u2014 only the visual token and dirty-check gating change, not the submit behavior."
+    },
+    {
+      "id": "UX-3",
+      "surface": "AccountPage",
+      "severity": "P3",
+      "title": "'Personal' tag next to every H2 is noise",
+      "what_is_wrong": "Each section H2 (Profile Information, Security, and presumably Preferences/Notifications below the fold) carries a small 'Personal' pill. Every section on /account is personal by definition; the contrast is already established by the top banner pointing to /settings for org-level settings.",
+      "why_it_matters": "Repeating the same badge four times on a single scroll adds visual weight without conveying new information, and dilutes the signal if a legitimate 'Org' or 'Shared' badge is ever introduced.",
+      "proposed_fix": "Drop the 'Personal' pill from all section headers on this page. If scoping context is ever needed (e.g., future shared preferences), reintroduce the badge only on the non-personal row.",
+      "functionality_preserved": "Preserves all AccountPage sections listed in the baseline (Profile, Security, Preferences, Notification Preferences); the pill is purely decorative and has no behavior to lose."
+    }
+  ],
+  "redesign_sketch": "Single-column settings page, max-width ~760px, left-aligned with a sticky mini TOC on the right at \u22651280px (Profile \u00b7 Security \u00b7 Preferences \u00b7 Notifications \u00b7 Command Palette) that deep-links to each section. Top: H1 'My Account' with subtitle 'Manage your personal settings and preferences', and the existing contrast banner linking to /settings kept as-is. Each section uses one H2 with a leading icon \u2014 no duplicate inner card header, no 'Personal' pill. Under each H2, a short helper sentence (e.g., 'Update your personal information'), then the form fields in a bordered card. Primary buttons ('Save Changes', 'Change Password', 'Save Preferences') use the saturated brand color only when the form is dirty; otherwise render disabled in muted peach. Avatar in the page header reflects the user's initials ('QA') instead of a generic silhouette."
+}

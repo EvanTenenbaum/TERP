@@ -1,0 +1,93 @@
+{
+  "page": "AccountingWorkspace.invoices",
+  "route": "/accounting?tab=invoices",
+  "assessment": "This is a dense, data-first invoice register with a lot of the right pieces: a clear tab spine, status filter pills, a contextual action bar, summary chips ($963,104 AR / 0 overdue / 520 total), and a column-filter-capable table. But the execution has one flat-out rendering bug (the Status column is leaking raw `<spar...` markup in every row) and several workflow flaws: bulk actions are clickable with zero selection, multiple column headers are truncated, and the 'overdue' chip contradicts the table (Mendocino Naturals has $5,885.56 outstanding against a Sep 28 due date). The shortcut legend dominates the bottom of the screen while the '0 selected \u00b7 All \u00b7 520 total' context is orphaned below the table. This page will feel both broken and confusing to an AR clerk running a daily collections pass.",
+  "notable_strengths": [
+    "Summary chips ($963,104 AR, 0 overdue, 520 total) plus the AR Aging shortcut give an at-a-glance financial posture before the user touches the table.",
+    "Status filter pills (All / Draft / Sent / Viewed / Partial / Paid / Overdue / Void) cover the `BillStatusActions`-style state machine and are the right primary slicer for an AR workflow.",
+    "Per-column filter affordances and the keyboard shortcut legend (Click / Shift+Click / Ctrl+Click / Ctrl+C / Esc) signal a real power-user grid, not a generic table."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "AccountingWorkspace.invoices",
+      "severity": "P0",
+      "title": "Status column renders raw `<spar...` markup in every row",
+      "what_is_wrong": "The STATUS column shows `<spar...` in every visible row (INV-000120 through INV-000111). A template is leaking the literal opening of a `<span>` tag instead of rendering the status badge.",
+      "why_it_matters": "The single most important column for an AR workflow \u2014 is this invoice Paid, Partial, Overdue, Void? \u2014 is unreadable. Every filter pill above depends on this concept, and without it the user has to reverse-engineer status from the Amount Due / Paid % columns.",
+      "proposed_fix": "Restore the status cell renderer: render a color-coded pill (Draft gray, Sent blue, Viewed indigo, Partial amber, Paid green, Overdue red, Void slate). While fixing, widen the column to a minimum of 110px so the longest label ('Overdue') fits without truncation, and escape any user-supplied content rather than injecting HTML strings.",
+      "functionality_preserved": "Touches only the cell renderer inside `InvoicesSurface`'s table column definition; the underlying invoice status field and the Draft/Sent/Viewed/Partial/Paid/Overdue/Void state machine remain intact."
+    },
+    {
+      "id": "UX-2",
+      "surface": "AccountingWorkspace.invoices",
+      "severity": "P1",
+      "title": "Bulk action buttons are enabled with zero rows selected",
+      "what_is_wrong": "'Mark Sent', 'Record Payment', 'Void', 'PDF', and 'Print' all sit in the action bar at full opacity while the footer reads '0 selected \u00b7 All \u00b7 520 total'. None of them can do useful work without a selection.",
+      "why_it_matters": "Clicking any of them produces either a dead-end toast, an empty modal, or \u2014 worst case \u2014 an unintended operation against the wrong row. It also wastes the user's primary real estate on controls that aren't in context.",
+      "proposed_fix": "Disable Mark Sent / Record Payment / Void / PDF / Print when `selectedInvoiceIds.length === 0`, with a tooltip 'Select one or more invoices'. When \u22651 row is selected, swap the action bar for a sticky selection bar that reads 'N invoices selected \u00b7 [Mark Sent] [Record Payment] [Void] [PDF] [Print] [Clear]'. Keep 'Create Invoice' always enabled as the non-selection primary action.",
+      "functionality_preserved": "The `InvoicesSurface` lazy sheet's mark-sent, record-payment, void, PDF, and print handlers are untouched \u2014 only their enablement predicate and container change."
+    },
+    {
+      "id": "UX-3",
+      "surface": "AccountingWorkspace.invoices",
+      "severity": "P1",
+      "title": "'0 overdue' chip contradicts the data in the table",
+      "what_is_wrong": "The summary chip reads `0 overdue`, but INV-000116 (Mendocino Naturals) shows a due date of Sep 28 2025 with $5,885.56 still outstanding rendered in red, and INV-000111 is at 102% paid (apparent overpayment). The chip is out of sync with the row-level state.",
+      "why_it_matters": "AR clerks use the overdue chip as their daily worklist entry point. If it lies, collections get missed, and every downstream DSO/aging report built on the same aggregate is suspect.",
+      "proposed_fix": "Compute the overdue count from the same query that drives the row-level 'Overdue' status (due_date < today AND amount_due > 0). Make the chip clickable so it filters the table to Overdue (equivalent to the Overdue pill). Add a second chip for overpayments ('1 overpaid' \u2192 filters to paid_ratio > 100%) so INV-000111 doesn't vanish into 'Paid'.",
+      "functionality_preserved": "Keeps the existing `InvoicesSurface` chip slots and the Overdue status filter pill; only the aggregation query and a new click handler are added."
+    },
+    {
+      "id": "UX-4",
+      "surface": "AccountingWorkspace.invoices",
+      "severity": "P1",
+      "title": "Four column headers are truncated at default width",
+      "what_is_wrong": "INVOICE DATE renders as 'INVOICE ...', AMOUNT DUE as 'AMOUNT D...', PAID % as 'PA...', and STATUS as 'STATU...'. The grid is not allocating minimum widths, and the filter/overflow icons inside each header eat the remaining space.",
+      "why_it_matters": "Users can't tell Invoice Date from Due Date at a glance, or Amount Due from Total. In an AR register where 'which date is which' determines whether an invoice is overdue, this is a real error-generator.",
+      "proposed_fix": "Set min-widths per column (Invoice Date 120px, Due Date 120px, Total 120px, Amount Due 130px, Paid % 90px, Status 110px). Move the three-dot column menu behind a hover reveal so the label owns the header at rest. Abbreviate 'Paid %' rather than truncating the header.",
+      "functionality_preserved": "No change to `InvoicesSurface` column definitions, sort, or filter behaviour \u2014 only CSS widths and hover state on the header affordances."
+    },
+    {
+      "id": "UX-5",
+      "surface": "AccountingWorkspace.invoices",
+      "severity": "P2",
+      "title": "Toolbar hierarchy dilutes the primary action and hides AR Aging",
+      "what_is_wrong": "'Create Invoice' is the only true primary action, yet it shares visual weight with Mark Sent, Record Payment, Void, PDF, and Print on the same row. Separately, 'AR Aging' is isolated on the right of the chip row, far from the other report-style controls, and reads ambiguously \u2014 is it a filter, a link, or a drawer?",
+      "why_it_matters": "Dozens of times a day, an AR user either (a) creates a new invoice or (b) drills into aging. Both are buried among bulk actions that only apply after selection.",
+      "proposed_fix": "Promote 'Create Invoice' to a solid-accent button anchored to the top-right of the Invoices panel next to the search. Group Mark Sent / Record Payment / Void / PDF / Print into a contextual selection bar (see UX-2). Relocate 'AR Aging' into a secondary 'Reports \u25be' menu beside Create Invoice, with a subtitle 'Open aging buckets report' on hover.",
+      "functionality_preserved": "All six existing buttons and the AR Aging route remain reachable; only grouping and visual weight change. `InvoicesSurface`'s handler bindings are untouched."
+    },
+    {
+      "id": "UX-6",
+      "surface": "AccountingWorkspace.invoices",
+      "severity": "P2",
+      "title": "Search input placeholder is clipped",
+      "what_is_wrong": "The search field placeholder renders as 'Search invoice # or clie\u2026' because the input is too narrow for its own hint. Also the search has no visible scope indicator (is it just invoice # / client, or also PO/line items?).",
+      "why_it_matters": "Users don't know the search scope, so they over- or under-constrain queries against a 520-row register.",
+      "proposed_fix": "Widen the input to ~320px, rewrite the placeholder to 'Search invoice #, client, PO, or amount', and add a scope hint on focus ('Press / to focus \u00b7 Ctrl+K for global'). Anchor it to the right of the panel next to the refresh button already present.",
+      "functionality_preserved": "No change to the invoice search tRPC call or its fuzzy-match fields; only input width and placeholder copy."
+    },
+    {
+      "id": "UX-7",
+      "surface": "AccountingWorkspace.invoices",
+      "severity": "P2",
+      "title": "Shortcut legend dominates screen while selection state is orphaned",
+      "what_is_wrong": "A five-chip keyboard-shortcut legend (Click / Shift+Click / Ctrl+Click / Ctrl+C / Escape) sits in a large floating panel at the bottom-right, permanently. The actual selection context \u2014 '0 selected \u00b7 All \u00b7 520 total' \u2014 sits in plain text on the bottom-left, far from the table rows it describes.",
+      "why_it_matters": "Newcomers get a lesson they've already learned; veterans lose real estate. Meanwhile the counter that would tell a veteran what their selection is gets missed entirely.",
+      "proposed_fix": "Collapse the shortcut legend into a '?' icon in the table footer that expands on hover/click. Merge '0 selected \u00b7 All \u00b7 520 total' into a persistent table footer row directly under the grid, with the count, active filter, and a 'Clear selection' link. Keep the legend content available \u2014 just not open by default.",
+      "functionality_preserved": "The shortcut legend component stays in `InvoicesSurface`; only its default collapsed state and footer layout change. No shortcut bindings are altered."
+    },
+    {
+      "id": "UX-8",
+      "surface": "AccountingWorkspace.invoices",
+      "severity": "P3",
+      "title": "Over-payment (102%) on INV-000111 is not flagged",
+      "what_is_wrong": "INV-000111 (Chula Vista Cannabis) shows `102%` in the Paid % column \u2014 the customer paid more than invoiced \u2014 but the cell is styled identically to the 100% and 69% rows. Amount Due reads $0.00, masking the overpayment.",
+      "why_it_matters": "Overpayments represent unallocated credit the business owes back or must apply to future invoices. Without a visual cue, they silently accumulate as reconciliation debt.",
+      "proposed_fix": "When paid_ratio > 100%, render the cell in a warning tone with a small 'Overpaid' chip and a tooltip showing the credit amount. Surface an aggregate 'N overpaid' chip in the header row next to '0 overdue' that filters to the same set.",
+      "functionality_preserved": "No change to payment recording or the GL reversal path; only a conditional style and derived chip on data already returned by the invoice query."
+    }
+  ],
+  "redesign_sketch": "Header stays as 'Accounting' H1 with the 10-tab LinearWorkspaceShell. Under Invoices, a single toolbar row runs left\u2192right: panel title 'Invoices \u00b7 520' \u00b7 three clickable aggregate chips (AR $963,104 / Overdue 0 / Overpaid 1, each a filter) \u00b7 flexible spacer \u00b7 wide search input 'Search invoice #, client, PO, or amount' \u00b7 Reports \u25be (AR Aging, DSO, Collections) \u00b7 solid-accent 'Create Invoice' button. A second row holds the status filter pills (All / Draft / Sent / Viewed / Partial / Paid / Overdue / Void) left-aligned, with a small row-count '50 visible \u00b7 All statuses' at right. The grid has fixed min-widths per column so no header truncates, Status renders as a colored pill, Paid % >100% renders in warning tone with an 'Overpaid' chip, and overdue rows get a red due-date tint computed from due_date < today. A sticky footer under the grid shows '0 selected \u00b7 All \u00b7 520 total \u00b7 Clear' on the left and a '?' shortcut popover on the right (collapsed by default). When \u22651 row is selected, the top toolbar's Create Invoice area is replaced by a contextual bar 'N selected \u00b7 Mark Sent \u00b7 Record Payment \u00b7 Void \u00b7 PDF \u00b7 Print \u00b7 Clear', so bulk actions only appear when they apply. The AR Aging link, GL reversal viewer, and all existing invoice-sheet drill-downs remain reachable from row click and the Reports menu."
+}

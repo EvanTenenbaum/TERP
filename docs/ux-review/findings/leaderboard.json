@@ -1,0 +1,43 @@
+{
+  "page": "LeaderboardPage",
+  "route": "/leaderboard",
+  "assessment": "The page has a clean scaffold \u2014 clear H1, category tabs, and a filter row \u2014 but it's doing the bare minimum to orient the user. The client-type dropdown label reads 'All ClientsAll Clients' (doubled string), the sort control shows 'Highest First' with no indication it toggles asc/desc, and the five category tabs (Master, Financial, Engagement, Reliability, Growth) give no hint of what metrics or weights drive them. Once loaded, rows are skeleton-only here, but there is no column header, no rank column, no score preview, and no explanation of how Master Score is composed \u2014 which is especially problematic given a 'Customize Weights' button sits top-right with no visible context for what it changes.",
+  "notable_strengths": [
+    "Clear category tab model (Master/Financial/Engagement/Reliability/Growth) gives users a fast mental map of the five lenses on performance.",
+    "Top-right action cluster (Customize Weights, Refresh, Export) groups configuration and data-out actions predictably.",
+    "Subtitle 'Track and compare client performance across key metrics' sets purpose immediately below the H1."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "LeaderboardPage",
+      "severity": "P2",
+      "title": "Client-type filter renders label twice ('All ClientsAll Clients')",
+      "what_is_wrong": "The first filter dropdown displays the string 'All ClientsAll Clients' \u2014 the selected value appears concatenated with the placeholder or label. This is visible in the screenshot and in the runtime button list.",
+      "why_it_matters": "Looks broken on a page that is supposed to convey data trust; users scanning filters will second-guess what state the filter is in and whether CUSTOMER/SUPPLIER/DUAL options exist.",
+      "proposed_fix": "Render the trigger as a single label: when nothing is narrowed show 'Client type: All', otherwise 'Client type: Customers' / 'Suppliers' / 'Dual'. Drop the duplicated value-plus-placeholder concatenation in the Select trigger.",
+      "functionality_preserved": "Preserves the `Filters: Client type (ALL/CUSTOMER/SUPPLIER/DUAL)` baseline \u2014 only the trigger label changes; the four filter values and the `leaderboard.*` query params are untouched."
+    },
+    {
+      "id": "UX-2",
+      "surface": "LeaderboardPage",
+      "severity": "P2",
+      "title": "Sort control hides the asc/desc toggle and the second sort key",
+      "what_is_wrong": "The filter row exposes 'Master Score' and 'Highest First' as two separate pills, but there is no visual affordance that 'Highest First' is a direction toggle, and no indication that `ytd_revenue` is an alternative sort key documented in the baseline.",
+      "why_it_matters": "Sales managers looking for 'who has fallen the furthest' or 'top revenue YTD' can't tell the control supports their question, so they scroll the list manually or leave the page.",
+      "proposed_fix": "Combine into one labeled control: 'Sort by [Master Score \u25be] [\u2193 Highest first]' where the first pill is a select with Master Score and YTD Revenue, and the arrow pill is an explicit direction toggle with a tooltip 'Switch to lowest first'.",
+      "functionality_preserved": "Preserves the baseline `sort by master_score or ytd_revenue (asc/desc)` \u2014 both keys and both directions remain, only the labeling/affordance changes."
+    },
+    {
+      "id": "UX-3",
+      "surface": "LeaderboardPage",
+      "severity": "P2",
+      "title": "'Customize Weights' is unexplained and disconnected from the Master Score tab",
+      "what_is_wrong": "The 'Customize Weights' button sits top-right with no tooltip, no current-weight summary, and no visual link to the 'Master Score' tab it actually governs. Users on Financial/Engagement/Reliability/Growth tabs see it too, where it has no effect.",
+      "why_it_matters": "Admins can't tell what the button does or what the current weighting is; non-admins may open it unnecessarily. Discoverability of a core feature (weight tuning affects every ranking downstream) is weak.",
+      "proposed_fix": "Show the button only (or emphasize it) on the Master Score tab, and render a small caption under 'Master Score Rankings': 'Weights: Financial 40% \u00b7 Engagement 20% \u00b7 Reliability 25% \u00b7 Growth 15% \u00b7 Customize'. Keep the full `WeightCustomizer` modal as the click target.",
+      "functionality_preserved": "Preserves `WeightCustomizer` action and `gamification.*` weight mutations \u2014 only placement and an inline summary are added; the modal and its writes are untouched."
+    }
+  ],
+  "redesign_sketch": "Keep H1 'Leaderboard' with subtitle. Directly under the tab row for Master Score, add a one-line weights caption ('Financial 40% \u00b7 Engagement 20% \u00b7 Reliability 25% \u00b7 Growth 15% \u2014 Customize') that doubles as the entry point to WeightCustomizer, so the top-right button becomes secondary. Collapse the filter row into three clearly labeled controls: 'Client type: All', 'Sort by: Master Score \u25be', and a direction toggle '\u2193 Highest first', plus the search field left-aligned. Replace the bare skeleton rows with a table that has columns Rank \u00b7 Client (name + TERI code) \u00b7 Score \u00b7 \u0394 vs last period \u00b7 YTD Revenue \u00b7 quick-action chevron, so rows click through to `/clients/:id` as today. Retain Refresh and Export top-right; move Customize Weights next to them but styled as tertiary until the Master Score tab is active."
+}

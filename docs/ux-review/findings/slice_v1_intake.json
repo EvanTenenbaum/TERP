@@ -1,0 +1,43 @@
+{
+  "page": "ProductIntakeSlicePage",
+  "route": "/slice-v1-lab/product-intake",
+  "assessment": "The page lands in a hollow empty state: an H1 'Receiving', a dead 'Select receiving draft' dropdown, an action toolbar whose primary button ('Receive') is styled active but cannot do anything, and a data table with headers but zero rows. The user is told twice to go 'Back to Receiving Queue' but the page still spends most of its real estate on a non-functional table and disabled-looking affordances. There is no inline way to pick a PO from here, so the screen is effectively a redirect page dressed up as a workspace. The breadcrumb 'Purchase Order \u2192 Receiving \u2192 Received' in the header is the clearest signal of where you are, but it is visually buried next to an environment label.",
+  "notable_strengths": [
+    "The three-step breadcrumb 'Purchase Order \u2192 Receiving \u2192 Received' establishes the intake pipeline clearly and should be preserved.",
+    "The action rail (Review / Receive / Activity Log / Attachments / SKU Gallery) is a coherent task vocabulary for a receiving draft and maps to the documented QA-gated flow.",
+    "The empty-state copy 'Open a purchase order from the Receiving queue to continue' correctly names the next step rather than showing a blank grid."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "ProductIntakeSlicePage",
+      "severity": "P1",
+      "title": "Empty state shows a full toolbar and table that cannot be used",
+      "what_is_wrong": "With 'No active receiving draft' the page still renders the column selector, density toggle, action rail (Review, Receive, Activity Log, Attachments, SKU Gallery), the '0 selected / Clear' bulk bar, and a full column header row. The 'Receive' button is rendered in the active/filled style even though there is nothing to receive.",
+      "why_it_matters": "Users try to click Receive or the column headers and get no feedback, which reads as a broken page. It also buries the one thing they actually need to do \u2014 go pick a PO \u2014 below a wall of inert chrome.",
+      "proposed_fix": "When `activeDraft` is null, collapse the toolbar and table into a single centered empty-state card containing the existing 'Back to Receiving Queue' button as the primary CTA plus a secondary 'Select receiving draft' dropdown. Keep the action rail mounted but visually disabled (reduced opacity, `aria-disabled`) so its presence is still discoverable.",
+      "functionality_preserved": "Preserves the Review/Receive/Activity Log/Attachments/SKU Gallery action rail and the `Select receiving draft` picker \u2014 none are removed, only gated on draft presence so they light up the moment a draft is loaded."
+    },
+    {
+      "id": "UX-2",
+      "surface": "ProductIntakeSlicePage",
+      "severity": "P2",
+      "title": "Two identical 'Back to Receiving Queue' buttons compete for the same action",
+      "what_is_wrong": "There is a 'Back to Receiving Queue' button in the top filter row and a second, visually different one in the center empty state. Both do the same thing.",
+      "why_it_matters": "Duplicate CTAs at different weights make users hesitate about which is primary and clutter the header row with a button that is only relevant in the empty case.",
+      "proposed_fix": "Remove the header-row instance only while the draft is null (render it in the centered empty state as the sole primary CTA). When a draft is active, move it back to the header row as a secondary action next to 'Columns'.",
+      "functionality_preserved": "The navigation target (Receiving queue route) is retained in both states; only one instance renders at a time, so no handler or route is removed."
+    },
+    {
+      "id": "UX-3",
+      "surface": "ProductIntakeSlicePage",
+      "severity": "P2",
+      "title": "H1 'Receiving' duplicates the nav tab and ignores draft context",
+      "what_is_wrong": "The page H1 is a generic 'Receiving' identical to the active top-nav tab label, with a subtitle describing the feature rather than the current object. Once a draft is loaded there is no place for the PO reference or vendor to surface at title level.",
+      "why_it_matters": "Users working multiple intakes in tabs cannot tell which PO they are in from the title bar, and the subtitle wastes the most valuable row on marketing copy.",
+      "proposed_fix": "Make the H1 dynamic: 'Receiving \u2014 {PO reference} \u00b7 {Brand/Farmer}' when a draft is active, and 'Receiving \u00b7 No active draft' when empty. Demote the current 'Review to Receive with inline QA gating\u2026' sentence to a one-line helper under the empty-state card only.",
+      "functionality_preserved": "Uses the same PO_REFERENCE and BRAND/FARMER fields already exposed in the table columns; no router or data contract changes, purely a title-binding."
+    }
+  ],
+  "redesign_sketch": "Header row unchanged: brand + breadcrumb 'Purchase Order \u2192 Receiving \u2192 Received' on the left, top-nav tabs centered, environment tag right. Below it, a context bar whose H1 becomes 'Receiving \u00b7 No active draft' (or 'Receiving \u2014 PO-1042 \u00b7 Green Ridge Farms' when loaded), with the 'Select receiving draft' dropdown and a compact action rail (Review, Receive, Activity Log, Attachments, SKU Gallery) pinned to the right \u2014 all in a disabled state until a draft loads. When empty, replace the entire table region with a single centered card: icon, heading 'No receiving draft selected', body 'Pick a PO from the Receiving queue to start inline QA and receipt.', primary button 'Back to Receiving Queue', secondary inline 'Select receiving draft \u25be'. When a draft is active, the card is swapped for the existing columned table (PO Reference, Brand/Farmer, Strain, Category, Packaging, Qty, Cost, Grade, Location, SKU) with the density toggle and Columns picker restored in the header row and the action rail lit up."
+}

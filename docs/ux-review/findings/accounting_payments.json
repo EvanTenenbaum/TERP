@@ -1,0 +1,43 @@
+{
+  "page": "Payments",
+  "route": "/accounting?tab=payments",
+  "assessment": "The Payments tab gives a clean ledger with useful top-line totals (283, $4.97M received, $5,800 sent) and filter chips for Received/Sent. But the TYPE column is rendering raw HTML markup ('<span clas...') instead of a styled badge, which is an embarrassing P0 data-integrity-looking bug. The Reference column leaks internal IDs like 'No reference' and raw hashes where a method-specific label would read better, and the 4 unrecorded payments surfaced on the dashboard ('2 AR without matching invoices, 2 AP without matching bills') have no visible affordance here to triage them. The keyboard hint footer is a nice touch and the action split (Record Payment vs Void) is clear.",
+  "notable_strengths": [
+    "Header totals ($4,973,788 received / $5,800 sent / 283 total) give immediate financial context before the table loads.",
+    "Keyboard affordance footer (Click/Shift+Click/Ctrl+Click/Ctrl+C/Escape) is discoverable and power-user friendly.",
+    "Received/Sent/All segmented filter is the right primary cut for a payment ledger."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "Payments",
+      "severity": "P0",
+      "title": "TYPE column renders raw HTML instead of a badge",
+      "what_is_wrong": "Every row in the TYPE column shows the truncated literal string '<span clas\u2026' rather than a rendered Received/Sent status pill. The actual payment type (ACH, CASH, CHECK, etc.) is shown in the METHOD column, so TYPE is both broken and duplicative-looking.",
+      "why_it_matters": "A column full of visible HTML source in a finance ledger destroys trust in the data and makes the Received/Sent distinction impossible to read at a glance \u2014 users must rely solely on the filter chip or the amount alignment to tell direction.",
+      "proposed_fix": "Escape/render the status badge HTML properly so TYPE displays a colored pill ('Received' green, 'Sent' amber, 'Void' grey). If the column is meant to show direction, rename the header to 'DIRECTION' to disambiguate from METHOD.",
+      "functionality_preserved": "Touches only the cell renderer for the `paymentType` column documented in the baseline's filterable-table spec; filtering/sorting on `paymentType` is unchanged."
+    },
+    {
+      "id": "UX-2",
+      "surface": "Payments",
+      "severity": "P1",
+      "title": "No path from 'Unrecorded Payments' alert to this registry",
+      "what_is_wrong": "The dashboard flags '4 unrecorded payments \u00b7 2 AR without matching invoices \u00b7 2 AP without matching bills', but on the Payments tab there is no chip, filter, or banner to isolate those 4 rows among 283. The 'Sent $5,800' total in the header matches the AP figure but is not clickable.",
+      "why_it_matters": "Reconciliation is the whole reason an accountant lands here. Forcing them to eyeball 283 rows to find 4 orphans is the slowest possible path through a core daily workflow.",
+      "proposed_fix": "Make the '$4,973,788 received' and '$5,800 sent' totals clickable filters, and add a fourth chip 'Unmatched (4)' next to All/Received/Sent that filters to payments with no linked invoice/bill. Add a subtle amber row indicator for unmatched rows.",
+      "functionality_preserved": "Uses the existing `paymentType` filter plumbing and the `?invoiceId=`/`?orderId=` deep-link schema; no new router surface, just a preset filter state."
+    },
+    {
+      "id": "UX-3",
+      "surface": "Payments",
+      "severity": "P2",
+      "title": "Void action is ambiguous with no row selected",
+      "what_is_wrong": "The 'Void' button sits in the top-right next to 'Record Payment' with no selection state shown. It is unclear whether clicking it opens a void-by-ID dialog, voids the highlighted row, or is disabled until selection \u2014 and there is no selection checkbox column visible.",
+      "why_it_matters": "Void is a destructive, audit-trail-affecting action on a finance ledger. Ambiguity about its target is exactly the class of affordance that causes incident tickets.",
+      "proposed_fix": "Disable 'Void' until a row is selected, and when enabled, change its label to 'Void PAY-000060' (the selected payment #). Move 'Void' into the detail drawer as the primary destructive action rather than a top-bar button so it is always scoped to a specific payment.",
+      "functionality_preserved": "Void action and the row\u2192drawer selection flow from the baseline ('Select a row to see details and take actions') are retained; only the button's enabled-state and label binding change."
+    }
+  ],
+  "redesign_sketch": "Keep the 'Accounting' H1 and tab bar untouched. Under the tab strip, render a compact header row: 'Payments' title on the left; on the right, three clickable KPI tiles \u2014 Total (283) \u00b7 Received ($4,973,788) \u00b7 Sent ($5,800) \u2014 each acting as a filter preset. Below that, a single control bar: segmented [All \u00b7 Received \u00b7 Sent \u00b7 Unmatched (4)] on the left, search on the right, and a meatball menu for column visibility. Move 'Record Payment' to a primary button top-right; remove the standalone 'Void' and make it a destructive action inside the row drawer. Table columns: PAYMENT # \u00b7 DATE \u00b7 DIRECTION (rendered badge, green/amber) \u00b7 METHOD \u00b7 AMOUNT (right-aligned, signed) \u00b7 INVOICE/BILL \u00b7 REFERENCE. Unmatched rows get a left-edge amber bar and a 'Link\u2026' inline action. Keep the keyboard-hint footer pinned."
+}

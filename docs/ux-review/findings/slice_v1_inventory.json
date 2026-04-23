@@ -1,0 +1,43 @@
+{
+  "page": "InventoryBrowseSlicePage",
+  "route": "/slice-v1-lab/inventory",
+  "assessment": "The page delivers on the 'grid-first browse' promise with a clean table, readable monospace SKUs, a density toggle, and a Columns control \u2014 the bones of a competent inventory grid. But the table is doing almost nothing to help an operator actually work inventory: Status is rendered as raw enum tokens (AWAITING_INTAKE, LIVE), Supplier is mostly a bare dash with no explanation of why, numeric columns are right-aligned but the headers drift with them making scan-alignment fuzzy, and every row has a redundant 'Gallery' button instead of the row itself being the click target. The density dropdown and Columns trigger have no visible state (no count of hidden columns, no current view name), so discoverability of the view-mode/drawer features called out in the subtitle is low.",
+  "notable_strengths": [
+    "Monospace SKU column with consistent prefixing makes scanning and copy/paste reliable.",
+    "Density control ('Comfortable') + Columns control + search in a single toolbar row is the correct Linear/Ramp-style pattern.",
+    "Breadcrumb 'Purchase Order \u2192 Receiving \u2192 Received' in the header anchors this slice inside the broader PO flow."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "InventoryBrowseSlicePage",
+      "severity": "P1",
+      "title": "Status column shows raw enum tokens instead of human labels",
+      "what_is_wrong": "The Status cells render 'AWAITING_INTAKE' and 'LIVE' as uppercase SCREAMING_SNAKE strings with no color semantics \u2014 'LIVE' and 'AWAITING_INTAKE' use the same muted pill treatment, so an operator cannot distinguish sellable inventory from not-yet-received inventory at a glance.",
+      "why_it_matters": "Status is the single most important triage signal on an inventory grid. Forcing users to read and decode enum strings on every row slows scanning and risks someone treating AWAITING_INTAKE stock as available.",
+      "proposed_fix": "Map the existing status values to title-cased labels ('Awaiting intake', 'Live') and apply a two-tone badge: neutral/amber for awaiting_intake, green for live. Keep the enum value as a `data-status` attribute and in the tooltip so filtering and tests continue to key off the raw token.",
+      "functionality_preserved": "The underlying status enum from the inventory query stays identical; this is a presentational mapping in the Status cell renderer, so any column-filter or Columns-toggle behavior keyed on the status field is untouched."
+    },
+    {
+      "id": "UX-2",
+      "surface": "InventoryBrowseSlicePage",
+      "severity": "P2",
+      "title": "Per-row 'Gallery' button is redundant and crowds the row",
+      "what_is_wrong": "Every row ends in an identical 'Gallery' pill button \u2014 the runtime captured 25 of them in sequence. The row itself is not a click target, so the only way into SKU detail is this one repeated control, and it steals horizontal space from the Supplier column (which is already showing '-' for most rows).",
+      "why_it_matters": "Repeated identical CTAs add visual noise, blow out the Buttons list for keyboard users tabbing through the grid, and mask the fact that row-click should open the SKU gallery drawer described in the page subtitle.",
+      "proposed_fix": "Make the entire row the primary click target that opens the SKU gallery drawer, and demote the per-row affordance to a small icon-only image button that appears on row hover/focus with an aria-label of 'Open gallery for {sku}'. Keep the button in the DOM on focus so keyboard access is preserved.",
+      "functionality_preserved": "The SKU gallery drawer trigger referenced in the page subtitle ('SKU gallery drawer') remains reachable via both row click and the hover icon, so no capability is removed \u2014 only the default invocation surface changes."
+    },
+    {
+      "id": "UX-3",
+      "surface": "InventoryBrowseSlicePage",
+      "severity": "P2",
+      "title": "Toolbar controls have no state and no result count",
+      "what_is_wrong": "The toolbar shows a search input, a 'Comfortable' dropdown, and a 'Columns' button, but nothing tells the user how many rows matched, how many columns are currently hidden, or what view mode is active beyond density. The subtitle advertises 'column controls, view modes, and SKU gallery drawer' but view modes are not visible anywhere on the page.",
+      "why_it_matters": "Without a row count, users can't tell if a search narrowed results or if the grid is paginated; without a '3 hidden' hint on Columns, they won't discover the column-toggle feature; without a view-mode control, the advertised feature is effectively dead.",
+      "proposed_fix": "Add a left-aligned result counter ('13 SKUs') next to the search, badge the Columns button with the hidden-column count ('Columns \u00b7 2 hidden' when applicable), and surface the view-mode switch as a segmented control ('Table / Gallery') immediately to the right of density. Keep 'Comfortable' as the density label but render it as a segmented Compact/Comfortable/Spacious toggle so current state is visible without opening the menu.",
+      "functionality_preserved": "All three controls (density selector, Columns popover, and the view-modes/gallery drawer referenced in the subtitle) remain intact; the change is purely surfacing their current state inline."
+    }
+  ],
+  "redesign_sketch": "Header row unchanged (H1 'Inventory Browse' with subtitle). Toolbar becomes: [Search ........] [13 SKUs] \u00b7 [Table | Gallery segmented] \u00b7 [Compact | Comfortable | Spacious density] \u00b7 [Columns \u00b7 2 hidden] \u00b7 overflow menu. Grid columns: SKU (mono) \u00b7 Product \u00b7 Status (title-case colored badge: green=Live, amber=Awaiting intake) \u00b7 On Hand (right-aligned, right-aligned header) \u00b7 Cost (right-aligned) \u00b7 Supplier (with an em-dash and muted 'No supplier' tooltip when null) \u00b7 trailing hover-only icon column for gallery. Row click opens the SKU gallery drawer; Cmd/Ctrl-click opens in a side panel. Empty supplier state uses muted '\u2014' with a tooltip rather than a bare '-'. Keyboard: arrow keys move row focus, Enter opens drawer, G opens gallery \u2014 documented in a small '?' affordance next to Columns."
+}

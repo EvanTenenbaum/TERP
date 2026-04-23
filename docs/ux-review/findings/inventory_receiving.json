@@ -1,0 +1,43 @@
+{
+  "page": "InventoryWorkspacePage.receiving",
+  "route": "/inventory?tab=receiving",
+  "assessment": "This is the receiving queue, but the page never admits it. The H1 is 'Inventory', the tab reads 'Product Intake', and the H2 reads 'Purchase Orders' \u2014 nothing on screen tells a receiver 'these are the POs waiting for you to receive'. The table itself is clean and the supplier chip row with counts is genuinely useful for triage, but the primary workflow (click a row to auto-launch the receiving draft per `autoLaunchReceivingOnRowClick`) is completely invisible \u2014 there is no 'Receive' action, no hover affordance, and the helper text 'Select a row to see details and actions' is tucked in the far right corner in muted type. The Est. Delivery column is 'Not set' on every confirmed row, which is the single most important field for a receiving queue and there is no call-to-action to fix it.",
+  "notable_strengths": [
+    "Supplier chip row with live counts (Sierra Nevada Farms 22, Trinity Alps 2, \u2026) gives fast, one-click triage across the queue.",
+    "Status summary pills ('10 confirmed purchase orders', '2 receiving purchase orders') next to the H2 correctly frame the queue's two states.",
+    "Dense, scannable table with per-column filter + menu affordances matches the rest of the ERP and keeps muscle memory."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "InventoryWorkspacePage.receiving",
+      "severity": "P1",
+      "title": "Primary action (start receiving) has zero affordance",
+      "what_is_wrong": "Baseline says row click auto-launches the receiving draft via `autoLaunchReceivingOnRowClick`, but the rows render as plain text with no cursor change, no trailing 'Receive' button, and no hover row highlight visible. The only hint is the right-aligned, muted 'Select a row to see details and actions' sentence next to the filter bar.",
+      "why_it_matters": "Receivers staring at 12 POs have no visual cue that this screen actually does anything \u2014 they will click 'New Purchase Order' or bounce to the PO detail route, bypassing the draft editor that this tab exists to launch.",
+      "proposed_fix": "Add a trailing actions column with a primary 'Receive' button on `CONFIRMED` rows and 'Resume' on `RECEIVING` rows. Keep the full-row click behavior, but give each row a visible hover state and a chevron. Promote the helper sentence into a one-line banner under the H2: 'Click a PO to open its receiving draft.'",
+      "functionality_preserved": "Does not touch `autoLaunchReceivingOnRowClick` or the `ProductIntakeSlicePage` lazy route \u2014 the new button simply triggers the same handler, and draft/confirmed state split is already in the baseline."
+    },
+    {
+      "id": "UX-2",
+      "surface": "InventoryWorkspacePage.receiving",
+      "severity": "P1",
+      "title": "Est. Delivery is 'Not set' on every row with no way to fix it",
+      "what_is_wrong": "Every CONFIRMED row shows 'Not set' in EST. DELIVERY. The 'Expected Today (0)' quick filter therefore can never return anything, and there is no inline edit, no bulk set, and no visual flag that these POs are missing a required planning field.",
+      "why_it_matters": "Est. delivery is the field receiving leads plan their dock and labor around. A queue where the whole column is empty makes the 'Expected Today' filter dead weight and pushes ETA management into a second tool (email, the PO detail page).",
+      "proposed_fix": "Render 'Not set' as a muted button that opens an inline date popover writing back through the existing PO update router. Flag rows with no ETA with a small amber dot in the PO NUMBER cell, and add a 'Missing ETA (10)' chip next to 'Expected Today (0)' so the gap is first-class.",
+      "functionality_preserved": "Uses the existing PurchaseOrderSurface mutation path for `estimatedDeliveryDate`; no schema or status-model change. `Expected Today` filter logic is untouched."
+    },
+    {
+      "id": "UX-3",
+      "surface": "InventoryWorkspacePage.receiving",
+      "severity": "P2",
+      "title": "Heading stack never says 'Receiving'",
+      "what_is_wrong": "H1 'Inventory' \u2192 active tab 'Product Intake' \u2192 H2 'Purchase Orders' \u2192 subtitle 'Unified purchase order queue\u2026'. The word 'Receiving' only appears as a status on two rows, even though the route is `?tab=receiving` and the baseline calls the tab 'Product Intake / Receiving'.",
+      "why_it_matters": "New receivers and cross-functional users (finance checking payment terms, ops looking for today's dock load) cannot tell this view from the generic PO list under BUY. It also makes the tiny caption 'QUEUE FIRST, THEN RECEIVING HANDOFF' \u2014 the one phrase that explains the page \u2014 do all the orienting work in 10px uppercase.",
+      "proposed_fix": "Rename the H2 to 'Receiving Queue' and move the existing 'Purchase Orders' label into the subtitle ('Confirmed and in-progress purchase orders ready to receive'). Keep the tab label 'Product Intake' for nav consistency, but add 'Receiving' as a secondary word in the tab tooltip and breadcrumb so search and muscle memory both work.",
+      "functionality_preserved": "Pure copy/hierarchy change inside `PurchaseOrderSurface` header slot; tab key `receiving`, `INVENTORY_WORKSPACE` registry, and `useWorkspaceHomeTelemetry('inventory', 'receiving')` are all untouched."
+    }
+  ],
+  "redesign_sketch": "Keep the outer Inventory shell and tab bar. Inside the Receiving tab: H2 becomes 'Receiving Queue' with subtitle 'Confirmed and in-progress POs ready to receive \u2014 click a row to open its draft.' Status pills ('10 Confirmed', '2 Receiving', 'Missing ETA 10', 'Expected Today 0') sit on one row as the primary segment control; supplier chip row stays directly below as a secondary filter. Table gets: hover highlight, a leading status dot column (amber = missing ETA, blue = receiving in progress), the existing columns, and a trailing actions column with a solid 'Receive' / ghost 'Resume' button. Est. Delivery cells render 'Not set' as an inline date-picker button. 'New Purchase Order' and 'Export CSV' stay top-right; the 'Select a row\u2026' helper moves into the subtitle so the right rail is free for a future bulk-selection toolbar."
+}

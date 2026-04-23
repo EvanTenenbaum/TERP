@@ -1,0 +1,43 @@
+{
+  "page": "GeneralLedger",
+  "route": "/accounting?tab=general-ledger",
+  "assessment": "The ledger has the right ingredients \u2014 account filter, fiscal period, date range, status tabs, running balance, Trial Balance, Post/Reverse/Export actions, and keyboard power-user hints \u2014 but it loads into a dead empty state because nothing is defaulted. Worse, the toolbar mixes three different concerns (status filters, a balance readout styled like a filter, and primary actions) on one line, and the keyboard-shortcut inspector takes up a quarter of the viewport while there is literally nothing to inspect. A trained bookkeeper will still get work done, but the first 10 seconds on this page communicate 'empty and confusing' rather than 'pick an account to begin'.",
+  "notable_strengths": [
+    "Full filter surface (account, fiscal period, date range, status, search) is present without being hidden in a drawer.",
+    "Primary ledger actions (Post Journal Entry, Reverse Entry, Export CSV, Trial Balance) are all one click away.",
+    "Keyboard shortcut inspector (Click, Shift+Click, Ctrl+Click, Ctrl+C, Escape) is a nice power-user affordance for a spreadsheet-style grid."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "GeneralLedger",
+      "severity": "P1",
+      "title": "Page loads empty because no filters are defaulted",
+      "what_is_wrong": "Both 'Select account\u2026' and 'Select fiscal period\u2026' are unset on mount, the date inputs read mm/dd/yyyy, and the grid shows 'No ledger entries \u2014 Adjust filters or post a new journal entry.' A user who just wants to see this month's activity has to make 2\u20133 picks before anything appears.",
+      "why_it_matters": "General Ledger is the accountant's daily scratchpad; an empty default forces a ritual of re-selecting the current period on every visit and hides the fact that entries exist at all.",
+      "proposed_fix": "Default fiscal period to the current open period (from the Fiscal Periods tab data) and default account to 'All accounts' so the grid renders on load. Leave the selects fully editable; show the defaulted values as chips the user can clear.",
+      "functionality_preserved": "Uses the same fiscal-period and account filter inputs already wired to the ledger query; we only change initial state, so the 'Filter/sort ledger entries' feature from the baseline is untouched."
+    },
+    {
+      "id": "UX-2",
+      "surface": "GeneralLedger",
+      "severity": "P2",
+      "title": "'Balance: $0.00' chip is styled like a status filter",
+      "what_is_wrong": "In the toolbar row, 'All / Posted / Draft' are segmented filter pills and immediately to their right sits a pill labeled 'Balance: $0.00' in the same pill shape and color family. It reads as a fourth clickable filter.",
+      "why_it_matters": "Users will try to click it to filter by zero-balance entries, or conversely miss that it is the running balance of the current filter set \u2014 which is the single most important number on a ledger page.",
+      "proposed_fix": "Move the balance out of the filter pill group and render it as a right-aligned, label+value readout ('Filtered balance: $0.00') with a different weight/treatment than the segmented control. Keep it in the same toolbar row so it still updates with filters.",
+      "functionality_preserved": "The balance is still displayed and still reactive to the same filter state; only typography and grouping change, so the baseline detail dialog and filter behavior are unaffected."
+    },
+    {
+      "id": "UX-3",
+      "surface": "GeneralLedger",
+      "severity": "P2",
+      "title": "Keyboard-shortcut inspector dominates the empty state and Reverse Entry looks enabled with no selection",
+      "what_is_wrong": "When the grid is empty, a large cluster of shortcut hints (Click select row, Shift+Click extend range, Ctrl+Click add to selection, Ctrl+C copy cells, Escape close inspector) anchors the bottom of the content area, competing with the 'No ledger entries' illustration. Meanwhile 'Reverse Entry' in the action row does not visibly differ from Post Journal Entry / Export CSV even though '0 selected' is shown in the footer.",
+      "why_it_matters": "The inspector teaches shortcuts for actions that are impossible right now, and Reverse Entry looks clickable despite requiring a selected posted entry \u2014 a classic dead-end that produces a confusing toast or no-op.",
+      "proposed_fix": "Collapse the shortcut hints into a small '? Shortcuts' popover anchored bottom-right when the grid is empty or unfocused, and expand them inline only once \u22651 row exists. Disable the Reverse Entry button (reduced opacity + tooltip 'Select a posted entry to reverse') whenever selection count is 0.",
+      "functionality_preserved": "All shortcut affordances and the Reverse Entry action remain available and wired to the same handlers; we only gate their visibility/enabled state on grid content and selection, preserving the 'Filter/sort ledger entries' and reverse-entry behaviors from the baseline."
+    }
+  ],
+  "redesign_sketch": "Header row: 'General Ledger' H2 with a right-aligned summary strip ('Filtered balance $X \u00b7 N entries \u00b7 Period: 2025-Q1'). Row 2 (filters): Account select (defaulted to All accounts), Fiscal Period select (defaulted to current open period), From/To dates with visible labels, and Search on the far right. Row 3 (view + actions): segmented control 'All / Posted / Draft' on the left; on the right a grouped action cluster 'Post Journal Entry (primary) \u00b7 Reverse Entry (disabled until selection) \u00b7 Trial Balance \u00b7 Export CSV'. Main area: ledger grid with sticky header, running-balance column, and inline row-expand for line items (reusing the baseline detail dialog on double-click). Empty state centered: icon, 'No entries for this filter', one-line helper, and a single 'Post Journal Entry' CTA \u2014 no shortcut wall. A small '? Shortcuts' pill bottom-right opens the full inspector on demand once rows exist."
+}

@@ -1,0 +1,271 @@
+page_key,finding_id,severity,title,primary_theme,all_themes,primitive
+AccountPage,UX-1,P2,Duplicated 'Profile Information' header wastes vertical space,T-06,"T-06,T-04",WorkspaceFilterBar
+AccountPage,UX-2,P2,Save Changes button reads as disabled when form is valid,PER-PAGE,,per-page ticket
+AccountPage,UX-3,P3,'Personal' tag next to every H2 is noise,PER-PAGE,,per-page ticket
+BankAccounts,UX-1,P1,Balance column truncates the page's headline numbers,T-05,T-05,SpreadsheetPilotGrid.numeric
+BankAccounts,UX-2,P1,"Total cash balance is buried as a header pill, not a KPI",T-05,T-05,SpreadsheetPilotGrid.numeric
+BankAccounts,UX-3,P2,Active column is a bare checkbox with no label or meaning,T-15,T-15,config/glossary
+BankTransactions,UX-1,P1,Empty state hides the table schema and next action,T-02,"T-02,T-03",OperationalStateSurface
+BankTransactions,UX-2,P2,Summary chips and filter chips are visually indistinguishable,T-02,"T-02,T-06",OperationalStateSurface
+BankTransactions,UX-3,P2,Keyboard-shortcut legend floats detached below the empty card,T-05,"T-05,T-04",SpreadsheetPilotGrid.numeric
+Bills,UX-1,P0,DUE AMT and STATUS columns render raw HTML instead of values,T-05,"T-05,T-06",SpreadsheetPilotGrid.numeric
+Bills,UX-2,P1,Bill # column truncates the only unique identifier,T-07,T-07,ManusSheet
+Bills,UX-3,P1,No visible entry point for the Create Bill dialog,T-05,"T-05,T-04,T-12",SpreadsheetPilotGrid.numeric
+CashLocations,UX-1,P1,"Empty state is a dead-end sentence, not a guided first action",T-02,T-02,OperationalStateSurface
+CashLocations,UX-2,P2,"'Select Location' KPI card is a placeholder, not a metric",T-04,T-04,AppSidebar+navState
+CashLocations,UX-3,P2,Transfer button active with zero locations and no disabled reasoning,PER-PAGE,,per-page ticket
+ChartOfAccounts,UX-1,P1,"Groups are collapsed by default, hiding all 9 accounts behind disclosure triangles",T-04,T-04,AppSidebar+navState
+ChartOfAccounts,UX-2,P2,Type filter chips duplicate the row grouping and leave no clear default action,T-06,"T-06,T-04",WorkspaceFilterBar
+ChartOfAccounts,UX-3,P2,'+ Add Row' is the wrong verb for creating a GL account,T-15,T-15,config/glossary
+AccountingDashboard,UX-1,P1,Sidebar shows 'Sales Quick Actions' while user is in Accounting,T-08,"T-08,T-04",LinearWorkspaceShell.tabGroups
+AccountingDashboard,UX-2,P1,Only Payables has a primary action; Receivables is a dead stat,T-03,T-03,PageHeader.actions
+AccountingDashboard,UX-3,P1,"'Queue Pressure: 15' is a meta-stat, not a finance signal",PER-PAGE,,per-page ticket
+AccountingDashboard,UX-4,P2,Reconciliation 'Never' state is a dead-end,PER-PAGE,,per-page ticket
+AccountingDashboard,UX-5,P2,'4 items need attention' banner duplicates the Unrecorded Payments card,T-06,T-06,WorkspaceFilterBar
+AccountingDashboard,UX-6,P2,KPI cards are not clickable and have no data freshness stamp,T-05,"T-05,T-08,T-10,T-12",SpreadsheetPilotGrid.numeric
+AccountingDashboard,UX-7,P2,Tab row is 10 items wide with no grouping and competes with the in-page H1,T-08,T-08,LinearWorkspaceShell.tabGroups
+AccountingDashboard,UX-8,P3,'Finance control center' and 'Reconciliation State' pills look interactive but aren't,T-06,T-06,WorkspaceFilterBar
+Expenses,UX-1,P1,Empty state doesn't guide first expense creation,T-02,"T-02,T-03",OperationalStateSurface
+Expenses,UX-2,P2,Category-breakdown cards and category CRUD are not discoverable,T-04,"T-04,T-15",AppSidebar+navState
+Expenses,UX-3,P3,Keyboard hint panel dominates the empty viewport,T-04,"T-04,T-13",AppSidebar+navState
+FiscalPeriods,UX-1,P1,Empty state dead-ends the first-run user,T-02,T-02,OperationalStateSurface
+FiscalPeriods,UX-2,P2,Close Period and Lock Period are enabled with nothing selected,PER-PAGE,,per-page ticket
+FiscalPeriods,UX-3,P3,Duplicate 'Fiscal Periods' headings stack vertically,T-06,T-06,WorkspaceFilterBar
+GeneralLedger,UX-1,P1,Page loads empty because no filters are defaulted,T-08,T-08,LinearWorkspaceShell.tabGroups
+GeneralLedger,UX-2,P2,'Balance: $0.00' chip is styled like a status filter,T-05,T-05,SpreadsheetPilotGrid.numeric
+GeneralLedger,UX-3,P2,Keyboard-shortcut inspector dominates the empty state and Reverse Entry looks enabled with no selection,T-02,"T-02,T-04",OperationalStateSurface
+AccountingWorkspace.invoices,UX-1,P0,Status column renders raw `<spar...` markup in every row,PER-PAGE,,per-page ticket
+AccountingWorkspace.invoices,UX-2,P1,Bulk action buttons are enabled with zero rows selected,T-03,T-03,PageHeader.actions
+AccountingWorkspace.invoices,UX-3,P1,'0 overdue' chip contradicts the data in the table,PER-PAGE,,per-page ticket
+AccountingWorkspace.invoices,UX-4,P1,Four column headers are truncated at default width,PER-PAGE,,per-page ticket
+AccountingWorkspace.invoices,UX-5,P2,Toolbar hierarchy dilutes the primary action and hides AR Aging,T-07,"T-07,T-03",ManusSheet
+AccountingWorkspace.invoices,UX-6,P2,Search input placeholder is clipped,T-12,T-12,OperationalStateSurface.error
+AccountingWorkspace.invoices,UX-7,P2,Shortcut legend dominates screen while selection state is orphaned,T-04,T-04,AppSidebar+navState
+AccountingWorkspace.invoices,UX-8,P3,Over-payment (102%) on INV-000111 is not flagged,PER-PAGE,,per-page ticket
+Payments,UX-1,P0,TYPE column renders raw HTML instead of a badge,T-15,T-15,config/glossary
+Payments,UX-2,P1,No path from 'Unrecorded Payments' alert to this registry,T-08,T-08,LinearWorkspaceShell.tabGroups
+Payments,UX-3,P2,Void action is ambiguous with no row selected,T-07,"T-07,T-03",ManusSheet
+AnalyticsPage,UX-1,P0,KPI tiles mix period-scoped and all-time values with no visual distinction,PER-PAGE,,per-page ticket
+AnalyticsPage,UX-2,P0,Revenue Trends table ignores the selected period,PER-PAGE,,per-page ticket
+AnalyticsPage,UX-3,P1,No chart on a page called Analytics,PER-PAGE,,per-page ticket
+AnalyticsPage,UX-4,P1,Export button hides its four datasets and two formats behind a single label,T-03,T-03,PageHeader.actions
+AnalyticsPage,UX-5,P1,Only one tile shows a delta; the rest lack a comparison baseline,PER-PAGE,,per-page ticket
+AnalyticsPage,UX-6,P2,KPI tile icons are decorative and in one case wrong,PER-PAGE,,per-page ticket
+AnalyticsPage,UX-7,P2,Tile subtext copy is inconsistent and often ambiguous,PER-PAGE,,per-page ticket
+AnalyticsPage,UX-8,P3,'Back to Dashboard' link is redundant with the active sidebar state,T-04,"T-04,T-09,T-12",AppSidebar+navState
+CalendarPage,UX-1,P1,Tab labels are missing the pending-count badges,T-08,T-08,LinearWorkspaceShell.tabGroups
+CalendarPage,UX-2,P1,"Event pills show truncated order IDs, not customer/amount",PER-PAGE,,per-page ticket
+CalendarPage,UX-3,P2,View switcher is four unlabeled icons,PER-PAGE,,per-page ticket
+CalendarPage,UX-4,P2,'Filters' bar is a full-width empty band,T-08,"T-08,T-04,T-12",LinearWorkspaceShell.tabGroups
+CalendarPage,UX-5,P2,"Legend is decorative, not interactive",PER-PAGE,,per-page ticket
+CalendarPage,UX-6,P2,Empty day cells have no visible click affordance for 'Create Event on this date',T-03,T-03,PageHeader.actions
+CalendarPage,UX-7,P2,Floating action button in bottom-right duplicates Create Event with no label,T-06,T-06,WorkspaceFilterBar
+CalendarPage,UX-8,P3,'Back to Dashboard' button is redundant with breadcrumb and sidebar,T-05,"T-05,T-04,T-09",SpreadsheetPilotGrid.numeric
+ClientLedgerPage,UX-1,P0,Status column renders raw HTML instead of a badge,T-06,T-06,WorkspaceFilterBar
+ClientLedgerPage,UX-2,P1,Delinquent invoices are not visually prioritized,PER-PAGE,,per-page ticket
+ClientLedgerPage,UX-3,P2,No page heading; 'Invoices' subtitle duplicates the table caption,T-06,"T-06,T-11,T-09",WorkspaceFilterBar
+ClientProfilePage,UX-1,P0,One failed dependency nukes the entire client profile,T-02,"T-02,T-08,T-12",OperationalStateSurface
+ClientProfilePage,UX-2,P0,No client identity anywhere on a client page,T-09,T-09,AppBreadcrumb+config/routes
+ClientProfilePage,UX-3,P1,"Error message gives no cause, no recovery, no next step",T-02,"T-02,T-12",OperationalStateSurface
+ClientProfilePage,UX-4,P1,Five-section shell is completely hidden in the error state,T-02,"T-02,T-08",OperationalStateSurface
+ClientProfilePage,UX-5,P2,Error card floats in a sea of unused canvas,T-02,T-02,OperationalStateSurface
+ClientProfilePage,UX-6,P2,Quick-actions rail is Sales-only on a dual-role client page,PER-PAGE,,per-page ticket
+ClientProfilePage,UX-7,P2,No H1/title means poor keyboard and screen-reader orientation,T-08,"T-08,T-11",LinearWorkspaceShell.tabGroups
+ClientProfilePage,UX-8,P3,"""Back"" button exists but is invisible in the error layout",T-09,"T-09,T-12",AppBreadcrumb+config/routes
+CogsSettingsPage,UX-1,P1,No save affordance — users can't tell if selection persisted,PER-PAGE,,per-page ticket
+CogsSettingsPage,UX-2,P2,Each row duplicates its own state,T-06,T-06,WorkspaceFilterBar
+CogsSettingsPage,UX-3,P2,No page H1 and weak visual hierarchy between page and card,PER-PAGE,,per-page ticket
+CreditsWorkspacePage,UX-1,P1,Triple-exposed navigation for the same three destinations,T-08,T-08,LinearWorkspaceShell.tabGroups
+CreditsWorkspacePage,UX-2,P1,"KPI tiles are inert, unscoped, and buried",T-02,T-02,OperationalStateSurface
+CreditsWorkspacePage,UX-3,P2,No primary action for the most common operator task,T-08,"T-08,T-03",LinearWorkspaceShell.tabGroups
+DashboardHomePage,UX-1,P0,'Today at a Glance' is stuck on skeleton bars with no resolution,T-02,T-02,OperationalStateSurface
+DashboardHomePage,UX-2,P1,The cash shortfall — the single most important signal — is buried,T-02,T-02,OperationalStateSurface
+DashboardHomePage,UX-3,P1,"Top KPIs have no trend or comparison, so numbers are uninterpretable",PER-PAGE,,per-page ticket
+DashboardHomePage,UX-4,P1,Left nav duplicates itself between 'SALES QUICK ACTIONS' and 'SELL',T-06,"T-06,T-04",WorkspaceFilterBar
+DashboardHomePage,UX-5,P2,Page has no H1; screen readers and page-title scanners see 'Command Palette',T-11,"T-11,T-12",navigation.sidebarVisible
+DashboardHomePage,UX-6,P2,'Live · Updated 12:08 PM' freshness signal is too quiet and ambiguous,T-06,"T-06,T-10,T-12",WorkspaceFilterBar
+DashboardHomePage,UX-7,P2,Empty-state copy is inconsistent between KPI cards,PER-PAGE,,per-page ticket
+DashboardHomePage,UX-8,P2,Floating action button (bottom right) and 'Pay Bills' / 'Review Bills' / 'View Clients' actions compete without hierarchy,PER-PAGE,,per-page ticket
+InterestListPage,UX-1,P1,Four zero-value KPI cards dominate the fold,T-02,"T-02,T-04",OperationalStateSurface
+InterestListPage,UX-2,P2,Redundant status filter chip duplicates the Active dropdown,T-06,T-06,WorkspaceFilterBar
+InterestListPage,UX-3,P2,Cross-tab jumps styled as primary buttons compete with page actions,T-08,T-08,LinearWorkspaceShell.tabGroups
+MatchmakingServicePage,UX-1,P1,KPI strip duplicates the column headers directly below it,T-06,"T-06,T-04",WorkspaceFilterBar
+MatchmakingServicePage,UX-2,P1,No 'Compute/Update Matches' control surfaces the core action of the page,PER-PAGE,,per-page ticket
+MatchmakingServicePage,UX-3,P1,Empty Client Needs and Suggested Matches columns are dead-ends,T-02,T-02,OperationalStateSurface
+MatchmakingServicePage,UX-4,P2,'Urgent Needs 0' is rendered in red,PER-PAGE,,per-page ticket
+MatchmakingServicePage,UX-5,P2,'Open Matchmaking' and 'Jump to Supplier Supply' duplicate the tab bar,T-06,"T-06,T-08,T-15",WorkspaceFilterBar
+MatchmakingServicePage,UX-6,P2,Reserve button's muted-tan fill is ambiguous,T-03,T-03,PageHeader.actions
+MatchmakingServicePage,UX-7,P2,'Supplier: Unknown supplier' leaks a null-state into the UI,PER-PAGE,,per-page ticket
+MatchmakingServicePage,UX-8,P2,Search and Active/All Priorities filter scope is not declared,PER-PAGE,,per-page ticket
+NeedsManagementPage,UX-1,P1,Empty state dead-ends instead of driving the primary action,T-02,"T-02,T-03",OperationalStateSurface
+NeedsManagementPage,UX-2,P2,Four stacked navigation layers before the user sees a row,T-06,"T-06,T-08,T-04,T-09",WorkspaceFilterBar
+NeedsManagementPage,UX-3,P2,KPI tiles waste above-the-fold space with zeroes and no drill-through,T-06,"T-06,T-08",WorkspaceFilterBar
+VendorSupplyPage,UX-1,P1,KPI strip pushes the actual inventory list below the fold,T-04,T-04,AppSidebar+navState
+VendorSupplyPage,UX-2,P1,Supplier shown as '#24' instead of a name,T-05,T-05,SpreadsheetPilotGrid.numeric
+VendorSupplyPage,UX-3,P2,Redundant 'Jump to Supplier Supply' button on the Supplier Supply tab,T-08,T-08,LinearWorkspaceShell.tabGroups
+FeatureFlagsPage,UX-1,P1,No search or category filter across 57 flags,T-06,"T-06,T-12",WorkspaceFilterBar
+FeatureFlagsPage,UX-2,P1,Three stacked tab levels obscure Feature Flags,T-08,"T-08,T-04",LinearWorkspaceShell.tabGroups
+FeatureFlagsPage,UX-3,P1,'Initialize Defaults' is a destructive-looking button with no guardrail,T-03,"T-03,T-12",PageHeader.actions
+Help,UX-1,P1,Topic bullets don't look clickable,PER-PAGE,,per-page ticket
+Help,UX-2,P2,Chevron on each card is ambiguous — expanded content is already visible,T-04,T-04,AppSidebar+navState
+Help,UX-3,P2,Search input lacks scope hint and keyboard shortcut parity,T-11,T-11,navigation.sidebarVisible
+InventoryWorkspacePage.inventory,UX-1,P1,"Status filter 'Live' and kanban columns double-filter, leaving 3 of 4 lanes empty",T-04,T-04,AppSidebar+navState
+InventoryWorkspacePage.inventory,UX-2,P1,Rightmost 'Quarantined' column is clipped at 1440px viewport,T-14,T-14,DashboardLayout.responsive
+InventoryWorkspacePage.inventory,UX-3,P1,Batch cards omit the data that drives wholesale decisions,T-01,T-01,ColDef.preset
+InventoryWorkspacePage.inventory,UX-4,P2,Left rail is labeled 'SALES QUICK ACTIONS' on the Inventory workspace,T-15,T-15,config/glossary
+InventoryWorkspacePage.inventory,UX-5,P2,"KPI chips (303 batches · 38,185.26 units · $34,215,625.44 value) are dead text",PER-PAGE,,per-page ticket
+InventoryWorkspacePage.inventory,UX-6,P2,'Inventory' appears three times within 120px of vertical space,T-06,"T-06,T-08,T-09",WorkspaceFilterBar
+InventoryWorkspacePage.inventory,UX-7,P2,'Save View' button is disabled by default with no affordance explaining why,PER-PAGE,,per-page ticket
+InventoryWorkspacePage.inventory,UX-8,P3,Active tab visual treatment is almost invisible,T-08,T-08,LinearWorkspaceShell.tabGroups
+InventoryWorkspacePage.intake,UX-1,P0,Location field renders duplicated 'Main Warehouse' string,T-06,T-06,WorkspaceFilterBar
+InventoryWorkspacePage.intake,UX-2,P1,Grid column headers are truncated to unreadable single letters,T-05,T-05,SpreadsheetPilotGrid.numeric
+InventoryWorkspacePage.intake,UX-3,P2,Sub-tab row conflates navigation pills with KPI counters,T-08,T-08,LinearWorkspaceShell.tabGroups
+PhotographyPage,UX-1,P1,Primary bulk action is visually demoted,PER-PAGE,,per-page ticket
+PhotographyPage,UX-2,P2,KPI counters contradict the visible queue without explanation,PER-PAGE,,per-page ticket
+PhotographyPage,UX-3,P2,Strain column is dead weight and Batch ID is under-emphasized,T-04,T-04,AppSidebar+navState
+InventoryWorkspacePage.receiving,UX-1,P1,Primary action (start receiving) has zero affordance,T-05,"T-05,T-03",SpreadsheetPilotGrid.numeric
+InventoryWorkspacePage.receiving,UX-2,P1,Est. Delivery is 'Not set' on every row with no way to fix it,PER-PAGE,,per-page ticket
+InventoryWorkspacePage.receiving,UX-3,P2,Heading stack never says 'Receiving',T-08,"T-08,T-09,T-15",LinearWorkspaceShell.tabGroups
+SampleManagement,UX-1,P1,"Lane filter is duplicated — two controls, same function",T-05,"T-05,T-06",SpreadsheetPilotGrid.numeric
+SampleManagement,UX-2,P1,Product column is ambiguous: unlabeled parenthetical numbers,PER-PAGE,,per-page ticket
+SampleManagement,UX-3,P2,Empty Expiring Samples widget consumes prime real estate,T-02,"T-02,T-04",OperationalStateSurface
+InventoryWorkspacePage.shipping,UX-1,P0,Selected shipment renders a blank right pane,T-02,T-02,OperationalStateSurface
+InventoryWorkspacePage.shipping,UX-2,P1,Default sort buries the 2 Ready shipments under 381 Pending,PER-PAGE,,per-page ticket
+InventoryWorkspacePage.shipping,UX-3,P1,Stat cards look clickable but are not filters,PER-PAGE,,per-page ticket
+InventoryWorkspacePage.shipping,UX-4,P1,Two view toggles with overlapping meaning,T-06,"T-06,T-07,T-12",WorkspaceFilterBar
+InventoryWorkspacePage.shipping,UX-5,P2,Page heading hierarchy duplicates itself,T-06,"T-06,T-08,T-04,T-09",WorkspaceFilterBar
+InventoryWorkspacePage.shipping,UX-6,P2,"Shipment cards omit customer, destination, and due date",T-02,T-02,OperationalStateSurface
+InventoryWorkspacePage.shipping,UX-7,P3,Pluralization bug: '1 bags',PER-PAGE,,per-page ticket
+InventoryWorkspacePage.shipping,UX-8,P2,No bulk actions or keyboard affordances for a 381-row queue,T-13,"T-13,T-11",SpreadsheetPilotGrid.keyboardHints
+LeaderboardPage,UX-1,P2,Client-type filter renders label twice ('All ClientsAll Clients'),T-06,T-06,WorkspaceFilterBar
+LeaderboardPage,UX-2,P2,Sort control hides the asc/desc toggle and the second sort key,PER-PAGE,,per-page ticket
+LeaderboardPage,UX-3,P2,'Customize Weights' is unexplained and disconnected from the Master Score tab,T-08,T-08,LinearWorkspaceShell.tabGroups
+Login,UX-1,P1,No staging environment indicator in the UI,T-08,T-08,LinearWorkspaceShell.tabGroups
+Login,UX-2,P2,TERP wordmark is unstyled and the card floats high on the page,PER-PAGE,,per-page ticket
+Login,UX-3,P2,Password field has no show/hide toggle and no caps-lock hint,PER-PAGE,,per-page ticket
+NotFound,UX-1,P2,Only one recovery path from a dead-end page,T-11,"T-11,T-10,T-12",navigation.sidebarVisible
+NotFound,UX-2,P3,Breadcrumb legitimizes the bad URL,T-09,T-09,AppBreadcrumb+config/routes
+NotFound,UX-3,P3,Alert-red iconography overstates severity,T-03,T-03,PageHeader.actions
+NotificationsPage,UX-1,P1,Triple-stacked 'System Notifications' heading wastes the entire fold,T-06,"T-06,T-08,T-04",WorkspaceFilterBar
+NotificationsPage,UX-2,P1,Filter dropdown and filter chips duplicate each other,T-05,"T-05,T-06",SpreadsheetPilotGrid.numeric
+NotificationsPage,UX-3,P1,Every row is '30 days ago' — there is no time hierarchy across 118 items,T-05,T-05,SpreadsheetPilotGrid.numeric
+NotificationsPage,UX-4,P1,Notification body is unclickable and hides the real identifiers,PER-PAGE,,per-page ticket
+NotificationsPage,UX-5,P2,'Client #203' tells the user nothing,T-05,T-05,SpreadsheetPilotGrid.numeric
+NotificationsPage,UX-6,P2,No bulk selection on a 118-item backlog,PER-PAGE,,per-page ticket
+NotificationsPage,UX-7,P2,Monotonous icon + type treatment makes priority invisible,PER-PAGE,,per-page ticket
+NotificationsPage,UX-8,P3,Floating action button in bottom-right is unlabelled and unexplained,T-15,T-15,config/glossary
+PricingProfilesPage,UX-1,P1,Rules Count column is dead weight — show what's in the bundle,T-05,T-05,SpreadsheetPilotGrid.numeric
+PricingProfilesPage,UX-2,P1,No visibility into which clients use each profile,PER-PAGE,,per-page ticket
+PricingProfilesPage,UX-3,P2,No empty/zero-profile guidance and timestamp-named rows read as debug data,T-02,"T-02,T-06,T-10",OperationalStateSurface
+PricingRulesPage,UX-1,P1,Conditions column is an opaque '1 condition(s)' placeholder,T-02,T-02,OperationalStateSurface
+PricingRulesPage,UX-2,P2,Rule scope (global / category / client / profile) is not surfaced,PER-PAGE,,per-page ticket
+PricingRulesPage,UX-3,P2,Status is display-only; baseline promises active/inactive toggles,PER-PAGE,,per-page ticket
+ProcurementWorkspacePage,UX-1,P1,Expected Today control is duplicated and the top copy is misleading,T-06,T-06,WorkspaceFilterBar
+ProcurementWorkspacePage,UX-2,P1,Three duplicate summaries of the same counts stacked above the table,T-06,"T-06,T-04",WorkspaceFilterBar
+ProcurementWorkspacePage,UX-3,P1,EST. DELIVERY column is 100% 'Not set' but still consumes a prime column slot,T-04,T-04,AppSidebar+navState
+ProcurementWorkspacePage,UX-4,P1,"Status values are unstyled text, killing scanability",PER-PAGE,,per-page ticket
+ProcurementWorkspacePage,UX-5,P2,'Select a row to see details and actions' is hidden as 12px grey copy next to filters,PER-PAGE,,per-page ticket
+ProcurementWorkspacePage,UX-6,P2,Column headers are truncated to ellipses instead of wrapping or resizing,T-12,T-12,OperationalStateSurface.error
+ProcurementWorkspacePage,UX-7,P2,Count chips have broken singular/plural grammar,PER-PAGE,,per-page ticket
+ProcurementWorkspacePage,UX-8,P2,"'QUEUE FIRST, THEN RECEIVING HANDOFF' tagline is jargon with no call to action",PER-PAGE,,per-page ticket
+ProductsPage,UX-1,P1,Row has no visible edit affordance or row action,PER-PAGE,,per-page ticket
+ProductsPage,UX-2,P1,No Type filter despite Type being a first-class column,PER-PAGE,,per-page ticket
+ProductsPage,UX-3,P2,"Table carries no operational signal — just name, badge, and filler description",T-05,"T-05,T-10",SpreadsheetPilotGrid.numeric
+RelationshipsWorkspacePage.clients,UX-1,P1,Relationship column is pure noise — every row stacks the same Seller + Supplier pair,T-04,T-04,AppSidebar+navState
+RelationshipsWorkspacePage.clients,UX-2,P1,"All 40 clients read as zero-data, so the directory looks broken",T-02,T-02,OperationalStateSurface
+RelationshipsWorkspacePage.clients,UX-3,P2,Two H1s on one page ('Relationships' and 'Clients'),T-08,"T-08,T-09",LinearWorkspaceShell.tabGroups
+RelationshipsWorkspacePage.clients,UX-4,P2,'Reachable Handles' is engineer-speak in a sales surface,T-15,T-15,config/glossary
+RelationshipsWorkspacePage.clients,UX-5,P2,"Local search placeholder advertises Cmd+K, which is already the global command palette",T-11,T-11,navigation.sidebarVisible
+RelationshipsWorkspacePage.clients,UX-6,P2,'Quick Add' button doesn't say what it adds,T-08,T-08,LinearWorkspaceShell.tabGroups
+RelationshipsWorkspacePage.clients,UX-7,P2,'Saved' pill has no referent next to the KPIs,T-10,"T-10,T-12,T-01",FreshnessBadge
+RelationshipsWorkspacePage.clients,UX-8,P3,SUPV-prefixed codes on the Clients tab read as supplier codes,T-05,"T-05,T-08",SpreadsheetPilotGrid.numeric
+RelationshipsWorkspacePage.suppliers,UX-1,P2,Relationship column is dead weight — every row shows 'Seller / Supplier',T-04,T-04,AppSidebar+navState
+RelationshipsWorkspacePage.suppliers,UX-2,P2,Header stats broadcast '$0.00' across an 18-supplier book with no context,T-08,T-08,LinearWorkspaceShell.tabGroups
+RelationshipsWorkspacePage.suppliers,UX-3,P2,"No filter, segment, or sort beyond column headers on an all-equal list",T-08,"T-08,T-12",LinearWorkspaceShell.tabGroups
+OrderCreatorPage,UX-1,P1,Tab row collides: 'Sales Catalogues' / 'Live Shopping' / 'New Order' visually overlap,T-08,T-08,LinearWorkspaceShell.tabGroups
+OrderCreatorPage,UX-2,P1,Empty state uses an error icon for routine guidance,T-02,T-02,OperationalStateSurface
+OrderCreatorPage,UX-3,P1,"Customer and document-type controls float top-right, disconnected from the empty-state instruction",T-02,T-02,OperationalStateSurface
+OrderCreatorPage,UX-4,P2,"H1 and breadcrumb say 'Sales', never 'New Order'",T-09,T-09,AppBreadcrumb+config/routes
+OrderCreatorPage,UX-5,P2,"All-caps meta copy 'KEEP THE CUSTOMER, DOCUMENT TYPE, AND TOTALS IN ONE WORKING FRAME' is designer talk, not seller talk",PER-PAGE,,per-page ticket
+OrderCreatorPage,UX-6,P2,'Queue' button with left-arrow reads as 'back' but is labeled 'Queue',T-08,T-08,LinearWorkspaceShell.tabGroups
+OrderCreatorPage,UX-7,P2,'Saved' indicator is green before the user has entered anything to save,PER-PAGE,,per-page ticket
+OrderCreatorPage,UX-8,P2,Bottom-right floating action button is unlabeled,PER-PAGE,,per-page ticket
+LiveShoppingPage (staff),UX-1,P1,Active session has no direct 'Join/Enter Room' action,PER-PAGE,,per-page ticket
+LiveShoppingPage (staff),UX-2,P2,Selected tab 'Live Shopping' is not visually distinguished,T-08,T-08,LinearWorkspaceShell.tabGroups
+LiveShoppingPage (staff),UX-3,P2,"KPI tiles are decorative, not interactive",PER-PAGE,,per-page ticket
+ShippingPickListPage,UX-1,P1,Continuation line-item rows lose their order context,PER-PAGE,,per-page ticket
+ShippingPickListPage,UX-2,P1,"Baseline columns date, batch, location, picker are missing from the table",T-04,T-04,AppSidebar+navState
+ShippingPickListPage,UX-3,P2,No bulk status action; PENDING→PACKED requires leaving the list,T-03,T-03,PageHeader.actions
+SalesWorkspacePage.quotes,UX-1,P1,Pipeline counters omit Draft and contradict the visible table,T-06,T-06,WorkspaceFilterBar
+SalesWorkspacePage.quotes,UX-2,P1,"Quote rows use an 'ORD-' prefix, indistinguishable from orders",T-02,"T-02,T-05,T-08",OperationalStateSurface
+SalesWorkspacePage.quotes,UX-3,P2,Duplicate H1 and a search placeholder that squats the global Cmd+K,T-06,"T-06,T-11",WorkspaceFilterBar
+ReturnsPage,UX-1,P1,Returns table is missing the workflow state and line-item context,PER-PAGE,,per-page ticket
+ReturnsPage,UX-2,P2,Return Reasons card is static text instead of a filter,T-06,T-06,WorkspaceFilterBar
+ReturnsPage,UX-3,P2,Process Return CTA is orphaned above the table with no empty/onboarding affordance,T-02,"T-02,T-07",OperationalStateSurface
+SalesWorkspacePage.sales-sheets,UX-1,P1,Tab row overlaps: 'Sales Catalogues' collides with 'Live Shopping',T-08,T-08,LinearWorkspaceShell.tabGroups
+SalesWorkspacePage.sales-sheets,UX-2,P1,Conversion actions duplicated between 'Next Step' card and 'Handoff' bar,T-06,"T-06,T-04",WorkspaceFilterBar
+SalesWorkspacePage.sales-sheets,UX-3,P2,'Draft ready' status badge lies about the draft,T-05,T-05,SpreadsheetPilotGrid.numeric
+SchedulingPage,UX-1,P1,"Week grid shows time only, not rooms — can't see resource availability at a glance",T-04,T-04,AppSidebar+navState
+SchedulingPage,UX-2,P2,Right rail shows 'Today' context while the calendar is on a week that may not include today,T-15,"T-15,T-12",config/glossary
+SchedulingPage,UX-3,P2,Default week view wastes vertical space on empty hours and hides end-of-day,PER-PAGE,,per-page ticket
+SearchResultsPage,UX-1,P1,Result cards waste vertical space; density is ~4 rows per viewport,T-04,T-04,AppSidebar+navState
+SearchResultsPage,UX-2,P1,Duplicate search inputs create ambiguity about authority,T-06,"T-06,T-11",WorkspaceFilterBar
+SearchResultsPage,UX-3,P2,Only Products section renders; no Quotes/Orders/Customers headings or empty-state hints,T-06,T-06,WorkspaceFilterBar
+Settings,UX-1,P1,"Users tab leads with a creation form, not the user list",T-07,"T-07,T-08",ManusSheet
+Settings,UX-2,P1,Reset Password requires hand-typing the username,T-07,T-07,ManusSheet
+Settings,UX-3,P2,Triple-stacked 'Access Control' label creates navigational noise,T-06,"T-06,T-08",WorkspaceFilterBar
+Settings,UX-4,P2,Top-level group tabs and sub-tabs use nearly identical styling,T-08,T-08,LinearWorkspaceShell.tabGroups
+Settings,UX-5,P2,Create New User collects no role at creation time,T-08,T-08,LinearWorkspaceShell.tabGroups
+Settings,UX-6,P2,"Password field has no confirm, strength, or show/hide",PER-PAGE,,per-page ticket
+Settings,UX-7,P3,'Back to Dashboard' link duplicates the breadcrumb home icon,T-06,"T-06,T-09",WorkspaceFilterBar
+Settings.locations,UX-1,P1,Flat 5-column form hides the hierarchy and forces re-entry of parents,PER-PAGE,,per-page ticket
+Settings.locations,UX-2,P1,"Existing Locations list is unreadable at scale — no grouping, search, or decoded path",T-02,"T-02,T-04,T-09,T-15",OperationalStateSurface
+Settings.roles,UX-1,P1,Role Management card is a 180px-tall wrapper around one button,T-08,"T-08,T-04",LinearWorkspaceShell.tabGroups
+Settings.roles,UX-2,P2,Permission and user counts look like editable inputs,T-05,"T-05,T-08",SpreadsheetPilotGrid.numeric
+Settings.roles,UX-3,P2,Row actions clipped at right edge of the table,T-06,T-06,WorkspaceFilterBar
+Settings.users,UX-1,P1,User roster is buried below two forms,T-07,"T-07,T-08,T-04",ManusSheet
+Settings.users,UX-2,P2,Inner tab group is visually indistinguishable from the outer one,T-02,"T-02,T-08",OperationalStateSurface
+Settings.users,UX-3,P2,Create User form wastes a full row on three short fields,T-05,"T-05,T-07",SpreadsheetPilotGrid.numeric
+ShrinkageReportPage,UX-1,P2,Title 'Shrinkage Report' is rendered twice in the header,T-05,"T-05,T-04,T-09",SpreadsheetPilotGrid.numeric
+ShrinkageReportPage,UX-2,P1,"Shrinkage-by-Reason pie chart has no legend, labels, or values",T-05,T-05,SpreadsheetPilotGrid.numeric
+ShrinkageReportPage,UX-3,P2,'Suspicious Events' KPI is undefined and non-interactive,PER-PAGE,,per-page ticket
+ProductIntakeSlicePage,UX-1,P1,Empty state shows a full toolbar and table that cannot be used,T-02,"T-02,T-04",OperationalStateSurface
+ProductIntakeSlicePage,UX-2,P2,Two identical 'Back to Receiving Queue' buttons compete for the same action,T-02,T-02,OperationalStateSurface
+ProductIntakeSlicePage,UX-3,P2,H1 'Receiving' duplicates the nav tab and ignores draft context,T-06,"T-06,T-08",WorkspaceFilterBar
+InventoryBrowseSlicePage,UX-1,P1,Status column shows raw enum tokens instead of human labels,PER-PAGE,,per-page ticket
+InventoryBrowseSlicePage,UX-2,P2,Per-row 'Gallery' button is redundant and crowds the row,T-07,T-07,ManusSheet
+InventoryBrowseSlicePage,UX-3,P2,Toolbar controls have no state and no result count,T-07,T-07,ManusSheet
+PurchaseOrdersSlicePage,UX-1,P1,Primary action 'Start Receiving' is visually indistinguishable from secondary actions and gives no feedback about selection,T-02,"T-02,T-05,T-03",OperationalStateSurface
+PurchaseOrdersSlicePage,UX-2,P1,Default sort buries actionable POs under completed ones,PER-PAGE,,per-page ticket
+PurchaseOrdersSlicePage,UX-3,P2,EXPECTED column is entirely empty and TOTAL formatting is inconsistent,PER-PAGE,,per-page ticket
+SystemMetricsPage,UX-1,P1,No overall health verdict or threshold coloring,T-05,T-05,SpreadsheetPilotGrid.numeric
+SystemMetricsPage,UX-2,P2,No 'as of' timestamp or refresh control,T-05,"T-05,T-10,T-12",SpreadsheetPilotGrid.numeric
+SystemMetricsPage,UX-3,P2,Event-loop lag promised by baseline is not visible,PER-PAGE,,per-page ticket
+TimeClockPage,UX-1,P1,Hero 'Ready to start your day?' card triples up with the status badge and wastes the fold,T-07,"T-07,T-04,T-03",ManusSheet
+TimeClockPage,UX-2,P2,KPI tiles render four zeroes with no framing or comparison,PER-PAGE,,per-page ticket
+TimeClockPage,UX-3,P2,'Back' button on a top-level nav destination is a dead-end pattern,T-07,"T-07,T-04,T-11,T-09",ManusSheet
+TodoListsPage,UX-1,P1,Header subtitle contradicts the active tab,T-08,T-08,LinearWorkspaceShell.tabGroups
+TodoListsPage,UX-2,P2,Empty canvas below CTAs wastes ~600px and hides the loading state,T-02,"T-02,T-03",OperationalStateSurface
+TodoListsPage,UX-3,P2,New List vs New Todo distinction is unexplained at the point of decision,PER-PAGE,,per-page ticket
+VIPDashboard,UX-1,P1,Internal Command Palette FAB is exposed on the client-facing login,T-11,T-11,navigation.sidebarVisible
+VIPDashboard,UX-2,P1,Login header is generic 'VIP Client Portal' with no TERP brand or client context,PER-PAGE,,per-page ticket
+VIPDashboard,UX-3,P2,Password field has no show/hide toggle,PER-PAGE,,per-page ticket
+VIPDashboard,UX-4,P2,No support path if a buyer cannot sign in,PER-PAGE,,per-page ticket
+VIPDashboard,UX-5,P2,Missing 'Remember me' / session persistence control,T-12,T-12,OperationalStateSurface.error
+VIPDashboard,UX-6,P2,Login card floats in a void with no value reinforcement,T-14,T-14,DashboardLayout.responsive
+VIPDashboard,UX-7,P3,'Forgot password?' link is typographically indistinguishable from body text,T-02,T-02,OperationalStateSurface
+VIPDashboard,UX-8,P1,Dashboard-level assessment is blocked: no empty/loading state visible for `/vip-portal/dashboard`,T-02,T-02,OperationalStateSurface
+VIPLogin,UX-1,P2,No brand identity — page doesn't look like a legitimate TERP portal,T-15,T-15,config/glossary
+VIPLogin,UX-2,P2,Password field has no show/hide toggle,T-05,T-05,SpreadsheetPilotGrid.numeric
+VIPLogin,UX-3,P3,'Forgot password?' doesn't read as a link,T-02,T-02,OperationalStateSurface
+WarehousePickPackPage,UX-1,P1,Desktop chrome swallows a page spec'd as touch-first,T-04,"T-04,T-11,T-09,T-14",AppSidebar+navState
+WarehousePickPackPage,UX-2,P1,Stat tiles look like filters but aren't,PER-PAGE,,per-page ticket
+WarehousePickPackPage,UX-3,P1,Order cards carry no triage information,T-05,T-05,SpreadsheetPilotGrid.numeric
+WarehousePickPackPage,UX-4,P1,No scan-to-jump on the list view,T-05,T-05,SpreadsheetPilotGrid.numeric
+WarehousePickPackPage,UX-5,P2,"Visual hierarchy celebrates the backlog, not the action",T-04,T-04,AppSidebar+navState
+WarehousePickPackPage,UX-6,P2,Unlabeled floating action button in bottom-right,PER-PAGE,,per-page ticket
+WarehousePickPackPage,UX-7,P2,No refresh control and no visible last-updated timestamp,T-12,T-12,OperationalStateSurface.error
+WarehousePickPackPage,UX-8,P3,'1 items' grammar and unreadable 13-digit order IDs,PER-PAGE,,per-page ticket
+WorkflowQueuePage,UX-1,P1,Fourth column clipped; board doesn't fit viewport,T-04,"T-04,T-14",AppSidebar+navState
+WorkflowQueuePage,UX-2,P2,Redundant status badge on every card duplicates the column,T-06,"T-06,T-10",WorkspaceFilterBar
+WorkflowQueuePage,UX-3,P2,"View switcher reads as unrelated actions, not a tab set",T-08,T-08,LinearWorkspaceShell.tabGroups

@@ -1,0 +1,93 @@
+{
+  "page": "VIPDashboard",
+  "route": "/vip-portal/dashboard",
+  "assessment": "The dashboard route itself could not be evaluated because `/vip-portal/dashboard` redirects unauthenticated sessions to `/vip-portal/login`, which is what actually rendered. The visible login gate is functional but minimal: a centered card with email, password, Sign In, and a forgot-password link on a bare cream canvas. It works, but it reads as a generic Tailwind starter \u2014 there is zero TERP branding, no indication which client's portal this is, no show/password affordance, no support path if login fails, and an internal-looking 'Command Palette' FAB is leaking onto a client-facing surface. For a B2B hemp/THCA wholesale portal where buyers handle invoices and live-buy inventory, the first-touch screen needs to feel like a verified, account-specific front door, not a stock auth template.",
+  "notable_strengths": [
+    "Form is short, vertically centered, and focus order (Email \u2192 Password \u2192 Sign In) is correct \u2014 no unnecessary friction on the critical path.",
+    "Primary action 'Sign In' is a full-width, high-contrast terracotta button that matches the TERP accent color, so the CTA is unambiguous.",
+    "Secondary action 'Forgot password?' is present and keeps the account-recovery path discoverable on the same screen."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "VIPDashboard",
+      "severity": "P1",
+      "title": "Internal Command Palette FAB is exposed on the client-facing login",
+      "what_is_wrong": "A black circular FAB (runtime H2 'Command Palette', with 'Manage MCP & Webhooks' buttons in its tree) renders in the bottom-right of the VIP login page. This is an operator/admin tool and has no business on an external client surface.",
+      "why_it_matters": "External wholesale buyers should not see MCP/webhook controls \u2014 it leaks internal tooling, invites confusion, and in a demo-to-client context it looks unprofessional and potentially a security smell.",
+      "proposed_fix": "Gate the Command Palette mount on an authenticated admin/impersonation role (or on routes outside `/vip-portal/*`). On `/vip-portal/login` and VIP-portal routes without an admin session, do not render the FAB at all.",
+      "functionality_preserved": "The Command Palette component and its 'Manage MCP & Webhooks' actions remain fully available in admin shells; this is a mount-condition change, not a feature removal. The `ImpersonationBanner` path still exposes admin context when a real admin is impersonating a VIP."
+    },
+    {
+      "id": "UX-2",
+      "surface": "VIPDashboard",
+      "severity": "P1",
+      "title": "Login header is generic 'VIP Client Portal' with no TERP brand or client context",
+      "what_is_wrong": "The card title reads 'VIP Client Portal' with subtitle 'Sign in to access your account'. There is no TERP wordmark, no logo, no account/company name, and nothing visually tying this screen to the hemp/THCA wholesale business.",
+      "why_it_matters": "Buyers who receive a login link by email cannot confirm at a glance that they landed on the right system, which raises phishing concerns and erodes trust before they've even authenticated. It also looks indistinguishable from any Tailwind auth template.",
+      "proposed_fix": "Above the card, add the TERP wordmark + a one-line tagline ('Wholesale portal for approved buyers'). Change the card title to 'Sign in to TERP' with a subheading 'VIP Client Portal'. Keep the form unchanged.",
+      "functionality_preserved": "The `VIPDashboard` auth flow, tRPC login mutation, and post-login routing to `/vip-portal/dashboard` are untouched; this is pure header/brand chrome above the existing form."
+    },
+    {
+      "id": "UX-3",
+      "surface": "VIPDashboard",
+      "severity": "P2",
+      "title": "Password field has no show/hide toggle",
+      "what_is_wrong": "The Password input renders as masked dots with no trailing eye icon or 'Show' control. Users who mistype on a laptop keyboard have no way to verify the value before submitting.",
+      "why_it_matters": "B2B users frequently paste passwords from a manager or type long generated strings; without a reveal toggle, the typical failure mode is multiple failed attempts and eventually a forgot-password round trip, which extends time-to-first-order.",
+      "proposed_fix": "Add a trailing eye/eye-off icon button inside the Password input that toggles `type` between `password` and `text`. Announce state via `aria-pressed`.",
+      "functionality_preserved": "The password field name, validation, and submit payload to the VIP auth endpoint stay identical \u2014 only the rendered input type is toggled client-side."
+    },
+    {
+      "id": "UX-4",
+      "surface": "VIPDashboard",
+      "severity": "P2",
+      "title": "No support path if a buyer cannot sign in",
+      "what_is_wrong": "The card offers only 'Sign In' and 'Forgot password?'. There is no 'Need help?', no rep contact, and no link back to a marketing/contact page. A buyer locked out (account disabled, not yet provisioned, wrong portal) has nowhere to go.",
+      "why_it_matters": "Wholesale clients whose account rep provisioned them will call/email the rep directly \u2014 but only if they can find them. Right now the dead-end on this screen turns a login failure into a churn risk or a support ticket in the wrong channel.",
+      "proposed_fix": "Below 'Forgot password?' add a muted second line: 'Need access? Contact your TERP rep or email sales@terp.[domain].' Do not introduce a signup flow \u2014 VIP accounts are provisioned by admins.",
+      "functionality_preserved": "No baseline flow is altered; this is additive microcopy. The VIP account-provisioning rule (admin-created accounts only) is explicitly reinforced by 'Contact your TERP rep' rather than offering self-signup."
+    },
+    {
+      "id": "UX-5",
+      "surface": "VIPDashboard",
+      "severity": "P2",
+      "title": "Missing 'Remember me' / session persistence control",
+      "what_is_wrong": "There is no checkbox to keep the session alive between visits. The baseline notes logout clears local/session storage, which implies session state is stored \u2014 but the user has no control surface over it.",
+      "why_it_matters": "VIP buyers check pricing, invoices, and the Live Catalog repeatedly throughout a week. Forcing a full email+password entry every visit adds real friction to a high-frequency workflow and is out of line with peer B2B tools.",
+      "proposed_fix": "Add a 'Keep me signed in on this device' checkbox above the Sign In button, defaulted off. Bind it to an extended refresh-token TTL; leave the default session length unchanged for unchecked logins.",
+      "functionality_preserved": "The existing logout behavior that clears local/session storage (per baseline Navigation note) continues to work; the checkbox only adjusts token TTL when opted in \u2014 it does not change the logout contract."
+    },
+    {
+      "id": "UX-6",
+      "surface": "VIPDashboard",
+      "severity": "P2",
+      "title": "Login card floats in a void with no value reinforcement",
+      "what_is_wrong": "Roughly 80% of the 1440\u00d7900 viewport is empty cream background. The single card is visually isolated, and there is no mention of what the portal provides (Live Catalog, AR invoices, Appointments, Documents) \u2014 things a returning buyer would recognize.",
+      "why_it_matters": "For a first-time VIP user clicking an onboarding email, this screen gives zero confidence about where they've landed or what they'll see after login. It also wastes a prime opportunity to set context for the multi-module dashboard behind the gate.",
+      "proposed_fix": "Convert the layout to a two-column pattern at \u2265md breakpoint: left column keeps the existing card; right column shows a short bulleted 'Inside your portal: Live Catalog, Invoices & Payments, Appointments, Documents, Marketplace'. Stack vertically on mobile.",
+      "functionality_preserved": "Every item named in the right column maps 1:1 to a baseline `VIPDashboard` module (`LiveCatalog`, `AccountsReceivable`, `AppointmentBooking`, `DocumentDownloads`, `MarketplaceNeeds`/`Supply`) \u2014 the page is strengthened, not reshaped, and per-client config still governs which modules actually render post-login."
+    },
+    {
+      "id": "UX-7",
+      "surface": "VIPDashboard",
+      "severity": "P3",
+      "title": "'Forgot password?' link is typographically indistinguishable from body text",
+      "what_is_wrong": "'Forgot password?' is rendered in the same small gray weight as the 'Sign in to access your account' subtitle, with no underline, no color accent, and no hover affordance visible in the static.",
+      "why_it_matters": "Users scanning for recovery scan for blue/accent text or an underline; a muted gray link fails the standard scanning pattern and increases mis-clicks on the back button instead.",
+      "proposed_fix": "Render 'Forgot password?' in the terracotta accent color (same hue as the Sign In button) with an underline on hover and `focus-visible` ring. Keep size and position.",
+      "functionality_preserved": "The link target, handler, and password-reset route are unchanged; this is purely a style token swap."
+    },
+    {
+      "id": "UX-8",
+      "surface": "VIPDashboard",
+      "severity": "P1",
+      "title": "Dashboard-level assessment is blocked: no empty/loading state visible for `/vip-portal/dashboard`",
+      "what_is_wrong": "Requesting `/vip-portal/dashboard` without a VIP session hard-redirects straight to `/vip-portal/login` \u2014 there is no intermediate 'Session expired, please sign in again' messaging, and after login there is no indication the user was returning to a specific deep link.",
+      "why_it_matters": "A VIP buyer who clicks a bookmarked URL to a specific module (e.g. `/vip-portal/invoices`) loses their destination. They land on login, sign in, and end up on the default dashboard \u2014 requiring a second click to return to the module they actually wanted.",
+      "proposed_fix": "On the login redirect, preserve the originally requested pathname in a `?next=` query param. After successful sign-in, route to `next` if present and if it resolves to a module enabled in the client's per-client config; otherwise fall back to `/vip-portal/dashboard`. On the login screen itself, when `next` is present, show a small banner: 'Sign in to continue.'",
+      "functionality_preserved": "The per-client module gating documented in the baseline ('rendered modules depend on the per-client config') is honored by validating `next` against the enabled modules before redirect; the default `/vip-portal/dashboard` landing remains the fallback, so no existing flow regresses."
+    }
+  ],
+  "redesign_sketch": "Two-column auth layout at \u2265md. Top-left: TERP wordmark + small tagline 'Wholesale portal for approved buyers'. Left column (420px, vertically centered): card titled 'Sign in to TERP' with subheading 'VIP Client Portal'. Fields: Email (autofocus), Password (with trailing show/hide eye icon), 'Keep me signed in on this device' checkbox (unchecked by default), full-width terracotta 'Sign In' button. Below button, two lines: accent-colored 'Forgot password?' and muted 'Need access? Contact your TERP rep.' If `?next=` is present, a subtle info strip above the form reads 'Sign in to continue to [module name].' Right column: heading 'Inside your portal', then a 4\u20135 row list with icon + label pairs (Live Catalog, Invoices & Payments, Appointments, Documents, Marketplace) sourced from enabled VIP modules \u2014 purely decorative on this screen. On mobile, the right column collapses below the card. The Command Palette FAB is not mounted on any `/vip-portal/*` route for non-admin sessions. Post-login, the actual `VIPDashboard` retains its existing module grid (balance, YTD spend, greeting, quick links) \u2014 this redesign only fixes the gate in front of it."
+}

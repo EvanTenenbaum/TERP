@@ -1,0 +1,43 @@
+{
+  "page": "PhotographyPage",
+  "route": "/inventory?tab=photography",
+  "assessment": "The page surfaces the right data \u2014 four pipeline counters, a batch table with status chips, and an Open Shoot Desk action per row \u2014 but the hierarchy is flat and the primary workflow is buried. With 'Ready to Review' at 0 and 'Queued' at 2 but 100 'Total Batches' showing as Pending, the counters and the table tell conflicting stories. The 'Select All Ready to Review' button is the de facto primary action yet it sits top-right with no visual weight, and the per-row Open Shoot Desk buttons repeat identically in every row with no bulk equivalent. There is also no indication which of these Pending batches the current user should start on first.",
+  "notable_strengths": [
+    "Four-up KPI strip (Queued / Ready to Review / Shot Today / Total Batches) cleanly frames the pipeline state at a glance.",
+    "Per-row status chip + explicit 'Open Shoot Desk' CTA makes the next step unambiguous on each batch.",
+    "Batch filter dropdown + product search are positioned together above the table, matching standard queue-tool conventions."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "PhotographyPage",
+      "severity": "P1",
+      "title": "Primary bulk action is visually demoted",
+      "what_is_wrong": "'Select All Ready to Review' is the only bulk action on the page but renders as a plain outlined button in the top-right of the table toolbar, while each row repeats a visually identical 'Open Shoot Desk' button. With 100 pending batches, the selection checkbox column also has no corresponding bulk action bar when rows are checked.",
+      "why_it_matters": "Photographers working a queue of 100 batches will click Open Shoot Desk row-by-row because the bulk path is invisible; this is the exact workflow the checkbox column was built for.",
+      "proposed_fix": "Promote 'Select All Ready to Review' to a primary (filled) button and pair it with a contextual bulk action bar that appears above the table when any row checkbox is ticked, showing count + 'Open Shoot Desk for N batches' and 'Mark Complete'. Keep per-row buttons unchanged.",
+      "functionality_preserved": "Preserves the PhotographyModule multi-select, status chips, and mark-complete features from the baseline \u2014 the fix only restyles the existing control and surfaces the existing bulk capability."
+    },
+    {
+      "id": "UX-2",
+      "surface": "PhotographyPage",
+      "severity": "P2",
+      "title": "KPI counters contradict the visible queue without explanation",
+      "what_is_wrong": "Header shows Queued: 2, Ready to Review: 0, Shot Today: 0, Total Batches: 100 \u2014 yet every visible row has a 'Pending' status chip. There is no legend mapping 'Pending' chip \u2192 which counter bucket, and the counters are not clickable filters.",
+      "why_it_matters": "Users cannot reconcile '2 queued' with 9+ visible pending rows, and cannot click a KPI to filter down to that subset, so the counters become decoration rather than navigation.",
+      "proposed_fix": "Make each KPI card a toggleable filter that scopes the table to its PENDING/IN_PROGRESS/COMPLETED bucket, add a one-line caption under each label (e.g., 'Pending intake', 'Awaiting QA', 'Completed today'), and align the chip labels in the Status column to the same vocabulary.",
+      "functionality_preserved": "Preserves the baseline filterable queue on PENDING/IN_PROGRESS/COMPLETED and the existing status chips \u2014 the fix wires the counters into the same filter state already driven by the `All batches` dropdown and `photography.*` router."
+    },
+    {
+      "id": "UX-3",
+      "surface": "PhotographyPage",
+      "severity": "P2",
+      "title": "Strain column is dead weight and Batch ID is under-emphasized",
+      "what_is_wrong": "Every visible row shows '-' in the Strain column, while Product names are truncated-looking strings like 'Qa Swarm Intake Product 1774741644218' and Batch IDs (564, 563, 562\u2026) are the actual identifier photographers call out, yet Batch ID is rendered in the same weight as everything else.",
+      "why_it_matters": "The column real estate for Strain is wasted in the common case, and photographers scanning for 'batch 564' have no typographic anchor to find it quickly.",
+      "proposed_fix": "Render Batch ID as a monospace, bolded lead token (e.g., '#564') as the first visible column after the checkbox, and collapse Strain into a secondary line under Product (or hide the column when >80% of rows are empty, with a column-picker toggle to bring it back).",
+      "functionality_preserved": "Preserves all columns documented in the baseline filterable queue \u2014 Strain data remains in the DOM/row model and can be revealed via the column toggle, so no field is removed."
+    }
+  ],
+  "redesign_sketch": "Keep H1 'Inventory' and the tab strip unchanged. Below tabs: a tighter 4-up KPI row where each card is a filter chip (Queued \u00b7 Ready to Review \u00b7 Shot Today \u00b7 Total) with a selected state that scopes the table; sub-caption under each number clarifies the bucket. Toolbar row: left = product search + 'All batches' dropdown + status multi-select; right = primary filled 'Select All Ready to Review' button plus a secondary 'Upload' entry into PhotographyModule. Table: checkbox | #BatchID (mono, bold) | Product (with Strain as dim subtitle when present) | Status chip | Added | Open Shoot Desk. When any checkbox is active, a sticky bulk action bar slides in above the table: 'N selected \u2014 Open Shoot Desk \u00b7 Mark Complete \u00b7 Clear'. Empty 'Ready to Review' state gets a one-line nudge: 'Nothing to review. 2 batches queued for shooting.'"
+}

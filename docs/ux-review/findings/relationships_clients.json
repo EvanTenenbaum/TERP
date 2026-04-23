@@ -1,0 +1,93 @@
+{
+  "page": "RelationshipsWorkspacePage.clients",
+  "route": "/relationships?tab=clients",
+  "assessment": "The page has the right bones \u2014 tab switcher, KPI strip, search + filter + Quick Add, and a sortable table \u2014 but it's drowning in low-signal repetition. Every one of the 40 rows shows the same Seller+Supplier badge stack, the same 'Watch' status, and the same $0.00 / 0 metrics, so the table reads as broken or unseeded even when it isn't. Copy is inconsistent ('Reachable Handles' is engineer jargon, 'Saved' badge has no referent, Quick Add doesn't say what it adds) and the SUPV-prefixed codes in the Clients tab imply suppliers. The heading hierarchy also double-stamps an H1. Underneath all that, the core directory + profile drill-in flow is intact and fast.",
+  "notable_strengths": [
+    "Clear tab model (Clients / Suppliers) matching the baseline's two work surfaces, with Clients selected and visually distinct.",
+    "KPI strip (Total, With Debt, LTV) sits next to the tab header so operators get portfolio context before they scan rows.",
+    "Every column that should be sortable (Code Name, LTV, Debt, Orders) exposes a sort affordance, and the row chevron plus keyboard-selected row border make the drill-in to ClientProfilePage obvious."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "RelationshipsWorkspacePage.clients",
+      "severity": "P1",
+      "title": "Relationship column is pure noise \u2014 every row stacks the same Seller + Supplier pair",
+      "what_is_wrong": "All eight visible rows (Sierra Nevada Farms through Humboldt Harvest Co) show an identical 'Seller' / 'Supplier' badge stack in the Relationship column. The column differentiates zero rows but consumes ~120px of horizontal space and doubles row height.",
+      "why_it_matters": "Operators scanning for a specific client can't use the column to narrow anything, and the repeated stack pushes contact info and money columns right, which is what they actually came to read.",
+      "proposed_fix": "Keep the dual-role concept but collapse it: render a single compact chip \u2014 'Client \u00b7 Supplier' when both flags are true, 'Client' or 'Supplier' otherwise \u2014 in a 72px column. Move the full role list into the profile page and the All Types filter (which already exists and is empty today).",
+      "functionality_preserved": "The VendorsWorkSurface contract (suppliers = clients with isSeller=true) is untouched; we still render both flags, just in a denser chip, and the Suppliers tab continues to filter by isSeller=true."
+    },
+    {
+      "id": "UX-2",
+      "surface": "RelationshipsWorkspacePage.clients",
+      "severity": "P1",
+      "title": "All 40 clients read as zero-data, so the directory looks broken",
+      "what_is_wrong": "KPI strip says 'With Debt: 0' and 'LTV: $0.00', every Status cell is 'Watch', and every LTV / Debt / Orders cell shows $0.00 / 0. There is no empty-state explanation and no timestamp, so a new operator can't tell whether this is seed data, a failed rollup, or reality.",
+      "why_it_matters": "The whole value proposition of the page \u2014 'track transactions, and monitor debt' per the subtitle \u2014 evaporates when the table looks dead. Operators lose trust in the numbers elsewhere in TERP.",
+      "proposed_fix": "When every row's LTV/Debt/Orders are null/zero, render a dismissible banner under the KPI strip: 'No billed orders yet for these clients \u2014 metrics will populate after the first invoiced shipment.' Render the zero cells as a muted '\u2014' instead of '$0.00' / '0' so real zero values stand out when they arrive. Add a 'Metrics as of <timestamp>' caption next to the Saved pill.",
+      "functionality_preserved": "No change to the rollup query or the Total/With Debt/LTV aggregates powering the KPI strip; this is a presentation-layer empty-state and formatter change only."
+    },
+    {
+      "id": "UX-3",
+      "surface": "RelationshipsWorkspacePage.clients",
+      "severity": "P2",
+      "title": "Two H1s on one page ('Relationships' and 'Clients')",
+      "what_is_wrong": "The Playwright capture lists H1 = ['Relationships', 'Clients']. The breadcrumb 'Relationships' in the top bar is being rendered at the same heading level as the page title 'Clients' below the tab row.",
+      "why_it_matters": "Screen readers announce two page titles, and the visual weight of the breadcrumb competes with the real page title. It also makes the card header feel like an unnecessary second nav layer.",
+      "proposed_fix": "Demote the breadcrumb 'Relationships' to a non-heading span (it already has the home chevron pattern), and keep 'Clients' as the sole H1 inside the work surface. The subtitle 'Manage clients, track transactions, and monitor debt' stays as the H1's supporting copy.",
+      "functionality_preserved": "The breadcrumb link target and the RelationshipsWorkspacePage tab routing are unchanged \u2014 this is a tag swap from h1 to span with equivalent styling."
+    },
+    {
+      "id": "UX-4",
+      "surface": "RelationshipsWorkspacePage.clients",
+      "severity": "P2",
+      "title": "'Reachable Handles' is engineer-speak in a sales surface",
+      "what_is_wrong": "The column header reads 'Reachable Handles' and its cells concatenate email and phone with a middle-dot separator on one line, e.g. 'Anna_sierra51@yahoo.com \u00b7 440-298-6411 x25762'.",
+      "why_it_matters": "Sales ops calls these 'contacts'. The label slows first-time readers, and cramming email and phone on one line makes both harder to click-to-copy on long rows.",
+      "proposed_fix": "Rename the column 'Contact'. Stack email (regular weight) over phone (muted) in the cell, each with its own copy-on-click affordance. Keep the handle-join logic server-side.",
+      "functionality_preserved": "No change to the tRPC query returning the email/phone fields \u2014 only the column header copy and cell layout are updated."
+    },
+    {
+      "id": "UX-5",
+      "surface": "RelationshipsWorkspacePage.clients",
+      "severity": "P2",
+      "title": "Local search placeholder advertises Cmd+K, which is already the global command palette",
+      "what_is_wrong": "The table search input reads 'Search clients\u2026 (Cmd+K)' but the top-bar command palette button is also labelled 'CTRL K' and the runtime exposes an H2 'Command Palette'. Two different inputs claim the same shortcut.",
+      "why_it_matters": "Pressing Cmd+K opens the global palette, not the local filter, so the hint is a lie. Users either mistrust shortcuts across TERP or get bounced out of the list they were scanning.",
+      "proposed_fix": "Drop the '(Cmd+K)' hint from the local search input and replace with '(/ to focus)' bound to the slash key, a pattern already familiar from Linear/GitHub. Leave Cmd/Ctrl+K wired exclusively to the global Command Palette.",
+      "functionality_preserved": "The existing client-filter search handler keeps its input binding; only the placeholder string and an added slash-key focus listener change. Global Command Palette shortcut is untouched."
+    },
+    {
+      "id": "UX-6",
+      "surface": "RelationshipsWorkspacePage.clients",
+      "severity": "P2",
+      "title": "'Quick Add' button doesn't say what it adds",
+      "what_is_wrong": "The orange primary CTA in the table header says only 'Quick Add' with a plus icon. On a page with a Clients tab and a Suppliers tab, and a 'New Order' shortcut in the left rail, the object being created is ambiguous.",
+      "why_it_matters": "Operators either click defensively to discover the modal or avoid it. It also prevents scannability for keyboard users relying on accessible name.",
+      "proposed_fix": "Relabel to 'Add client' on the Clients tab and 'Add supplier' on the Suppliers tab \u2014 the button already re-renders per tab. Keep the plus icon and the orange fill.",
+      "functionality_preserved": "Same quick-create modal the button already opens; only the button label is tab-aware."
+    },
+    {
+      "id": "UX-7",
+      "surface": "RelationshipsWorkspacePage.clients",
+      "severity": "P2",
+      "title": "'Saved' pill has no referent next to the KPIs",
+      "what_is_wrong": "Between the subtitle and the KPI counters sits a green 'Saved' badge with a check icon. Nothing on the page was just edited \u2014 it's a persistent element.",
+      "why_it_matters": "Users read it as a stale toast or a filter preset indicator and waste attention trying to map it to an action. On this B2B directory, any unexplained green dot looks like a health/status signal.",
+      "proposed_fix": "If the pill indicates auto-saved filter state, relabel to 'View saved \u00b7 Default' with a caret that opens the saved-views menu. If it indicates last-sync freshness, relabel to 'Synced 2m ago' with a refresh icon. Pick one and commit \u2014 don't ship a decorative 'Saved'.",
+      "functionality_preserved": "Whatever the badge currently reflects (saved-view state or sync state) stays wired to the same source; this is a copy + icon swap to make it legible."
+    },
+    {
+      "id": "UX-8",
+      "surface": "RelationshipsWorkspacePage.clients",
+      "severity": "P3",
+      "title": "SUPV-prefixed codes on the Clients tab read as supplier codes",
+      "what_is_wrong": "Every code under each client name reads 'SUPV0025', 'SUPV0024', etc. The prefix visually matches 'Supplier/Vendor', but we're on the Clients tab.",
+      "why_it_matters": "It undermines the tab distinction \u2014 operators who opened Clients start doubting they're looking at clients, especially given the same rows also carry a Supplier badge (see UX-1).",
+      "proposed_fix": "Keep the code immutable for database linkage, but render a scoped display prefix: 'CL-0025' style on the Clients tab and 'SUP-0025' on the Suppliers tab, generated from the same numeric id. Show the raw code in a tooltip for power users who memorized it.",
+      "functionality_preserved": "The underlying client id / code field from the clients table is unchanged; only the display formatter in the Code Name cell differs per tab."
+    }
+  ],
+  "redesign_sketch": "Single H1 'Clients' with subtitle 'Manage clients, track transactions, and monitor debt' \u2014 breadcrumb above is plain text, not a heading. Tab row (Clients | Suppliers) stays pinned under the H1. KPI strip becomes three equal tiles: Total clients \u00b7 With debt \u00b7 Portfolio LTV, each with a muted 'as of <timestamp>' caption and a small refresh control replacing the current 'Saved' pill. Toolbar row: left = search input with '/' hint, type filter, and a new 'With debt' toggle chip; right = primary 'Add client' button (renamed from Quick Add). Table columns in this order: Code/Name (stacked, 'CL-0025' display code muted under name), Contact (email over phone, copy-on-click), Role (single compact chip 'Client \u00b7 Supplier' when both), Status, Last activity, LTV, Debt, Orders, chevron. Zero metrics render as '\u2014' not '$0.00'. When all rows have null metrics, a dismissible banner explains why: 'Metrics populate after the first invoiced shipment.' Row selection keeps the existing orange focus border and chevron drill-in to ClientProfilePage."
+}

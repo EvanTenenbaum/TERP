@@ -1,0 +1,93 @@
+{
+  "page": "InventoryWorkspacePage.inventory",
+  "route": "/inventory?tab=inventory",
+  "assessment": "The page correctly anchors Inventory as the Operations home and exposes the right tab set, but the default kanban-by-status board fights the default 'Live' filter: three of four columns render 'No batches' while the only populated column ('Live') shows a cramped 100-item scroll, and the rightmost 'Quarantined' column is visibly clipped off the canvas. The card body is also too thin for a THCA wholesale tool \u2014 Qty and price without THCA%, weight, location, COA status, or age means buyers and operators cannot triage from this surface and must click into every batch. Finally, the left rail is titled 'SALES QUICK ACTIONS' on what is explicitly the Inventory workspace, creating an off-topic primary nav. The KPI strip (303 batches / 38,185.26 units / $34,215,625.44 value) and the tab structure are strong; the board metaphor itself is not the problem, the filter+view coupling and card density are.",
+  "notable_strengths": [
+    "The KPI strip with batches / units / value anchors the workspace with portfolio-level truth at a glance.",
+    "Tab order (Inventory \u2192 Direct Intake \u2192 Product Intake \u2192 Shipping \u2192 Photography \u2192 Samples) mirrors the real physical lifecycle of a batch and should be preserved.",
+    "Batch cards lead with the SKU/lot code in a monospace chip, which matches how ops teams actually refer to inventory on the floor."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "InventoryWorkspacePage.inventory",
+      "severity": "P1",
+      "title": "Status filter 'Live' and kanban columns double-filter, leaving 3 of 4 lanes empty",
+      "what_is_wrong": "The toolbar status selector is set to 'Live' while the board renders four status lanes \u2014 Awaiting Intake (0), Live (100), On Hold (0), Quarantined (clipped). Three columns permanently say 'No batches' and consume ~60% of the horizontal canvas.",
+      "why_it_matters": "Users waste screen space on empty lanes and cannot actually see cross-status volume at a glance; they also have no cue that the status filter is what emptied the other lanes, so the board looks broken.",
+      "proposed_fix": "When the status selector is set to a single status, collapse non-matching lanes into 48px header-only rails showing only the count and allow click-to-expand; when the selector is 'All', expand all four. Alternatively, auto-switch the status selector to 'All' the first time the kanban is rendered and let column-level counts carry the filtering story.",
+      "functionality_preserved": "Keeps the status dropdown and the four-lane kanban from `InventoryManagementSurface` intact \u2014 nothing is removed, only the default interaction between filter and board is reconciled."
+    },
+    {
+      "id": "UX-2",
+      "surface": "InventoryWorkspacePage.inventory",
+      "severity": "P1",
+      "title": "Rightmost 'Quarantined' column is clipped at 1440px viewport",
+      "what_is_wrong": "At the default viewport the Quarantined column header is cut off mid-word with no visible horizontal scroll affordance. The user has no cue that more content exists to the right.",
+      "why_it_matters": "Quarantined inventory is the highest-risk bucket in a hemp/THCA ERP (compliance, recalls). Hiding it behind an invisible scroll is a compliance-visibility failure.",
+      "proposed_fix": "Set column min-width to ~280px with `overflow-x: auto` on the board container and render a persistent right-edge fade + scroll shadow. Additionally, show a sticky column-count rail above the board (e.g., 'Awaiting 0 \u00b7 Live 100 \u00b7 On Hold 0 \u00b7 Quarantined N') so counts are readable even when a column is scrolled out.",
+      "functionality_preserved": "Preserves the four-column lane layout from `InventoryManagementSurface`; only the container's overflow behavior and a summary rail are added."
+    },
+    {
+      "id": "UX-3",
+      "surface": "InventoryWorkspacePage.inventory",
+      "severity": "P1",
+      "title": "Batch cards omit the data that drives wholesale decisions",
+      "what_is_wrong": "Each card shows SKU, product name, a single supplier/origin line, Qty, and price. There is no THCA%, no weight, no room/location, no intake date or batch age, no COA/test status, no photography status, and no hold/sample reservations.",
+      "why_it_matters": "Sales and operations cannot triage from the board \u2014 they must open each batch sheet to answer basic questions ('is this ready to sell?', 'how old is it?', 'does it pass spec?'). This is the core workflow on this page and it is \u226530% slower than it should be.",
+      "proposed_fix": "Add a 2-line metadata region under the product name: line 1 = THCA% \u00b7 weight (lb/kg) \u00b7 age in days; line 2 = location/room \u00b7 COA badge (Pass/Pending/Fail) \u00b7 photo badge \u00b7 hold/reserved badge. Keep Qty and price pinned to the bottom-right as today. Allow the 'Default' saved view to toggle a 'Compact' density that hides line 2.",
+      "functionality_preserved": "No new data sources required \u2014 every field surfaces existing attributes already rendered in the deep-linked `batchId` row sheet of `InventoryManagementSurface`; nothing is removed."
+    },
+    {
+      "id": "UX-4",
+      "surface": "InventoryWorkspacePage.inventory",
+      "severity": "P2",
+      "title": "Left rail is labeled 'SALES QUICK ACTIONS' on the Inventory workspace",
+      "what_is_wrong": "The top rail group on /inventory is titled 'SALES QUICK ACTIONS' and surfaces New Order, Active Orders, Sales Catalogue, Recent Customers, Today's Shipments \u2014 none of which belong to the Inventory workspace the user just entered.",
+      "why_it_matters": "Primary nav real-estate is spent on an off-topic group, pushing the actual Inventory workspace tabs (SELL, BUY, OPERATIONS\u2026) below the fold on shorter screens and creating a context mismatch between breadcrumb and rail.",
+      "proposed_fix": "Rename the rail group to 'Quick Actions' and render context-aware items per route: on /inventory show New Intake, Create Adjustment, Photography Queue, Pending Samples, Today's Shipments. Keep the Sales items available under OPERATIONS\u2192Sales, not in the top rail.",
+      "functionality_preserved": "Every existing Sales Quick Action item remains reachable; this is a rename + per-route item swap inside the existing rail component, no router or tRPC endpoints change."
+    },
+    {
+      "id": "UX-5",
+      "surface": "InventoryWorkspacePage.inventory",
+      "severity": "P2",
+      "title": "KPI chips (303 batches \u00b7 38,185.26 units \u00b7 $34,215,625.44 value) are dead text",
+      "what_is_wrong": "The three portfolio KPIs sit in chip-shaped containers but are not clickable, cannot be filtered to, and do not update when filters or status selector are applied \u2014 they always reflect the unfiltered portfolio.",
+      "why_it_matters": "Users assume chips = filters in every modern B2B tool (Linear, Ramp). The static treatment wastes a high-value interaction zone and makes the numbers feel decorative.",
+      "proposed_fix": "Keep the chips visually identical but make each one: (a) recompute against active filters with the unfiltered total shown as subdued 'of 303' suffix, and (b) clickable to toggle 'show only batches contributing to this metric' (e.g., clicking '$value' sorts by value desc).",
+      "functionality_preserved": "`InventoryManagementSurface` already exposes batches/units/value aggregates; this only adds click handlers and a filter-aware recompute, preserving the original totals as secondary text."
+    },
+    {
+      "id": "UX-6",
+      "surface": "InventoryWorkspacePage.inventory",
+      "severity": "P2",
+      "title": "'Inventory' appears three times within 120px of vertical space",
+      "what_is_wrong": "The breadcrumb says Inventory, the H1 says Inventory, the active tab says Inventory, and the KPI strip header says Inventory \u2014 four repetitions stacked in the top pane.",
+      "why_it_matters": "Visual hierarchy is flattened and the user loses the cue that they are on the Inventory *tab* of the Inventory *workspace*; the H1 'Inventory' carries no incremental information.",
+      "proposed_fix": "Drop the KPI strip's duplicate 'Inventory' subheader (keep the chips and the 'INVENTORY OPERATIONS' eyebrow). Replace the H1 'Inventory' with a contextual title that includes the active view, e.g., 'Inventory \u2014 Live view' that updates with the status selector. Keep the tab label as-is.",
+      "functionality_preserved": "Pure copy/label change inside the H1 region of `InventoryWorkspacePage`; tabs, KPIs, and routing are untouched."
+    },
+    {
+      "id": "UX-7",
+      "surface": "InventoryWorkspacePage.inventory",
+      "severity": "P2",
+      "title": "'Save View' button is disabled by default with no affordance explaining why",
+      "what_is_wrong": "Next to the 'Default (available now)' view selector, 'Save View' renders in a disabled state on page load with no tooltip, hint, or muted helper text.",
+      "why_it_matters": "Users cannot tell whether saved views are a feature they don't have access to, a feature that requires a dirty state, or a broken button \u2014 a classic dead-end pattern.",
+      "proposed_fix": "Keep the button disabled until a filter/sort/status change is applied, and replace the static label with 'Save changes to view' + a tooltip on hover: 'Change a filter, search, or status to save a new view.' When dirty, enable it and change label to 'Save as new view'.",
+      "functionality_preserved": "The saved-view endpoint and button component remain; only label/tooltip/dirty-state wiring is added."
+    },
+    {
+      "id": "UX-8",
+      "surface": "InventoryWorkspacePage.inventory",
+      "severity": "P3",
+      "title": "Active tab visual treatment is almost invisible",
+      "what_is_wrong": "The active 'Inventory' tab is distinguished only by a faint outline/underline; it reads nearly identical to inactive tabs like 'Direct Intake' and 'Shipping'.",
+      "why_it_matters": "Users lose orientation across the six-tab workspace, especially after returning from a deep link that sets `tab=`.",
+      "proposed_fix": "Give the active tab a 2px bottom border in the brand accent, bold the label (500\u2192600), and darken the label color one step. Keep hover/focus rings as-is.",
+      "functionality_preserved": "Styling-only change to the existing tab component in `INVENTORY_WORKSPACE`; no routing or tab logic changes."
+    }
+  ],
+  "redesign_sketch": "Top pane: breadcrumb \u2192 H1 'Inventory \u2014 {active status} view' \u2192 six tabs with a stronger active underline. Below tabs, a single-row command strip: left = search input, status selector ('All' by default so the board carries filtering), Filters, saved-view selector + contextual 'Save changes to view' button; right = density toggle (Compact/Standard) and Export CSV. Below the strip, three clickable KPI chips (batches \u00b7 units \u00b7 value) that recompute against active filters and show 'of {unfiltered}' subtext. Main surface: four-lane kanban with min-width 280px lanes, horizontal scroll with edge shadows, and a sticky summary rail above the board showing all four lane counts even when a lane is scrolled off. Each card: row 1 = SKU chip + status dot; row 2 = product name; row 3 = supplier / origin; row 4 = THCA% \u00b7 weight \u00b7 age-in-days; row 5 = location \u00b7 COA badge \u00b7 photo badge \u00b7 hold/reserved badge; footer = Qty left, price right. Left rail renamed 'Quick Actions' with context-aware items for /inventory (New Intake, Create Adjustment, Photography Queue, Pending Samples, Today's Shipments). Everything documented in the baseline \u2014 tabs, sheet-native surfaces, deep-link `batchId`, status lanes, KPIs, saved views, Export CSV \u2014 stays intact; the redesign only rewires defaults, density, and card information architecture."
+}

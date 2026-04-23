@@ -1,0 +1,93 @@
+{
+  "page": "OrderCreatorPage",
+  "route": "/sales?tab=create-order",
+  "assessment": "The page presents a clean, low-density working frame with the correct structural bones \u2014 header, tab rail, saved indicator, totals row, empty state, keyboard-hint footer \u2014 but it squanders its opening move. The first screen the rep lands on answers almost none of the questions a seller actually has: Who am I selling to? Is this a quote or a sale? Can they buy on credit? What's the fastest path to add my first line? The empty state uses a warning triangle (which looks like an error), the tab row collides with itself at 'Sales Catalogues/Live Shopping/New Order', the H1 still says 'Sales' so the breadcrumb and page context never reflect the actual task ('New Order'), and the instructional line 'KEEP THE CUSTOMER, DOCUMENT TYPE, AND TOTALS IN ONE WORKING FRAME' is meta-designer copy, not seller copy. The document-type selector ('Sales Order') and the customer picker are floated top-right, disconnected from the empty state's 'Choose a customer above' sentence, so the eye has to zigzag. The keyboard hints in the footer and the left 'Sales Quick Actions' rail are both real strengths that a redesign should protect.",
+  "notable_strengths": [
+    "Persistent keyboard-hint footer (Ctrl+S save draft \u00b7 Ctrl+Enter finalize \u00b7 Ctrl+Z undo in grid) teaches the grid-style workflow without a modal.",
+    "Left 'Sales Quick Actions' rail (New Order, Active Orders, Sales Catalogue, Recent Customers, Today's Shipments) gives reps a fast re-entry point without leaving the workspace.",
+    "Status chips 'Saved' and '0 lines \u00b7 synced' establish trust that the draft/autosave loop is actually running."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "OrderCreatorPage",
+      "severity": "P1",
+      "title": "Tab row collides: 'Sales Catalogues' / 'Live Shopping' / 'New Order' visually overlap",
+      "what_is_wrong": "In the tab strip under the 'Sales' H1, the labels 'Sales Catalogues' and 'Live Shopping' are touching, and 'Live Shopping' butts directly into the active 'New Order' pill with no gutter. Tabs appear to use fixed-width columns that the longer labels have outgrown.",
+      "why_it_matters": "The active-tab boundary is ambiguous, users can't tell which pill they're about to click, and the page looks broken on first impression \u2014 not a good signal on a money-moving surface.",
+      "proposed_fix": "Switch the tab container from fixed equal-width columns to content-width with a consistent 16\u201324px gutter, left-align the strip, and allow it to horizontally scroll on narrow viewports. Keep the same seven tabs in the same order.",
+      "functionality_preserved": "All seven tabs from the Sales Workspace router (Orders, Pick List, Quotes, Returns, Sales Catalogues, Live Shopping, New Order) remain present and clickable; only their layout math changes."
+    },
+    {
+      "id": "UX-2",
+      "surface": "OrderCreatorPage",
+      "severity": "P1",
+      "title": "Empty state uses an error icon for routine guidance",
+      "what_is_wrong": "The center empty state uses a yellow/amber warning triangle with an exclamation mark above the copy 'Select a customer to start this order'. Nothing is wrong \u2014 this is the normal starting state of a new draft.",
+      "why_it_matters": "Warning iconography trains reps to read 'something is broken' every time they open a new order. It blunts the signal for actual validation errors the Zod `orderValidationSchema` and credit-enforcement banners need to raise later.",
+      "proposed_fix": "Replace the warning triangle with a neutral illustration or a user/customer silhouette icon, and add a primary button 'Choose customer' that focuses the `ClientCombobox` (keyboard shortcut hint: C). Keep the headline and subcopy, tighten to 'Pick a customer to begin' / 'Add batches, pricing, and totals without leaving this workspace.'",
+      "functionality_preserved": "The empty state still gates on customer selection before `InventoryBrowser` / `LineItemTable` activate; we only change the icon and add a focus-forwarding CTA, no change to `ClientCombobox` behavior."
+    },
+    {
+      "id": "UX-3",
+      "surface": "OrderCreatorPage",
+      "severity": "P1",
+      "title": "Customer and document-type controls float top-right, disconnected from the empty-state instruction",
+      "what_is_wrong": "The empty state says 'Choose a customer above to begin a new order', but the 'Customer\u2026' combobox and the 'Sales Order' document-type dropdown are small, unlabeled controls pinned to the top-right of the work-surface header, 800+ px away from the instruction text. Neither has a visible label \u2014 the rep has to infer what the 'Sales Order' dropdown toggles.",
+      "why_it_matters": "First-time and returning reps both spend a beat hunting for where to start. Because the dropdowns also hold the quote/sale switch (a legally meaningful distinction), an unlabeled control is a credit/tax-surface risk.",
+      "proposed_fix": "Promote the empty state into a centered 'Start' card that contains: (1) a full-width `ClientCombobox` labeled 'Customer', (2) a segmented control 'Sale / Quote' wired to the existing `mode=quote` URL flag, (3) a 'Start order' primary button. Keep the compact header versions as secondary controls for later edits once a customer is chosen.",
+      "functionality_preserved": "`ClientCombobox`, `QuickCreateClient`, and the SALE-vs-QUOTE toggle driven by the `mode=quote` URL flag all stay; they are simply surfaced in the first-use card instead of the header corner."
+    },
+    {
+      "id": "UX-4",
+      "surface": "OrderCreatorPage",
+      "severity": "P2",
+      "title": "H1 and breadcrumb say 'Sales', never 'New Order'",
+      "what_is_wrong": "The breadcrumb trail reads 'Home \u203a Sales' and the H1 is 'Sales'. The only indicator that the user is on the order-creation surface is a small 'New order' caption next to the 'Queue' button.",
+      "why_it_matters": "Browser tab title, back-button expectations, and tab-switching (Cmd+Tab) all rely on the page title. A rep juggling multiple drafts can't tell tabs apart; screen readers announce 'Sales' for every sub-surface.",
+      "proposed_fix": "Keep H1 as 'Sales' but append a live sub-H1 rendered next to the 'Saved' chip \u2014 e.g., 'New order \u00b7 Draft' (or 'New quote \u00b7 Draft' when `mode=quote`), and update `document.title` to 'New order \u2014 TERP' / 'New quote \u2014 TERP'. Add the draft short-id once the first save returns from `orders.draft`.",
+      "functionality_preserved": "Sales Workspace H1 and tab structure are untouched; we only enrich the page title string and add a live sub-heading sourced from the existing `mode` param and `orders.draft` response."
+    },
+    {
+      "id": "UX-5",
+      "surface": "OrderCreatorPage",
+      "severity": "P2",
+      "title": "All-caps meta copy 'KEEP THE CUSTOMER, DOCUMENT TYPE, AND TOTALS IN ONE WORKING FRAME' is designer talk, not seller talk",
+      "what_is_wrong": "Below the 'Saved' pill sits an ALL-CAPS line describing the layout philosophy of the page itself. It doesn't tell the rep what to do, and capitalized sentence-case English is harder to scan.",
+      "why_it_matters": "It consumes the most valuable vertical real estate on the page \u2014 the eye-level strip below the header \u2014 with zero task value, pushing the 'No line items' row and empty-state further down.",
+      "proposed_fix": "Replace this line with task-focused dynamic copy: before customer selected \u2192 'Pick a customer to load pricing, credit, and recent batches.' After selection \u2192 show the `ClientCommitContextCard` summary here (commit context + credit headline). Use sentence case, regular weight.",
+      "functionality_preserved": "`ClientCommitContextCard`, `CreditLimitBanner`, and `CreditStatusCard` all render here post-selection; we're only reclaiming the strip and binding its content to existing context providers."
+    },
+    {
+      "id": "UX-6",
+      "surface": "OrderCreatorPage",
+      "severity": "P2",
+      "title": "'Queue' button with left-arrow reads as 'back' but is labeled 'Queue'",
+      "what_is_wrong": "At the top-left of the work surface sits a button with a leftward chevron and the text 'Queue'. Its affordance (back-arrow icon) contradicts its label (a noun). There is no tooltip and no secondary caption.",
+      "why_it_matters": "Reps will either (a) avoid clicking it for fear of losing their draft, or (b) click it expecting 'back to sales list' and land somewhere unexpected. Either outcome slows the draft/finalize loop.",
+      "proposed_fix": "Split affordances: keep a distinct back-arrow icon button that returns to the 'Orders' tab with tooltip 'Back to orders list', and change the 'Queue' control to a pill-button labeled 'Draft queue (N)' where N is the count of in-flight drafts from `orders.*` \u2014 clicking it opens the queue popover.",
+      "functionality_preserved": "The draft queue behavior (autosave drafts list) and the back navigation into `SalesOrderSurface` are both kept; we only separate them visually and add the count from existing draft data."
+    },
+    {
+      "id": "UX-7",
+      "surface": "OrderCreatorPage",
+      "severity": "P2",
+      "title": "'Saved' indicator is green before the user has entered anything to save",
+      "what_is_wrong": "The green check + 'Saved' pill is already lit on an empty, never-touched draft, and the footer shows '0 lines \u00b7 synced'.",
+      "why_it_matters": "It trains reps to ignore the save state entirely, which is the exact signal we need them to trust during credit-override and finalize flows. It also conflates 'nothing to save' with 'successfully persisted'.",
+      "proposed_fix": "Introduce three explicit states for the save chip: 'New draft' (neutral gray, no icon, shown until the first mutation), 'Saving\u2026' (spinner), 'Saved \u00b7 HH:MM' (green check with timestamp). Drive from the debounced draft mutation's pending/success states already in `orders.*`.",
+      "functionality_preserved": "Debounced autosave via `orders.draft` is unchanged; we only remap its three states to three distinct visual treatments on the same chip."
+    },
+    {
+      "id": "UX-8",
+      "surface": "OrderCreatorPage",
+      "severity": "P2",
+      "title": "Bottom-right floating action button is unlabeled",
+      "what_is_wrong": "A small circular icon-only FAB sits in the bottom-right corner of the work surface with no label, tooltip text visible, or caption.",
+      "why_it_matters": "On a page that already mentions `FloatingOrderPreview`, `OrderAdjustmentPanel`, and the `WorkSurfaceStatusBar`, an anonymous FAB adds a fourth unknown. Reps won't click unknown icons on a money surface.",
+      "proposed_fix": "Give the FAB a visible label on hover and on first render (e.g., 'Preview document' or 'Order summary'), move it to the right edge of the `WorkSurfaceStatusBar` as a labeled button, and key it to the existing hotkey (add to `KeyboardHintBar` if absent).",
+      "functionality_preserved": "`FloatingOrderPreview` / summary panel toggle behavior is unchanged; we only relabel and re-anchor the trigger."
+    }
+  ],
+  "redesign_sketch": "Header stays: breadcrumb 'Home \u203a Sales', H1 'Sales', tab rail with content-width tabs and 20px gutters. Immediately below the active 'New Order' tab, a two-line document bar: line 1 = 'New order \u00b7 Draft #12043' (or 'New quote \u00b7 Draft'), live save chip ('New draft' / 'Saving\u2026' / 'Saved 10:42'), and a 'Draft queue (3)' pill on the left where 'Queue' used to be. Line 2 = dynamic context strip \u2014 before customer: muted sentence-case helper 'Pick a customer to load pricing, credit, and recent batches.'; after customer: `ClientCommitContextCard` summary + `CreditLimitBanner` inline headline. Primary body is a centered 'Start order' card while no customer is selected: large `ClientCombobox` with 'Customer' label, a 'Sale / Quote' segmented control bound to the `mode=quote` URL flag, a 'Recent customers' 3-chip row, and a 'Start order' primary button (Enter). Once customer + doc-type are chosen, the card collapses into the header and the work surface expands to: left 70% = `LineItemTable` / `OrdersDocumentLineItemsGrid` with inline `InventoryBrowser` add-row and keyboard-first editing; right 30% = sticky side-rail stacking `CreditStatusCard`, `PricingContextPanel`, `OrderAdjustmentPanel`, `OrderTotalsPanel`, `ReferredBySelector`. Replace the warning triangle in the empty-grid row with a neutral 'Add your first line (press A)' hint. Footer `KeyboardHintBar` stays pinned with Ctrl+S save draft \u00b7 Ctrl+Enter finalize \u00b7 Ctrl+Z undo, and gets a new 'Space \u00b7 Preview document' entry so the unlabeled FAB becomes a labeled 'Preview' button at the right of the `WorkSurfaceStatusBar`."
+}

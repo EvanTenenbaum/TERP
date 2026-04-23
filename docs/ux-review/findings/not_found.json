@@ -1,0 +1,43 @@
+{
+  "page": "NotFound",
+  "route": "/definitely-does-not-exist",
+  "assessment": "The 404 page is functional and friendly: a clear '404' heading, explanatory copy, and a 'Go Home' CTA. But for an internal ERP, it's a dead-end \u2014 the user who mistyped a URL or clicked a stale bookmark has exactly one escape hatch (home) and no way to search, jump to a recent module, or report the broken link. The breadcrumb showing 'Definitely Does Not Exist' as if it's a real page is also misleading. The visual treatment (large red alert icon) also overstates severity for what is usually a stale link.",
+  "notable_strengths": [
+    "Clear, human microcopy ('Sorry, the page you are looking for doesn't exist. It may have been moved or deleted.') instead of a raw stack trace.",
+    "Global shell (sidebar, search, command palette, notifications) stays mounted so the user isn't fully stranded.",
+    "Single obvious primary action ('Go Home') with a matching home icon."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "NotFound",
+      "severity": "P2",
+      "title": "Only one recovery path from a dead-end page",
+      "what_is_wrong": "The 404 card offers just 'Go Home'. For an ERP where users land here from stale bookmarks, Slack links, or mistyped order IDs, there's no 'Go Back', no link into the command palette, and no link to Active Orders / Sales / Recent pages.",
+      "why_it_matters": "Forcing a trip to the dashboard loses context and adds clicks. In an internal tool, most 404s come from a specific workflow (order URL, shipment URL) and the user wants back into that workflow, not the home page.",
+      "proposed_fix": "Under the 'Go Home' button, add a secondary 'Go Back' button (history.back) and a third-tier text link 'Search with \u2318K' that focuses the existing global search/command palette. Keep 'Go Home' as the visual primary.",
+      "functionality_preserved": "Uses the existing global Command Palette (CTRL K button already in the DOM) and browser history; no new routes or tRPC calls \u2014 the NotFound route at `/404` and its fallback behavior (TER-902) remain unchanged."
+    },
+    {
+      "id": "UX-2",
+      "surface": "NotFound",
+      "severity": "P3",
+      "title": "Breadcrumb legitimizes the bad URL",
+      "what_is_wrong": "The top breadcrumb renders 'Definitely Does Not Exist' (the slugified bad path) as if it's a valid page node, next to the home icon.",
+      "why_it_matters": "It's confusing \u2014 the breadcrumb implies that page exists in the hierarchy when it's the thing that just 404'd. On unfamiliar URLs users may mistakenly trust the label.",
+      "proposed_fix": "On the NotFound route, replace the dynamic slug crumb with a static 'Not Found' label (muted) or suppress the second crumb entirely so the trail reads Home \u203a Not Found.",
+      "functionality_preserved": "Only the breadcrumb label for the NotFound route changes; the shared breadcrumb component and its behavior on valid routes are untouched."
+    },
+    {
+      "id": "UX-3",
+      "surface": "NotFound",
+      "severity": "P3",
+      "title": "Alert-red iconography overstates severity",
+      "what_is_wrong": "A large red exclamation-in-circle icon sits above the 404 \u2014 the same visual vocabulary used for destructive errors and system failures elsewhere in TERP.",
+      "why_it_matters": "Dilutes the meaning of red alerts across the app. A missing page is a wayfinding issue, not a system error; staff who see this repeatedly stop trusting red as 'something actually broke'.",
+      "proposed_fix": "Swap the red alert icon for a neutral compass/map or muted search-empty illustration in the app's existing neutral/brand palette, and keep '404 \u00b7 Page Not Found' as the heading pair.",
+      "functionality_preserved": "Purely a visual asset swap inside the NotFound component; routing and TER-902 fallback logic are not affected."
+    }
+  ],
+  "redesign_sketch": "Centered card on the neutral background, max ~560px wide. Top: small neutral illustration (compass/empty-state, not red alert). Heading stack: eyebrow '404' (muted), H1 'We can't find that page', then one line of body copy: 'The link may be outdated or the record was deleted.' Below, a horizontal action row: primary 'Go Home' (filled), secondary 'Go Back' (outline), and a tertiary text link 'Search TERP  \u2318K' that triggers the existing command palette. Breadcrumb at the top reads simply Home \u203a Not Found. No other layout changes to the global shell."
+}

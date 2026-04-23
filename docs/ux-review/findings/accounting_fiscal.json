@@ -1,0 +1,43 @@
+{
+  "page": "FiscalPeriods",
+  "route": "/accounting?tab=fiscal-periods",
+  "assessment": "The Fiscal Periods tab has the right scaffolding (status filter pills, + Add Row, Close/Lock actions, a spreadsheet-style empty state with keyboard hints) but fails the zero-state moment badly. The empty table shows a generic 'No fiscal periods' message with no onboarding toward the primary action, and the Close Period / Lock Period buttons sit enabled in the toolbar despite there being nothing to close or lock. The 'Fiscal Periods' label also duplicates itself twice within 80px of vertical space (section header and card header), which makes the page feel unfinished. For an accounting surface where period setup is a prerequisite for closing the books, first-run guidance is the critical missing piece.",
+  "notable_strengths": [
+    "Status filter pills (All / Open / Closed / Locked) map directly to the documented period lifecycle and are immediately scannable.",
+    "Keyboard shortcut legend (Click, Double-click, Ctrl+C, Ctrl+V, Ctrl+Z, Escape) teaches the spreadsheet interaction model without a modal.",
+    "Tab navigation keeps Fiscal Periods adjacent to Bank Transactions and General Ledger, which is the correct month-end mental model."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "FiscalPeriods",
+      "severity": "P1",
+      "title": "Empty state dead-ends the first-run user",
+      "what_is_wrong": "With zero periods, the table body shows only a file icon, 'No fiscal periods', and the misleading subline 'No fiscal periods match your filters' \u2014 but no filter is actually applied (All is selected). There is no CTA pointing at the '+ Add Row' button in the toolbar.",
+      "why_it_matters": "Fiscal periods gate invoice posting and close workflows. A brand-new tenant lands here, reads a filter-not-found message that isn't true, and has no obvious next step toward creating their first period.",
+      "proposed_fix": "When the underlying period count is 0 (not just the filtered count), swap the empty state to: heading 'Set up your first fiscal period', body 'Define a date range so invoices and journal entries can post to a book', and a primary button 'Create fiscal period' that triggers the same handler as '+ Add Row'. Reserve the current 'No periods match your filters' copy for the case where totalCount > 0 but filteredCount === 0.",
+      "functionality_preserved": "Reuses the existing '+ Add Row' / date-range calendar popover from the Features list; only swaps empty-state copy and adds a second entry point to the same create action."
+    },
+    {
+      "id": "UX-2",
+      "surface": "FiscalPeriods",
+      "severity": "P2",
+      "title": "Close Period and Lock Period are enabled with nothing selected",
+      "what_is_wrong": "The toolbar status bar reads '0 selected | All Statuses | 0 total' yet the 'Close Period' and 'Lock Period' buttons are fully enabled with no visual affordance that they require a selected row.",
+      "why_it_matters": "Users will click them, hit an error toast or a no-op, and lose trust in the toolbar. It also hides the fact that these are row-scoped actions, not global ones.",
+      "proposed_fix": "Disable both buttons when selectedCount === 0, with tooltip 'Select a period to close' / 'Select a closed period to lock'. Keep '+ Add Row' always enabled. When a row is selected, also show the selected period's label next to the buttons (e.g., 'Close Period \u2014 Q3 2025').",
+      "functionality_preserved": "Preserves the documented open/close period action and the journal-entry-exists warning; disabling is conditional on selection state, not removal of capability."
+    },
+    {
+      "id": "UX-3",
+      "surface": "FiscalPeriods",
+      "severity": "P3",
+      "title": "Duplicate 'Fiscal Periods' headings stack vertically",
+      "what_is_wrong": "The card header shows 'Fiscal Periods  [0 periods]' at the top, and then a second bold 'Fiscal Periods' label sits directly above the empty table body with no distinguishing information.",
+      "why_it_matters": "Redundant labels waste vertical space on a page already competing with the global header, tab strip, and toolbar, and make the section look like a template that wasn't finished.",
+      "proposed_fix": "Remove the inner 'Fiscal Periods' label above the table body; the outer card header already provides the count and identity. If the inner label is serving as a column-group header, replace it with the actual column headers the grid will render (Period Name, Start Date, End Date, Status, Journal Entries).",
+      "functionality_preserved": "Pure typographic dedup; no router, data, or interaction behavior is touched."
+    }
+  ],
+  "redesign_sketch": "Keep tab strip and the single card. Card header: 'Fiscal Periods' on the left with the [0 periods] badge; search and refresh on the right (as today). Second row: segmented status pills (All/Open/Closed/Locked) on the left, and a right-aligned action cluster where '+ New Period' is the primary filled button and 'Close Period' / 'Lock Period' are secondary, disabled until a row is selected with tooltips explaining the rule. Body: when totalPeriods === 0, render a centered empty state \u2014 ledger icon, 'Set up your first fiscal period', one-line rationale about posting and close, and a primary 'Create fiscal period' button that opens the existing date-range calendar popover. When periods exist, render the spreadsheet grid with columns Period | Start | End | Status (colored chip) | Journal Entries (count) | Last Modified, and keep the keyboard shortcut legend docked in the footer next to the '{n} selected | {status} | {total}' summary."
+}

@@ -1,0 +1,43 @@
+{
+  "page": "PricingRulesPage",
+  "route": "/pricing/rules",
+  "assessment": "The page is functional and legible: a clean searchable table with clear columns, prominent Create Rule CTA, and per-row edit/delete actions. But it wastes the table's evidentiary power \u2014 every rule shows the same '+50.00%' pill and '1 condition(s)' placeholder, so at a glance you cannot tell what any rule actually does, who it applies to, or whether the top-priority rule is the one you think it is. The scope dimension (global / category / client / profile) from the baseline is entirely invisible, and the 'Back to Dashboard' link above the card competes with the page title for the primary wayfinding slot.",
+  "notable_strengths": [
+    "Single prominent 'Create Rule' CTA and inline per-row edit/delete keep CRUD obvious.",
+    "Dedicated search field above the table matches the baseline's 'searchable table' contract.",
+    "Priority and Status columns are present and readable, supporting the rule-ordering mental model."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "PricingRulesPage",
+      "severity": "P1",
+      "title": "Conditions column is an opaque '1 condition(s)' placeholder",
+      "what_is_wrong": "Every row in the Conditions column shows the literal string '1 condition(s)' with no hint of what the condition is (category? client? SKU?). Combined with identical '+50.00%' adjustments and an 'AND' logic chip with nothing to AND, three rules look indistinguishable.",
+      "why_it_matters": "Ops cannot audit or pick the right rule to edit without opening each one. With priority 1000 / 999 / 100 all firing +50%, a pricing mistake is easy and the table fails its core job as a decision surface.",
+      "proposed_fix": "Render a human-readable summary chip per condition, e.g. 'Category: Flower', 'Client: Acme', 'Profile: Wholesale'. If >1 condition, show the first plus '+N more' with a tooltip listing the rest. Drop the parenthetical '(s)' and only show the AND/OR chip when conditions.length > 1.",
+      "functionality_preserved": "Uses the same `pricing.*` rule payload already fetched for the table; edit dialog and condition storage are untouched \u2014 only the cell renderer changes."
+    },
+    {
+      "id": "UX-2",
+      "surface": "PricingRulesPage",
+      "severity": "P2",
+      "title": "Rule scope (global / category / client / profile) is not surfaced",
+      "what_is_wrong": "The baseline documents scope as a first-class feature, but the table has no Scope column. A global +50% markup and a client-specific +50% markup render identically.",
+      "why_it_matters": "Scope is the single biggest blast-radius signal for a pricing rule; hiding it forces users into the edit dialog to answer 'does this affect everyone?'",
+      "proposed_fix": "Insert a 'Scope' column between Name and Adjustment with a colored tag: Global (neutral), Category (blue), Client (purple), Profile (amber). Sort/filter by scope via column header.",
+      "functionality_preserved": "Reads existing scope field exposed by `pricing.list` (create/edit dialogs already write it per baseline 'rule scope' feature); no schema or router change."
+    },
+    {
+      "id": "UX-3",
+      "surface": "PricingRulesPage",
+      "severity": "P2",
+      "title": "Status is display-only; baseline promises active/inactive toggles",
+      "what_is_wrong": "The Status column shows a static red 'Active' badge on every row. Baseline explicitly lists 'active/inactive toggles', but there is no toggle affordance in the row \u2014 the only way to deactivate is presumably inside the edit dialog. The red color also miscodes Active as a warning state.",
+      "why_it_matters": "Temporarily pausing a rule is a common pricing-ops action (promo ended, bad rule caught in review). Forcing a dialog round-trip for a boolean is friction on a core workflow.",
+      "proposed_fix": "Replace the badge with a switch component that calls `pricing.setActive` inline, with an optimistic update and toast. Use green for Active, neutral gray for Inactive. Keep the label next to the switch for scannability.",
+      "functionality_preserved": "The baseline 'active/inactive toggles' feature and `pricing.*` mutation are the mechanism; this fix exposes the existing toggle in the row instead of burying it in the edit dialog."
+    }
+  ],
+  "redesign_sketch": "Keep the card layout but promote the H1 'Pricing Rules' to the top of the card and demote 'Back to Dashboard' to a small breadcrumb-adjacent link (the breadcrumb already carries it). Below the title, a subtitle plus a compact filter row: search input, Scope dropdown (All / Global / Category / Client / Profile), Status dropdown (All / Active / Inactive), and a right-aligned 'Create Rule' button. Table columns, left to right: Name, Scope (colored tag), Adjustment (+/- % pill, green for markdown / red for markup so direction is legible), Conditions (human-readable chips, first + '+N more'), Logic (hidden when \u22641 condition), Priority (right-aligned numeric, with an \u2191\u2193 reorder affordance on hover), Status (inline switch), Actions (edit / delete icons). Empty-state microcopy: 'No pricing rules yet. Create one to apply markups or markdowns by category, client, or profile.' Default sort: Priority desc, so the highest-priority rule is row 1."
+}

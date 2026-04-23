@@ -1,0 +1,93 @@
+{
+  "page": "DashboardHomePage",
+  "route": "/",
+  "assessment": "The dashboard clearly wants to be a single-screen daily pulse, and the KPI strip + three-column pulse row lays out the right primitives (orders, cash, inventory, appointments, AR/AP). But the execution buries the single most important signal on the page \u2014 'You're short $551,981.62 after scheduled bills' \u2014 inside the middle of a side column, while top-line KPIs sit without any trend/comparison so a user cannot tell if 511 open orders or $963,104 AR is good or bad. The 'Today at a Glance' card is rendering as three gray skeleton bars with no resolution and no empty-state copy, which reads as broken. The left nav duplicates itself (SALES QUICK ACTIONS + SELL both surface ordering/catalogue entry points), and the page has no H1 at all \u2014 the most prominent heading is 'Command Palette' from the search dialog. Strong bones, weak hierarchy and unfinished states.",
+  "notable_strengths": [
+    "Five-card KPI strip gives a scannable top-of-page pulse with consistent iconography and unit subtext ('38,185 live units', '41 open invoices').",
+    "Cash Position panel does the hard work of showing Cash on Hand \u2192 Scheduled Payables \u2192 Available After Bills as a connected story with a red callout, which is exactly the owner's decision framing.",
+    "Per-widget error/empty boundaries are respected \u2014 the Appointments card degrades to a proper illustrated empty state ('No upcoming appointments') instead of a blank tile."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "DashboardHomePage",
+      "severity": "P0",
+      "title": "'Today at a Glance' is stuck on skeleton bars with no resolution",
+      "what_is_wrong": "The 'Today at a Glance' card renders three gray placeholder bars below 'Sales, cash, and inbox signals for your morning review.' with no copy, no data, and no empty state. It looks identical to a permanent loading state.",
+      "why_it_matters": "The owner's first stop is literally labeled 'for your morning review' \u2014 if it renders as dead skeletons, the user assumes the dashboard is broken and loses trust in the other KPI numbers on the same page.",
+      "proposed_fix": "Give OwnerQuickCardsWidget a real empty-state copy block ('No signals needing attention \u2014 nice.') with a muted icon and a secondary 'Open Notifications' link, matching the Appointments card's treatment. If the widget is still fetching, replace bars with a single spinner + label 'Loading today's signals\u2026' so loading is distinguishable from empty.",
+      "functionality_preserved": "OwnerQuickCardsWidget and its ComponentErrorBoundary stay intact \u2014 only the loading/empty render path is replaced; the drill-through 'Open Notifications' link and data contract are untouched."
+    },
+    {
+      "id": "UX-2",
+      "surface": "DashboardHomePage",
+      "severity": "P1",
+      "title": "The cash shortfall \u2014 the single most important signal \u2014 is buried",
+      "what_is_wrong": "'You're short $551,981.62 after scheduled bills.' sits inside the right-hand Cash Position card, visually equivalent to the Appointments empty state next to it. The KPI strip above it shows CASH COLLECTED (7D) $0 with no link to this shortfall.",
+      "why_it_matters": "The baseline says this page is the owner's 'daily pulse' for 'cash decisions'. A -$551K position is the decision of the day and should be the first thing the eye lands on, not the fourth column of the third row.",
+      "proposed_fix": "Add a full-width, dismissable alert row immediately under the header when Available After Bills < 0: red-tinted bar reading 'Cash short $551,981.62 after scheduled bills \u2014 review $551,981.62 in payables' with 'Review Bills' + 'Pay Bills' buttons. Keep the Cash Position card below exactly as-is for the full breakdown.",
+      "functionality_preserved": "OwnerCashDecisionPanel and its Review Bills / Manage links remain; the banner is a new surface that reads from the same computed value, so no tRPC or business logic changes."
+    },
+    {
+      "id": "UX-3",
+      "surface": "DashboardHomePage",
+      "severity": "P1",
+      "title": "Top KPIs have no trend or comparison, so numbers are uninterpretable",
+      "what_is_wrong": "Four of the five KPI cards (OPEN ORDERS 511, FULFILLED TODAY 0, OUTSTANDING RECEIVABLES $963,104, INVENTORY VALUE $34.2M) show only a number and a supporting unit. Only CASH COLLECTED (7D) carries a comparison, and even that one renders the awkward '\u2014 N/A vs last week'.",
+      "why_it_matters": "An owner cannot tell from '511 open orders' whether the business is accelerating or stalling. Without a delta, the KPI row is decorative instead of diagnostic \u2014 it fails the 'what needs your attention today' promise in the subheader.",
+      "proposed_fix": "Add a single-line delta under every KPI subtext: '\u25b2 14 vs yesterday', '\u25bc $42K vs 7d avg', etc. For FULFILLED TODAY 0 show '0 of 511 open \u2014 behind typical 09:00 pace'. Replace '\u2014 N/A vs last week' with 'First week of tracking' when the comparator is null.",
+      "functionality_preserved": "OperationalKpisWidget (TER-1055) and its drill-through links to filtered workspaces are untouched; this is a subtext addition sourced from the same data the widget already renders."
+    },
+    {
+      "id": "UX-4",
+      "surface": "DashboardHomePage",
+      "severity": "P1",
+      "title": "Left nav duplicates itself between 'SALES QUICK ACTIONS' and 'SELL'",
+      "what_is_wrong": "The sidebar shows SALES QUICK ACTIONS (New Order, Active Orders, Sales Catalogue, Recent Customers, Today's Shipments) stacked directly above a SELL group (Sales, Demand & Supply, Leaderboard). A user looking for 'create order' has two plausible homes.",
+      "why_it_matters": "Every other nav group (BUY, OPERATIONS, FINANCE) uses the collapsed-section pattern, so the flat QUICK ACTIONS block breaks the pattern and forces the user to scan twice. It also eats vertical space on smaller laptops, pushing SELL's children off-screen.",
+      "proposed_fix": "Keep QUICK ACTIONS but move it to a compact 2-column icon grid pinned at the top, above the section list, labeled 'Quick actions' (sentence case). Inside SELL, surface Sales, Demand & Supply, Leaderboard as-is. Do not delete any link \u2014 same five quick-action targets, just visually separated as shortcuts rather than a parallel taxonomy.",
+      "functionality_preserved": "All five quick-action routes (New Order, Active Orders, Sales Catalogue, Recent Customers, Today's Shipments) and all three SELL children remain navigable; only visual grouping changes."
+    },
+    {
+      "id": "UX-5",
+      "surface": "DashboardHomePage",
+      "severity": "P2",
+      "title": "Page has no H1; screen readers and page-title scanners see 'Command Palette'",
+      "what_is_wrong": "Playwright reports H1: [] and the only H2 is 'Command Palette'. The visible 'OWNER COMMAND CENTER' is a styled badge, not a heading element.",
+      "why_it_matters": "Assistive tech and browser outline tools will announce the command-palette dialog as the page's main landmark. It's also an accessibility audit failure the team will have to fix eventually.",
+      "proposed_fix": "Promote 'Owner Command Center' to an <h1> rendered to the left of the badge styling (visually the badge can remain), and demote the date subhead to <p>. Add an aria-live region around the 'Live \u00b7 Updated 12:08 PM' chip so refreshes are announced.",
+      "functionality_preserved": "The OWNER COMMAND CENTER badge component and the 'Live \u00b7 Updated HH:MM' freshness indicator both keep their current behavior and styling; only the underlying semantic tag changes."
+    },
+    {
+      "id": "UX-6",
+      "surface": "DashboardHomePage",
+      "severity": "P2",
+      "title": "'Live \u00b7 Updated 12:08 PM' freshness signal is too quiet and ambiguous",
+      "what_is_wrong": "The freshness chip sits at the far right edge of the header row in thin gray text. There is no indication of refresh cadence, whether it auto-refreshes, or how to force a refresh. Cash Position separately shows 'Updated 04/23 12:08 PM' in its own footer \u2014 two clocks, no hierarchy.",
+      "why_it_matters": "On a dashboard whose entire value prop is 'what needs your attention today', the user needs to trust that the numbers are current before they act on a -$551K shortfall.",
+      "proposed_fix": "Move the freshness chip immediately under the H1, styled as 'Live \u2022 updated 12:08 PM \u2022 refreshes every 60s' with a small \u27f3 icon button that manually refreshes. Remove the duplicate 'Updated 04/23 12:08 PM' line inside Cash Position; rely on the page-level chip.",
+      "functionality_preserved": "The per-widget data refetch on mount (OwnerCashDecisionPanel etc.) is untouched; the manual refresh button invokes the same existing queries."
+    },
+    {
+      "id": "UX-7",
+      "surface": "DashboardHomePage",
+      "severity": "P2",
+      "title": "Empty-state copy is inconsistent between KPI cards",
+      "what_is_wrong": "FULFILLED TODAY 0 gets warm copy 'Nothing shipped yet'. CASH COLLECTED (7D) $0 gets the technical 'Last week $0 \u2014 N/A vs last week'. The two tell the same story ('no data to compare yet') in different voices.",
+      "why_it_matters": "Inconsistent voice on KPIs that sit inches apart reads as half-finished product and erodes the polish of the whole strip.",
+      "proposed_fix": "Standardize: when the primary value is 0 and there is no comparator, render '<friendly copy> \u2014 <helpful next step or context>'. E.g., 'No cash collected this week yet', 'First 7 days of tracking'. Strip the em-dash '\u2014' arrow glyph when the delta is unknowable.",
+      "functionality_preserved": "OperationalKpisWidget's value computation is untouched; only the empty/zero-state string template changes."
+    },
+    {
+      "id": "UX-8",
+      "surface": "DashboardHomePage",
+      "severity": "P2",
+      "title": "Floating action button (bottom right) and 'Pay Bills' / 'Review Bills' / 'View Clients' actions compete without hierarchy",
+      "what_is_wrong": "There is an unlabeled orange circular FAB in the bottom-right corner, plus 'Review Bills \u2192', 'Pay Bills', 'View Clients \u2192', 'Manage \u2192', and 'View all \u2192' scattered across the same fold. The FAB has no tooltip visible and no clear relationship to the page.",
+      "why_it_matters": "On a decision dashboard, ambient CTAs should guide the eye toward the one thing that matters today. Five peer-level arrows plus an unlabeled FAB produce choice paralysis.",
+      "proposed_fix": "Give the FAB a visible tooltip and icon-meaning on hover (e.g., 'New order'). Demote secondary card links ('View all', 'Manage', 'View Clients') to tertiary styling (muted, no arrow glyph). Keep 'Review Bills' as the only primary-styled in-card CTA since it's tied to the cash shortfall narrative.",
+      "functionality_preserved": "Every drill-through link named in the baseline (per-widget drill-through and the FAB action) continues to route to the same destination; only weight/tooltip changes."
+    }
+  ],
+  "redesign_sketch": "Header row: <h1>Owner Command Center</h1> with OWNER COMMAND CENTER pill inline, subhead 'Thursday, Apr 23 \u2014 here's what needs your attention today', freshness meta on the next line ('Live \u2022 updated 12:08 PM \u2022 auto-refreshes every 60s \u27f3'). Immediately below, a conditional full-width red alert banner when Available After Bills < 0: 'Cash short $551,981.62 after scheduled bills' with [Review Bills] [Pay Bills] buttons right-aligned. Then the existing five-card KPI strip, each card upgraded with a delta line ('\u25b2 14 vs yesterday' or 'First week of tracking' when null). Row 3 \u2014 three equal columns: Today at a Glance (with real empty-state copy and an icon, not skeleton bars) \u00b7 Appointments (unchanged) \u00b7 Cash Position (unchanged, but drop its duplicate 'Updated\u2026' footer since freshness is now in the header). Row 4 \u2014 Money In vs. Out \u00b7 Suppliers Waiting to Be Paid (unchanged). Row 5 \u2014 Inventory Snapshot \u00b7 Aging Inventory. Row 6 \u2014 collapsed OwnerSkuStatusBrowserWidget. Left nav: pin a compact 'Quick actions' icon grid (New Order, Active Orders, Sales Catalogue, Recent Customers, Today's Shipments) above the section list, then SELL / BUY / OPERATIONS / RELATIONSHIPS / FINANCE / ADMIN as consistent collapsible groups. Microcopy rules: use sentence case for all card CTAs, reserve primary button styling for Review Bills only, standardize zero/empty states to friendly + actionable ('No cash collected this week yet' instead of '$0 \u2014 N/A vs last week')."
+}
