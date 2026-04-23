@@ -1,0 +1,42 @@
+{
+  "page": "CreditsWorkspacePage",
+  "route": "/credits",
+  "assessment": "The dashboard explains the policy-vs-adjustments distinction clearly in prose, but it is almost pure navigation chrome wrapped around four $0.00 tiles. The same three destinations are exposed three times (tabs, header 'Open ...' buttons, and the two large cards with 'Open Capacity Settings' / 'Review Issued Adjustments' CTAs), which creates decision noise without adding capability. The KPI row (Adjustment balance, Adjustments used, Expiring soon) is the most valuable piece of information on the page and it is buried below two explanatory cards, with no timeframe filter, no drill-in, and no empty-state guidance explaining whether $0.00 means 'nothing issued yet' or 'nothing loaded'.",
+  "notable_strengths": [
+    "The 'Keep the concepts separate' footer and the two intro cards do real teaching work \u2014 capacity vs. issued adjustments is a genuinely confusing distinction and the copy lands it.",
+    "Tab set (Dashboard / Issued Adjustments / Capacity Settings) maps cleanly to the two operator jobs plus an overview."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "CreditsWorkspacePage",
+      "severity": "P1",
+      "title": "Triple-exposed navigation for the same three destinations",
+      "what_is_wrong": "The tab row ('Dashboard', 'Issued Adjustments', 'Capacity Settings'), the top-right button cluster ('Open Dashboard', 'Open Issued Adjustments', 'Open Capacity Settings'), and the two primary cards ('Open Capacity Settings', 'Review Issued Adjustments') all route to the same three places. 'Open Dashboard' from the Dashboard tab is a no-op.",
+      "why_it_matters": "Operators scan three competing CTA zones to answer a single question ('where do I go?'), and the redundant header buttons dilute which action is primary. On a page whose only job is routing, duplicate CTAs add seconds to every visit.",
+      "proposed_fix": "Keep the Dashboard/Issued Adjustments/Capacity Settings tabs as the single navigation surface. Delete the top-right 'Open Dashboard / Open Issued Adjustments / Open Capacity Settings' button group. Keep the contextual CTAs inside the two explanatory cards ('Open Capacity Settings', 'Review Issued Adjustments') since they carry teaching context.",
+      "functionality_preserved": "No routes are removed \u2014 every destination remains reachable via the tab bar and the two in-card CTAs, so the Capacity Settings page and Issued Adjustments page stay fully discoverable."
+    },
+    {
+      "id": "UX-2",
+      "surface": "CreditsWorkspacePage",
+      "severity": "P1",
+      "title": "KPI tiles are inert, unscoped, and buried",
+      "what_is_wrong": "'Adjustment balance', 'Adjustments used', and 'Expiring soon' all render $0.00 with no timeframe selector, no click-through, and no indication of whether the zero is real data or an empty state. 'Expiring soon' hardcodes '0 open adjustments in the next 30 days' with no way to change the window.",
+      "why_it_matters": "These three numbers are the only operational signal on the page; if an operator sees a non-zero 'Expiring soon' they need to jump straight to the affected adjustments, and they need to know the window. As built, the tiles are decoration.",
+      "proposed_fix": "Promote the KPI row above the two explanatory cards. Make each tile a link into Issued Adjustments pre-filtered by state (open / applied / expiring\u226430d). Add a small period selector ('Last 30d \u25be') on the row header and surface it on the Expiring tile. When all values are zero, replace the $0.00 with an inline empty-state line ('No adjustments issued yet \u2014 Issue your first').",
+      "functionality_preserved": "The underlying Issued Adjustments list/router is unchanged; tiles become pre-filtered entry points into that same view, and no metric is removed."
+    },
+    {
+      "id": "UX-3",
+      "surface": "CreditsWorkspacePage",
+      "severity": "P2",
+      "title": "No primary action for the most common operator task",
+      "what_is_wrong": "The Issued credit adjustments card describes issuing returns/refunds/pricing/goodwill adjustments, but the only CTA is 'Review Issued Adjustments'. There is no 'Issue adjustment' / 'New adjustment' entry point on a page whose own copy frames issuing as a core decision.",
+      "why_it_matters": "Operators who land here to create an adjustment have to click into the Issued Adjustments tab and hunt for the create affordance, adding a step to the most frequent write action on the surface.",
+      "proposed_fix": "Add a secondary 'Issue adjustment' button next to 'Review Issued Adjustments' on the Issued credit adjustments card, wired to the same create flow the Issued Adjustments tab exposes. Mirror with 'Adjust capacity' on the capacity card if that create route exists.",
+      "functionality_preserved": "Reuses the existing Issued Adjustments creation route/mutation \u2014 no new business logic, just a shortcut entry point on the dashboard."
+    }
+  ],
+  "redesign_sketch": "Header: H1 'Client Credit' with a single tab row (Dashboard | Issued Adjustments | Capacity Settings) and no duplicate 'Open ...' buttons. Row 1 (KPI strip, full width, 4 columns): Adjustment balance \u00b7 Adjustments used \u00b7 Expiring soon (30d \u25be) \u00b7 Issued this period \u2014 each tile clickable, routing into Issued Adjustments pre-filtered, with inline empty-state copy when zero. Row 2 (two teaching cards, 50/50): 'Client credit capacity' with CTAs [Open Capacity Settings] [Adjust capacity]; 'Issued credit adjustments' with CTAs [Review Issued Adjustments] [Issue adjustment]. Row 3 (full-width footer callout): 'Keep the concepts separate' explainer, unchanged. Microcopy for empty KPIs: 'No adjustments issued yet' with a subtle link rather than a hard $0.00."
+}

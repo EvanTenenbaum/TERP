@@ -1,0 +1,93 @@
+{
+  "page": "WarehousePickPackPage",
+  "route": "/warehouse/pick-pack",
+  "assessment": "The page is legible and the KPI strip + card list pattern is a reasonable starting point, but it badly under-delivers on its stated purpose: a mobile/tablet, touch-first fulfillment UI. Instead we get a full desktop chrome (286px sidebar, breadcrumbs, command palette) eating ~30% of a 1440 viewport, oversized cards that show only an order number and a supplier name, and no way to triage 381 pending orders \u2014 no age, priority, status badge, item preview, or ship date. The headline stat visually prioritises the backlog (381 Pending in blue) over the actionable bucket (2 Ready in green), the stat cards are not filters, 'Ready' is the smallest emphasis, and there is no scan-to-jump affordance on the list view despite the baseline calling out barcode entry as a core interaction. Grammar ('1 items') and an unlabeled FAB round out the polish debt.",
+  "notable_strengths": [
+    "Four-bucket status KPI strip (Pending / Picking / Ready / Shipped) gives an at-a-glance fulfillment pipeline.",
+    "Order cards are large, low-density, and easy to tap \u2014 the right instinct for warehouse gloved/tablet use.",
+    "A single prominent search field above the list matches the 'find my order fast' mental model of a picker."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "WarehousePickPackPage",
+      "severity": "P1",
+      "title": "Desktop chrome swallows a page spec'd as touch-first",
+      "what_is_wrong": "The left sidebar (SALES QUICK ACTIONS, SELL, BUY, OPERATIONS, RELATIONSHIPS, FINANCE, ADMIN), breadcrumbs (Home / Warehouse / Shipping), and the 'CTRL K' command palette all render at full width on a page the baseline describes as 'Mobile/tablet-optimized, touch-first, \u226544 px tap targets'. On a tablet in landscape, the 286 px sidebar alone consumes roughly a third of the horizontal space before any order content.",
+      "why_it_matters": "Pickers work on tablets/phones with gloves and imperfect lighting. Every pixel given to navigation they never use during a pick shift is a pixel stolen from the order list and the scan target, and horizontally dense content forces awkward thumb reaches.",
+      "proposed_fix": "Default the sidebar to collapsed on any `/warehouse/*` route (keep the collapse toggle visible), hide breadcrumbs and the CTRL-K pill below the `md` breakpoint, and promote the page to max-width:100% so the order list fills the viewport. Keep the sidebar icons reachable via the existing collapse chevron for admins who want it.",
+      "functionality_preserved": "Does not touch `pickPack.getPickList` or remove any nav entry \u2014 only changes the default collapsed state of the app shell for this route, so every SALES QUICK ACTIONS / SELL / BUY item remains one tap away via the existing collapse toggle."
+    },
+    {
+      "id": "UX-2",
+      "surface": "WarehousePickPackPage",
+      "severity": "P1",
+      "title": "Stat tiles look like filters but aren't",
+      "what_is_wrong": "The four tiles (381 Pending, 0 Picking, 2 Ready, 127 Shipped) are bordered, equally weighted, and visually segmented the way a segmented filter would be \u2014 but tapping them appears to do nothing, and the list below mixes all statuses with no badge to show which bucket each card belongs to.",
+      "why_it_matters": "With 381 pending orders the picker has no way to narrow the list to the 2 that are actually ready to pack next, or to only the orders they've already started ('Picking'). They're forced to scroll or search by an S-number they may not have memorised.",
+      "proposed_fix": "Make each tile a toggle filter backed by the existing `status` field on `pickPack.getPickList`. Default the page to `Ready + Picking` selected (the action-required buckets); allow multi-select; persist selection in URL. Add a small colored status dot + label (e.g. 'Ready', 'Picking') on each order row.",
+      "functionality_preserved": "Uses the existing `pickPack.getPickList` router with the `PENDING`/`PARTIAL`/`READY`/`SHIPPED` statuses already in the baseline \u2014 no new endpoint, no behavior removed, all 381 pending orders remain reachable by tapping the Pending tile."
+    },
+    {
+      "id": "UX-3",
+      "surface": "WarehousePickPackPage",
+      "severity": "P1",
+      "title": "Order cards carry no triage information",
+      "what_is_wrong": "Each row shows only the S-number, customer ('San Jose Supply', 'Mendocino Supply', 'Sunset Dispensary'), and 'X items'. There is no status, no order age, no ship-by date, no SKU preview, no carrier, no priority \u2014 nothing that tells a picker which of 381 pending orders to pull next.",
+      "why_it_matters": "Fulfillment order is the whole job. Without age or ship date the picker either asks a manager, cherry-picks the easiest orders, or ships late \u2014 all of which the ERP is meant to prevent.",
+      "proposed_fix": "Reformat each card into a two-row layout: top row = status pill + S-number (truncated to last 6, e.g. 'S-\u2026234441') + ship-by date in red if overdue; bottom row = customer \u00b7 item count \u00b7 first 2 SKU names truncated. Right-aligned meta: 'Created 2h ago'. Keep the chevron.",
+      "functionality_preserved": "All fields are already available on the order records feeding `pickPack.getPickList` (status, createdAt, line items, customer); this is a presentation change only and the 'Select an order to start picking' tap target and navigation behavior are unchanged."
+    },
+    {
+      "id": "UX-4",
+      "surface": "WarehousePickPackPage",
+      "severity": "P1",
+      "title": "No scan-to-jump on the list view",
+      "what_is_wrong": "The baseline lists 'Scan (barcode input)' as a core interaction, but on the list screen there is only a text search field ('Search by order number or client\u2026') and no scan affordance. The scan flow is apparently only available after the user has already manually selected an order.",
+      "why_it_matters": "The canonical warehouse flow is: picker grabs a pick slip, scans the order barcode, and is dropped straight into the pick list. Forcing them to type or scroll first is the slowest possible path.",
+      "proposed_fix": "Add a barcode icon button inside the search field (right-aligned) that opens the same scan input already used on the detail page. On successful scan of an order barcode, route directly to that order's pick list via the existing `pickPack.getPickList` detail flow.",
+      "functionality_preserved": "Reuses the existing `pickPack.pick` scan handler and `pickPack.getPickList` detail route \u2014 no new router, no removal of the text search which remains the primary input."
+    },
+    {
+      "id": "UX-5",
+      "surface": "WarehousePickPackPage",
+      "severity": "P2",
+      "title": "Visual hierarchy celebrates the backlog, not the action",
+      "what_is_wrong": "'381 Pending' renders in the largest blue numeral; '2 Ready' \u2014 the bucket the picker should act on next \u2014 is the same size but in a muted green that reads as less urgent. '0 Picking' is given equal real estate despite being empty.",
+      "why_it_matters": "Users anchor on whatever is biggest and most colorful. The current hierarchy broadcasts 'you are behind' rather than 'these two are ready to pack right now'.",
+      "proposed_fix": "Reverse the emphasis: color 'Ready' in the primary accent and add a subtle pulse/badge when >0; render 'Pending' and 'Shipped' in neutral grey text with a colored accent bar. Collapse empty buckets (e.g. 'Picking: 0') to a smaller tile.",
+      "functionality_preserved": "All four status counts remain visible and tappable; only weight and color change. The underlying `pickPack.getPickList` count query is untouched."
+    },
+    {
+      "id": "UX-6",
+      "surface": "WarehousePickPackPage",
+      "severity": "P2",
+      "title": "Unlabeled floating action button in bottom-right",
+      "what_is_wrong": "A circular icon button sits in the bottom-right corner of the content area with no label, no tooltip rendered in the DOM, and no accompanying text. Its meaning is unguessable from the screenshot.",
+      "why_it_matters": "Warehouse users on tablets often tap exploratorily; an unlabeled FAB either gets ignored (wasted affordance) or mis-tapped (interrupted flow).",
+      "proposed_fix": "Either give the FAB a persistent label ('Scan' or 'Quick pick') with an icon on the left, or move its function into the header as a labeled button. Add an `aria-label` regardless.",
+      "functionality_preserved": "The FAB's current action (whatever it invokes) remains; only its label and ARIA annotation are added."
+    },
+    {
+      "id": "UX-7",
+      "surface": "WarehousePickPackPage",
+      "severity": "P2",
+      "title": "No refresh control and no visible last-updated timestamp",
+      "what_is_wrong": "The baseline explicitly lists 'refresh' as a feature, but there is no refresh button or pull-to-refresh indicator on the screen, and no 'Updated 30s ago' stamp near the stat strip.",
+      "why_it_matters": "Multiple pickers work the same queue. Without a refresh affordance or freshness indicator, a picker can spend 30 seconds walking to a shelf for an order that was claimed by a coworker seconds earlier.",
+      "proposed_fix": "Add a small 'Updated 14s ago \u00b7 Refresh' control aligned to the right of the H1. Auto-refresh the list every 30s via the existing query. On tablet, also wire pull-to-refresh.",
+      "functionality_preserved": "Uses the existing `pickPack.getPickList` query; adds a manual re-fetch trigger and a timestamp, no new endpoints."
+    },
+    {
+      "id": "UX-8",
+      "surface": "WarehousePickPackPage",
+      "severity": "P3",
+      "title": "'1 items' grammar and unreadable 13-digit order IDs",
+      "what_is_wrong": "Every card with a single line says '1 items' (see 'S-1773179234441 \u00b7 1 items' and 'S-1773179163763 \u00b7 1 items'). The S-number itself is a 13-digit timestamp that is visually impossible to distinguish between rows \u2014 the first 10 digits are identical.",
+      "why_it_matters": "Minor but corrodes trust; pickers scanning visually down the list cannot differentiate order IDs and have to read every digit.",
+      "proposed_fix": "Pluralize correctly ('1 item' / '2 items'). Render order IDs as 'S-\u2026234441' with a monospace suffix and the full ID available on hover/long-press; the last 6 digits are unique enough for visual scanning.",
+      "functionality_preserved": "The full `orderNumber` is preserved in the underlying data and in search; only the rendered form is truncated."
+    }
+  ],
+  "redesign_sketch": "On /warehouse/pick-pack the app shell collapses its sidebar by default and hides breadcrumbs/CTRL-K under md. Header is a single row: H1 'Pick & Pack' with a right-aligned 'Updated 14s ago \u00b7 Refresh' and a labeled 'Scan order' button. Below, a compact segmented filter bar built from the existing four status buckets \u2014 Ready (2) highlighted in primary green and selected by default alongside Picking (0); Pending (381) and Shipped (127) selectable but muted. Full-width search with an inline barcode icon on the right that opens scan mode. The order list becomes denser two-line rows: line 1 = colored status pill + 'S-\u2026234441' (monospace) + ship-by chip ('Ship by Today' in amber when <24h); line 2 = customer name \u00b7 '2 items' (pluralized) \u00b7 preview of first SKUs ('Blue Dream 1g \u00d74, Gelato 3.5g \u00d72'). Right-side meta: '2h ago' and chevron. An unlabeled FAB is replaced with a labeled 'Scan' pill pinned to the bottom-right on mobile. Empty states per filter: 'No orders ready to pack \u2014 nice work.'"
+}

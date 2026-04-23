@@ -1,0 +1,43 @@
+{
+  "page": "LiveShoppingPage (staff)",
+  "route": "/sales?tab=live-shopping",
+  "assessment": "The page gives a clean overview of live shopping sessions with four KPI tiles and a sessions table, but it reads like a dashboard for a feature that barely has any data. The Sessions table has only seven columns of which one (Items) shows 0 and another (Status) duplicates the KPI tiles, while the single Active session buries its most important affordance \u2014 actually joining/driving the live room \u2014 behind a generic 'View Details' link. The tab chip for 'Live Shopping' is also visually indistinguishable from the other sales tabs, so users landing here don't immediately grok that the active state is selected. KPI math (Total Sessions = 1, Active = 1, Converted = 0) is internally consistent but the tiles are static and not filterable.",
+  "notable_strengths": [
+    "KPI strip (Active / Scheduled / Total / Converted) gives a usable at-a-glance status of the live shopping program.",
+    "'New Session' primary CTA is correctly placed top-right and visually distinct in the TERP orange.",
+    "Sessions table cleanly surfaces Status, Title, Client, Host, Items, Date in a conventional ERP layout."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "LiveShoppingPage (staff)",
+      "severity": "P1",
+      "title": "Active session has no direct 'Join/Enter Room' action",
+      "what_is_wrong": "The only action on the single Active session row is a generic 'View Details' link. For a live, time-sensitive workflow there is no visible room code, no join button, and no indication of how a staff host resumes or enters the session.",
+      "why_it_matters": "Live Shopping is a real-time workflow \u2014 staff need one click to enter the active room. Forcing a details page in between adds a full navigation step during a session that is already live with a client.",
+      "proposed_fix": "In the Actions column, when Status=Active, render a primary 'Enter Room' button alongside 'View Details', and show the room code as a monospace chip in the Title/Host cell. Keep 'View Details' for non-active rows.",
+      "functionality_preserved": "Does not alter the `vipPortalLiveShopping.joinByRoomCode` contract or the LiveShoppingSession three-status workflow; the new button simply routes to the existing session detail/room route that View Details already opens."
+    },
+    {
+      "id": "UX-2",
+      "surface": "LiveShoppingPage (staff)",
+      "severity": "P2",
+      "title": "Selected tab 'Live Shopping' is not visually distinguished",
+      "what_is_wrong": "All seven Sales tabs (Orders, Pick List, Quotes, Returns, Sales Catalogues, Live Shopping, New Order) render with identical styling; the active 'Live Shopping' tab only shows a faint outline, and 'New Order' \u2014 which is an action, not a sibling view \u2014 is styled as just another tab.",
+      "why_it_matters": "Users lose orientation within the Sales cluster and can mistake 'New Order' for a peer view. Weak active-state styling slows tab scanning every visit.",
+      "proposed_fix": "Give the active tab a filled background + bold label matching TERP's design token for selected chips, and visually separate 'New Order' as a secondary button to the right of the tab row (or move it next to 'New Session' in the page header).",
+      "functionality_preserved": "Tabs and the New Order entry point are layout-only; no change to the Sales tab routing (`tab=live-shopping` etc.) or to the New Order flow."
+    },
+    {
+      "id": "UX-3",
+      "surface": "LiveShoppingPage (staff)",
+      "severity": "P2",
+      "title": "KPI tiles are decorative, not interactive",
+      "what_is_wrong": "The four KPI cards (Active Sessions 1, Scheduled 0, Total 1, Converted 0) are static \u2014 clicking them does nothing, and the Sessions table below has its own separate 'All Statuses' filter.",
+      "why_it_matters": "Users expect to click an 'Active Sessions: 1' tile to immediately filter the table. Two parallel filter mechanisms (tiles + dropdown) that don't talk to each other is wasted real estate.",
+      "proposed_fix": "Make each KPI tile a toggle that sets the Sessions table filter (Active / Scheduled / All / Converted). Show a subtle selected state on the active tile and sync it with the 'All Statuses' dropdown.",
+      "functionality_preserved": "The underlying Sessions query and the existing status dropdown remain; the tiles become a shortcut control that writes to the same filter state the dropdown already drives."
+    }
+  ],
+  "redesign_sketch": "Header: 'Live Shopping' H1 with subtitle, right-aligned primary 'New Session' button. Move 'New Order' out of the tab row and into a secondary button beside 'New Session'; restyle the Sales tab row so the active chip has a filled background. KPI strip stays as four tiles but becomes a segmented filter bar \u2014 clicking 'Active Sessions' filters the table and highlights the tile, with the 'All Statuses' dropdown reflecting the same state. Sessions table gains a 'Room Code' column (monospace chip) and an Actions column that renders a primary 'Enter Room' button for Active rows, 'Start' for Scheduled rows, and 'View Details' for Ended/Converted rows. Empty state for the table reads 'No sessions yet \u2014 start a Live Shopping session with a client' with an inline New Session CTA."
+}

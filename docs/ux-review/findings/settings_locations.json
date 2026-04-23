@@ -1,0 +1,33 @@
+{
+  "page": "Settings.locations",
+  "route": "/settings?tab=locations",
+  "assessment": "The Locations tab does its job at a basic CRUD level \u2014 you can add a hierarchical location and see existing ones \u2014 but the hierarchy is buried under a field matrix that reads like a flat form. Five equally-weighted inputs (Site, Zone, Rack, Shelf, Bin) suggest all fields matter equally, when in fact only Site is required and the rest are nested children. The existing locations list is a tiny card with cryptic `A > 1 > 1 > 1` path strings and no grouping by Site, which will collapse the moment a warehouse has more than a handful of bins. There is no search, no bulk import, and no way to add a child to an existing parent \u2014 every new bin forces you to retype the whole Site.",
+  "notable_strengths": [
+    "Clear site/zone/rack/shelf/bin mental model is surfaced as column labels with `(optional)` hints on non-required fields.",
+    "Master Data sub-tabs (Product Metadata, Locations, Categories, Grades, Tags) keep reference-data tools co-located and predictable.",
+    "Edit and delete affordances on each existing location row are immediate and discoverable."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "Settings.locations",
+      "severity": "P1",
+      "title": "Flat 5-column form hides the hierarchy and forces re-entry of parents",
+      "what_is_wrong": "The Add New Location card shows Site, Zone, Rack, Shelf, Bin as five equal-weight inputs side by side. Nothing in the UI signals that these are nested, and there is no way to pick an existing Site/Zone and append a child \u2014 every new bin requires retyping `WH1 > A > R1 > S1` from scratch.",
+      "why_it_matters": "Warehouses have dozens to hundreds of bins under the same site. Re-entering the parent chain on every add is the single biggest time cost on this page and also a consistency risk (typos create orphan siblings like `WH1` vs `wh1`).",
+      "proposed_fix": "Replace the flat row with a cascading picker: Site becomes a combobox of existing sites plus a 'Create new site' option; Zone/Rack/Shelf/Bin become dependent comboboxes that auto-fill from the selected parent. Add an 'Add child to\u2026' action on each row in Existing Locations that pre-fills the parent chain.",
+      "functionality_preserved": "Preserves the Locations master-data entity (`SETTINGS_SECTIONS` Master Data \u203a Locations) \u2014 all five fields remain writable, the `Add Location` submit still posts the full Site/Zone/Rack/Shelf/Bin tuple, and manual free-text creation stays available via the 'Create new' option."
+    },
+    {
+      "id": "UX-2",
+      "surface": "Settings.locations",
+      "severity": "P1",
+      "title": "Existing Locations list is unreadable at scale \u2014 no grouping, search, or decoded path",
+      "what_is_wrong": "The Existing Locations section shows a single card 'Main Warehouse \u2014 A > 1 > 1 > 1' with no Site grouping, no search input, no pagination, no column headers naming what A/1/1/1 are, and no counter of total locations. With 50+ bins this becomes a scroll wall of indistinguishable breadcrumb strings.",
+      "why_it_matters": "Admins use this page to audit and fix warehouse geography before intake/shipping runs. If you can't find or scan a location quickly, duplicate bins get created and receiving routes to the wrong slot.",
+      "proposed_fix": "Group Existing Locations by Site with collapsible sections and a count ('Main Warehouse \u00b7 24 locations'). Add a search input above the list ('Search by site, zone, rack\u2026'). Change each row to show labeled segments ('Zone A \u00b7 Rack 1 \u00b7 Shelf 1 \u00b7 Bin 1') instead of a raw `>` string, and keep the pencil/trash icons on the right.",
+      "functionality_preserved": "Preserves the Locations listing/edit/delete behavior \u2014 the same records render, and the existing pencil (edit) and trash (delete) controls remain on every row; only grouping, labeling, and search are layered on top."
+    }
+  ],
+  "redesign_sketch": "Keep the 'System Settings' H1 and Master Data \u203a Locations tab chain. Replace the 'Add New Location' card with a compact two-line composer: line 1 is a Site combobox (existing sites + 'Create new'); line 2 reveals Zone \u2192 Rack \u2192 Shelf \u2192 Bin as dependent comboboxes that cascade from the selection, ending in a primary 'Add Location' button. Below, 'Existing Locations' becomes a searchable, grouped tree: a search box, then collapsible Site headers ('Main Warehouse \u00b7 24 bins') each containing rows labeled 'Zone A \u00b7 Rack 1 \u00b7 Shelf 1 \u00b7 Bin 1' with a hover 'Add child' action plus the existing edit/delete icons. Footer hint: 'Tip: only Site is required \u2014 leave deeper levels blank for site-level storage.'"
+}

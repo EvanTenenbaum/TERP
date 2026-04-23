@@ -1,0 +1,42 @@
+{
+  "page": "Login",
+  "route": "/login",
+  "assessment": "This is a functional but completely generic sign-in card floating in a cream void. It authenticates, the button is clearly the primary action, and the form is short enough that nobody will get lost. But it wastes the one moment where TERP establishes brand and environment context: the wordmark is set in a default system stack, there's no indication this is a STAGING environment (the tab title says [STAGING] but the UI doesn't), and the card is vertically mis-centered \u2014 it sits in the upper third of the viewport with a huge empty band below the submit button. For an internal B2B tool where operators log in daily and sometimes across staging/prod, these are small but real misses.",
+  "notable_strengths": [
+    "Single-column form with exactly two fields and a full-width primary button \u2014 zero ambiguity about what to do.",
+    "Labels sit above inputs with clear placeholder copy ('Enter your username' / 'Enter your password'), so the form is readable without focus state."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "Login",
+      "severity": "P1",
+      "title": "No staging environment indicator in the UI",
+      "what_is_wrong": "The browser tab reads 'TERP [STAGING]' but the login card itself shows only 'TERP'. Once the tab is in a background window or pinned, there is no visual cue the user is authenticating against staging rather than production.",
+      "why_it_matters": "Operators who have both envs open will paste production credentials, run test orders against real data, or vice versa \u2014 a real risk in a wholesale ERP where a mistaken PO or quote has financial consequences.",
+      "proposed_fix": "Render an environment badge next to or beneath the TERP wordmark when `import.meta.env.MODE !== 'production'` \u2014 e.g. a small amber pill reading 'STAGING' under the 'Sign in to your account' subtitle. Optionally tint the card border amber in non-prod.",
+      "functionality_preserved": "Purely additive to the existing login card layout; does not touch `POST /api/auth/login`, the username/password fields, or the returnUrl handoff."
+    },
+    {
+      "id": "UX-2",
+      "surface": "Login",
+      "severity": "P2",
+      "title": "TERP wordmark is unstyled and the card floats high on the page",
+      "what_is_wrong": "The 'TERP' heading is rendered in the default sans stack at a modest weight, and the entire card is pinned to roughly the upper third of the viewport, leaving a large empty band below the Sign in button. The brand moment is flat and the composition looks unfinished.",
+      "why_it_matters": "Login is the first and most repeated screen employees see. A generic, off-center card signals 'unfinished internal tool' and undermines trust in the product when demoing to new hires or external stakeholders.",
+      "proposed_fix": "Vertically center the card in the viewport (flex min-h-screen, items-center). Set the TERP wordmark in the app's display face at ~32\u201336px, letter-spacing tightened, matching the sienna accent used on the Sign in button. Tighten the subtitle 'Sign in to your account' to a muted foreground color.",
+      "functionality_preserved": "Only typography and container alignment change; the form fields, submit handler, and dev `VITE_SKIP_LOGIN_LOCAL` auto-redirect behavior are untouched."
+    },
+    {
+      "id": "UX-3",
+      "surface": "Login",
+      "severity": "P2",
+      "title": "Password field has no show/hide toggle and no caps-lock hint",
+      "what_is_wrong": "The password input is a plain masked field with no trailing affordance. There is no way to verify what was typed and no warning if Caps Lock is on.",
+      "why_it_matters": "Internal ERPs often use strong generated passwords stored in managers; operators fat-finger them, hit Sign in, and get a generic auth failure. Each retry costs ~10s and one more failure can trigger lockout policies.",
+      "proposed_fix": "Add a trailing eye icon button inside the password input that toggles `type` between `password` and `text`, and show a small 'Caps Lock is on' helper line beneath the field when the keyboard event reports caps lock active.",
+      "functionality_preserved": "The field still submits the same `password` value to `POST /api/auth/login`; only the input's presentation layer is enhanced."
+    }
+  ],
+  "redesign_sketch": "Full-viewport flex container, vertically and horizontally centered. Card is ~420px wide, white, soft shadow, 12px radius. Inside the card, top-to-bottom: (1) TERP wordmark in the app's display face, 34px, sienna-tinted, letter-spacing -0.02em; (2) directly beneath, when non-prod, a small amber pill 'STAGING'; (3) muted subtitle 'Sign in to your TERP account'; (4) 24px gap; (5) Username label + input; (6) Password label + input with a trailing eye toggle, and a reserved 16px helper slot that surfaces 'Caps Lock is on' or the server auth error in red; (7) full-width sienna 'Sign in' button, with a subtle loading spinner state; (8) small footer line 'Having trouble? Contact your TERP admin.' in muted text. No extra links, no social auth \u2014 this is an internal tool and the minimalism is correct; we're only fixing brand, environment clarity, and password ergonomics."
+}

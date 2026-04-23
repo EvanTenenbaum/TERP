@@ -1,0 +1,42 @@
+{
+  "page": "FeatureFlagsPage",
+  "route": "/settings?tab=feature-flags",
+  "assessment": "The page buries a critical power-user surface (57 feature flags controlling module access) under three stacked levels of tabs \u2014 Settings tabs \u2192 Developer sub-tabs \u2192 Controls/Change Log \u2014 with no search, filter, or category jump. The table design is reasonable (clear Active / On by Default / Requires / Access columns), but with 57 controls grouped into lowercase category headers ('accounting', 'beta'\u2026) and no way to find a flag except scrolling, a super-admin toggling a single module has to navigate a deep path and then hunt. 'Initialize Defaults' sits next to 'Refresh' and 'Add Control' with no warning copy, which is dangerous given it can mass-reset system-wide behavior.",
+  "notable_strengths": [
+    "Row layout cleanly separates 'Active' (system state) from 'On by Default' (rollout policy) with machine ID (`module-accounting`) and plain-language description visible together.",
+    "Controls count badge 'Controls (57)' gives immediate scale awareness, and Change Log is a peer tab rather than buried in a menu."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "FeatureFlagsPage",
+      "severity": "P1",
+      "title": "No search or category filter across 57 flags",
+      "what_is_wrong": "The 'Controls (57)' view renders every flag inline grouped under lowercase category cards ('accounting', 'beta', \u2026) with no search box, category filter chips, or sticky jump nav. To toggle a known flag an admin must scroll through the entire list.",
+      "why_it_matters": "Feature-flag work is almost always targeted ('flip module-accounting for ops team'). Scrolling 57 rows grouped by opaque category names slows the most common task and invites mistoggles on adjacent rows.",
+      "proposed_fix": "Add a search input and a category filter row directly above the Controls list (left of the 'Initialize Defaults / Refresh / Add Control' button cluster). Search should match feature name, machine ID, and description. Add a left-rail or sticky chip strip of category anchors (accounting, beta, \u2026) using the same grouping the page already computes.",
+      "functionality_preserved": "Purely additive client-side filter over the `featureFlags.*` list query \u2014 the full table, toggles, overrides, and create-flag dialog remain intact; filtering only narrows which rows render."
+    },
+    {
+      "id": "UX-2",
+      "surface": "FeatureFlagsPage",
+      "severity": "P1",
+      "title": "Three stacked tab levels obscure Feature Flags",
+      "what_is_wrong": "Reaching flags requires Settings tab 'Developer' \u2192 sub-tab 'Feature Flags' \u2192 inner tab 'Controls (57)'. The outer Settings tabs render with almost no selected-state contrast (Developer looks the same weight as Access Control / Master Data / Organization), and the sub-tab row ('Feature Flags / VIP Access / Database') sits visually identical to the outer row.",
+      "why_it_matters": "Admins land here from deep links or muscle memory and lose orientation \u2014 the runtime DOM confirms 9 tab-like buttons on one page. Weak selected-state on the Settings tabs makes it hard to tell where you are, and nested tab strips compete for attention with the actual content.",
+      "proposed_fix": "Collapse the Developer sub-tab row into a segmented control placed inside the 'Developer' panel header ('Feature Flags | VIP Access | Database'), and visually demote it (smaller, muted background) so the top Settings tabs read as the primary nav. Give the active Settings tab a clear filled pill or underline so 'Developer' is unambiguous. Inline 'Controls / Change Log' as a smaller secondary toggle beside the 'Feature Controls' heading rather than a third tab strip.",
+      "functionality_preserved": "All four Settings panes (Access Control, Master Data, Organization, Developer), the three Developer views (Feature Flags, VIP Access, Database), and the Controls vs. Change Log split are all retained \u2014 the change is visual weight and grouping, not routing. Baseline 'audit history dialog' and tabbed structure stay."
+    },
+    {
+      "id": "UX-3",
+      "surface": "FeatureFlagsPage",
+      "severity": "P1",
+      "title": "'Initialize Defaults' is a destructive-looking button with no guardrail",
+      "what_is_wrong": "'Initialize Defaults' sits in the header button cluster next to benign 'Refresh' and 'Add Control', with identical styling and no subtitle, tooltip, or confirmation affordance visible. Its effect on 57 live flags is unclear from the label alone.",
+      "why_it_matters": "A super-admin clicking it expecting 'refresh-like' behavior could mass-reset flag state across the tenant. The lack of inline copy about what 'defaults' means (first-run seed? reset everything? fill missing?) turns a support tool into a footgun.",
+      "proposed_fix": "Demote 'Initialize Defaults' to a secondary/ghost button positioned at the far left of the cluster (separated from Refresh/Add Control), add helper copy under it like 'Seeds any missing flags from code \u2014 will not overwrite existing values' (use the actual behavior), and require a confirm dialog listing the number of flags that would be created vs. untouched before commit.",
+      "functionality_preserved": "The underlying `featureFlags.*` initialize mutation still runs; only its button styling, placement, microcopy, and confirmation step change. No behavior is removed."
+    }
+  ],
+  "redesign_sketch": "Header: 'System Settings' H1 with the four Settings tabs rendered as a clearly-selected pill row (Developer highlighted). Inside the Developer panel, replace the sub-tab strip with a compact segmented control beside the panel title: 'Developer \u00b7 [Feature Flags] VIP Access  Database'. Below it, a single 'Feature Controls' section with: left \u2014 H2 + subtitle; right \u2014 button cluster ordered [Add Control] (primary), [Refresh] (ghost), [Initialize Defaults] (ghost, separated, with helper text). Under that, a toolbar row: search input ('Search flags, module ID, description\u2026'), category filter chips (accounting, beta, \u2026, All), and a small 'Controls (57) | Change Log' toggle. Table groups collapse/expand by category with Title Case headers and a sticky category jump rail on the left at \u2265lg breakpoints. Row layout unchanged: Feature + machine ID + description | Active toggle | On by Default toggle | Requires | Access (overrides) icon."
+}

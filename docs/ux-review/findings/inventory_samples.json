@@ -1,0 +1,43 @@
+{
+  "page": "SampleManagement",
+  "route": "/inventory?tab=samples",
+  "assessment": "The page gets the basics right \u2014 a clear New Sample CTA, a readable table, and an Expiring Samples callout \u2014 but it undermines itself by shipping the same operator-lane filter twice (once as compact chips next to search, once as prominent tab-like buttons above the table). The Product column crams two SKUs plus unlabeled parenthetical numbers into one line, which is the single most frequent read on this screen and the hardest to parse. Density is otherwise low: Due Date is universally 'Not set' and Location is universally 'Warehouse', so two full columns carry zero signal, while the Expiring widget occupies a large empty card that says nothing is expiring.",
+  "notable_strengths": [
+    "Operator-lane counts (All 14 / Samples Out 12 / Samples Return 2) are surfaced directly on the filter controls so triage is a one-click action.",
+    "Status pills ('Samples Out', 'Samples Return') are color-coded and consistent with the lane filter vocabulary.",
+    "New Sample is a single, prominent primary-colored CTA that is never more than one click from any sub-tab."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "SampleManagement",
+      "severity": "P1",
+      "title": "Lane filter is duplicated \u2014 two controls, same function",
+      "what_is_wrong": "The 'All 14 / Samples Out 12 / Samples Return 2' chips appear to the right of the search field, and an identical 'All Samples / Samples Out 12 / Samples Return 2' segmented control appears directly above the table. Both drive the same ALL/OUT/RETURN lane filter.",
+      "why_it_matters": "Operators can't tell if these are independent filters or the same one; clicking one and not the other creates doubt about which state is active. It also wastes two full rows of vertical space above the fold, pushing sample rows down.",
+      "proposed_fix": "Keep one control: the larger segmented button row above the table ('All Samples / Samples Out 12 / Samples Return 2') since it has the clearest affordance and counts. Remove the duplicate chip row next to the search input and move the search field onto that same row, left-aligned, with the segmented control right-aligned.",
+      "functionality_preserved": "Preserves the `SampleList` operator-lane filter (`ALL`/`OUT`/`RETURN`) \u2014 the single remaining segmented control still exposes all three lanes with their live counts."
+    },
+    {
+      "id": "UX-2",
+      "surface": "SampleManagement",
+      "severity": "P1",
+      "title": "Product column is ambiguous: unlabeled parenthetical numbers",
+      "what_is_wrong": "Rows show 'Product #107 (4.9), Product #108 (1.9)' with a lorem-ipsum subtitle. The parenthetical numbers have no header, unit, or tooltip \u2014 they could be quantity, weight (lb/g), potency %, or price.",
+      "why_it_matters": "Quantity is the core decision input for a sample pull; if a rep reads 4.9 as units when it's pounds (or vice versa), they ship the wrong amount. The ambiguity forces a click into each row to confirm.",
+      "proposed_fix": "Render each line item as 'Product #107 \u2014 4.9 lb' (or whatever the canonical unit is), one item per line within the cell, with the unit explicit. Drop the lorem subtitle or replace it with a strain/grade tag pulled from the product record. Add a column header note 'Qty per item' if multiple items are common.",
+      "functionality_preserved": "Preserves the `samples.*` tRPC payload (product + qty pairs from `SampleForm`); the fix is purely display formatting of fields already returned."
+    },
+    {
+      "id": "UX-3",
+      "surface": "SampleManagement",
+      "severity": "P2",
+      "title": "Empty Expiring Samples widget consumes prime real estate",
+      "what_is_wrong": "The 'Expiring Samples' card on the right occupies roughly a third of the width above the table and contains only the line 'No samples expiring in the next 30 days.' when empty, which is the common case.",
+      "why_it_matters": "The table \u2014 the actual work surface \u2014 is compressed because an empty-state card is always rendered at full size. It also trains operators to ignore the widget, which reduces its value when it does have content.",
+      "proposed_fix": "Collapse the widget to a single-line inline banner above the table when empty ('\u23f1 No samples expiring in the next 30 days'), and expand it back to a full card only when `ExpiringSamplesWidget` has \u22651 entry. Let the table take the full container width in the empty state.",
+      "functionality_preserved": "Preserves `ExpiringSamplesWidget` \u2014 same data source and threshold, only the empty-state presentation changes; populated states still render the full card."
+    }
+  ],
+  "redesign_sketch": "Single H1 'Samples' with a right-aligned 'New Sample' primary button on the same row. Below it, one toolbar row: left = search input 'Search samples\u2026', right = segmented control 'All Samples 14 | Samples Out 12 | Samples Return 2'. Empty-state Expiring Samples collapses to a thin inline banner above the toolbar; when populated, it becomes a full card docked to the right of the toolbar. Table columns: ID \u00b7 Product (stacked line items, each 'Product #107 \u2014 4.9 lb') \u00b7 Client \u00b7 Status pill \u00b7 Requested \u00b7 Due (muted 'Not set' italic when null) \u00b7 Location \u00b7 Actions. Row click opens the sample drawer; overflow menu exposes Return, Ship, and Update Location entry points tied to the existing dialogs."
+}

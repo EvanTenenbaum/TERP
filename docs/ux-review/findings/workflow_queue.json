@@ -1,0 +1,43 @@
+{
+  "page": "WorkflowQueuePage",
+  "route": "/workflow-queue",
+  "assessment": "The kanban board is legible and the column counts give a quick sense of load, but the page wastes the most valuable real estate on redundant chrome (sub-page nav as buttons, giant sidebar, 'Back to Dashboard') and the cards repeat information without surfacing what an operator actually needs to triage: age in stage, priority, assignee, and order linkage. The raw enum badge 'AWAITING_INTAKE' on every card in the Awaiting Intake column is pure visual noise, and the fourth column ('Live') is clipped off the right edge because the board doesn't horizontally scroll or fit the viewport.",
+  "notable_strengths": [
+    "Column header count chips with status-colored underlines make per-stage volume scannable at a glance.",
+    "Drag handle + card structure (batch ID, strain, qty, updated-at) maps cleanly to the WorkflowBoard DnD model.",
+    "View switcher (Board / Analytics / History / Settings) is surfaced as top-right actions rather than buried."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "WorkflowQueuePage",
+      "severity": "P1",
+      "title": "Fourth column clipped; board doesn't fit viewport",
+      "what_is_wrong": "The 'Live' column is cut off at the right edge of the screenshot \u2014 only the drag handle and truncated batch IDs are visible. With four fixed-width columns plus a 240px sidebar, the board overflows at common laptop widths and there is no visible horizontal scroll affordance.",
+      "why_it_matters": "Users cannot read or drop cards into 'Live' without scrolling blindly, and any additional statuses created via WorkflowSettings will compound the problem. This makes the canonical board view unusable for the last stage of the pipeline.",
+      "proposed_fix": "Make the board container horizontally scrollable with a persistent scrollbar and sticky column headers, and add a collapse toggle on the left sidebar (the `\u00ab` control is already drawn but inert here) so operators can reclaim ~240px. Tighten column min-width to ~280px and let columns flex so 4\u20135 fit on a 1440px screen.",
+      "functionality_preserved": "Does not touch `WorkflowBoard` DnD or `workflowQueue.*` data \u2014 purely a layout/overflow change on the board wrapper, so all statuses configured in WorkflowSettings remain reachable."
+    },
+    {
+      "id": "UX-2",
+      "surface": "WorkflowQueuePage",
+      "severity": "P2",
+      "title": "Redundant status badge on every card duplicates the column",
+      "what_is_wrong": "Each card inside 'Awaiting Intake' shows a pill reading `AWAITING_INTAKE`; cards in 'In Photography' show `LIVE` (incorrectly, per the column), and 'Photography Complete' shows `PHOTOGRAPHY_COMPLETE`. The pills use raw SCREAMING_SNAKE_CASE enum values and in at least one column disagree with the column title.",
+      "why_it_matters": "It burns a full row of vertical space on information already conveyed by column placement, pushes more actionable metadata (age, priority, assignee) below the fold, and the mismatch between 'In Photography' column and `LIVE` badge makes users distrust the board's source of truth.",
+      "proposed_fix": "Remove the in-card status pill when the card is in its matching column and replace the freed row with a priority chip + 'Updated 2mo ago' with a warning color when stale. If status must remain visible (e.g., during an optimistic drop), render it only when `card.status !== column.status`, and render the human label from the same WorkflowSettings color/name config used by the column header.",
+      "functionality_preserved": "Preserves `WorkflowSettings` status labels/colors and the `workflowQueue.*` status field on each batch; the pill is conditionally rendered, never dropped from the data model or drag payload."
+    },
+    {
+      "id": "UX-3",
+      "surface": "WorkflowQueuePage",
+      "severity": "P2",
+      "title": "View switcher reads as unrelated actions, not a tab set",
+      "what_is_wrong": "Board, Analytics, History, and Settings are rendered as four equally-weighted outlined buttons alongside the primary 'Add to Queue' CTA, with no selected state indicating the current view is Board. The DOM also exposes zero tabs (`Tabs: []`).",
+      "why_it_matters": "Users can't tell which of the four `?view=` modes they're on, and the visual weight competes with the primary action. Returning to Board after visiting Settings/History requires hunting for the right button.",
+      "proposed_fix": "Convert Board / Analytics / History / Settings into a segmented control (or underline tabs) immediately under the H1, with the active view filled. Keep 'Add to Queue' as the only primary-colored button in the header row.",
+      "functionality_preserved": "Still drives the same `?view=board|analytics|history|settings` query param and renders the same `WorkflowBoard`, `WorkflowAnalytics`, `WorkflowHistory`, `WorkflowSettings` components \u2014 only the control's visual grouping changes."
+    }
+  ],
+  "redesign_sketch": "Header row: H1 'Workflow Queue' with subtitle, single primary 'Add to Queue' button right-aligned. Directly beneath, a segmented tab bar: [Board] Analytics History Settings, with active state. Board area becomes a full-width horizontally-scrollable flex container with sticky column headers (name + count chip + colored underline sourced from WorkflowSettings). Sidebar gets a working collapse toggle. Card template (top to bottom): drag handle + batch ID + priority chip on row 1; strain name on row 2; qty + linked order number on row 3; footer with assignee avatar and relative updated-at that turns amber past an SLA threshold. Status pill is hidden when card.status matches its column; 'Back to Dashboard' moves into the breadcrumb only."
+}

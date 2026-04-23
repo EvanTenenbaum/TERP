@@ -1,0 +1,43 @@
+{
+  "page": "Help",
+  "route": "/help",
+  "assessment": "The Help Center lands with a clean title, a prominent search input, and a 2-column grid of section cards that map directly to the baseline's six help areas \u2014 this is a solid, scannable structure. However, the experience wastes its most valuable real estate: every section card is collapsed-by-default with a chevron, yet the topics are already visible inside the card, so the chevron reads as broken or redundant. The section cards are also visually heavy (large icons, lots of padding) while the topics themselves are tiny bulleted text with no affordance that they are navigable \u2014 users won't know whether clicking 'Customizing data cards' takes them to long-form training copy or does nothing. Finally, the search input has no placeholder guidance about what it searches (titles only? body copy?) and no results state is hinted at.",
+  "notable_strengths": [
+    "Clear H1 'TERP Help Center' with a plain-English subtitle sets expectations immediately",
+    "Six baseline sections are all surfaced above the fold in a predictable 2-column grid with recognizable icons",
+    "Top-level search field is the first interactive element, matching user intent for a help page"
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "Help",
+      "severity": "P1",
+      "title": "Topic bullets don't look clickable",
+      "what_is_wrong": "Inside each section card (e.g., 'Customizing data cards', 'Creating and managing batches', 'Fulfillment workflow\u2026'), topics render as small grey bulleted text with no link color, underline, hover chevron, or cursor affordance. They look like marketing copy, not navigation into the long-form training content the baseline promises.",
+      "why_it_matters": "The baseline states each section has a 'topics list + long-form training copy'. If users can't tell the topics are the entry points to that copy, they'll fall back to the search field or abandon \u2014 defeating the catalog pattern entirely.",
+      "proposed_fix": "Style topic rows as list-group links: left-aligned, medium weight, primary text color, subtle right-chevron that appears on hover, full-row hover background, and cursor:pointer across the whole row. Drop the decorative bullet.",
+      "functionality_preserved": "Preserves the Help page's six-section topic list structure defined in FUNCTIONAL_BASELINE \u00a7Help; only visual affordance changes, no topic is removed or rerouted."
+    },
+    {
+      "id": "UX-2",
+      "surface": "Help",
+      "severity": "P2",
+      "title": "Chevron on each card is ambiguous \u2014 expanded content is already visible",
+      "what_is_wrong": "Each section card header (Dashboard, Inventory Management, Orders & Fulfillment, Client Management) shows a down-chevron suggesting it expands, yet the topics list is already rendered inside the card. Clicking the chevron either does nothing visible or collapses content the user just scanned.",
+      "why_it_matters": "Redundant disclosure controls break trust in the UI and cost a click for users who assume the 'real' content is still hidden.",
+      "proposed_fix": "Either (a) remove the chevron and keep cards always-expanded since there are only six sections, or (b) make the chevron the single source of truth: start cards collapsed showing description only, expand to reveal topics, and animate smoothly. Pick one model and apply consistently.",
+      "functionality_preserved": "Preserves all six baseline sections and their description + topics list; only the disclosure pattern is disambiguated."
+    },
+    {
+      "id": "UX-3",
+      "surface": "Help",
+      "severity": "P2",
+      "title": "Search input lacks scope hint and keyboard shortcut parity",
+      "what_is_wrong": "The in-page 'Search for help topics\u2026' field gives no indication of what it searches (topic titles? body text?) and offers no keyboard shortcut, while the global 'CTRL K' palette sits 200px above it. Users land on /help via the `?` shortcut (per runtime supplement) but have no fast way to focus the help search itself.",
+      "why_it_matters": "Power users who hit `?` expect to type immediately. Without autofocus or a shortcut badge, they hunt for the field with a mouse, erasing the shortcut's value.",
+      "proposed_fix": "Autofocus the help search on page load, sharpen the placeholder to 'Search topics and training articles\u2026', and show a small '/' shortcut badge inside the input. Add a visible empty-results state with 'No topics match \u2014 try the Command Palette (Ctrl+K)' fallback.",
+      "functionality_preserved": "Preserves the Help page's local search (no tRPC, client-side per baseline) and the global Command Palette shortcut; only adds focus + copy."
+    }
+  ],
+  "redesign_sketch": "Heading stays: 'TERP Help Center' with subtitle and a full-width search bar (autofocused, placeholder 'Search topics and training articles\u2026', '/' shortcut badge). Below, replace the heavy collapsible cards with a 2-column grid of six always-expanded section panels. Each panel: small colored icon + section name (H3) on one line, one-line description in muted text, then a clean list-group of topics where each row is a full-width clickable link (topic title left, right-chevron on hover, row hover background). Panels are equal-height with consistent padding so Dashboard/Inventory/Orders/Clients/Analytics/Accounting align in a clean 3-row, 2-column layout. Remove redundant card-level chevrons. When a search query is active, collapse the grid into a single flat result list grouped by section with matched snippets highlighted; show 'No topics match \u2014 try Ctrl+K' when empty."
+}

@@ -1,0 +1,43 @@
+{
+  "page": "InventoryWorkspacePage.intake",
+  "route": "/inventory?tab=intake",
+  "assessment": "The Direct Intake tab packs a real workflow \u2014 supplier/product/qty/COGS entry, bulk row controls, and a live grid \u2014 into one screen, but hierarchy is broken in ways that will confuse any new receiver. The top form and the row grid look like two disconnected objects, the Location field literally renders 'Main Warehouse' five times concatenated, and the grid's column headers are truncated to single letters ('C\u2026', 'S.') which makes the spreadsheet unreadable. The sub-tab row (Intake / Pending 5 / Submitted 0 / Errors 0 / Qty 0 / $0.00) mixes navigation pills with KPI counters using identical styling, so a user can't tell what's clickable. The Standard/Spreadsheet view toggle and the Submit controls are well placed, but the page needs a hierarchy pass before a real receiver could move fast on it.",
+  "notable_strengths": [
+    "Saved indicator + Edit Selected Details give clear autosave feedback and a path to bulk edit \u2014 must survive any redesign.",
+    "Action grouping at the row level (Add Row, +5 Rows, Submit Selected, Fill Down, Duplicate, Remove, Submit All) covers every bulk operation a receiver needs in one strip.",
+    "Sub-counts (Pending 5, Submitted 0, Errors 0) expose draft health at a glance, which is the right ambient signal for a batch-entry workflow."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "InventoryWorkspacePage.intake",
+      "severity": "P0",
+      "title": "Location field renders duplicated 'Main Warehouse' string",
+      "what_is_wrong": "The Location select shows the value as 'Main WarehouseMain WarehouseMain WarehouseMain WarehouseMain Warehouse' \u2014 the same label concatenated five times inside one input \u2014 while every grid row below correctly shows a single 'Main Warehouse'.",
+      "why_it_matters": "This looks like a data bug (are there five locations stacked? is this multi-select?) and will make a receiver distrust every other default on the form. It also visually dominates the intake header.",
+      "proposed_fix": "Render the top-level Location control as a single selected value with a count chip only if multi-location is intentional (e.g., 'Main Warehouse \u00b7 5 selected'). Fix the join/format bug in the trigger so it displays one location label, matching the per-row cell below.",
+      "functionality_preserved": "Keeps the `IntakePilotSurface` location selector and its binding to the location field on each grid row \u2014 this is purely a display/format fix to the select's trigger label."
+    },
+    {
+      "id": "UX-2",
+      "surface": "InventoryWorkspacePage.intake",
+      "severity": "P1",
+      "title": "Grid column headers are truncated to unreadable single letters",
+      "what_is_wrong": "In the row grid, four consecutive columns show headers 'C\u2026', 'C\u2026', 'C\u2026', 'C\u2026' and the last column is 'S.' \u2014 only Supplier, Product/Strain, and Location are legible. The columns are each ~80px wide with filter/menu chevrons eating the remaining space.",
+      "why_it_matters": "A receiver entering COGS/qty cannot tell which cell is which without clicking in. This is the central data-entry surface of the tab; illegible headers directly slow throughput and invite wrong-column entries.",
+      "proposed_fix": "Set a minimum header width that fits the label before the filter icon (e.g., 120px for COGS/Qty, 140px for COGS Mode), move the column-menu kebab to a hover affordance, and allow the Supplier/Product/Location columns to flex so numeric columns keep their labels. Show full header text with a tooltip fallback only when genuinely space-constrained.",
+      "functionality_preserved": "Preserves the `IntakePilotSurface` sheet-native column set (Supplier, Product/Strain, COGS Mode, COGS, Qty, Location, Status) and per-column filter/menu handlers; only column sizing and header rendering change."
+    },
+    {
+      "id": "UX-3",
+      "surface": "InventoryWorkspacePage.intake",
+      "severity": "P2",
+      "title": "Sub-tab row conflates navigation pills with KPI counters",
+      "what_is_wrong": "The strip 'Intake | Pending 5 | Submitted 0 | Errors 0 | Qty 0 | $0.00' uses identical pill styling for all six items, but 'Intake' is the active view while 'Qty 0' and '$0.00' are totals, and 'Pending/Submitted/Errors' are filter counts. Nothing distinguishes the three roles.",
+      "why_it_matters": "Users will click 'Qty 0' expecting a filter and get nothing, or miss that Errors 0 is a filter they should tap when the number rises. It also dilutes the visual anchor for the active tab.",
+      "proposed_fix": "Split the strip into two zones: left = segmented control for 'Intake / Pending (5) / Submitted (0) / Errors (0)' with a clear selected state; right = read-only summary chips 'Qty: 0' and 'Total: $0.00' rendered as metric tiles, not buttons. Align the summary chips with the 'Saved' and 'Edit Selected Details' cluster on the right.",
+      "functionality_preserved": "Keeps every existing count and filter behavior in `IntakePilotSurface`'s status filter strip \u2014 the fix is a visual grouping and styling change, not a removal of any filter or metric."
+    }
+  ],
+  "redesign_sketch": "Header row unchanged: H1 'Inventory' + tab bar + right-aligned Spreadsheet/Standard view toggle. Directly under the tab bar, a single command strip split into three zones: (left) segmented filter 'Intake \u00b7 Pending 5 \u00b7 Submitted 0 \u00b7 Errors 0' with one selected state; (center) small metric tiles 'Qty 0' and 'Total $0.00' in muted type; (right) 'Saved \u2713' + 'Edit Selected Details'. Below, a titled 'New intake row' card containing Supplier, Product/Strain, Qty, COGS Mode, COGS on row 1 and Location on row 2 \u2014 Location shows a single selected value, not a concatenated string. Then a bulk-actions toolbar ('Add Row', '+5 Rows', 'Fill Down', 'Duplicate Selected', 'Remove Selected', with 'Submit Selected (1)' and 'Submit All Product Intake' right-aligned in primary brown). The grid underneath uses full-width legible headers (SUPPLIER, PRODUCT/STRAIN, COGS MODE, COGS, QTY, LOCATION, STATUS), column menus hidden until hover, and a sticky first column for supplier so the receiver can scan rows while entering numerics."
+}

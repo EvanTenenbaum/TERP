@@ -1,0 +1,43 @@
+{
+  "page": "ReturnsPage",
+  "route": "/sales?tab=returns",
+  "assessment": "The page delivers the core RMA surface \u2014 three KPI cards, a Process Return CTA, and a returns table \u2014 but it reads as a lightly-dressed prototype rather than a working queue. The Return Reasons card is a dead text block when it could be a filter, the table is missing the key operational columns (item, qty, state-machine status, customer) that an RMA manager needs to triage, and the state machine (Draft \u2192 Received \u2192 Inspected \u2192 Restocked/Disposed \u2192 Closed) documented in the baseline is completely absent from the UI. The Process Return button floating above an otherwise unstyled table also creates a weak hierarchy compared to the header block above.",
+  "notable_strengths": [
+    "KPI cards up top (Total Returns, Defective Items, Return Reasons) frame the queue's shape at a glance.",
+    "GL Status column with a direct View GL link preserves the ReturnGLStatus integration inline with each row.",
+    "Clear, labeled primary action (Process Return) with a sensible orange accent that matches the rest of Sales."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "ReturnsPage",
+      "severity": "P1",
+      "title": "Returns table is missing the workflow state and line-item context",
+      "what_is_wrong": "The table shows Return ID, Order ID, Reason, Processed By, Processed At, Notes, GL Status \u2014 but no Customer, no SKU/qty, and critically no current state (Draft/Received/Inspected/Restocked/Disposed/Closed). An RMA manager cannot triage what needs inspection or restocking from this view.",
+      "why_it_matters": "The documented state machine is the primary operational lens for returns. Without a Status column the user must open each return to know what to do next, adding a click to every triage decision.",
+      "proposed_fix": "Insert a Status column (pill) between Order ID and Reason, and add a Customer column after Order ID. Also surface item count (e.g. '2 items \u00b7 5 units') either as a column or under the Order ID. Keep all existing columns.",
+      "functionality_preserved": "Uses the existing `returns.*` tRPC state field and the baseline state machine enum; purely additive columns, no removal."
+    },
+    {
+      "id": "UX-2",
+      "surface": "ReturnsPage",
+      "severity": "P2",
+      "title": "Return Reasons card is static text instead of a filter",
+      "what_is_wrong": "The Return Reasons card lists 'Wrong Item: 0, Not As Described: 0, Changed Mind: 0, Other: 0' as plain text, next to a Defective Items KPI that is essentially the same dimension split off. Clicking any row does nothing, and the Reason column in the table is not filterable.",
+      "why_it_matters": "Reason is the single most used filter for an RMA queue (e.g. 'show me everything defective this week'). Making the breakdown clickable converts a passive readout into the fastest triage path.",
+      "proposed_fix": "Make each reason line a toggleable filter chip that filters the table by that enum value; merge the Defective KPI into the same card as the selected/primary chip. Add an 'All' chip as the default. Keep the underlying counts.",
+      "functionality_preserved": "Filters client-side off the existing return reason enum from `returns.*`; no API or enum changes."
+    },
+    {
+      "id": "UX-3",
+      "surface": "ReturnsPage",
+      "severity": "P2",
+      "title": "Process Return CTA is orphaned above the table with no empty/onboarding affordance",
+      "what_is_wrong": "The Process Return button sits alone on a line above the table header, separated from the page H1 by the KPI row. With only one row in the table there is a large dead zone below, and no hint that Process Return is how you create an RMA against a sold order.",
+      "why_it_matters": "On a page whose entire purpose is 'Create and manage RMAs', the creation entry point reads as a secondary toolbar button. New users lose time hunting for it and the page feels underpopulated.",
+      "proposed_fix": "Move Process Return into the page header row next to Standard/Spreadsheet View as the primary (filled) button, and add a one-line helper under it: 'Start an RMA from a sold order.' Keep a secondary Process Return CTA in the table's empty state for discoverability.",
+      "functionality_preserved": "Unchanged `returns.*` create dialog trigger \u2014 only the button's position and a helper string change."
+    }
+  ],
+  "redesign_sketch": "Header row: H1 'Returns' left, subtitle 'Process and track order returns', with [Process Return] (primary) + [Spreadsheet / Standard] view toggle right-aligned. Below: three-up KPI strip \u2014 (1) Open Returns with sub-counts by state (Draft/Received/Inspected), (2) Awaiting GL Reversal, (3) Reason breakdown rendered as clickable filter chips (Defective, Wrong Item, Not As Described, Changed Mind, Other) with counts. Below chips: a filters bar (Status, Reason, Date range, Customer search) bound to the table. Table columns: Return ID \u00b7 Status pill \u00b7 Order ID \u00b7 Customer \u00b7 Items (e.g. '2 \u00d7 Purple Haze +1') \u00b7 Reason \u00b7 Processed By \u00b7 Processed At \u00b7 Notes (truncated) \u00b7 GL Status (View GL link). Row click opens a side drawer with the full state-machine timeline and Restock/Dispose actions. Empty state: illustrated block with 'No returns yet \u2014 Process Return to start an RMA from a sold order.'"
+}

@@ -1,0 +1,43 @@
+{
+  "page": "TodoListsPage",
+  "route": "/notifications?tab=todos",
+  "assessment": "The Todo Lists tab is buried inside the Notifications hub, which conceptually conflates system-generated alerts with user-authored tasks. The tab itself is fine \u2014 tabs are labeled, the two primary CTAs (New List, New Todo) are discoverable, and the empty/loading state is explicit \u2014 but the page wastes the entire viewport on a single loading spinner with no skeleton, and the two primary actions sit above an empty canvas with no hint of what a 'list' vs a 'todo' is. The header micro-copy ('Review system notifications and alerts in one hub') also contradicts the Todo Lists subtitle directly beneath it.",
+  "notable_strengths": [
+    "Two distinct CTAs (New List, New Todo) with clear visual hierarchy \u2014 primary filled for Todo, outlined for List \u2014 correctly signals the most common action.",
+    "Tab structure keeps Notifications/Alerts/Todos co-located, consistent with the Notifications hub pattern.",
+    "Explicit 'Loading your lists...' copy instead of a bare spinner tells the user the state is transient."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "TodoListsPage",
+      "severity": "P1",
+      "title": "Header subtitle contradicts the active tab",
+      "what_is_wrong": "The page header reads 'Notifications \u2014 Review system notifications and alerts in one hub.' while the Todo Lists tab is active and the card subtitle says 'Organize your tasks with lists'. The two descriptions fight each other and the user has no cue this tab owns personal task data, not system alerts.",
+      "why_it_matters": "Users landing here via the `/todo-lists` legacy redirect or via a quick-jump command are told they are in a notifications hub and may back out before realizing their tasks live here.",
+      "proposed_fix": "Make the subtitle tab-aware: when Todo Lists is active, swap the subtitle to 'Your personal and shared task lists'. Keep the H1 'Notifications' for hub consistency, but drive the subtitle from the active tab.",
+      "functionality_preserved": "Preserves the Notifications hub H1 and the three-tab structure (System Notifications / Alerts / Todo Lists) from the baseline; only the subtitle string is tab-reactive."
+    },
+    {
+      "id": "UX-2",
+      "surface": "TodoListsPage",
+      "severity": "P2",
+      "title": "Empty canvas below CTAs wastes ~600px and hides the loading state",
+      "what_is_wrong": "While lists load, the entire content area shows a single centered spinner with 'Loading your lists...' and nothing else. On a page whose baseline promises a 'card grid', there is no skeleton indicating shape, column count, or whether any list exists.",
+      "why_it_matters": "Users can't distinguish 'I have no lists' from 'still loading' from 'fetch failed' at a glance, and the New List / New Todo buttons look orphaned above empty space.",
+      "proposed_fix": "Replace the centered spinner with 3\u20134 skeleton list cards in the same grid the populated state will use, plus a persistent helper row under the CTAs: 'Lists group related todos. Todos can also live outside a list.' On load completion, if the result is truly empty, render an illustrated empty state with a 'Create your first list' primary action that reuses the New List handler.",
+      "functionality_preserved": "Preserves the baseline card-grid layout and the create/quick-add/delete behavior; only swaps the loading visual and adds an empty-state variant that calls the same New List action."
+    },
+    {
+      "id": "UX-3",
+      "surface": "TodoListsPage",
+      "severity": "P2",
+      "title": "New List vs New Todo distinction is unexplained at the point of decision",
+      "what_is_wrong": "Two same-sized buttons sit adjacent with no tooltip, helper text, or icon differentiation beyond the '+' glyph. A first-time user cannot predict whether 'New Todo' requires picking a list first, or whether 'New List' creates an empty container.",
+      "why_it_matters": "Ambiguity at the primary action forces a trial-and-error click, which is exactly what ERP power users resent; misclicks also create orphan empty lists that clutter the grid.",
+      "proposed_fix": "Add a one-line caption under each button in the header row: 'New List \u2014 group related todos' and 'New Todo \u2014 add a task (optionally to a list)'. Keep button labels identical; only add secondary caption text in 12px muted color beneath each.",
+      "functionality_preserved": "Preserves the two baseline create affordances (New List and quick-add Todo) and their existing handlers \u2014 the change is purely copy/typography in the header."
+    }
+  ],
+  "redesign_sketch": "Keep H1 'Notifications' and the three tabs. Make the subtitle tab-reactive: on Todo Lists, show 'Your personal and shared task lists'. Header row of the content card: left side 'Todo Lists' title with count pill (e.g., 'Todo Lists \u00b7 4'); right side New List (outline) and New Todo (filled), each with a 12px muted caption explaining scope. Body: responsive 3-column grid of list cards (title, todo count, last-updated, overflow menu with delete). While loading, render 4 skeleton cards in the same grid, not a centered spinner. True empty state: centered illustration + 'No lists yet' + primary 'Create your first list' button that invokes the existing New List handler. A persistent 'Unlisted todos' card anchors the grid so quick-added todos without a list are visible, not lost."
+}

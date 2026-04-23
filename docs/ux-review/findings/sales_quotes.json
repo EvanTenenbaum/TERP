@@ -1,0 +1,43 @@
+{
+  "page": "SalesWorkspacePage.quotes",
+  "route": "/sales?tab=quotes",
+  "assessment": "The Quotes sub-tab is functionally legible \u2014 tabs, filter, and a clean table with consistent columns \u2014 but it fails on its two most important jobs: telling the user the state of their quote pipeline, and distinguishing quotes from orders. The status strip reports Unsent/Sent/Converted all as 0 despite every visible row being DRAFT, and every quote number is prefixed 'ORD-' which will collide cognitively with the Orders tab one click away. There is also a redundant double H1 ('Sales' shell title + 'Sales Quotes' page title) and a search placeholder that claims the Cmd+K shortcut already owned by the global command palette.",
+  "notable_strengths": [
+    "Column set (Quote #, Client, Created, Valid Until, Status, Total) is the right minimum for a quote queue and the row hierarchy is calm.",
+    "Status pipeline summary (Saved / Unsent / Sent / Converted) in the header is the correct mental model \u2014 it just needs to be accurate.",
+    "Mode toggle (Spreadsheet View / Standard View) and the 'New Quote' CTA are right where a sales rep expects them."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "SalesWorkspacePage.quotes",
+      "severity": "P1",
+      "title": "Pipeline counters omit Draft and contradict the visible table",
+      "what_is_wrong": "The header strip shows 'Saved / Unsent: 0 / Sent: 0 / Converted: 0' while every one of the ~11 visible rows carries a DRAFT badge. There is no Draft count and the zeros make the pipeline look empty when it is not.",
+      "why_it_matters": "A sales manager glances at these counters to decide what to work on. Today they read as 'nothing to do' while the queue below is full of unsent drafts \u2014 the most important segment to chase.",
+      "proposed_fix": "Add a leading 'Draft: N' counter before Unsent, and make each counter a filter chip that sets the status filter. Replace the ambiguous green 'Saved' pill with a neutral 'All: N' total. Drive counts from the same `quotes.list` payload that renders the table so they can never diverge.",
+      "functionality_preserved": "QuotesWorkSurface continues to consume `quotes.*` tRPC output; the fix only re-maps existing status buckets into the header strip and reuses the existing 'All Statuses' filter behavior."
+    },
+    {
+      "id": "UX-2",
+      "surface": "SalesWorkspacePage.quotes",
+      "severity": "P1",
+      "title": "Quote rows use an 'ORD-' prefix, indistinguishable from orders",
+      "what_is_wrong": "Every row in the Quote # column reads 'ORD-000378', 'ORD-000370', etc. The Orders tab sits one click to the left and uses the same prefix pattern.",
+      "why_it_matters": "Reps routinely paste these numbers into chats and emails ('send me ORD-000378'). When the same identifier space is shared between quotes and orders, support threads and search collide, and converting a quote to an order creates two records with overlapping-looking IDs.",
+      "proposed_fix": "Display the quote identifier with a `QUO-` (or `Q-`) visual prefix in this column while keeping the underlying stored id unchanged \u2014 render as `QUO-000378` with the numeric tail preserved. If backend ids truly are shared with orders, add a small 'Quote' tag next to the number so the row is self-identifying when copy-pasted out of context.",
+      "functionality_preserved": "Does not touch the `quotes.*` router or the stored order/quote id scheme \u2014 purely a column renderer change inside QuotesWorkSurface, so `quoteId` deep-links and conversion flows keep working."
+    },
+    {
+      "id": "UX-3",
+      "surface": "SalesWorkspacePage.quotes",
+      "severity": "P2",
+      "title": "Duplicate H1 and a search placeholder that squats the global Cmd+K",
+      "what_is_wrong": "The page renders two H1s ('Sales' from `LinearWorkspaceShell` and 'Sales Quotes' from the surface), and the in-table search input shows placeholder 'Search quotes\u2026 (Cmd+K)' \u2014 but Cmd+K is already bound to the global command palette (visible top bar).",
+      "why_it_matters": "Two H1s flatten the hierarchy and push the useful counters below the fold on short viewports. The Cmd+K hint teaches users a shortcut that will actually open the command palette, eroding trust in in-app hints.",
+      "proposed_fix": "Demote 'Sales Quotes' to an H2 (or drop it and let the shell title carry 'Sales \u203a Quotes'), and tighten the subtitle row so the counters sit on the same line as the title. Change the search placeholder to 'Search quotes by #, client, or total' and remove the '(Cmd+K)' hint; if a local shortcut is desired, bind '/' and label it '(/)'.",
+      "functionality_preserved": "LinearWorkspaceShell title/meta-strip API is untouched; only the QuotesWorkSurface internal header markup and input placeholder string change, preserving the `quotes.list` search behavior."
+    }
+  ],
+  "redesign_sketch": "One H1 from the shell: 'Sales', breadcrumb 'Sell \u203a Sales \u203a Quotes'. Below it, a single dense header row: left side shows 'Quotes' with a muted total (e.g., '24 quotes') and four clickable status chips (Draft 11 \u00b7 Sent 6 \u00b7 Accepted 4 \u00b7 Expired 3) that drive the status filter; right side holds Spreadsheet/Standard toggle and a primary 'New Quote' button. Filter bar beneath: search input ('Search quotes by #, client, or total'), status select, and a Valid-Until date range. Table columns unchanged but Quote # renders as 'QUO-000378' with a subtle 'Quote' tag, Valid Until cells turn amber when <7 days and red when past, and the trailing chevron opens a right drawer with Convert-to-Order / Duplicate / Send actions so the queue stays keyboard-navigable."
+}

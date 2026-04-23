@@ -1,0 +1,43 @@
+{
+  "page": "Settings.roles",
+  "route": "/settings?tab=roles",
+  "assessment": "The Roles tab is functional but visually undifferentiated from the sibling sub-tabs (Users, User Roles, Permissions) and wastes enormous vertical space before showing the actual role table. 'Role Management' is a full-width card whose only job is to hold a single 'Create New Role' button \u2014 that's a header-action, not a section. The 'All Roles' table is what matters here, yet it's pushed below the fold; a user arriving on the tab sees two nearly identical shield-icon cards with generic descriptions before any data. The table itself has clear columns (Role Name, Description, Type, Permissions, Users) but the permission/user counts are rendered as chip-like boxes that read as interactive when they may not be, and row actions are clipped at the right edge.",
+  "notable_strengths": [
+    "Clear two-level tab hierarchy (Access Control \u2192 Users / User Roles / Roles / Permissions) keeps related access surfaces together.",
+    "Role table exposes Type (System) and both Permissions and Users counts, which is the right information density for an admin landing.",
+    "Descriptions on system roles (Super Admin, Owner/Executive, Operations Manager) are written in plain language and explain the safety posture."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "Settings.roles",
+      "severity": "P1",
+      "title": "Role Management card is a 180px-tall wrapper around one button",
+      "what_is_wrong": "The 'Role Management \u2014 Create and manage roles to organize permissions' card consumes the entire initial viewport width and ~180px of height purely to host the 'Create New Role' button. The 'All Roles' table, which is the actual content of this tab, is pushed below the fold.",
+      "why_it_matters": "An admin landing on Roles to audit or edit an existing role has to scroll before seeing any role. The duplicated shield icon and near-identical subtitle on two stacked cards ('Role Management' and 'All Roles') also makes the page read as two redundant sections.",
+      "proposed_fix": "Collapse the 'Role Management' card into a header-action row: keep the 'Create New Role' button but anchor it to the right of the 'All Roles' heading (or to the right of the sub-tab strip). Let the 'All Roles' table render in the first viewport. Move the 'Create and manage roles to organize permissions' copy into the Access Control section subtitle or drop it \u2014 the page H1 and tab label already convey this.",
+      "functionality_preserved": "The `Create New Role` CTA in the `RoleManagement` component is preserved verbatim; only its container chrome is removed. No router call or create flow changes."
+    },
+    {
+      "id": "UX-2",
+      "surface": "Settings.roles",
+      "severity": "P2",
+      "title": "Permission and user counts look like editable inputs",
+      "what_is_wrong": "In the All Roles table, the Permissions column renders values like `331`, `44`, `102` inside thin bordered boxes, and the Users column renders `3`, `1`, `2` inside similar boxes with a user icon. They visually match text-input fields more than read-only counts or links.",
+      "why_it_matters": "Admins auditing roles will either (a) try to click/edit them expecting a drill-down and get nothing, or (b) not realize they are clickable if they actually link to the Permissions or Users sub-tabs filtered to that role. Either way, affordance is wrong.",
+      "proposed_fix": "Render both counts as plain numeric cells with a trailing label ('331 permissions', '3 users') and make them actual links that deep-link to `?tab=permissions&role=<id>` and `?tab=users&role=<id>`. Remove the input-style border; use a subtle underline on hover to signal navigability.",
+      "functionality_preserved": "The `UserRoleManagement` / `PermissionAssignment` sub-sections remain unchanged; this fix only restyles the count cells in `RoleManagement` and adds a querystring filter that those components can already consume via the existing `?tab=` deep-link pattern."
+    },
+    {
+      "id": "UX-3",
+      "surface": "Settings.roles",
+      "severity": "P2",
+      "title": "Row actions clipped at right edge of the table",
+      "what_is_wrong": "On each role row, a partial control is visible at the right edge (a cut-off circle icon next to the Users count on Super Admin, Owner/Executive, and Operations Manager rows). The actions column is being cropped by the card's right padding.",
+      "why_it_matters": "If those icons are Edit/Delete/View-permissions actions, they are the primary per-row affordance on the page and they're unreachable without horizontal scrolling. Admins can't tell system roles are non-editable vs. custom roles are editable at a glance.",
+      "proposed_fix": "Pin an explicit 'Actions' column at the right with a fixed width (~96px), show full-size icon buttons (View \u00b7 Edit \u00b7 Duplicate) with tooltips, and disable Edit/Delete on rows where `Type = System` with a tooltip 'System roles cannot be modified'. Ensure the table container has `overflow-x: auto` as a fallback instead of clipping.",
+      "functionality_preserved": "Preserves the existing row-action handlers in `RoleManagement` and the `Type = System` business rule (Super Admin / Owner/Executive / Operations Manager remain protected); only the column layout and disabled-state affordance change."
+    }
+  ],
+  "redesign_sketch": "Header stays: 'System Settings' / 'Manage system configurations and master data' / top tabs (Access Control \u00b7 Master Data \u00b7 Organization \u00b7 Developer). Inside Access Control, sub-tabs Users \u00b7 User Roles \u00b7 Roles \u00b7 Permissions remain. The Roles panel collapses to a single card: a row with 'All Roles' on the left, count ('5 roles \u00b7 3 system, 2 custom') underneath, and 'Create New Role' button pinned right. Directly below: the roles table with columns Role | Description | Type (chip) | Permissions (linked count) | Users (linked count) | Actions (pinned right, icon buttons, disabled on System). Kill the separate 'Role Management' wrapper card entirely. First viewport now shows all ~5 roles without scrolling."
+}

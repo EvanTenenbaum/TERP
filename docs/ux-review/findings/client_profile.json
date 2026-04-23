@@ -1,0 +1,93 @@
+{
+  "page": "ClientProfilePage",
+  "route": "/clients/1",
+  "assessment": "This is effectively a dead-end. The entire 360\u00b0 profile \u2014 Overview, Sales & Pricing, Money, Supply & Inventory, Activity \u2014 has been replaced by a single terse sentence (\"This relationship profile could not be loaded.\") because one tRPC call (presumably `relationshipProfile.*`) failed. The rest of the page has no skeleton, no client identity, no recovery action, no diagnostic. The breadcrumb reads \"#1\" and the document has no H1, so a user who landed here from search or a deep link has zero context about which client this is or what to do next. Everything the baseline promises for this page is hidden behind a single error dependency.",
+  "notable_strengths": [
+    "The left Sales Quick Actions rail remains available, so the user isn't trapped \u2014 they can still jump to New Order, Active Orders, or Recent Customers.",
+    "Global chrome (command palette, breadcrumb, notifications, FAB) is preserved, so keyboard shortcuts and navigation still function around the broken panel.",
+    "The error is at least contained in a bordered card rather than a raw stack trace or a white screen."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "ClientProfilePage",
+      "severity": "P0",
+      "title": "One failed dependency nukes the entire client profile",
+      "what_is_wrong": "A single error string \"This relationship profile could not be loaded.\" replaces every documented section (Overview metrics, Sales & Pricing, Money, Supply & Inventory, Activity). There is no partial render, no client name, no fallback from `clients.getById` or `client360.*` which are independent calls.",
+      "why_it_matters": "Sales and AR cannot look up credit status, open invoices, contact history, or even confirm who the client is if `relationshipProfile.*` has a hiccup. A transient RPC failure becomes a total workflow block for every team that depends on this page.",
+      "proposed_fix": "Scope the error boundary to only the Overview relationship header. Render the full `LinearWorkspaceShell` with its five tabs regardless; let each section render its own loading/error state from its own router. The relationship card shows the error inline with a Retry button; Money, Activity, etc. continue to load from their independent tRPC calls.",
+      "functionality_preserved": "Preserves `relationshipProfile.*` as the source for the relationship header while allowing `clients.getById`, `clientLedger.*`, `credits.*`, `client360.*`, `clientCommunications.*` to drive their own sections per the baseline's section list."
+    },
+    {
+      "id": "UX-2",
+      "surface": "ClientProfilePage",
+      "severity": "P0",
+      "title": "No client identity anywhere on a client page",
+      "what_is_wrong": "There is no H1, no page title beyond \"TERP [STAGING]\", and the breadcrumb reads only \"Clients \u203a #1\". The user cannot tell which client they are viewing.",
+      "why_it_matters": "If a rep shares the URL or lands here from a search result, they have no way to verify they're on the right record before making decisions about credit, shipments, or outreach \u2014 a real risk for a B2B wholesale tool where client confusion has financial consequences.",
+      "proposed_fix": "Always render an H1 page header with `{client.businessName}` plus a `RelationshipRoleBadge` row beneath it, fed by `clients.getById` (which does not depend on the relationship profile). Replace the breadcrumb token \"#1\" with the business name, falling back to \"Client #1\" only if the name is still loading.",
+      "functionality_preserved": "Keeps `RelationshipRoleBadge` and `clients.getById` exactly as specified in the baseline; only adds a header region above the shell."
+    },
+    {
+      "id": "UX-3",
+      "surface": "ClientProfilePage",
+      "severity": "P1",
+      "title": "Error message gives no cause, no recovery, no next step",
+      "what_is_wrong": "The error card contains a single sentence with no error code, no timestamp, no Retry, no \"Back to Clients\", no \"Report to support\", and no hint about whether the problem is permissions, a missing relationship profile record, or a network failure.",
+      "why_it_matters": "Users will refresh the browser (losing any unsaved state elsewhere), file tickets without diagnostics, or abandon the task. Engineering has no correlation ID to triage from.",
+      "proposed_fix": "Replace the bare string with a structured empty state: icon, title \"Couldn't load relationship profile\", subtext \"Client record loaded, but relationship roles failed to fetch. (code: RP-404 \u00b7 12:03:14)\", and three actions \u2014 \"Retry\", \"Create relationship profile\" (if the cause is absence), and \"Back to Clients\". Keep the rest of the page shell mounted around it.",
+      "functionality_preserved": "Retry re-invokes `relationshipProfile.*`; \"Create relationship profile\" routes through the existing change-relationship-roles flow listed in baseline per-section actions. No new RPCs required."
+    },
+    {
+      "id": "UX-4",
+      "surface": "ClientProfilePage",
+      "severity": "P1",
+      "title": "Five-section shell is completely hidden in the error state",
+      "what_is_wrong": "Baseline specifies five sections (Overview, Sales & Pricing, Money, Supply & Inventory, Activity) but not even the section tabs/anchors are rendered when the relationship profile errors. There are zero tabs in the runtime DOM.",
+      "why_it_matters": "Users cannot jump to Money to check an invoice, or to Activity to log a call they just took, without first fixing an error that may not even be relevant to their task. A credit dispute shouldn't be blocked by a roles lookup.",
+      "proposed_fix": "Render the section tab bar (Overview / Sales & Pricing / Money / Supply & Inventory / Activity) unconditionally inside `LinearWorkspaceShell`. Each tab lazy-loads its own data; Overview is the only tab that surfaces the relationship-profile error inline.",
+      "functionality_preserved": "Matches the baseline's explicit \"Shell: LinearWorkspaceShell with five sections\" contract; sections continue to call their baseline tRPC routers independently."
+    },
+    {
+      "id": "UX-5",
+      "surface": "ClientProfilePage",
+      "severity": "P2",
+      "title": "Error card floats in a sea of unused canvas",
+      "what_is_wrong": "The error occupies a thin card at the top of a ~900px empty workspace. The proportions read as \"page loaded fine, just empty\" rather than \"dependency failed\" \u2014 and the floating action button in the bottom right is still clickable with no context about what it does when the page is errored.",
+      "why_it_matters": "Visual weight miscommunicates severity. A user may assume this is just a sparse client and waste time scrolling or clicking around. The always-on FAB on an error page also invites misfires.",
+      "proposed_fix": "Once UX-4 lands, the shell fills the canvas and this is resolved for the normal state. For the isolated relationship-card error, constrain the card to the Overview column width (e.g. 720px) and left-align it under the new H1. Hide or disable the FAB when the primary content region is in an error state, with a tooltip \"Unavailable while profile is loading\".",
+      "functionality_preserved": "FAB behavior (quick actions) is unchanged when the page renders normally; we're only gating it on the error branch of the same component."
+    },
+    {
+      "id": "UX-6",
+      "surface": "ClientProfilePage",
+      "severity": "P2",
+      "title": "Quick-actions rail is Sales-only on a dual-role client page",
+      "what_is_wrong": "The left rail is titled \"SALES QUICK ACTIONS\" with New Order, Active Orders, Sales Catalogue, Recent Customers, Today's Shipments \u2014 all customer-side. The baseline explicitly supports suppliers and dual-role clients via `SupplierProfileSection`, yet there are no supplier quick actions (New PO, Open POs, Supplier Catalogue) exposed at the same level.",
+      "why_it_matters": "A buyer opening a supplier's profile has to dig into the Buy menu every time to do the equivalent of \"New Order\" for a PO. Same page, wildly asymmetric ergonomics depending on relationship direction.",
+      "proposed_fix": "Make the quick-actions rail role-aware: when `relationshipProfile` resolves as supplier-only show Buy actions; when dual-role show a segmented header (Sales | Supply) that swaps the five items. Keep the same slot positions and icon language.",
+      "functionality_preserved": "Uses the already-loaded relationship role from `relationshipProfile.*`; navigation targets already exist under the Buy menu items \u2014 no new routes."
+    },
+    {
+      "id": "UX-7",
+      "surface": "ClientProfilePage",
+      "severity": "P2",
+      "title": "No H1/title means poor keyboard and screen-reader orientation",
+      "what_is_wrong": "Playwright capture shows `H1: []`, only \"Command Palette\" as H2. Tab count is 0. Screen readers and keyboard users have nothing to jump to with landmark navigation.",
+      "why_it_matters": "Accessibility regression and also an internal discoverability problem \u2014 CTRL+F for a client name on this page would fail.",
+      "proposed_fix": "Add a semantic `<h1>` with the client business name, and set `document.title` to `${client.name} \u00b7 Clients \u00b7 TERP`. Add an `<h2>` for each section tab panel (Overview, Sales & Pricing, etc.).",
+      "functionality_preserved": "No data or router changes; purely additive DOM semantics on top of `clients.getById` and the existing shell structure."
+    },
+    {
+      "id": "UX-8",
+      "surface": "ClientProfilePage",
+      "severity": "P3",
+      "title": "\"Back\" button exists but is invisible in the error layout",
+      "what_is_wrong": "The runtime button list includes \"Back\" but the screenshot shows no visible back control inside the error card or near the breadcrumb \u2014 it's likely clipped or offscreen. Users default to browser back, which breaks in-app state.",
+      "why_it_matters": "When the page is unusable and recovery fails, the only documented escape hatch isn't visible.",
+      "proposed_fix": "Promote the Back button into the error empty-state action row (next to Retry) with the label \"Back to Clients\", and ensure it sits inside the visible viewport alongside the H1 breadcrumb trail.",
+      "functionality_preserved": "Same Back handler; only its placement and label change."
+    }
+  ],
+  "redesign_sketch": "Header band: breadcrumb \"Clients \u203a Acme Hemp Co.\" then H1 \"Acme Hemp Co.\" with `RelationshipRoleBadge` chips (Customer \u00b7 Supplier), a right-aligned action cluster (Edit Client, Log Activity, Book Appointment, More \u22ef). Directly under the H1, a compact metric strip: Balance \u00b7 Credit Available \u00b7 Open Orders \u00b7 Last Contact \u00b7 VIP tier \u2014 each cell links into the matching section. Section tabs pinned below: Overview | Sales & Pricing | Money | Supply & Inventory | Activity. Each tab renders independently; a failure in one section shows an inline empty state (icon + cause + Retry + secondary action) without taking down its siblings. Overview is two-column: left shows relationship summary, quick stats, `FreeformNoteWidget`; right shows `CommentWidget` and recent communications preview with \"View all in Activity\". Left rail becomes role-aware Quick Actions (Sales set for customers, Supply set for suppliers, segmented control for dual-role). Error microcopy pattern: \"Couldn't load {section}. {reason} \u00b7 {timestamp}\" with Retry + contextual secondary (e.g. \"Create relationship profile\"). FAB remains for logging activity but is disabled with tooltip when the page is in a global error fallback. Title bar: \"{Client} \u00b7 Clients \u00b7 TERP\" so browser tabs and screen readers have context."
+}

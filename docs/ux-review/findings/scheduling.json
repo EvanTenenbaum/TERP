@@ -1,0 +1,43 @@
+{
+  "page": "SchedulingPage",
+  "route": "/scheduling",
+  "assessment": "The page is a competent calendar shell: three tabs (Calendar/Shifts/Deliveries), Day/Week/Month toggle, Today + pager, a Rooms sidebar with color-coded groups, and context widgets (Today's Appointments, Live Queue) on the right. But the default Week view is a wasteland\u2014eleven empty rows, 18:00+ cut off, and the only visible dimension is time. Resources (rooms) are listed in a sidebar rather than rendered as columns or lanes on the grid, so a user staring at the default view cannot tell which room is free when, which is the entire point of a room-booking tool. The right rail also duplicates 'today' context while the main grid shows a week, creating a mismatch. Book Room is prominent and the empty states are humane, which saves it from feeling broken.",
+  "notable_strengths": [
+    "Clear tri-tab model (Calendar / Shifts / Deliveries) with Day/Week/Month + Today pager exactly where power users expect it.",
+    "Rooms sidebar groups by Meeting Rooms vs Loading Docks with colored dots and booking counts\u2014fast mental model for resource type.",
+    "Primary 'Book Room' CTA is unambiguous, high-contrast, and anchored top-right next to the date controls."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "SchedulingPage",
+      "severity": "P1",
+      "title": "Week grid shows time only, not rooms \u2014 can't see resource availability at a glance",
+      "what_is_wrong": "In Week view the grid columns are Mon 20\u2026Sun 26 and rows are hours, but rooms are only selectable in the left sidebar as a filter. There is no per-room lane, so a dispatcher looking at 'Apr 20\u2013Apr 26, 2026' cannot tell whether Loading Dock 1 vs Dock 2 vs Receiving Bay is booked at 10:00 Wednesday without re-filtering.",
+      "why_it_matters": "Room booking is fundamentally a resource-vs-time problem. Forcing users to click each room one by one to compare availability turns a 5-second glance into 6+ interactions and makes double-booking more likely.",
+      "proposed_fix": "When 'All Rooms' is selected, render the Day view as resource columns (one column per room) and Week view as stacked per-room lanes within each day column (or a resource-first toggle next to Day/Week/Month). When a specific room is selected in the sidebar, fall back to the current time-only grid. Keep the sidebar as the filter control.",
+      "functionality_preserved": "Preserves `RoomSidebar`, the Day/Week/Month views, and `scheduling.*` booking queries\u2014only the grid's column/lane composition changes based on the sidebar selection."
+    },
+    {
+      "id": "UX-2",
+      "surface": "SchedulingPage",
+      "severity": "P2",
+      "title": "Right rail shows 'Today' context while the calendar is on a week that may not include today",
+      "what_is_wrong": "The right column is 'Today's Appointments' and 'Live Queue' (today-scoped), but the main grid is showing Apr 20\u201326 with Thu 23 highlighted. If a user pages forward to next week with the chevron, the right rail still says 'Today' and stays empty, creating cognitive dissonance about what date the page is 'about'.",
+      "why_it_matters": "Users lose trust in the panels when the scope of the left (grid) and right (rail) disagree, and the rail becomes dead space whenever they're planning ahead.",
+      "proposed_fix": "Rename the rail header to reflect the selected date ('Thu Apr 23 \u00b7 Appointments', 'Thu Apr 23 \u00b7 Queue') and have it follow the focused day in the grid. When the focused day is today, append a subtle 'Today' pill. Keep the refresh icon and empty-state copy unchanged.",
+      "functionality_preserved": "Preserves the `TodaysAppointments` and `LiveQueue` panels and their tRPC data\u2014only the header label and date-scope follow the calendar's current focus instead of hard-coding 'today'."
+    },
+    {
+      "id": "UX-3",
+      "surface": "SchedulingPage",
+      "severity": "P2",
+      "title": "Default week view wastes vertical space on empty hours and hides end-of-day",
+      "what_is_wrong": "The visible grid starts at 8:00 and stops at 17:00 within the viewport, with every cell empty. There's no zero-state prompt inside the grid itself (e.g., 'Click a slot to book'), no 'jump to first booking', and evening hours (18:00\u201320:00) are below the fold even though loading docks frequently run late.",
+      "why_it_matters": "A new user sees a blank grid and doesn't realize the primary interaction is click-to-book; an operations user loses time scrolling to find where the actual bookings live.",
+      "proposed_fix": "Auto-scroll to the earliest booking of the focused day (or 8:00 if none), show an inline hint in the first empty cell that reads 'Click any slot to book a room' that dismisses on first click, and add a compact 'Business hours / 24h' density toggle near the Day/Week/Month switcher.",
+      "functionality_preserved": "Preserves `RoomBookingModal` triggering from slot clicks and the existing Day/Week/Month views; only scroll position, a dismissible hint, and a density toggle are added."
+    }
+  ],
+  "redesign_sketch": "Header row unchanged: 'Scheduling' H1 + date range, tab group (Calendar/Shifts/Deliveries), view switcher (Day/Week/Month), pager + Today, Book Room CTA. Body becomes a 3-column layout: (1) narrow Rooms sidebar with 'All Rooms' default, Meeting Rooms group, Loading Docks group, gear for RoomManagementModal; (2) main grid that is resource-aware \u2014 when 'All Rooms' is selected, columns are rooms (Day view) or day-blocks subdivided into room lanes (Week view); when a specific room is selected, it collapses to the current time-only grid. Grid auto-scrolls to earliest booking and shows a one-time 'Click any slot to book' hint; business-hours/24h density toggle sits next to Day/Week/Month; (3) right rail retitled to follow the focused day \u2014 'Thu Apr 23 \u00b7 Appointments' and 'Thu Apr 23 \u00b7 Queue' with a 'Today' pill when applicable, same empty states. Shifts and Deliveries tabs reuse the same header chrome so mental model stays consistent."
+}

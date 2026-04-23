@@ -1,0 +1,43 @@
+{
+  "page": "ShrinkageReportPage",
+  "route": "/reports/shrinkage",
+  "assessment": "The page establishes a reasonable shrinkage overview \u2014 date/category/reason filters, three KPI cards, two breakdown charts, and CSV export \u2014 but the execution wastes vertical space and strips meaning from the visuals. The title 'Shrinkage Report' is rendered twice within 60px of itself (once beside the back button, once as the H1), and the 'Shrinkage by Reason' pie chart has no legend, no labels, and no percentages, so a user literally cannot tell which reason the dominant blue slice represents. The KPI trio is clean and the bar chart is legible, but 'Suspicious Events: 0' has no definition or drill-through affordance, so it reads as a dead metric.",
+  "notable_strengths": [
+    "Filter row (Start/End/Category/Reason/Min Quantity) is laid out in a single scannable line with sensible 30-day default range.",
+    "Three KPI cards (Total Events, Total Qty Lost, Suspicious Events) give an immediate at-a-glance summary before the charts.",
+    "Export CSV is persistently visible in the top-right, matching the pattern used on other reports."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "ShrinkageReportPage",
+      "severity": "P2",
+      "title": "Title 'Shrinkage Report' is rendered twice in the header",
+      "what_is_wrong": "The back-button row shows '\u2190 Back to Inventory  \ud83d\udcc9 Shrinkage Report' and then immediately below, the H1 repeats '\ud83d\udcc9 Shrinkage Report' with the subtitle 'Track and analyze inventory losses and discrepancies'. The page label and the H1 are identical strings stacked ~40px apart.",
+      "why_it_matters": "Duplicated titles waste ~80px of above-the-fold real estate that should belong to filters and KPIs, and make the page feel templated rather than designed. On a 900px-tall laptop it pushes the pie chart below the fold.",
+      "proposed_fix": "Collapse to a single header row: '\u2190 Back to Inventory' on the left, then the page title 'Shrinkage Report' with the subtitle directly beneath, and 'Export CSV' right-aligned on the same row. Drop the redundant title chip next to the back button \u2014 the breadcrumb ('Reports \u203a Shrinkage') already labels the page.",
+      "functionality_preserved": "Preserves the `ShrinkageReport` component's back-to-`/inventory` link and the Export CSV action documented in the baseline; only the duplicated text node is removed, no behavior changes."
+    },
+    {
+      "id": "UX-2",
+      "surface": "ShrinkageReportPage",
+      "severity": "P1",
+      "title": "Shrinkage-by-Reason pie chart has no legend, labels, or values",
+      "what_is_wrong": "The left chart card titled 'Shrinkage by Reason' renders a blue circle with a thin white sliver \u2014 no legend, no slice labels, no tooltip hint, no percentages. In contrast the 'Shrinkage by Category' bar chart on the right labels Flower and Tincture with a numeric axis.",
+      "why_it_matters": "The core purpose of this report \u2014 understanding WHY units are disappearing (damage vs. theft vs. miscount vs. expiry) \u2014 is exactly what the unlabeled pie obscures. A manager cannot act on 'mostly blue'.",
+      "proposed_fix": "Add a right-side legend listing each reason with its color swatch, event count, and percentage (e.g. 'Damaged \u2014 5 events \u00b7 83%'). Render slice labels on segments \u22658%, and fall back to a horizontal stacked bar when there are \u22642 reasons so a single dominant slice doesn't read as a solid disc.",
+      "functionality_preserved": "Uses the same reason breakdown data the `ShrinkageReport` variant='full' component already aggregates; this is a presentation layer change to the existing chart, not a data or router change."
+    },
+    {
+      "id": "UX-3",
+      "surface": "ShrinkageReportPage",
+      "severity": "P2",
+      "title": "'Suspicious Events' KPI is undefined and non-interactive",
+      "what_is_wrong": "The third KPI card shows 'Suspicious Events: 0' with an alert icon, but there is no tooltip, no definition of what makes an event suspicious, and clicking the card does nothing \u2014 while 'Total Events: 6' sits next to it with no way to filter the table below to just those 6 either.",
+      "why_it_matters": "A zero on an unexplained 'suspicious' metric is either falsely reassuring or meaningless. And because neither KPI card is clickable, users cannot use the summary to drive into the Shrinkage Events table \u2014 they have to re-filter manually.",
+      "proposed_fix": "Add an info tooltip on 'Suspicious Events' stating the exact rule (e.g. 'Events where qty lost > X% of batch or flagged by reviewer'). Make all three KPI cards clickable: Total Events scrolls to and filters the Shrinkage Events table to the current filter set; Suspicious Events additionally applies a `suspicious=true` filter; Total Qty Lost sorts the table descending by quantity.",
+      "functionality_preserved": "Preserves the `ShrinkageReport` component's by-batch table and existing filter params (date range, category, reason, min quantity); the KPIs become shortcut filters over the same dataset rather than new endpoints."
+    }
+  ],
+  "redesign_sketch": "Single-row header: back chevron + breadcrumb on left, 'Shrinkage Report' H1 with 'Track and analyze inventory losses and discrepancies' subtitle centered-left, 'Export CSV' right-aligned. Second row: compact filter bar (Start/End preset chips '7d \u00b7 30d \u00b7 90d \u00b7 Custom', Category, Reason, Min Qty) with an 'Apply / Reset' pair. Third row: 3 clickable KPI cards \u2014 Total Events (click = scroll+filter table), Total Qty Lost (click = sort table desc by qty), Suspicious Events (click = filter suspicious=true, with hover tooltip defining the rule). Fourth row: two equal-width chart cards; the pie becomes a donut with right-side legend showing 'Reason \u2014 count \u00b7 %' rows, and the bar chart gains value labels at bar ends. Below, the existing 'Shrinkage Events' table anchors with a sticky filter summary chip row so users always see which slice/reason the table is scoped to."
+}

@@ -1,0 +1,43 @@
+{
+  "page": "NeedsManagementPage",
+  "route": "/demand-supply?tab=needs",
+  "assessment": "The page surfaces the right primitives \u2014 tabs for the four Demand & Supply surfaces, four KPI tiles, search + status/priority filters, a paginated list, and a Create Need CTA \u2014 but the hierarchy is confused. Two H1s ('Demand & Supply' and 'Needs Management') compete, the KPI tiles are all zero and consume the most valuable real estate above the empty state, and the empty state itself buries the one action the user can take. The redundant tab system ('Matchmaking/Client Needs/Interest List/Supplier Supply' sitting above 'All Needs/Smart Opportunities') creates four levels of navigation before the user reaches data. For a zero-state workspace this is too much chrome and too little guidance.",
+  "notable_strengths": [
+    "KPI tiles (Active Needs, With Matches, Urgent, Opportunities) give at-a-glance pipeline health once populated",
+    "Cross-surface shortcuts ('Open Matchmaking', 'Jump to Supplier Supply') correctly treat needs as part of a larger matching workflow",
+    "Filters (search, status=Active default, All Priorities) match the baseline field model cleanly"
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "NeedsManagementPage",
+      "severity": "P1",
+      "title": "Empty state dead-ends instead of driving the primary action",
+      "what_is_wrong": "The 'No needs found' empty state shows only a package icon and the copy 'Try adjusting your filters or create a new need' with no button. The actual 'Create Need' CTA is ~500px away in the top-right corner, and the filter is silently defaulted to 'Active' which hides any FULFILLED/EXPIRED/CANCELLED needs that may exist.",
+      "why_it_matters": "A first-time or filtered-empty user has to visually hunt for the CTA or realize the Active filter is masking data. On a zero-state workspace this is the single most important moment and it's passive.",
+      "proposed_fix": "Put two inline buttons inside the empty state card: a primary 'Create Need' and a secondary 'Clear filters' (only shown when filters are non-default). Change copy to 'No active needs. Create one to start matching, or view all statuses.'",
+      "functionality_preserved": "Reuses the existing `clientNeeds.create` mutation behind 'Create Need' and the Active/All Priorities filter controls \u2014 no routes or fields change."
+    },
+    {
+      "id": "UX-2",
+      "surface": "NeedsManagementPage",
+      "severity": "P2",
+      "title": "Four stacked navigation layers before the user sees a row",
+      "what_is_wrong": "From top to bottom the user crosses: breadcrumb \u2192 Matchmaking/Client Needs/Interest List/Supplier Supply tab row \u2192 'Open Matchmaking / Jump to Supplier Supply' link row \u2192 'All Needs (0) / Smart Opportunities (0)' sub-tabs. 'Jump to Supplier Supply' duplicates the 'Supplier Supply' tab already visible 40px above it.",
+      "why_it_matters": "Vertical chrome pushes the KPI tiles, filters, and list below the fold on smaller laptops and makes the information scent of each control unclear.",
+      "proposed_fix": "Collapse the right-side 'Open Matchmaking' / 'Jump to Supplier Supply' link row into a single overflow button ('Go to\u2026 \u25be') or move them next to Create Need as secondary-styled buttons. Keep the primary tab row and the All Needs/Smart Opportunities sub-tabs.",
+      "functionality_preserved": "Both jump links remain reachable; only their presentation is consolidated. The `matching.*` routes they navigate to are untouched."
+    },
+    {
+      "id": "UX-3",
+      "surface": "NeedsManagementPage",
+      "severity": "P2",
+      "title": "KPI tiles waste above-the-fold space with zeroes and no drill-through",
+      "what_is_wrong": "Four large tiles (Active Needs, With Matches, Urgent, Opportunities) each render a single '0' in ~120px of vertical space, are not clickable, and do not filter the list below. 'Opportunities' also duplicates the 'Smart Opportunities (0)' sub-tab.",
+      "why_it_matters": "In zero-state they're pure decoration; in populated state they waste their potential because clicking 'Urgent: 7' is the obvious shortcut to a URGENT-priority filter.",
+      "proposed_fix": "Make each tile a filter chip: clicking 'Urgent' applies priority=URGENT to the list; 'With Matches' filters to needs with \u22651 match; 'Opportunities' routes to the Smart Opportunities sub-tab. Reduce tile height by ~30% and add a trend delta (e.g., '+2 this week') beneath the count.",
+      "functionality_preserved": "Tile counts still read from the same `clientNeeds.*`/`matching.*` aggregates; click handlers only set existing filter state (priority, status, matches) already supported by the baseline Filter/search action."
+    }
+  ],
+  "redesign_sketch": "Single H1 'Client Needs' with a one-line subhead and the D&S tabs directly beneath it (demote 'Demand & Supply' to breadcrumb only). Right-aligned action cluster: primary 'Create Need', secondary overflow 'Go to \u25be' (Matchmaking, Supplier Supply). Below: a slimmer 4-up KPI strip where each tile is a clickable filter chip with count + weekly delta. Filter bar: search, Status (default Active), Priority, and any applied KPI-chip filters shown as removable pills. Sub-tabs 'All Needs' / 'Smart Opportunities' sit on top of the list. Empty state is a centered card with icon, 'No active needs match your filters', and two buttons: primary 'Create Need', secondary 'Clear filters' (conditional). Populated list rows: priority pill \u2022 strain \u2022 category/grade \u2022 qty range \u2022 client \u2022 match count badge \u2022 row actions (Edit, Cancel, Fulfill, Attach to match)."
+}

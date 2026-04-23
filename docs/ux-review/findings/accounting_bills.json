@@ -1,0 +1,43 @@
+{
+  "page": "Bills",
+  "route": "/accounting?tab=bills",
+  "assessment": "The Bills table has a strong scaffold \u2014 clear sub-tab nav, a useful header strip (AP total, overdue count, total count), status filter pills, and bulk action buttons (Pay Vendor, Mark Received, Void) with a keyboard-shortcut inspector. But two columns \u2014 DUE AMT and STATUS \u2014 are literally rendering raw HTML strings (`<span class=\"\u2026\">`) instead of values and badges, which torches the table's usefulness and looks broken. On top of that, the Bill # column is truncated to unreadable stubs (`BILL-GF002-LIF\u2026`) and the documented 'create bill dialog' has no visible entry point anywhere on this page, despite Bills being an AP workflow where creation matters.",
+  "notable_strengths": [
+    "Header chip row ($1,088,665 AP / 27 overdue / 27 total) plus AP Aging button gives a strong at-a-glance AP posture before the user touches the table.",
+    "Status filter pills (All/Draft/Pending/Approved/Partial/Paid/Overdue/Void) sit right above bulk actions (Pay Vendor, Mark Received, Void), which maps cleanly to the BillStatusActions state machine.",
+    "Persistent keyboard-shortcut inspector (Click/Shift+Click/Ctrl+Click/Ctrl+C/Escape) teaches power-user selection behavior without stealing screen space from the table."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "Bills",
+      "severity": "P0",
+      "title": "DUE AMT and STATUS columns render raw HTML instead of values",
+      "what_is_wrong": "Every row in the DUE AMT and STATUS columns shows the literal string `<span class=\"\u2026\">` instead of a dollar amount or a status badge. The two most decision-critical columns on an AP page are unreadable.",
+      "why_it_matters": "AP clerks triage bills by how much is due and what state each bill is in. With both columns broken, users cannot decide what to pay, cannot confirm a bill is Overdue vs Pending, and the status filter pills above become unverifiable. This is a dead-end for the core workflow.",
+      "proposed_fix": "Render the cell as the computed value, not the HTML template string: DUE AMT should be a right-aligned currency (e.g. `$500.00`, dimmed when $0, red when > 0 and past due); STATUS should be a colored pill matching the filter chip palette (Draft grey, Pending amber, Approved blue, Partial violet, Paid green, Overdue red, Void slate). Fix the cell renderer so the span's text content is passed, not its markup.",
+      "functionality_preserved": "Leaves the existing column definitions, sortable/filterable table, and BillStatusTimeline/BillStatusActions state machine untouched \u2014 only the cell renderer changes so the already-computed due amount and status string are displayed instead of escaped HTML."
+    },
+    {
+      "id": "UX-2",
+      "surface": "Bills",
+      "severity": "P1",
+      "title": "Bill # column truncates the only unique identifier",
+      "what_is_wrong": "Every Bill # is cut to ~14 chars with an ellipsis (`BILL-GF002-LIF\u2026`, `BILL-GF002-177\u2026`, `BILL-20260219-\u2026`), so six consecutive rows look identical and the user cannot distinguish bills without clicking each one.",
+      "why_it_matters": "Bills against the same vendor (Sierra Nevada Farms appears six times with identical dates and amounts repeating) are impossible to tell apart from the list. Reconciling against a vendor statement or the `?billId=` deep-link requires the full ID visible.",
+      "proposed_fix": "Widen the Bill # column to fit the longest ID (~22 chars) and shrink the over-wide empty space in DUE AMT/STATUS once they render properly. If space is tight, keep truncation but add a tooltip on hover showing the full ID, and make the ID itself a monospace link to the detail sheet.",
+      "functionality_preserved": "Does not change the table schema, sort, or the `?billId=` deep-link \u2014 only column width and hover affordance. Detail sheet opening behavior is unaffected."
+    },
+    {
+      "id": "UX-3",
+      "surface": "Bills",
+      "severity": "P1",
+      "title": "No visible entry point for the Create Bill dialog",
+      "what_is_wrong": "The baseline documents a 'create bill dialog,' but the Bills header shows only a search box and a refresh icon. There is no `New Bill` / `+ Bill` / `Record Bill` button anywhere in the viewport, even though the sibling sidebar has a `New Order` shortcut for sales.",
+      "why_it_matters": "AP users who receive a vendor invoice have no way to enter it from the page they're already on. They either hunt through the command palette (Ctrl+K) or leave the page, which is 30%+ slower for a frequent task and makes the dialog effectively undiscoverable for new users.",
+      "proposed_fix": "Add a primary `+ New Bill` button in the Bills sub-header, right-aligned next to the search input (mirror the Sales Quick Actions pattern on the left rail). Keep the Ctrl+K route as a power-user path.",
+      "functionality_preserved": "Wires the existing create bill dialog to a visible trigger; no router, mutation, or BillStatusActions behavior changes. The dialog component itself is unchanged."
+    }
+  ],
+  "redesign_sketch": "Keep the Accounting H1 and the sub-tab row. Bills sub-header becomes two rows: (row 1) title `Bills` + chip strip `$1,088,665 AP \u00b7 27 overdue \u00b7 27 total` on the left, and on the right `AP Aging`, search, refresh, and a primary `+ New Bill`; (row 2) status filter pills on the left, bulk action buttons on the right, with a live `N selected` counter that replaces the '0 selected' footer when rows are checked. Table columns in order: checkbox, Bill # (monospace, full ID, link), Vendor (link), Date, Due (red text if past due), Total (right-aligned $), Due Amt (right-aligned $, dim when $0), Status (colored pill matching filter chips), row-overflow menu. Footer keeps the keyboard inspector but collapses to a single line. Microcopy: replace the bare '46 visible \u00b7 46 total \u00b7 All statuses' with 'Showing 46 of 46 bills \u00b7 filtered by: All statuses' so the filter state reads as a sentence."
+}

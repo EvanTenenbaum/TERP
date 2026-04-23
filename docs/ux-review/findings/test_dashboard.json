@@ -1,0 +1,93 @@
+{
+  "page": "DashboardHomePage",
+  "route": "/",
+  "assessment": "The page delivers on its promise as a daily pulse \u2014 KPIs, cash health, appointments, and payables are all one scroll away, and the per-widget error isolation is working (one failed widget, 'Today at a Glance', did not kill the page). But the top half is doing too much in too little horizontal space: five KPI cards are squeezed to the point where supporting copy truncates mid-word ('in flig...', 'Nothing shipped y...'), the errored widget offers no recovery path, and the Cash Position panel restates the same $551,981.62 figure three ways. There is also no real page title \u2014 'OWNER COMMAND CENTER' reads as a status pill, not an h1, and the 'N/A vs last week' meta row on Cash Collected is noise when both numbers are zero. The structure is right; the density, copy, and empty/error states need tightening.",
+  "notable_strengths": [
+    "Per-widget ComponentErrorBoundary is clearly doing its job \u2014 'Today at a Glance' failed while every neighbouring card rendered correctly, so the page stays usable.",
+    "The Cash Position panel surfaces a decision-grade insight ('You're short $551,981.62 after scheduled bills') with a direct 'Review Bills \u2192' drill-through, which matches the Owner Command Center framing.",
+    "Freshness signal ('Live \u00b7 Updated 1:34 PM') establishes trust in the numbers and should be preserved on any redesign."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "DashboardHomePage",
+      "severity": "P1",
+      "title": "KPI subtitles truncate mid-word at this column count",
+      "what_is_wrong": "In the top KPI strip, 'Open Orders' subtitle shows '$33,600,523 in flig...' and 'Fulfilled Today' shows 'Nothing shipped y...'. Five KPI tiles are forced into one row and the support copy is clipped to the point that the last word is unreadable.",
+      "why_it_matters": "The supporting line is the qualifier that makes the headline number actionable ('in flight' vs 'shipped'). Truncating it turns a glanceable KPI into a guess, and the owner is the exact persona who reads subtitles to decide whether to drill in.",
+      "proposed_fix": "Keep all five OperationalKpisWidget tiles but switch the row to a 12-column grid where Open Orders and Inventory Value (the two with the longest subtitles) span 3 columns and the other three span 2, or allow the subtitle to wrap to two lines with min-height lock. Also shorten the copy: 'in flight' (no abbreviation) and 'Nothing shipped yet today'.",
+      "functionality_preserved": "OperationalKpisWidget (TER-1055) \u2014 all five KPIs and their drill-through targets remain; only the grid spans and a copy string change."
+    },
+    {
+      "id": "UX-2",
+      "surface": "DashboardHomePage",
+      "severity": "P1",
+      "title": "'Today at a Glance' errored state is a dead-end",
+      "what_is_wrong": "The OwnerQuickCardsWidget card renders 'Unable to load daily snapshot \u2014 Transaction or inbox data could not be loaded' with a folder icon, but there is no retry button, no error code, and no alternate link to the underlying data.",
+      "why_it_matters": "On the owner's daily-pulse screen, one of the three daily-pulse cards is silently broken with no path to recovery. The user has to reload the whole page to even attempt a retry, and they cannot tell whether it's a transient fetch failure or a permission issue.",
+      "proposed_fix": "Inside the existing ComponentErrorBoundary fallback for OwnerQuickCardsWidget, add a 'Retry' button that re-invokes the tRPC query, plus a secondary 'Open transactions \u2192' link that routes to the Finance workspace so the owner has a manual fallback. Include a muted error code line ('ref: \u2026') for support.",
+      "functionality_preserved": "ComponentErrorBoundary per-widget isolation \u2014 the fix is additive inside the existing boundary; neighbouring widgets and the boundary contract are untouched."
+    },
+    {
+      "id": "UX-3",
+      "surface": "DashboardHomePage",
+      "severity": "P1",
+      "title": "'Cash Collected (7D)' meta row is noise when both values are zero",
+      "what_is_wrong": "The KPI reads 'CASH COLLECTED (7D) $0' then 'Last week $0' then '\u2014 N/A vs last week'. Three lines are spent saying 'zero vs zero'.",
+      "why_it_matters": "It burns visual weight on a degenerate case and crowds the adjacent tiles that are already truncating (UX-1). It also teaches the owner to tune out the comparison line, which is the one that matters on non-zero days.",
+      "proposed_fix": "When current and prior period are both zero, collapse the meta row to a single muted 'No collections in the last 7 days' line and drop the '\u2014 N/A vs last week' fragment. Keep the full delta chip when either value is non-zero.",
+      "functionality_preserved": "OperationalKpisWidget KPI \u2014 the underlying metric, period window, and drill-through remain; only the sub-copy branch for the (0,0) case changes."
+    },
+    {
+      "id": "UX-4",
+      "surface": "DashboardHomePage",
+      "severity": "P2",
+      "title": "No page-level heading \u2014 the owner has no h1",
+      "what_is_wrong": "The topmost text is a green outlined pill 'OWNER COMMAND CENTER' immediately followed by the date sentence. There is no typographic h1; the pill reads as a status chip, not a title.",
+      "why_it_matters": "Screen readers and scanning users both rely on a real heading to orient. On a page that explicitly brands itself as a 'command center', the brand phrase being rendered as a pill undersells the page and creates ambiguity with the freshness badge on the right (both look like chips).",
+      "proposed_fix": "Promote 'Owner Command Center' to an h1 at normal weight (e.g. 24px semibold, title-case), keep the date sentence as a muted subtitle below it, and move the 'Live \u00b7 Updated 1:34 PM' chip to the right of the h1 row. Drop the pill styling.",
+      "functionality_preserved": "Header row content (badge text, date string, freshness timestamp) \u2014 all three elements remain, only their typographic treatment changes."
+    },
+    {
+      "id": "UX-5",
+      "surface": "DashboardHomePage",
+      "severity": "P2",
+      "title": "Cash Position panel repeats $551,981.62 three times",
+      "what_is_wrong": "OwnerCashDecisionPanel shows 'You're short $551,981.62 after scheduled bills' at top, then a row 'Scheduled Payables $551,981.62', then 'Available After Bills -$551,981.62'. Because Cash on Hand is $0.00, the shortfall, the payables total, and the negative balance are literally the same number displayed three ways.",
+      "why_it_matters": "Redundancy in a money widget looks like a bug and erodes trust in the figures. The owner has to compare digits three times to confirm nothing is off.",
+      "proposed_fix": "When Cash on Hand == 0, suppress the 'Available After Bills' row (since it equals -Scheduled Payables by definition) and keep only the top alert + the Cash on Hand + Scheduled Payables rows. When Cash on Hand > 0, show all three. Keep 'Review Bills \u2192' and 'Manage \u2192' untouched.",
+      "functionality_preserved": "OwnerCashDecisionPanel \u2014 all data points, the 'Review Bills' and 'Manage' drill-throughs, and the shortfall alert logic remain; only one row is conditionally hidden when it is arithmetically redundant."
+    },
+    {
+      "id": "UX-6",
+      "surface": "DashboardHomePage",
+      "severity": "P2",
+      "title": "Smart Briefs toggle row is invisible on this capture",
+      "what_is_wrong": "The baseline explicitly calls out a 'Smart Briefs toggle row at the top of the page' that lets the operator pick which Smart Brief cards to show, but nothing on screen between the freshness chip and the KPI strip exposes this control. Either it is not rendering or it is visually indistinguishable from the header chrome.",
+      "why_it_matters": "If an owner cannot find the panel-visibility control, the per-user persisted preferences never get set and everyone sees the default card mix forever. A discoverability failure here looks like missing functionality.",
+      "proposed_fix": "Anchor the Smart Briefs control as a right-aligned 'Customize briefs' button in the new header row (next to the freshness chip), opening a popover of card toggles. Persist state through the same mechanism already in place.",
+      "functionality_preserved": "Smart Briefs toggle feature and its per-user persistence \u2014 the control and its state store are untouched; only its entry point becomes a labelled button with a popover."
+    },
+    {
+      "id": "UX-7",
+      "surface": "DashboardHomePage",
+      "severity": "P2",
+      "title": "Appointments empty state wastes a prime slot",
+      "what_is_wrong": "OwnerAppointmentsWidget shows a centred calendar icon and 'No upcoming appointments \u2014 No appointments scheduled for the next 7 days', occupying the middle column of the daily pulse row. The 'View all \u2192' link remains top-right but there is no way to add an appointment from here.",
+      "why_it_matters": "The middle column of the daily pulse row is the most-looked-at real estate after the KPIs. Giving it up to a passive empty state, on a page whose purpose is 'what needs your attention today', is a missed nudge.",
+      "proposed_fix": "In the empty state, add a secondary-style 'Schedule appointment' button under the helper text that routes to the appointment creation flow (same target as 'View all'). Keep the icon and copy.",
+      "functionality_preserved": "OwnerAppointmentsWidget \u2014 no behavior change to the widget's data contract; only the empty-state slot gains a CTA that reuses the existing appointments route."
+    },
+    {
+      "id": "UX-8",
+      "surface": "DashboardHomePage",
+      "severity": "P2",
+      "title": "Money In vs. Out does not reconcile with the Outstanding Receivables KPI",
+      "what_is_wrong": "The 'Outstanding Receivables' KPI reads $963,104 / 41 open invoices. The 'Money In vs. Out' card below says 'You owe suppliers $125,561.41 more than customers owe you' \u2014 implying suppliers are owed ~$1.09M. Neither card states the supplier figure in-line, so the owner has to do the subtraction to validate the headline.",
+      "why_it_matters": "Two money widgets on the same screen showing different slices of the same AR/AP pair without cross-reference forces mental math and invites mistrust when numbers move.",
+      "proposed_fix": "In OwnerDebtPositionWidget, render an explicit two-line breakdown under the red banner: 'Customers owe you $963,104' and 'You owe suppliers $1,088,665', followed by the delta. Keep 'View Clients \u2192' as is.",
+      "functionality_preserved": "OwnerDebtPositionWidget \u2014 same AR/AP data sources and the 'View Clients' drill-through are retained; the fix only surfaces the two underlying totals already used in the delta calculation."
+    }
+  ],
+  "redesign_sketch": "Header row becomes: left \u2014 h1 'Owner Command Center' with muted subtitle 'Thursday, Apr 23 \u2014 here's what needs your attention today.'; right \u2014 'Live \u00b7 Updated 1:34 PM' chip plus a 'Customize briefs' button exposing the Smart Briefs toggles. Row 2: five-tile KPI strip on a 12-col grid (3/2/2/2/3 spans) with subtitles allowed to wrap to two lines and the (0,0) Cash Collected case collapsed to one muted line. Row 3 (daily pulse): 'Today at a Glance' | 'Appointments' | 'Cash Position', where the error boundary now renders a Retry + 'Open transactions' fallback, the Appointments empty state adds a 'Schedule appointment' secondary button, and the Cash Position panel hides the redundant 'Available After Bills' row when Cash on Hand is $0. Row 4 (money): OwnerDebtPositionWidget now leads with an explicit two-line breakdown (Customers owe $963,104 \u00b7 You owe suppliers $1,088,665) above the red banner, next to OwnerVendorsNeedPaymentWidget unchanged. Row 5: InventorySnapshotWidget + AgingInventoryWidget. Row 6: collapsed OwnerSkuStatusBrowserWidget. Every ComponentErrorBoundary fallback standardises on 'Retry \u00b7 Open [underlying surface] \u00b7 ref: <id>'."
+}

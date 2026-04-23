@@ -1,0 +1,93 @@
+{
+  "page": "AnalyticsPage",
+  "route": "/analytics",
+  "assessment": "The page has a clean header, a reasonable KPI grid, and the right tab scaffolding (Overview/Sales/Inventory/Clients) to support deeper drill-downs, but the content currently undermines its own premise. With 'Last 30 days' selected, Period Revenue reads $761.32 with '1 this period' order \u2014 yet the tile next to it shows Avg Order Value $63,840.06 and Total Revenue $36M, and the Revenue Trends table below renders six months of data (2025-04 through 2025-09). The user literally cannot tell which tiles obey the period selector and which are all-time, which is a trust-killer for an analytics surface. There is also no actual visualization on a page called Analytics \u2014 just a flat table \u2014 and only one of the eight KPI tiles carries a delta, leaving the rest without a baseline to judge against.",
+  "notable_strengths": [
+    "Tabbed structure (Overview/Sales/Inventory/Clients) pre-segments the analytics workload into recognizable buckets instead of one infinite scroll.",
+    "KPI tiles are readable: large numeric weight, consistent tile footprint, one-line subtext under each number.",
+    "Global period selector and Export live in the top-right where an operator expects them, adjacent to the H1."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "AnalyticsPage",
+      "severity": "P0",
+      "title": "KPI tiles mix period-scoped and all-time values with no visual distinction",
+      "what_is_wrong": "With 'Last 30 days' active, Period Revenue shows $761.32 (-99.7%) while Total Revenue shows $36,261,153.77, Outstanding Balance shows $31,281,565.32, Payments Received shows $4,979,588.45, and Avg Order Value shows $63,840.06. The subtexts ('Total from all orders' vs 'Average per order' vs 'Unpaid invoices') are inconsistent about scope, so the user cannot tell which tiles respect the selector and which ignore it.",
+      "why_it_matters": "An operator reading Avg Order Value of $63k next to Period Revenue of $761 will either distrust the page or make a decision on the wrong denominator. For an analytics surface, ambiguous scope is worse than missing data.",
+      "proposed_fix": "Segment the 8 tiles into two clearly labeled bands: a top row 'This period \u00b7 Last 30 days' (Period Revenue, Orders in Period, New Clients, Period Avg Order Value) and a second row 'All time' (Total Revenue, Outstanding Balance, Payments Received, Active Batches). Add a small muted pill 'Period' or 'All time' to each tile's header so scope is never ambiguous even when the user scrolls. Keep identical tile chrome and icons.",
+      "functionality_preserved": "Uses the same `analytics.getExtendedSummary` payload and the same MetricCard components \u2014 only the tile grouping, header pill, and subtext copy change; no KPI is removed."
+    },
+    {
+      "id": "UX-2",
+      "surface": "AnalyticsPage",
+      "severity": "P0",
+      "title": "Revenue Trends table ignores the selected period",
+      "what_is_wrong": "The period selector reads 'Last 30 days', but the Revenue Trends table lists 2025-04, 2025-05, 2025-06, 2025-07, 2025-08, 2025-09 \u2014 six monthly rows. The baseline states the page 'fetches granularity-aware trends (day for short periods, month otherwise)', so 30 days should render ~30 daily rows, not 6 monthly ones.",
+      "why_it_matters": "Either the selector is lying or the table is. Either way the user cannot reconcile the tiles (which claim a -99.7% period drop) with the trend (which shows $1\u20132M months through September). This contradicts the primary 'is my business healthy?' question the page exists to answer.",
+      "proposed_fix": "Bind RevenueTrendsTable to the same period state as the KPI band and honor the granularity rule from the baseline: \u226431 days \u2192 daily rows, 32\u2013180 days \u2192 weekly, >180 days \u2192 monthly. Label the Period column header with the granularity in use ('Day', 'Week', 'Month'). Add a one-line caption under 'Revenue Trends' reading 'Daily revenue over the last 30 days' that updates with the selector.",
+      "functionality_preserved": "Calls the same `analytics.getRevenueTrends` router that already supports granularity per the baseline; the fix just wires the selector through and surfaces the current granularity in the caption."
+    },
+    {
+      "id": "UX-3",
+      "surface": "AnalyticsPage",
+      "severity": "P1",
+      "title": "No chart on a page called Analytics",
+      "what_is_wrong": "The Revenue Trends section is a pure 4-column table (Period, Revenue, Orders, Avg Order). There is no line, bar, or sparkline anywhere on the page, including the KPI tiles.",
+      "why_it_matters": "An operator trying to spot direction ('are we trending up or down?') has to read six dollar figures and mentally sort them. This is the job charts do in one glance, and every peer tool (Ramp, Rippling Insights, Linear Insights) leads with one.",
+      "proposed_fix": "Add a Revenue Trends line chart above the existing table, sharing the same data source. Keep the table intact beneath it as the tabular drill-down. Add 30-day sparklines inside the Period Revenue, Total Orders, Active Clients, and Payments Received tiles using the same trend data.",
+      "functionality_preserved": "Uses the existing `analytics.getRevenueTrends` payload; RevenueTrendsTable stays exactly as documented in the baseline \u2014 the chart is additive."
+    },
+    {
+      "id": "UX-4",
+      "surface": "AnalyticsPage",
+      "severity": "P1",
+      "title": "Export button hides its four datasets and two formats behind a single label",
+      "what_is_wrong": "The top-right control reads 'Export' with a download icon but no caret or hint that it's a dropdown. The baseline specifies four distinct datasets (summary/revenue/clients/inventory) \u00d7 two formats (CSV/JSON).",
+      "why_it_matters": "Users either click expecting an instant download of 'something' or do not realize inventory/clients exports exist at all. Discovery of a documented capability drops to near zero.",
+      "proposed_fix": "Render as a split-menu button: primary action 'Export summary (CSV)' with a caret on the right that opens a menu grouped by dataset (Summary, Revenue, Clients, Inventory) with a CSV/JSON toggle at the top of the menu. Persist the last-used dataset+format as the default primary action via a per-user preference.",
+      "functionality_preserved": "Hits the same `analytics.exportData` router with the same four datasets and two formats from the baseline; only the control pattern and default selection change."
+    },
+    {
+      "id": "UX-5",
+      "surface": "AnalyticsPage",
+      "severity": "P1",
+      "title": "Only one tile shows a delta; the rest lack a comparison baseline",
+      "what_is_wrong": "Period Revenue shows '-99.7% vs previous period' in red. The other seven tiles \u2014 Total Revenue, Avg Order Value, Outstanding Balance, Total Orders, Active Clients, Batches, Payments Received \u2014 carry no comparison, only a static subtext.",
+      "why_it_matters": "A number without a baseline is noise. An operator cannot tell whether 568 orders, 47 active clients, or $31M outstanding is better or worse than last period, which is the entire reason the period selector exists.",
+      "proposed_fix": "On every period-scoped tile, render a delta row under the number in the same pattern as Period Revenue: arrow + %\u0394 + 'vs previous period', with green/red semantic color. For all-time tiles (Outstanding Balance, Total Revenue, Batches), replace the delta row with a muted 'as of today' timestamp so the absence is intentional rather than omitted.",
+      "functionality_preserved": "`analytics.getExtendedSummary` already returns the previous-period comparison used by Period Revenue; the fix fans the same pattern out to the other fields the router exposes, touching only MetricCard composition."
+    },
+    {
+      "id": "UX-6",
+      "surface": "AnalyticsPage",
+      "severity": "P2",
+      "title": "KPI tile icons are decorative and in one case wrong",
+      "what_is_wrong": "Outstanding Balance carries a percent-sign icon (%), which signals a rate, not a dollar balance. Total Revenue, Avg Order Value, and Payments Received all carry a generic '$' icon, giving no visual differentiation between the four money tiles.",
+      "why_it_matters": "At a glance, all four money tiles look identical and the percent icon actively miscommunicates what Outstanding Balance represents. Iconography should accelerate scanning, not confuse it.",
+      "proposed_fix": "Replace the percent on Outstanding Balance with a clock/hourglass 'aging' glyph. Differentiate money tiles by semantic glyph: Total Revenue \u2192 stacked-bars, Avg Order Value \u2192 receipt, Payments Received \u2192 check-circle, Outstanding Balance \u2192 clock. Keep glyph position and size identical so layout is unchanged.",
+      "functionality_preserved": "Pure icon swap inside MetricCard; no data, router, or layout change."
+    },
+    {
+      "id": "UX-7",
+      "surface": "AnalyticsPage",
+      "severity": "P2",
+      "title": "Tile subtext copy is inconsistent and often ambiguous",
+      "what_is_wrong": "Subtexts read 'Total from all orders', 'Average per order', 'Unpaid invoices', '1 this period', '6 new this period', 'Active batches in inventory', 'Total collected'. The grammar oscillates between scope descriptors, counts, and raw labels, and 'Average per order' never says over what window.",
+      "why_it_matters": "Inconsistent microcopy forces the reader to re-parse every tile instead of scanning. It also reinforces UX-1's scope confusion.",
+      "proposed_fix": "Standardize to the pattern '<Count/Scope> \u00b7 <Window>': 'All orders \u00b7 all time', 'Per order \u00b7 last 30 days', '1 order \u00b7 last 30 days', '6 new \u00b7 last 30 days', 'Active batches \u00b7 now', 'Collected \u00b7 all time'. Use a dot separator and Sentence case. Replace ambiguous '1 this period' with explicit 'orders' or 'new'.",
+      "functionality_preserved": "Copy-only change inside MetricCard instances; no router or data contract impact."
+    },
+    {
+      "id": "UX-8",
+      "surface": "AnalyticsPage",
+      "severity": "P3",
+      "title": "'Back to Dashboard' link is redundant with the active sidebar state",
+      "what_is_wrong": "The left sidebar already shows Analytics as the active nav item (green bar + highlight), and the top breadcrumb shows Home \u203a Analytics. Yet a third 'Back to Dashboard' link with left arrow sits above the H1.",
+      "why_it_matters": "It eats a full row of vertical real estate above the H1, pushes KPI tiles further below the fold, and creates three redundant ways to navigate back. Not harmful, but lazy layout on a data-dense page.",
+      "proposed_fix": "Remove the 'Back to Dashboard' row and rely on the existing breadcrumb (Home \u203a Analytics) for upward navigation. Lift the H1 and subtitle to the first row. The recovered vertical space lets the KPI band and the new trend chart sit above the fold.",
+      "functionality_preserved": "Navigation intent is preserved by the existing breadcrumb row visible in the DOM; no routes are removed."
+    }
+  ],
+  "redesign_sketch": "Top bar (unchanged): breadcrumb, search, notifications, user. Page header row: H1 'Analytics' + subtitle on the left; on the right a period selector ('Last 30 days \u25be') and a split-menu Export ('Export summary (CSV) \u25be'). Immediately below the header, the four tabs (Overview / Sales / Inventory / Clients) remain as the primary pivot. Overview body is then organized in three bands, each with a small uppercase eyebrow label: (1) 'This period \u00b7 Last 30 days' \u2014 4 KPI tiles (Period Revenue, Orders, New Clients, Avg Order Value) each with a sparkline and a green/red %\u0394 row. (2) 'All time' \u2014 4 KPI tiles (Total Revenue, Payments Received, Outstanding Balance, Active Batches) each with an 'as of today' timestamp in place of the delta. (3) 'Revenue trends \u00b7 Daily over last 30 days' \u2014 a line chart with Revenue (primary axis) and Orders (secondary), followed by the existing RevenueTrendsTable underneath acting as the numeric drill-down with a granularity column header that reflects the current binning. Below that, a 'Top clients \u00b7 Last 30 days' section housing TopClientsTable with client name, revenue, order count, and trend arrow. Iconography is semantic (bar-chart, receipt, check-circle, clock) and every tile carries both a scope pill ('Period' or 'All time') and a one-line subtext in the pattern '<scope> \u00b7 <window>'. The Sales / Inventory / Clients tabs reuse the same three-band pattern scoped to their domain."
+}

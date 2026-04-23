@@ -1,0 +1,43 @@
+{
+  "page": "BankTransactions",
+  "route": "/accounting?tab=bank-transactions",
+  "assessment": "The Bank Transactions tab is a spreadsheet-style ledger but in its empty state it reads as broken: three summary chips show $0.00/0 with no context, the filter bar is duplicated (type chips + status chips) without labels, and the table area is a blank card with no column headers so users can't tell what they're supposed to see. The keyboard-hint cluster floating at the bottom right is helpful but misplaced below the empty card, making it look like a footer rather than table help. Nothing tells a first-time user whether they need to connect a bank account, import a CSV, or manually add rows.",
+  "notable_strengths": [
+    "Two-axis filtering (type: All/Deposit/Withdrawal/Transfer/Fee and status: All/Reconciled/Unreconciled) is the right mental model for reconciliation work.",
+    "Summary chips for deposits, withdrawals, and unreconciled count are the correct KPIs to surface at the top.",
+    "Inline spreadsheet affordances (Add Row, Toggle Reconciled, Export CSV, click/double-click/ctrl+c legend) match the power-user reconciliation workflow."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "BankTransactions",
+      "severity": "P1",
+      "title": "Empty state hides the table schema and next action",
+      "what_is_wrong": "The card shows only a generic file icon and 'No transactions / No bank transactions match your filters' with no column headers visible and no CTA, even though '+ Add Row' and 'Export CSV' exist in the toolbar above. A new user cannot tell what fields a transaction has or how to populate the first row.",
+      "why_it_matters": "First-run and filtered-to-zero states both dead-end here; users don't know whether to add a row, change filters, or connect a bank account, slowing the first reconciliation session significantly.",
+      "proposed_fix": "Always render the column header row (Date, Type, Description, Reference, Amount, Reconciled) even when empty, and replace the generic icon with two primary actions inline: 'Add first transaction' (triggers the existing Add Row) and 'Clear filters' (only when a non-'All' chip is active). Keep the 'No transactions match your filters' copy as secondary text.",
+      "functionality_preserved": "Uses the existing '+ Add Row' control and the existing type/status filter chips \u2014 no new router or mutation; just renders headers and wires buttons to existing handlers."
+    },
+    {
+      "id": "UX-2",
+      "surface": "BankTransactions",
+      "severity": "P2",
+      "title": "Summary chips and filter chips are visually indistinguishable",
+      "what_is_wrong": "The header row has three pill badges ('$0.00 deposits', '$0.00 withdrawals', '0 unreconciled') immediately above two rows of filter pills ('All/Deposit/Withdrawal/Transfer/Fee' and 'All Status/Reconciled/Unreconciled'). All use the same rounded-pill shape with the same orange/green tinting, so users can't tell KPIs from clickable filters.",
+      "why_it_matters": "Users will try to click the KPI chips expecting them to filter (e.g., click 'unreconciled' to see unreconciled rows) and get nothing, or miss the real filter chips entirely. This is the core filtering UI for reconciliation.",
+      "proposed_fix": "Style KPIs as flat stat blocks with label-above-value typography (no pill background), and keep only filter controls as pills. Additionally, make the 'unreconciled' KPI actually trigger the Unreconciled status filter so the affordance matches expectation. Add 'Type:' and 'Status:' labels before each filter row.",
+      "functionality_preserved": "No change to the filter router call or to the reconciled-flag business rule; KPIs remain read-only derived values and filter pills retain current click behaviour."
+    },
+    {
+      "id": "UX-3",
+      "surface": "BankTransactions",
+      "severity": "P2",
+      "title": "Keyboard-shortcut legend floats detached below the empty card",
+      "what_is_wrong": "The 'Click select cell \u00b7 Double-click edit cell \u00b7 Ctrl+C copy \u00b7 Ctrl+V paste \u00b7 Ctrl+Z undo \u00b7 Escape cancel edit' block sits outside the table card, right-aligned below '0 selected | All Types | 0 total', so it reads as page chrome rather than help for the grid.",
+      "why_it_matters": "New users don't realize the table supports spreadsheet semantics until they've already struggled; experienced users can't quickly reference shortcuts because the legend is far from the grid it documents.",
+      "proposed_fix": "Move the shortcut legend into a collapsible 'Keyboard shortcuts' popover anchored to the table toolbar (next to Export CSV), collapsed by default with a '?' icon. Keep the '0 selected | All Types | 0 total' status strip pinned to the bottom of the table card.",
+      "functionality_preserved": "Preserves all documented grid interactions (click/double-click/copy/paste/undo/cancel) exactly \u2014 fix is purely presentational placement of the help text."
+    }
+  ],
+  "redesign_sketch": "Header: 'Bank Transactions' H2 left, 'Search transactions\u2026' and refresh right. Directly below, a 3-column KPI strip (flat, no pills): 'Deposits $0.00' / 'Withdrawals $0.00' / 'Unreconciled 0' \u2014 the last is clickable and toggles the Unreconciled status filter. Below KPIs, a single toolbar row: left side two labeled filter groups ('Type:' All\u00b7Deposit\u00b7Withdrawal\u00b7Transfer\u00b7Fee / 'Status:' All\u00b7Reconciled\u00b7Unreconciled); right side action cluster (+ Add Row, Toggle Reconciled, Export CSV, ? shortcuts). The table card always shows column headers (Date \u00b7 Type \u00b7 Description \u00b7 Reference \u00b7 Amount \u00b7 Reconciled) with a sticky header row. Empty state inside the grid: centered two-button prompt 'Add first transaction' (primary) + 'Clear filters' (secondary, only if filters active), with muted subcopy 'Rows support click-to-select, double-click to edit.' Footer strip inside the card: '0 selected \u00b7 All Types \u00b7 0 total' left-aligned."
+}

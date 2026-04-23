@@ -1,0 +1,93 @@
+{
+  "page": "NotificationsPage",
+  "route": "/notifications",
+  "assessment": "The page wires up the three required surfaces (system, alerts, todos) and exposes the core read/filter controls, but the System Notifications tab is doing almost nothing useful with its 118 items. The entire visible list is identical 'New Order Created' rows for Client #203, all timestamped '30 days ago', with no grouping, no priority, no client names, and no click-through to the underlying order. Worse, the word 'System Notifications' appears three times in the first 600px of viewport (tab, card title, list header) while the filter UI duplicates itself as both a dropdown and a chip row. The result is a hub that looks like an inbox but reads like a log file \u2014 you cannot triage from it.",
+  "notable_strengths": [
+    "Tabbed structure cleanly separates System / Alerts / Todos per the baseline and keeps the URL stable at /notifications.",
+    "Unread indicator dot on the right edge of each row plus a 'Mark all read' affordance gives a clear read-state model.",
+    "The 118 count badge on the list header gives honest scale of the backlog without hiding it behind a 9+."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "NotificationsPage",
+      "severity": "P1",
+      "title": "Triple-stacked 'System Notifications' heading wastes the entire fold",
+      "what_is_wrong": "Within ~400px of vertical space the user reads 'System Notifications' as a tab label, then as an H2 card title with subtext 'Inbox items, reminders, and updates that need review.', then again as a bell-iconed list header with the 118 badge. The page H1 'Notifications' plus the subtitle 'Review system notifications and alerts in one hub.' is a fourth, nearly-identical line.",
+      "why_it_matters": "The first screenful shows the user zero notifications \u2014 the actual list starts below the fold. On a 118-item backlog this adds a full scroll before any triage can begin and trains users to ignore the header region entirely.",
+      "proposed_fix": "Collapse to a single heading pattern: keep the page H1 'Notifications' + one-line subtitle, drop the redundant card-level 'System Notifications' title and its duplicate subtext, and let the active tab itself act as the section label. Move the 118 badge onto the tab (e.g. 'System Notifications \u00b7 118') so count stays visible without a second header.",
+      "functionality_preserved": "Preserves `InlineNotificationPanel` mount point and the `notifications.*` tRPC count query \u2014 only the chrome above the panel changes; the panel still renders the same list and mark-all-read action."
+    },
+    {
+      "id": "UX-2",
+      "surface": "NotificationsPage",
+      "severity": "P1",
+      "title": "Filter dropdown and filter chips duplicate each other",
+      "what_is_wrong": "Directly above the list there is a funnel-icon dropdown labelled 'All', and directly below it a chip row 'All / FYI / Needs Action'. Both controls filter the same list by notification category.",
+      "why_it_matters": "Users have to guess which control is authoritative, and if the two ever disagree (dropdown says 'FYI' while chip says 'All') the list becomes unexplainable. It also adds a full row of vertical space that pushes the first notification further down.",
+      "proposed_fix": "Keep the segmented chip row ('All / FYI / Needs Action') as the primary type filter \u2014 it is faster to scan and one click to switch. Repurpose the funnel dropdown for a secondary axis that the chips don't cover (date range: Today / 7d / 30d / All), or remove it if redundant. Right-align 'Mark all read' on the same row as the chips to reclaim vertical space.",
+      "functionality_preserved": "Both controls hit the same `notifications.list` filter params; consolidating UI into one control per filter axis keeps every existing query combination reachable."
+    },
+    {
+      "id": "UX-3",
+      "surface": "NotificationsPage",
+      "severity": "P1",
+      "title": "Every row is '30 days ago' \u2014 there is no time hierarchy across 118 items",
+      "what_is_wrong": "All four visible rows show the relative timestamp '30 days ago' with no absolute date, no grouping header (Today / Yesterday / This week / Older), and no sort indicator. With 118 items this pattern continues for dozens of screens.",
+      "why_it_matters": "A user cannot tell whether an item is fresh or stale, cannot scan to 'anything from today', and cannot bound their triage. For an ERP where 'New Order Created' drives fulfillment SLAs, losing timestamp precision is a workflow hazard.",
+      "proposed_fix": "Group the list under sticky section headers ('Today', 'Yesterday', 'Earlier this week', 'Older') and switch each row's timestamp to a tooltip-on-hover exact datetime plus a short relative form ('2h', '3d'). Right-align timestamps in a fixed column so the eye can scan them.",
+      "functionality_preserved": "Uses existing `createdAt` field already returned by `notifications.list`; grouping is a client-side render change inside `InlineNotificationPanel` and does not alter the router contract."
+    },
+    {
+      "id": "UX-4",
+      "surface": "NotificationsPage",
+      "severity": "P1",
+      "title": "Notification body is unclickable and hides the real identifiers",
+      "what_is_wrong": "Each row reads 'Order O-1774393232360 created for Client #203 - $129.72' but neither the order code nor the client is a link. The baseline names `normalizeNotificationLink` as the follow-through mechanism, yet nothing in the row signals affordance \u2014 no hover underline, no chevron, no 'Open order' action.",
+      "why_it_matters": "The whole point of a system notification is to jump to the thing. Forcing users to copy 'O-1774393232360' and paste it into global search turns a one-click task into four steps and wastes the `normalizeNotificationLink` infrastructure.",
+      "proposed_fix": "Make the entire row a clickable link routed through `normalizeNotificationLink`. Render 'O-1774393232360' as a monospace link-styled token and 'Client #203' as a secondary link to the customer record. Add a subtle right-edge chevron on hover to signal navigability. Keep 'Mark read' as a secondary action surfaced on row hover so click-to-navigate is the default.",
+      "functionality_preserved": "`normalizeNotificationLink` already exists in the baseline; this fix just wires the row onClick to it. 'Mark read' button is preserved as a hover action, not removed."
+    },
+    {
+      "id": "UX-5",
+      "surface": "NotificationsPage",
+      "severity": "P2",
+      "title": "'Client #203' tells the user nothing",
+      "what_is_wrong": "Every visible notification references the customer as 'Client #203' \u2014 an internal numeric ID rather than the company name.",
+      "why_it_matters": "Sales ops staff know customers by brand name, not by PK. They cannot recognize who an order is for, cannot prioritize (is this the $2M VIP or a new lead?), and cannot scan the list for a specific customer.",
+      "proposed_fix": "Replace 'Client #203' with the customer display name pulled from the same join the orders page already uses; keep the numeric ID available on hover/tooltip for support debugging. If the payload does not currently include name, add `customer.name` to the `notifications.list` return shape.",
+      "functionality_preserved": "Enriches the existing `notifications.*` payload without removing the numeric ID; the underlying notification record and routing behaviour stay intact."
+    },
+    {
+      "id": "UX-6",
+      "surface": "NotificationsPage",
+      "severity": "P2",
+      "title": "No bulk selection on a 118-item backlog",
+      "what_is_wrong": "The only bulk action is 'Mark all read' (top right). There is no per-row checkbox and no way to mark a subset read \u2014 e.g. all 'FYI' order-created notices from last month.",
+      "why_it_matters": "'Mark all read' is destructive-to-attention: it zeros unread state including items the user actually wanted to act on. Without a middle ground, users either let the badge rot at 9+ or blow everything away.",
+      "proposed_fix": "Add a left-edge checkbox per row plus a 'Select all in view' checkbox in the header row. When \u22651 is selected, reveal a sticky action bar with 'Mark read (N)' and 'Dismiss (N)'. Keep the existing 'Mark all read' button unchanged as the nuclear option.",
+      "functionality_preserved": "Adds a new multi-select mutation call against the same `notifications.markRead` router (batched); the single-row 'Mark read' buttons listed in the button inventory remain."
+    },
+    {
+      "id": "UX-7",
+      "surface": "NotificationsPage",
+      "severity": "P2",
+      "title": "Monotonous icon + type treatment makes priority invisible",
+      "what_is_wrong": "All four visible rows use the same amber circle-info icon and the same title color, despite the filter system distinguishing 'FYI' from 'Needs Action'. There is no way to scan down the list and find the 'Needs Action' items.",
+      "why_it_matters": "The chip filter exists specifically because FYI vs Needs Action are different workflows, but the list rendering throws that distinction away. Users must filter to see priority \u2014 they can't triage a mixed list.",
+      "proposed_fix": "Assign a distinct leading icon + accent color per notification category: FYI (neutral info), Needs Action (amber/red with small badge 'Action'), Success/Completed (green check). Keep row layout identical; only the icon token and an inline category pill change.",
+      "functionality_preserved": "Uses the `category`/`type` field already driving the chip filter; no router or data model change."
+    },
+    {
+      "id": "UX-8",
+      "surface": "NotificationsPage",
+      "severity": "P3",
+      "title": "Floating action button in bottom-right is unlabelled and unexplained",
+      "what_is_wrong": "A dark circular FAB sits fixed in the bottom-right of the viewport with no tooltip, no label, and no obvious relationship to the notifications list (it appears global across the app).",
+      "why_it_matters": "On a triage page where the user's hands are on 'Mark read' buttons in the lower-right column, an unlabelled global FAB is a mis-click hazard and adds visual noise.",
+      "proposed_fix": "Add a hover tooltip naming the FAB's actual function (e.g. 'Quick add task' or whatever it invokes), and shift its position slightly so it does not overlap the right-edge unread dots / 'Mark read' column on this page.",
+      "functionality_preserved": "Keeps the FAB and its target modal intact; only tooltip and offset change."
+    }
+  ],
+  "redesign_sketch": "Header: single H1 'Notifications' with one-line subtitle. Directly below, a tab row 'System Notifications \u00b7 118 | Alerts \u00b7 N | Todo Lists \u00b7 N' \u2014 counts live on the tabs, so the redundant card title and bell-icon subheader are gone. Under the active tab: a single toolbar row containing [All | FYI | Needs Action] chip group on the left, a date-range dropdown (Today / 7d / 30d / All) in the middle, and 'Mark all read' right-aligned. Below the toolbar, the list is grouped under sticky date headers ('Today', 'Yesterday', 'Earlier this week', 'Older'). Each row: category icon (color-coded FYI vs Needs Action) + title ('New Order Created') + secondary line with linked order code ('O-1774393232360'), linked customer name ('Acme Hemp Co'), and amount; right side shows a monospace relative timestamp ('3d') with exact datetime on hover, plus unread dot. Entire row is clickable via normalizeNotificationLink; on hover a 'Mark read' ghost button and a right chevron appear. Left-edge checkbox enables multi-select; when \u22651 selected a sticky bottom bar offers 'Mark read (N)' / 'Dismiss (N)'. Empty, loading, error states continue to flow through EmptyState / LoadingState / ErrorState as the baseline specifies."
+}

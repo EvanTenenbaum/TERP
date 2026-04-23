@@ -1,0 +1,43 @@
+{
+  "page": "ClientLedgerPage",
+  "route": "/client-ledger",
+  "assessment": "The embedded InvoicesSurface gives this page real substance \u2014 AR totals, status filters, bulk actions, and a dense invoice grid all land above the fold. But three things undermine it: the Status column is literally rendering raw HTML (`<span cla...`) instead of a badge, the page has no H1 so the browsing context reduces to the tiny 'Client Ledger' breadcrumb, and the Amount Due / Paid % columns bury the only signal that matters on a ledger (who still owes money) behind visually identical $0.00 / 100% rows. For a page whose entire job is surfacing receivables, the hierarchy treats fully-paid and delinquent invoices with equal weight.",
+  "notable_strengths": [
+    "Header KPIs ($963,104 AR, 0 overdue, 520 total) and the AR Aging shortcut give immediate financial context.",
+    "Status-filter chips (All/Draft/Sent/Viewed/Partial/Paid/Overdue/Void) plus contextual bulk actions (Mark Sent, Record Payment, Void, PDF, Print) keep core AR workflows one click away.",
+    "Keyboard/selection legend (Click, Shift+Click, Ctrl+Click, Ctrl+C, Escape) is a power-user affordance worth keeping."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "ClientLedgerPage",
+      "severity": "P0",
+      "title": "Status column renders raw HTML instead of a badge",
+      "what_is_wrong": "Every row in the STATUS column shows the literal string `<span cla\u2026` (truncated markup) rather than a rendered Paid/Partial/Sent pill. The column is unreadable for all 10 visible invoices.",
+      "why_it_matters": "Status is the primary signal on a ledger \u2014 users cannot distinguish Paid from Partial from Overdue at a glance, which forces them to cross-reference Amount Due and Paid % on every row. This is a functional break, not cosmetic.",
+      "proposed_fix": "Render the status cell through the existing badge component (the same one powering the filter chips above) instead of injecting an HTML string into the cell's text node. Map each invoice status to its established color token (Paid=green, Partial=amber, Overdue=red, Sent/Viewed=neutral, Draft=grey, Void=strikethrough).",
+      "functionality_preserved": "Leaves the InvoicesSurface grid schema and the underlying invoice status field untouched; only the cell renderer changes from text to badge component."
+    },
+    {
+      "id": "UX-2",
+      "surface": "ClientLedgerPage",
+      "severity": "P1",
+      "title": "Delinquent invoices are not visually prioritized",
+      "what_is_wrong": "INV-000116 (Mendocino Naturals, $5,885.76 due, 69% paid) and INV-000111 (Chula Vista, 102% paid \u2014 a likely overpayment) sit in identical typography and weight as nine fully-paid rows. The default sort appears to be invoice number descending, so the one row that actually needs action is buried mid-table.",
+      "why_it_matters": "The purpose of a client ledger is exception handling \u2014 finding what's unpaid or mis-paid. A default that treats $0 due and $5,885 due equivalently makes the header's '$963,104 AR' number unactionable from this view.",
+      "proposed_fix": "Default-sort by Amount Due desc (or add a secondary sort that floats non-zero Amount Due to the top), bold any non-zero Amount Due value, and color the 102% Paid % cell amber to flag overpayment. Keep the existing column sort affordances so users can re-sort by Invoice # or Due Date.",
+      "functionality_preserved": "InvoicesSurface column definitions, filter chips, and the tRPC invoice list query remain intact; this is a default-sort and conditional-formatting change inside the existing grid."
+    },
+    {
+      "id": "UX-3",
+      "surface": "ClientLedgerPage",
+      "severity": "P2",
+      "title": "No page heading; 'Invoices' subtitle duplicates the table caption",
+      "what_is_wrong": "The page has no H1 (Playwright confirms `H1: []`). Identity is carried only by the breadcrumb 'Client Ledger', while the card header reads 'Invoices' and the table caption below also reads 'Invoices \u00b7 50 visible \u00b7 520 total'. A user landing here from the command palette sees two 'Invoices' labels and no explicit 'Client Ledger' title in the content area.",
+      "why_it_matters": "Loss of context on a route that specifically exists to be the ledger surface; also hurts scannability when multiple tabs are open and screen-reader users navigating by heading.",
+      "proposed_fix": "Add an H1 'Client Ledger' above the KPI strip, demote the card header to 'Open Invoices' (or remove it, since the grid caption already labels the table), and keep the KPI chips ($963,104 AR / 0 overdue / 520 total) immediately under the H1.",
+      "functionality_preserved": "Per baseline, ClientLedgerPage renders InvoicesSurface \u2014 no surface is removed; this only adds a heading wrapper and relabels the duplicated inner card title."
+    }
+  ],
+  "redesign_sketch": "Top of content area: H1 'Client Ledger' with a right-aligned 'Search invoice # or client' input. Directly below the H1, a single row of three KPI chips \u2014 AR Outstanding $963,104, Overdue 0, Total Invoices 520 \u2014 with 'AR Aging' as a secondary link button on the right. Status filter chips (All/Draft/Sent/Viewed/Partial/Paid/Overdue/Void) as a segmented control; bulk-action bar (Create Invoice primary; Mark Sent, Record Payment, Void, PDF, Print secondary) pinned to the right of the chip row. Grid: Invoice # \u00b7 Client \u00b7 Invoice Date \u00b7 Due Date \u00b7 Total \u00b7 Amount Due (bold when >0) \u00b7 Paid % \u00b7 Status (rendered badge). Default sort: Amount Due desc, then Due Date asc. Row microcopy: overpaid rows show a small amber 'Overpaid' tag next to Paid %. Footer legend and selection counter remain as-is."
+}

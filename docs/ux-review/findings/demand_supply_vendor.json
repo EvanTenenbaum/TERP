@@ -1,0 +1,43 @@
+{
+  "page": "VendorSupplyPage",
+  "route": "/demand-supply?tab=vendor-supply",
+  "assessment": "The page is functional but wastes its most valuable real estate. Four oversized KPI cards dominate the viewport before the user sees a single supply item \u2014 and three of those KPIs (Reserved=1, Total=15, Expiring=0) are low-signal for a daily workflow that is fundamentally about matching offered inventory to clients. The supply row itself is information-sparse despite being ~130px tall: the supplier is rendered as '#24' with no name, and the primary action 'Find Matching Clients' is a low-contrast outlined button competing with nothing. The redundant top block ('Demand & Supply' + tab 'Supplier Supply' + H1 'Supplier Supply' + 'Jump to Supplier Supply' button) is a hierarchy smell \u2014 users already ARE on supplier supply.",
+  "notable_strengths": [
+    "Status pill (Available/Expired) on each row makes lifecycle state scannable at a glance.",
+    "Filter bar (search + status + category + sort + direction) is well-organized and sits directly above the list where expected.",
+    "'Find Matching Clients' per-row action correctly surfaces the matchmaking primitive at the supply-item level."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "VendorSupplyPage",
+      "severity": "P1",
+      "title": "KPI strip pushes the actual inventory list below the fold",
+      "what_is_wrong": "Four full-width stat cards (Available Items 12, Reserved 1, Total 15, Expiring Soon 0) consume roughly a third of the initial viewport. Only the first supply row (Blue Dream) is partially visible; the second (Gelato) is clipped. Three of the four cards show trivial numbers (1, 15, 0) that do not drive any action.",
+      "why_it_matters": "The core job on this page is triaging supplier offers and firing 'Find Matching Clients'. Burying the list forces an immediate scroll on every visit and hides how many rows exist.",
+      "proposed_fix": "Collapse the four cards into a single compact summary bar above the filters (e.g., '12 available \u00b7 1 reserved \u00b7 0 expiring \u226430d \u00b7 15 total') at ~32px height, and hoist the list up. Keep each metric clickable as a filter shortcut.",
+      "functionality_preserved": "All four metrics remain visible and remain derived from the same `vendorSupply.*` aggregate; nothing is removed, only re-laid-out into one row."
+    },
+    {
+      "id": "UX-2",
+      "surface": "VendorSupplyPage",
+      "severity": "P1",
+      "title": "Supplier shown as '#24' instead of a name",
+      "what_is_wrong": "The Blue Dream row's supplier line reads 'Supplier: #24 \u2022 Flower \u2022 Grade B'. A numeric ID is meaningless to a sales rep deciding whether to pitch this lot to a client.",
+      "why_it_matters": "Reps cannot recognize the source at a glance, so every row requires a click-through to identify the vendor \u2014 directly slowing the matchmaking loop this page exists to serve.",
+      "proposed_fix": "Render the vendor's display name as the primary label ('Green Valley Farms #24') sourced from the `vendors` relation; keep the numeric code as a secondary muted suffix. If the name is truly unknown, show 'Unnamed vendor #24' rather than the bare ID.",
+      "functionality_preserved": "Uses the existing `vendors.*` / `clients.*` tRPC join already declared in baseline; the vendor ID remains addressable, only the label changes."
+    },
+    {
+      "id": "UX-3",
+      "surface": "VendorSupplyPage",
+      "severity": "P2",
+      "title": "Redundant 'Jump to Supplier Supply' button on the Supplier Supply tab",
+      "what_is_wrong": "While the Supplier Supply tab is active, the header still renders a 'Jump to Supplier Supply' button next to 'Open Matchmaking'. It navigates to where the user already is.",
+      "why_it_matters": "Dead controls erode trust in the header and steal attention from 'Add Supply Item', which is the real primary action.",
+      "proposed_fix": "Hide 'Jump to Supplier Supply' when `tab=vendor-supply` is active (keep it on other tabs where it's a useful shortcut). Leave 'Open Matchmaking' and promote 'Add Supply Item' as the sole primary CTA in the page header row.",
+      "functionality_preserved": "The cross-tab jump shortcut is retained on Matchmaking/Client Needs/Interest List tabs; only the self-referential case is suppressed."
+    }
+  ],
+  "redesign_sketch": "Header: breadcrumb + single H1 'Supplier Supply' with subcopy, right-aligned primary 'Add Supply Item' and secondary 'Open Matchmaking' / 'Configure Display'. Below header, a 32px summary strip: '12 Available \u00b7 1 Reserved \u00b7 0 Expiring \u226430d \u00b7 15 Total' as clickable filter chips. Then the existing filter bar unchanged. Then a denser list where each row is two lines: line 1 = Strain (bold) + status pill + vendor display name; line 2 = a 4-column grid (Qty | Price | Avail Until | Added) with 'Find Matching Clients' right-aligned as a filled primary button and a kebab for edit/delete. Remove the self-referential 'Jump to Supplier Supply' button when already on this tab."
+}

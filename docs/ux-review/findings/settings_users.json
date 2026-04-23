@@ -1,0 +1,43 @@
+{
+  "page": "Settings.users",
+  "route": "/settings?tab=users",
+  "assessment": "This is a bare-bones admin form page masquerading as a user management surface. The tab hierarchy works (Access Control \u2192 Users sub-tab), but the primary affordance a Settings.users page needs \u2014 the list of existing users \u2014 is pushed below the fold behind two stacked creation/reset forms. An admin landing here to audit who has access, change a role, or deactivate an offboarded employee has to scroll past 'Create New User' and 'Reset Password' cards to even see the roster. The forms themselves are serviceable (clear labels, helper text on length, required markers) but the page reads like a form-first admin tool from 2014 rather than a list-first management surface.",
+  "notable_strengths": [
+    "Two-level tab structure (top tabs for Settings sections, inner tabs for Users/User Roles/Roles/Permissions) correctly mirrors the SETTINGS_GROUPS / Access Control taxonomy.",
+    "Create User form has inline constraint hints ('Minimum 3 characters', 'Minimum 8 characters') and required-field asterisks, so validation expectations are visible before submit.",
+    "Breadcrumb 'Back to Dashboard' plus persistent top-tab row gives a clear escape hatch from deep settings navigation."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "Settings.users",
+      "severity": "P1",
+      "title": "User roster is buried below two forms",
+      "what_is_wrong": "The initial viewport shows 'Create New User' and the top of 'Reset Password', with the actual user list (implied by the 'All Roles' filter and '10 / page' paginator in the DOM) rendered further down the page.",
+      "why_it_matters": "The dominant task on a Users settings page is auditing or editing existing users, not creating one. Admins must scroll past two forms every visit to find the list, and newcomers may not realize a list exists at all.",
+      "proposed_fix": "Flip the page order: render the user table (with the 'All Roles' filter and '10 / page' paginator) immediately below the inner tabs, and collapse 'Create New User' into a top-right 'New User' button that opens a drawer/modal containing the existing fields. Move 'Reset Password' into a per-row row-action (kebab menu \u2192 Reset password) that pre-fills the username.",
+      "functionality_preserved": "`UserManagement` component still owns Create User and Reset Password; fields, validation (min 3 / min 8 chars), and the Create User tRPC call are untouched \u2014 only their entry points move from always-visible cards to a button-triggered drawer and a row action."
+    },
+    {
+      "id": "UX-2",
+      "surface": "Settings.users",
+      "severity": "P2",
+      "title": "Inner tab group is visually indistinguishable from the outer one",
+      "what_is_wrong": "The four outer tabs (Access Control, Master Data, Organization, Developer) and the four inner Access Control tabs (Users, User Roles, Roles, Permissions) use similar chip styling and sit within ~150px of each other, with no grouping label on the inner row.",
+      "why_it_matters": "Users can't tell at a glance which level of navigation they're at, and the duplication of 'Users / User Roles / Roles / Permissions' inside a section called 'Access Control' invites mis-clicks when someone meant to jump to Master Data.",
+      "proposed_fix": "Demote the inner row to a segmented control pinned to the left of the 'Access Control' card header, and tighten its type (smaller, medium weight). Keep the outer tabs as the primary navigation band. Add a thin divider and a 'Section: Access Control' eyebrow above the inner control so the nesting is explicit.",
+      "functionality_preserved": "Both tab groups still drive the same `SETTINGS_SECTIONS` routing with `?tab=users`; only visual weight and placement change, and all four inner sub-sections (`UserManagement`, `UserRoleManagement`, `RoleManagement`, `PermissionAssignment`) remain reachable."
+    },
+    {
+      "id": "UX-3",
+      "surface": "Settings.users",
+      "severity": "P2",
+      "title": "Create User form wastes a full row on three short fields",
+      "what_is_wrong": "Username, Password, and Display Name each take ~1/3 of the content width (~400px each) despite being short inputs, pushing the Create User button and everything below further down.",
+      "why_it_matters": "Horizontal real estate is over-allocated while vertical space (the scarcer axis, given the buried table) is wasted, amplifying finding UX-1.",
+      "proposed_fix": "Constrain the form to a max-width of ~640px, stack the three fields in two rows (Username + Display Name on row 1, Password on row 2 with a show/hide toggle), and right-align the Create User button. When moved into a drawer per UX-1, this layout fits natively.",
+      "functionality_preserved": "Same three fields bound to the same Create User mutation; helper text ('Minimum 3 characters', 'Minimum 8 characters') and required markers are kept verbatim."
+    }
+  ],
+  "redesign_sketch": "Header unchanged: 'System Settings' H1 + subtitle + outer tab row (Access Control / Master Data / Organization / Developer). Inside the Access Control card, replace the current chip row with a left-aligned segmented control labeled with an 'Access Control' eyebrow: [Users \u00b7 User Roles \u00b7 Roles \u00b7 Permissions]. Body becomes list-first: a toolbar row with a search input, the existing 'All Roles' filter, a '10 / page' paginator on the right, and a primary 'New User' button that opens a right-side drawer containing the current Create New User form (Username, Display Name, Password with show/hide, min-char hints, Create User CTA). Below the toolbar, a user table with columns Username \u00b7 Display Name \u00b7 Role \u00b7 Last Login \u00b7 Status \u00b7 actions (kebab \u2192 Reset password [pre-filled], Edit roles, Deactivate). Reset Password is no longer a separate top-level card; it lives in the row kebab and reuses the same form fields inside a small modal. Microcopy: empty state 'No users match these filters \u2014 clear filters or create a new user.' Drawer heading 'Create user'; reset modal heading 'Reset password for {username}'."
+}

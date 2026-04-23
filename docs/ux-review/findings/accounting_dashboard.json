@@ -1,0 +1,93 @@
+{
+  "page": "AccountingDashboard",
+  "route": "/accounting?tab=dashboard",
+  "assessment": "The page opens with a clear narrative \u2014 three cash KPIs, then a reconciliation block, then an alert \u2014 and the numbers are large, readable, and color-coded sensibly. But the dashboard is asymmetric in action: it gives only one primary CTA (Pay Supplier) while $963K / 371 overdue invoices sits to the left with no equivalent receivables action. The sidebar shows 'SALES QUICK ACTIONS' even though the user is inside Finance, so the quick-action rail is wasted space. Several tiles (Queue Pressure 15, Last Reconciled Never, the duplicate 'items need attention' banner) describe state but give no way to act on it, so the above-the-fold area reads more like a status poster than a control center. Tightening CTAs onto the KPI cards, contextualising the sidebar, and reworking the two meta-metrics would recover most of the control-center promise the subhead already makes.",
+  "notable_strengths": [
+    "Opinionated subhead ('Start with the cash-moving work\u2026') frames the dashboard's intent instead of listing widgets.",
+    "Three-KPI top row (Receivables / Payables / Queue Pressure) with semantic green/red amounts gives an at-a-glance cash posture.",
+    "Reconciliation Summary cleanly separates outstanding vs. unrecorded vs. last-reconciled, which is the right mental model for AR/AP close."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "AccountingDashboard",
+      "severity": "P1",
+      "title": "Sidebar shows 'Sales Quick Actions' while user is in Accounting",
+      "what_is_wrong": "The left rail's pinned block is labelled 'SALES QUICK ACTIONS' with New Order / Active Orders / Sales Catalogue / Recent Customers / Today's Shipments, and the FINANCE group is collapsed \u2014 yet the user is deep inside /accounting?tab=dashboard.",
+      "why_it_matters": "An accountant landing here has to expand FINANCE manually every session to reach Invoices/Bills/Payments siblings, and the five visible shortcuts are irrelevant to their task, wasting the most valuable real estate on the screen.",
+      "proposed_fix": "Make the quick-actions block context-aware: when the active route starts with /accounting, swap to a 'FINANCE QUICK ACTIONS' set (New Invoice, Record Payment, New Bill, Pay Supplier, Reconcile) and auto-expand the FINANCE nav group. Keep the Sales block as the default for /sales/* routes.",
+      "functionality_preserved": "Only the contents of the Quick Actions panel change; the SELL/BUY/OPERATIONS/RELATIONSHIPS/FINANCE/ADMIN nav tree and every link it exposes remain intact, so navigation coverage is unchanged."
+    },
+    {
+      "id": "UX-2",
+      "surface": "AccountingDashboard",
+      "severity": "P1",
+      "title": "Only Payables has a primary action; Receivables is a dead stat",
+      "what_is_wrong": "The header exposes a single red 'Pay Supplier' button. The Receivables card shows $963,103.66 with '371 overdue invoices ready for follow-up' but no button on the card and no matching AR primary action in the header.",
+      "why_it_matters": "371 overdue invoices is the bigger cash lever than 27 overdue bills, yet the UI nudges the user toward paying vendors first. Collections work requires two extra clicks (tab \u2192 filter) while disbursements are one click \u2014 exactly backwards for cash flow.",
+      "proposed_fix": "Give each KPI card its own inline action: 'Follow up (371)' on Receivables, 'Pay bills (27)' on Payables, 'Review queue' on Queue Pressure. Keep 'Pay Supplier' in the header but pair it with a secondary 'Record Payment' so both sides of the ledger have an entry point above the fold.",
+      "functionality_preserved": "The baseline's `PayVendorModal` keeps its current launch point; the new buttons route to the existing Invoices/Bills tabs with pre-filtered state, and `payments.*` / `vendorPayables.*` routers are unchanged."
+    },
+    {
+      "id": "UX-3",
+      "surface": "AccountingDashboard",
+      "severity": "P1",
+      "title": "'Queue Pressure: 15' is a meta-stat, not a finance signal",
+      "what_is_wrong": "The third KPI reads 'QUEUE PRESSURE / 15 / Recent invoices, bills, and payments currently visible in the dashboard.' It measures how full the dashboard is, not how pressured the business is.",
+      "why_it_matters": "One third of prime above-the-fold space is spent on a self-referential count. Users who need to triage cash have no idea whether 15 is high, low, trending up, or tied to a deadline \u2014 the card offers no threshold, no aging, no comparison.",
+      "proposed_fix": "Replace the label/body copy (keep the card position and data source) with an aging-based metric: '\u226530 days past due \u2014 $X across Y documents' with a sparkline of the last 8 weeks, or at minimum show the 25-overdue auto-alert threshold from the baseline so the number has meaning. Add an 'Open Overdue Queue' button (already exists in the button list) directly on this card.",
+      "functionality_preserved": "No data source is removed; the card still renders from `accounting.*` plus the same invoice/bill/payment counts, and the baseline's 25-overdue auto-alert rule is surfaced rather than hidden."
+    },
+    {
+      "id": "UX-4",
+      "surface": "AccountingDashboard",
+      "severity": "P2",
+      "title": "Reconciliation 'Never' state is a dead-end",
+      "what_is_wrong": "The 'LAST RECONCILED' tile shows a clock icon, the word 'Never', and subtext 'Most recent reconciliation' \u2014 but no button to start one, even though this is the single most important action implied by the surrounding 'Reconciliation State' section.",
+      "why_it_matters": "For a brand-new tenant (or any tenant that has genuinely never reconciled), the correct next action is 'Reconcile now'. The dashboard tells them the bad news but refuses to offer the cure, forcing them to discover Bank Transactions or Bank Accounts tabs themselves.",
+      "proposed_fix": "When `lastReconciledAt == null`, render the tile with a 'Start reconciliation' primary button and the copy 'No reconciliation on record \u2014 start with your bank accounts.' When a date exists, show the date plus a 'Reconcile again' secondary button.",
+      "functionality_preserved": "The `ReconciliationSummary` component keeps its existing data shape and tRPC calls; the fix adds a button that deep-links into Bank Accounts \u2192 reconcile flow that already exists."
+    },
+    {
+      "id": "UX-5",
+      "surface": "AccountingDashboard",
+      "severity": "P2",
+      "title": "'4 items need attention' banner duplicates the Unrecorded Payments card",
+      "what_is_wrong": "The yellow 'UNRECORDED PAYMENTS: 4 / AR: 2 ($83,543.00) / AP: 2 ($5,800.00)' card already conveys the full breakdown. Immediately below it, a separate warning box repeats '4 items need attention / 2 AR payments without matching invoices / 2 AP payments without matching bills.'",
+      "why_it_matters": "Two stacked panels show the same 4 / 2 / 2 numbers with slightly different wording, which burns vertical space, implies two different problems to a hurried reader, and pushes the real overdue lists further below the fold.",
+      "proposed_fix": "Merge the warning copy into the card itself: keep the yellow tile, and directly under the AR/AP split add two inline action links \u2014 'Match 2 AR payments \u2192' and 'Match 2 AP payments \u2192'. Delete the separate banner panel.",
+      "functionality_preserved": "The underlying `ReconciliationSummary` data and its AR/AP split remain; the merged card still routes into the same match-payments flow, just via one panel instead of two."
+    },
+    {
+      "id": "UX-6",
+      "surface": "AccountingDashboard",
+      "severity": "P2",
+      "title": "KPI cards are not clickable and have no data freshness stamp",
+      "what_is_wrong": "The Receivables, Payables and Queue Pressure cards look like tiles but have no hover affordance, no chevron, and no 'as of HH:MM' timestamp. The only way to drill in is to move up to the tab bar and pick 'Invoices' or 'Bills'.",
+      "why_it_matters": "Accountants will habitually click a big number to see its contents. When nothing happens they assume the UI is broken, and without an as-of time they can't tell if the $963K figure reflects the payment they just posted.",
+      "proposed_fix": "Make the entire KPI card a link target to the corresponding tab with the overdue filter pre-applied, add a right-aligned chevron, and show 'Updated 2 min ago \u00b7 Refresh' in the card footer driven by the `accounting.*` query's `dataUpdatedAt`.",
+      "functionality_preserved": "The cards still consume the same `invoices.*` / `bills.*` / `accounting.*` data; the fix only adds an href and a timestamp reading from the existing query metadata."
+    },
+    {
+      "id": "UX-7",
+      "surface": "AccountingDashboard",
+      "severity": "P2",
+      "title": "Tab row is 10 items wide with no grouping and competes with the in-page H1",
+      "what_is_wrong": "The tabs 'Dashboard \u00b7 Invoices \u00b7 Bills \u00b7 Payments \u00b7 General Ledger \u00b7 Chart of Accounts \u00b7 Expenses \u00b7 Bank Accounts \u00b7 Bank Transactions \u00b7 Fiscal Periods' sit in one undifferentiated row directly under the page title, with identical weight and no separator.",
+      "why_it_matters": "The first four (Dashboard/Invoices/Bills/Payments) are daily-use; the last three (Bank Accounts/Bank Transactions/Fiscal Periods) are weekly/monthly. Users scan the full row each visit because nothing signals frequency, and the density swallows the 'Accounting Dashboard' H1 immediately below.",
+      "proposed_fix": "Split the tabs into two visual groups with a vertical divider: 'Daily: Dashboard \u00b7 Invoices \u00b7 Bills \u00b7 Payments' and 'Ledger & Close: General Ledger \u00b7 Chart of Accounts \u00b7 Expenses \u00b7 Bank Accounts \u00b7 Bank Transactions \u00b7 Fiscal Periods'. Reduce the tab font-size one step so the H1 dominates.",
+      "functionality_preserved": "All ten tabs remain present and wired to the same routes; only visual grouping and type-scale change."
+    },
+    {
+      "id": "UX-8",
+      "surface": "AccountingDashboard",
+      "severity": "P3",
+      "title": "'Finance control center' and 'Reconciliation State' pills look interactive but aren't",
+      "what_is_wrong": "Two small pill-shaped badges ('Finance control center' above the H1, 'Reconciliation State' above the summary) render in the same rounded-rectangle style as filter chips used elsewhere in the app but do nothing on hover/click.",
+      "why_it_matters": "They consume visual weight and train users to ignore pill-shaped elements, which bleeds into real filter chips on the Invoices/Bills tabs.",
+      "proposed_fix": "Demote them to plain eyebrow text (uppercase, letter-spaced, no border) so they read as section labels, not affordances. Keep the strings identical.",
+      "functionality_preserved": "No logic attaches to these elements today, so removing the pill chrome touches presentation only."
+    }
+  ],
+  "redesign_sketch": "Header row: breadcrumb + H1 'Accounting Dashboard' with an as-of timestamp on the right and two primary buttons \u2014 'Record Payment' (green) and 'Pay Supplier' (red). Eyebrow text 'Finance control center' sits above the H1 as plain uppercase, not a pill. Tab bar below is visually split into 'Daily' (Dashboard/Invoices/Bills/Payments) and 'Ledger & Close' (General Ledger/Chart of Accounts/Expenses/Bank Accounts/Bank Transactions/Fiscal Periods). Row 1: three equal KPI cards, each fully clickable with a chevron and footer 'Updated Xm ago'. Receivables card shows $963,103.66, 371 overdue, inline button 'Follow up (371)'. Payables shows $1,088,665.07, 27 overdue, inline 'Pay bills (27)'. The third card replaces 'Queue Pressure' with 'Aging \u226530 days' \u2014 $ amount, doc count, sparkline, 'Open Overdue Queue' button. Row 2: Reconciliation block with three tiles \u2014 Outstanding Invoices (41, $963K), Unrecorded Payments (4, with inline 'Match 2 AR \u2192' and 'Match 2 AP \u2192' links replacing the duplicate banner), Last Reconciled ('Never \u2014 Start reconciliation' primary button, or the date with 'Reconcile again'). Row 3 (below fold): the existing Overdue Invoices (371) and Overdue Bills (27) lists side by side, each with its own 'Review' button. Left rail swaps to FINANCE QUICK ACTIONS (New Invoice, Record Payment, New Bill, Pay Supplier, Reconcile) whenever the route starts with /accounting, and the FINANCE nav group is auto-expanded."
+}
