@@ -481,26 +481,49 @@ export function useCatalogueDraft({
   const generateShareLink = useCallback(async () => {
     // Share link requires a finalized sheet ID, not a draft ID.
     // salesSheets.generateShareLink operates on the salesSheetHistory table.
-    if (!lastSavedSheetId || hasUnsavedChanges) return null;
+    if (!lastSavedSheetId) {
+      toast.error("Save the catalogue before generating a share link");
+      return null;
+    }
+    if (hasUnsavedChanges) {
+      toast.error("Save your latest changes before generating a share link");
+      return null;
+    }
     try {
       const result = await shareLinkMutateAsyncRef.current({
         sheetId: lastSavedSheetId,
         expiresInDays: 7,
       });
-      if (result?.shareUrl) {
-        const absoluteShareUrl = toAbsoluteShareUrl(result.shareUrl);
-        setLastShareUrl(absoluteShareUrl);
-        if (navigator.clipboard?.writeText) {
+      if (!result?.shareUrl) {
+        toast.error(
+          "Share link could not be generated — the server returned no URL"
+        );
+        return null;
+      }
+      const absoluteShareUrl = toAbsoluteShareUrl(result.shareUrl);
+      setLastShareUrl(absoluteShareUrl);
+      if (navigator.clipboard?.writeText) {
+        try {
           await navigator.clipboard.writeText(absoluteShareUrl);
           toast.success("Share link copied to clipboard");
-        } else {
-          toast.success("Share link ready");
+        } catch (clipboardError) {
+          console.error(
+            "Failed to copy share link to clipboard",
+            clipboardError
+          );
+          toast.error(
+            "Share link ready, but copying to clipboard failed — use 'Open Shared View' instead"
+          );
         }
-        return absoluteShareUrl;
+      } else {
+        toast.success("Share link ready");
       }
-      return null;
-    } catch {
-      toast.error("Failed to generate share link");
+      return absoluteShareUrl;
+    } catch (error) {
+      console.error("Failed to generate share link", error);
+      const message =
+        error instanceof Error ? error.message : "Unknown error";
+      toast.error("Failed to generate share link: " + message);
       return null;
     }
   }, [lastSavedSheetId, hasUnsavedChanges]);
