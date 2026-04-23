@@ -116,7 +116,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
             <Input
               type="search"
               placeholder="Search, jump, or run a command..."
-              className="h-10 w-full rounded-2xl border-0 bg-transparent pl-10 pr-[5.5rem] text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="h-10 w-full rounded-[var(--radius)] border-0 bg-transparent pl-10 pr-[5.5rem] text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
