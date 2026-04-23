@@ -152,7 +152,9 @@ const getInventoryCogsPerUnit = (item: PricedInventoryItem) =>
   item.effectiveCogs ?? item.basePrice ?? item.unitCogs ?? 0;
 
 const getInventoryRetailPrice = (item: PricedInventoryItem) =>
-  roundToCents(item.retailPrice || item.basePrice || 0);
+  // TER-1011: preserve explicit 0 (intentionally free). Use `??` instead of
+  // `||` so a saved retailPrice of 0 isn't replaced by the catalogue default.
+  roundToCents(item.retailPrice ?? item.basePrice ?? 0);
 
 const buildDefaultInventoryRowControls = (
   row: InventoryBrowserRow

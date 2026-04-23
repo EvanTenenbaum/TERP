@@ -1509,7 +1509,10 @@ export default function OrderCreatorPageV2({
         // Calculate margin percent from basePrice and retailPrice
         const cogsPerUnit =
           item.effectiveCogs ?? item.basePrice ?? item.unitCogs ?? 0;
-        const retailPrice = item.retailPrice || item.basePrice || 0;
+        // TER-1011: preserve explicit 0 (intentionally free). Use `??` instead
+        // of `||` so a saved retailPrice of 0 isn't replaced by the catalogue
+        // default (basePrice).
+        const retailPrice = item.retailPrice ?? item.basePrice ?? 0;
 
         const availableUnits = Math.max(1, Math.floor(item.quantity ?? 1));
         const quantity =
