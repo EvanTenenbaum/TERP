@@ -19,6 +19,11 @@
  *   `terp/no-restricted-glossary` enforce the same contract at build time;
  *   the flag lets product control the runtime rollout window. Default when
  *   absent: **disabled**.
+ * - `ux.v2.workspace-tabs` — Enables the two-level tab rail in
+ *   `LinearWorkspaceShell` when a workspace config declares `tabGroups`
+ *   (TER-1305). When disabled, the shell falls back to the single flat
+ *   `tabs` rail so deep links keep working unchanged. Default when flag is
+ *   absent from the server response: **disabled** (safe default).
  *
  * Add new UX v2 flags to `UX_V2_FLAGS` below; do NOT hard-code flag strings
  * at call sites.
@@ -34,6 +39,12 @@ export const UX_V2_FLAGS = {
   DRAWER: "ux.v2.drawer",
   /** Canonical terminology rollout (TER-1315). */
   GLOSSARY: "ux.v2.glossary",
+  /**
+   * Two-level workspace tab rail driven by `WorkspaceConfig.tabGroups`
+   * (TER-1305). Disabled by default — shell renders the legacy flat `tabs`
+   * rail when this flag is off even if `tabGroups` is present.
+   */
+  WORKSPACE_TABS: "ux.v2.workspace-tabs",
 } as const;
 
 export type UxV2FlagKey = (typeof UX_V2_FLAGS)[keyof typeof UX_V2_FLAGS];
