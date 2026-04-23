@@ -35,6 +35,11 @@ export const NotificationBell = React.memo(function NotificationBell({
     }
   );
 
+  // Use dedicated unread count query as canonical source
+  const { data: unreadData } = trpc.notifications.getUnreadCount.useQuery(undefined, {
+    refetchInterval: 30000, // Poll every 30 seconds
+  });
+
   const markRead = trpc.notifications.markRead.useMutation({
     onSuccess: async () => {
       await Promise.all([
@@ -54,7 +59,7 @@ export const NotificationBell = React.memo(function NotificationBell({
   });
 
   const notifications = listData?.items ?? [];
-  const unreadCount = listData?.unread ?? 0;
+  const unreadCount = unreadData?.unread ?? 0;
 
   const handleViewAll = useCallback(() => {
     setLocation("/notifications");

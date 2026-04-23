@@ -11,6 +11,7 @@ const mockSetLocation = vi.fn();
 const mockMarkRead = vi.fn();
 const mockMarkAllRead = vi.fn();
 const mockInvalidate = vi.fn();
+let mockUnreadCount = 1;
 
 const sampleNotifications = [
   {
@@ -41,7 +42,7 @@ vi.mock("@/lib/trpc", () => ({
     notifications: {
       getUnreadCount: {
         useQuery: vi.fn(() => ({
-          data: { unread: 1 },
+          data: { unread: mockUnreadCount },
           isLoading: false,
         })),
       },
@@ -86,6 +87,7 @@ vi.mock("wouter", () => ({
 describe("NotificationBell", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUnreadCount = 1;
   });
 
   const renderBell = () =>
@@ -101,7 +103,26 @@ describe("NotificationBell", () => {
     fireEvent.click(trigger);
   };
 
+  it("hides badge when unread count is 0", () => {
+    mockUnreadCount = 0;
+    renderBell();
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
+  });
+
+  it("shows numeric badge when count is 1-9", () => {
+    mockUnreadCount = 5;
+    renderBell();
+    expect(screen.getByText("5")).toBeInTheDocument();
+  });
+
+  it("shows 9+ badge when count is greater than 9", () => {
+    mockUnreadCount = 15;
+    renderBell();
+    expect(screen.getByText("9+")).toBeInTheDocument();
+  });
+
   it("renders unread badge from query data", () => {
+    mockUnreadCount = 1;
     renderBell();
     expect(screen.getByText("1")).toBeInTheDocument();
   });
