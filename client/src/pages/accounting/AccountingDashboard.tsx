@@ -208,11 +208,13 @@ export default function AccountingDashboard({
                 </p>
               </div>
             </div>
+            {/* TER-1295: Single primary action per header region. "Pay
+                Supplier" is the page-level primary task (not a destructive
+                operation), so it uses the default primary variant. The
+                destructive variant is reserved for the overdue-alert
+                escalation path below. */}
             <div className="flex flex-wrap items-center gap-2">
-              <Button
-                variant="destructive"
-                onClick={() => setPayVendorOpen(true)}
-              >
+              <Button onClick={() => setPayVendorOpen(true)}>
                 Pay Supplier
               </Button>
             </div>

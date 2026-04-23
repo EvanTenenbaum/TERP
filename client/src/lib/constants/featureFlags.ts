@@ -29,6 +29,23 @@ export const FEATURE_FLAGS = {
    * response: **disabled** (safe default).
    */
   uxV2BreadcrumbRegistry: "ux.v2.breadcrumb-registry",
+  /**
+   * TER-1295: PageHeader one-primary-action invariant.
+   *
+   * The `<PageHeader>` component always runs a development-mode advisory
+   * check that counts primary (`variant="default"`) buttons in its
+   * `actions` slot and logs a `console.error` when more than one is
+   * detected. That check is compiled only into dev builds (stripped in
+   * production via `process.env.NODE_ENV === "development"`).
+   *
+   * This flag exists to let operators opt into broader enforcement or
+   * telemetry downstream (e.g. admin surfacing, lint gating) without
+   * removing the dev-time log.
+   *
+   * See: docs/ux-review/02-Implementation_Strategy.md §4.11
+   * Linear: TER-1295
+   */
+  uxV2PageHeaderInvariant: "ux.v2.page-header-invariant",
 } as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS];

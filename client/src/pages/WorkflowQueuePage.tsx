@@ -172,7 +172,13 @@ export default function WorkflowQueuePage() {
             </div>
           </div>
 
-          {/* View Mode Switcher */}
+          {/* View Mode Switcher
+              TER-1295: "Add to Queue" is the single primary action. The
+              view-mode toggle buttons are navigation controls and use
+              variant="secondary" when active (instead of "default") so only
+              one primary (variant="default") button lives in the header
+              region. aria-pressed communicates the active toggle state to
+              assistive technologies. */}
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <Button
               variant="default"
@@ -183,32 +189,36 @@ export default function WorkflowQueuePage() {
               Add to Queue
             </Button>
             <Button
-              variant={viewMode === "board" ? "default" : "outline"}
+              variant={viewMode === "board" ? "secondary" : "outline"}
               size="sm"
               onClick={() => setViewMode("board")}
+              aria-pressed={viewMode === "board"}
             >
               Board
             </Button>
             <Button
-              variant={viewMode === "analytics" ? "default" : "outline"}
+              variant={viewMode === "analytics" ? "secondary" : "outline"}
               size="sm"
               onClick={() => setViewMode("analytics")}
+              aria-pressed={viewMode === "analytics"}
             >
               <BarChart3 className="h-4 w-4 mr-2" />
               Analytics
             </Button>
             <Button
-              variant={viewMode === "history" ? "default" : "outline"}
+              variant={viewMode === "history" ? "secondary" : "outline"}
               size="sm"
               onClick={() => setViewMode("history")}
+              aria-pressed={viewMode === "history"}
             >
               <History className="h-4 w-4 mr-2" />
               History
             </Button>
             <Button
-              variant={viewMode === "settings" ? "default" : "outline"}
+              variant={viewMode === "settings" ? "secondary" : "outline"}
               size="sm"
               onClick={() => setViewMode("settings")}
+              aria-pressed={viewMode === "settings"}
             >
               <Settings className="h-4 w-4 mr-2" />
               Settings
