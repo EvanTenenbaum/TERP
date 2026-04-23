@@ -242,7 +242,6 @@
         color-mix(in oklab, var(--card) 99%, transparent),
         color-mix(in oklab, var(--background) 94%, transparent)
       );
-    box-shadow: 0 20px 45px -34px rgb(15 23 42 / 0.22);
     overflow: hidden;
   }
 
@@ -357,7 +356,6 @@
     padding: 0.3rem 0.78rem;
     font-size: 0.7rem;
     line-height: 1.15;
-    box-shadow: inset 0 1px 0 color-mix(in oklab, var(--background) 65%, transparent);
   }
 
   .linear-workspace-meta-label {
@@ -454,9 +452,6 @@
     padding: 4px;
     border: 1px solid color-mix(in oklab, var(--border) 84%, transparent);
     background: color-mix(in oklab, var(--muted) 48%, transparent);
-    box-shadow:
-      inset 0 1px 0 color-mix(in oklab, var(--background) 72%, transparent),
-      0 1px 0 color-mix(in oklab, var(--foreground) 3%, transparent);
   }
 
   .linear-workspace-shell[data-density="compact"] .linear-workspace-tabs-list {
@@ -489,9 +484,6 @@
   .linear-workspace-tabs-trigger[data-state="active"] {
     background: var(--background);
     color: var(--foreground);
-    box-shadow:
-      0 1px 1px rgb(15 23 42 / 0.08),
-      0 8px 22px -16px rgb(15 23 42 / 0.3);
   }
 
   .linear-workspace-command-strip {
