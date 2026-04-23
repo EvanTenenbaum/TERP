@@ -379,6 +379,14 @@ function Router() {
                   component={withErrorBoundary(SalesWorkspacePage)}
                 />
                 <Route
+                  path="/sales/new"
+                  component={RedirectWithTab(
+                    "/sales/new",
+                    "/sales",
+                    "create-order"
+                  )}
+                />
+                <Route
                   path="/relationships"
                   component={withErrorBoundary(RelationshipsWorkspacePage)}
                 />
