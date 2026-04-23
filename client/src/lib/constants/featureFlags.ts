@@ -46,6 +46,19 @@ export const FEATURE_FLAGS = {
    * Linear: TER-1295
    */
   uxV2PageHeaderInvariant: "ux.v2.page-header-invariant",
+  /**
+   * UX v2 persisted sidebar open-group state.
+   *
+   * When enabled, the `AppSidebar` reads the open/closed state of navigation
+   * groups from `localStorage` on mount and writes back on every accordion
+   * toggle, so the user's sidebar layout survives page refreshes and
+   * navigation. When disabled, the sidebar falls back to the default
+   * route-driven open-group behavior.
+   *
+   * See: docs/ux-review/02-Implementation_Strategy.md §4.6
+   * Linear: TER-1306
+   */
+  uxV2NavPersist: "ux.v2.nav-persist",
 } as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS];

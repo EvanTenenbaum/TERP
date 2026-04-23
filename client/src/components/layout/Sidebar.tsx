@@ -25,12 +25,16 @@ import { cn } from "@/lib/utils";
 import {
   buildNavigationAccessModel,
   defaultQuickLinkPaths,
+  navigationGroups,
   navigationItems,
   type NavigationGroupKey,
 } from "@/config/navigation";
 import { normalizeOperationsTab } from "@/lib/workspaceRoutes";
+import { FEATURE_FLAGS } from "@/lib/constants/featureFlags";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
+import { useOptionalFeatureFlag } from "@/contexts/FeatureFlagContext";
 import { useNavigationState } from "@/hooks/useNavigationState";
+import { getNavOpenGroups, setNavOpenGroups } from "@/lib/navState";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -120,6 +124,22 @@ function getDefaultOpenGroups(currentPath: string) {
   } satisfies Record<NavigationGroupKey, boolean>;
 }
 
+/**
+ * TER-1306: Map the persisted array of open group keys into the full
+ * {@link NavigationGroupKey} record used by the sidebar. Unknown keys are
+ * discarded; missing keys default to closed.
+ */
+function openGroupsFromPersisted(
+  persisted: string[]
+): Record<NavigationGroupKey, boolean> {
+  const openSet = new Set(persisted);
+  const next: Partial<Record<NavigationGroupKey, boolean>> = {};
+  for (const { key } of navigationGroups) {
+    next[key] = openSet.has(key);
+  }
+  return next as Record<NavigationGroupKey, boolean>;
+}
+
 export const Sidebar = React.memo(function Sidebar({
   open = false,
   onClose,
@@ -134,9 +154,26 @@ export const Sidebar = React.memo(function Sidebar({
   const { data: currentUser } = trpc.auth.me.useQuery(undefined, {
     staleTime: 60_000,
   });
+  // TER-1306: When the ux.v2.nav-persist flag is enabled, the sidebar reads
+  // the last-known open groups from localStorage on mount and writes back on
+  // every accordion toggle so state survives refreshes and navigation.
+  const navPersistEnabled = useOptionalFeatureFlag(
+    FEATURE_FLAGS.uxV2NavPersist
+  );
   const [openGroups, setOpenGroups] = useState<
     Record<NavigationGroupKey, boolean>
-  >(() => getDefaultOpenGroups(`${location}${search || ""}`));
+  >(() => {
+    const defaults = getDefaultOpenGroups(`${location}${search || ""}`);
+    if (!navPersistEnabled) {
+      return defaults;
+    }
+    const persisted = getNavOpenGroups();
+    if (persisted.length === 0) {
+      return defaults;
+    }
+    return openGroupsFromPersisted(persisted);
+  });
+  const navHydratedFromStorageRef = useRef(navPersistEnabled);
   const [collapsed, setCollapsed] = useState(false);
 
   // BUG-103: Auto-close the mobile drawer whenever the active route changes so
@@ -178,11 +215,25 @@ export const Sidebar = React.memo(function Sidebar({
   );
   const groupedNavigation = navigationAccessModel.groups;
 
-  const toggleGroup = useCallback((key: NavigationGroupKey) => {
-    flushSync(() => {
-      setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
-    });
-  }, []);
+  const toggleGroup = useCallback(
+    (key: NavigationGroupKey) => {
+      flushSync(() => {
+        setOpenGroups(prev => {
+          const next = { ...prev, [key]: !prev[key] };
+          if (navPersistEnabled) {
+            // TER-1306: Persist the full set of currently-open group keys on
+            // every accordion toggle so the state survives refresh/navigation.
+            const openKeys = (
+              Object.keys(next) as NavigationGroupKey[]
+            ).filter(groupKey => next[groupKey]);
+            setNavOpenGroups(openKeys);
+          }
+          return next;
+        });
+      });
+    },
+    [navPersistEnabled]
+  );
 
   const isActivePath = useCallback(
     (path: string) => {
@@ -220,6 +271,22 @@ export const Sidebar = React.memo(function Sidebar({
       prev[activeGroupKey] ? prev : { ...prev, [activeGroupKey]: true }
     );
   }, [activeGroupKey]);
+
+  // TER-1306: Feature flags load asynchronously; if the ux.v2.nav-persist
+  // flag flips from false → true after the initial render, hydrate the
+  // sidebar from localStorage exactly once so the user still sees their
+  // persisted layout on cold loads.
+  useEffect(() => {
+    if (!navPersistEnabled || navHydratedFromStorageRef.current) {
+      return;
+    }
+    navHydratedFromStorageRef.current = true;
+    const persisted = getNavOpenGroups();
+    if (persisted.length === 0) {
+      return;
+    }
+    setOpenGroups(openGroupsFromPersisted(persisted));
+  }, [navPersistEnabled]);
 
   return (
     <>
