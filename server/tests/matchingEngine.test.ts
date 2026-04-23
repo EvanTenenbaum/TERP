@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import type { Match } from '../matchingEngineEnhanced';
+import type { HistoricalMatch } from '../historicalAnalysis';
 
 /**
  * Matching Engine Tests
@@ -381,6 +383,46 @@ describe('Matching Engine', () => {
       expect(reasons).toHaveLength(2);
       expect(reasons[0]).toContain('Over budget');
       expect(reasons[1]).toContain('Insufficient quantity');
+    });
+  });
+
+  describe('Type Compatibility (TER-1249 regression)', () => {
+    it('should allow HistoricalMatch to be assigned to Match type', () => {
+      // This test verifies that HistoricalMatch (which extends Match from matchingEngineEnhanced)
+      // is structurally compatible with the Match type from matchingEngineEnhanced.
+      // This ensures the import redirection from historicalAnalysis.ts is type-safe.
+      
+      const historicalMatch: HistoricalMatch = {
+        sourceId: 1,
+        sourceType: 'HISTORICAL' as const,
+        confidence: 85,
+        reasons: ['Historical buyer'],
+        sourceData: {
+          client: { id: 1, name: 'Test Client' },
+          purchaseCount: 5,
+          lastPurchaseDate: new Date(),
+          totalQuantity: 100,
+          averageQuantity: 20,
+        },
+        pattern: {
+          clientId: 1,
+          strain: 'Blue Dream',
+          category: 'Flower',
+          purchaseCount: 5,
+          totalQuantity: 100,
+          avgPrice: 50,
+          lastPurchaseDate: new Date(),
+          daysSinceLastPurchase: 30,
+        },
+        isLapsedBuyer: false,
+      };
+
+      // Type assertion - this will fail to compile if types are incompatible
+      const match: Match = historicalMatch;
+
+      expect(match).toBeDefined();
+      expect(match.sourceType).toBe('HISTORICAL');
+      expect(match.confidence).toBe(85);
     });
   });
 });
