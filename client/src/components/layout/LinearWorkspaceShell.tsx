@@ -44,6 +44,17 @@ interface LinearWorkspaceShellProps<T extends string> {
    */
   tabGroups?: readonly LinearWorkspaceTabGroup<T>[];
   commandStrip?: ReactNode;
+  /**
+   * Optional UX v2 standardized filter surface (TER-1310). Rendered
+   * immediately below the tab row / command strip when provided. Intended
+   * to host a `<WorkspaceFilterBar>` from
+   * `@/components/layout/WorkspaceFilterBar`, which in turn wraps filter
+   * inputs driven by `useWorkspaceFilter()`.
+   *
+   * Intentionally not rendered at all when absent, so surfaces that don't
+   * opt in see no additional whitespace.
+   */
+  filterStrip?: ReactNode;
   children: ReactNode;
   className?: string;
   density?: "default" | "compact";
@@ -88,6 +99,7 @@ export function LinearWorkspaceShell<T extends string>({
   onTabChange,
   tabGroups,
   commandStrip,
+  filterStrip,
   children,
   className,
   density = "default",
@@ -263,6 +275,14 @@ export function LinearWorkspaceShell<T extends string>({
               <div className="linear-workspace-command-strip">
                 {commandStrip}
               </div>
+            </div>
+          ) : null}
+          {filterStrip ? (
+            <div
+              className="linear-workspace-filter-row"
+              data-slot="linear-workspace-filter-row"
+            >
+              {filterStrip}
             </div>
           ) : null}
           {children}
