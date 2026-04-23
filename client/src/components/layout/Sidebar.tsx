@@ -282,7 +282,7 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
                       isActivePath("/sales?tab=create-order")
-                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
                         : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                     )}
                     aria-current={
@@ -303,7 +303,7 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
                       isActivePath("/sales?tab=orders")
-                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
                         : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                     )}
                     aria-current={
@@ -322,7 +322,7 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
                       isActivePath("/sales?tab=sales-sheets")
-                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
                         : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                     )}
                     aria-current={
@@ -343,7 +343,7 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
                       isActivePath("/relationships?tab=clients")
-                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
                         : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                     )}
                     aria-current={
@@ -364,7 +364,7 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
                       isActivePath("/inventory?tab=shipping")
-                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
                         : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                     )}
                     aria-current={
@@ -391,7 +391,7 @@ export const Sidebar = React.memo(function Sidebar({
                 key={group.key}
                 className={cn(
                   "rounded-lg border border-transparent transition-colors",
-                  hasActiveItem && "border-white/10 bg-white/5"
+                  false
                 )}
               >
                 {!collapsed && (
@@ -408,12 +408,6 @@ export const Sidebar = React.memo(function Sidebar({
                     data-testid="nav-group-label"
                   >
                     <span className="flex items-center gap-1.5">
-                      {hasActiveItem && (
-                        <span
-                          className="inline-block h-1.5 w-1.5 rounded-full bg-[oklch(0.78_0.18_130)] flex-shrink-0"
-                          aria-hidden
-                        />
-                      )}
                       {group.label}
                     </span>
                     {isOpen ? (
@@ -451,7 +445,7 @@ export const Sidebar = React.memo(function Sidebar({
                                   : "px-3 py-2",
                                 isActive
                                   ? cn(
-                                      "border-l-[3px] border-[oklch(0.78_0.18_130)] bg-white/10 text-white font-semibold"
+                                      "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
                                     )
                                   : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                               )}
@@ -483,18 +477,7 @@ export const Sidebar = React.memo(function Sidebar({
 
         {/* TER-599: Simplified footer — user info + logout only */}
         <div className="border-t border-white/10 p-3">
-          {!collapsed && (
-            <div className="flex items-center gap-2 mb-2">
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="text-xs bg-white/10 text-white/70">
-                  <UserCircle2 className="h-4 w-4" />
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-xs text-white/70 truncate">
-                {currentUser?.name || currentUser?.email || "TERP Operator"}
-              </p>
-            </div>
-          )}
+          
           <Button
             variant="ghost"
             size="sm"

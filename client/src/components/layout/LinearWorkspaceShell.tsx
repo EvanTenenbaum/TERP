@@ -16,17 +16,13 @@ export interface LinearWorkspaceTab<T extends string = string> {
 
 interface LinearWorkspaceShellProps<T extends string> {
   title: string;
-  description: string;
   activeTab: T;
   tabs: readonly LinearWorkspaceTab<T>[];
   onTabChange: (tab: T) => void;
-  meta?: Array<{ label: string; value: ReactNode }>;
   commandStrip?: ReactNode;
   children: ReactNode;
   className?: string;
   density?: "default" | "compact";
-  /** Navigation section label (e.g. "Sell", "Buy", "Finance") shown as a hierarchy cue */
-  section?: string;
 }
 
 const TRANSITION_SKELETON_MS = 180;
@@ -63,19 +59,15 @@ function LinearWorkspaceTransitionSkeleton() {
 
 export function LinearWorkspaceShell<T extends string>({
   title,
-  description,
   activeTab,
   tabs,
   onTabChange,
-  meta = [],
   commandStrip,
   children,
   className,
   density = "default",
-  section,
 }: LinearWorkspaceShellProps<T>) {
-  const showHeader = Boolean(title || description || section);
-  const showMeta = meta.length > 0;
+  const showHeader = Boolean(title);
   const showTabs = tabs.length > 1;
   const showTabRow = showTabs || Boolean(commandStrip);
   const tabsScrollRef = useRef<HTMLDivElement>(null);
@@ -133,44 +125,10 @@ export function LinearWorkspaceShell<T extends string>({
       {showHeader && (
         <header className="linear-workspace-header">
           <div className="linear-workspace-title-wrap">
-            <p className="linear-workspace-eyebrow">
-              {section ? (
-                <>
-                  <span className="linear-workspace-eyebrow-section">
-                    {section}
-                  </span>
-                  <span className="linear-workspace-eyebrow-sep" aria-hidden>
-                    {" "}
-                    /{" "}
-                  </span>
-                </>
-              ) : null}
-              Workspace
-            </p>
             <div>
               <h1 className="linear-workspace-title">{title}</h1>
-              {description ? (
-                <p className="linear-workspace-description">{description}</p>
-              ) : null}
             </div>
           </div>
-          {showMeta && (
-            <div
-              className="linear-workspace-meta"
-              aria-label="Workspace metadata"
-            >
-              {meta.map(item => (
-                <div key={item.label} className="linear-workspace-meta-item">
-                  <span className="linear-workspace-meta-label">
-                    {item.label}
-                  </span>
-                  <span className="linear-workspace-meta-value">
-                    {item.value}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
         </header>
       )}
 

@@ -54,25 +54,9 @@ export default function AccountingWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={ACCOUNTING_WORKSPACE.title}
-      description="Keep invoices, bills, payments, and ledger work in one queue-first finance workspace."
-      section="Finance"
       activeTab={activeTab}
       tabs={ACCOUNTING_WORKSPACE.tabs}
       onTabChange={setActiveTab}
-      meta={[
-        {
-          label: "Cash in",
-          value: "Select an invoice, then record payment",
-        },
-        {
-          label: "Cash out",
-          value: "Pay suppliers, then confirm the ledger",
-        },
-        {
-          label: "Ledger flow",
-          value: "Invoice -> Payment -> General Ledger",
-        },
-      ]}
     >
       <LinearWorkspacePanel value="dashboard">
         <AccountingDashboard embedded />
