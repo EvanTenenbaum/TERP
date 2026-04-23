@@ -292,9 +292,11 @@ export const returnsRouter = router({
           status: returns.status,
           notes: returns.notes,
           processedBy: returns.processedBy,
+          processedByName: users.name,
           processedAt: returns.processedAt,
         })
-        .from(returns);
+        .from(returns)
+        .leftJoin(users, eq(returns.processedBy, users.id));
 
       if (conditions.length > 0) {
         query = query.where(and(...conditions)) as typeof query;
