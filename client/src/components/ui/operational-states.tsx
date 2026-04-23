@@ -1,3 +1,6 @@
+import * as React from "react";
+import { AlertCircleIcon } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,6 +12,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 type EmptyVariant = NonNullable<EmptyStateProps["variant"]>;
+
+/**
+ * Shared outer card chrome for every non-ok state rendered by
+ * {@link OperationalStateSurface}. Keeping the border-radius, min-height, and
+ * padding identical across loading / empty / error variants guarantees that
+ * swapping states does not cause any layout reflow in the parent layout.
+ *
+ * Consumers that only need a single variant can use {@link OperationalSkeletonState},
+ * {@link OperationalErrorState}, or {@link OperationalEmptyState} directly.
+ */
+const OPERATIONAL_SURFACE_CHROME =
+  "flex min-h-[18rem] w-full flex-col rounded-xl border border-border/70 bg-muted/20 px-6 py-6";
 
 interface OperationalEmptyStateProps {
   title: string;
@@ -65,6 +80,260 @@ export function OperationalEmptyState({
       </div>
     </div>
   );
+}
+
+interface OperationalSkeletonStateProps {
+  /** Number of skeleton rows to render (default: 5) */
+  rows?: number;
+  /**
+   * Accessible label announced to assistive tech while the skeleton is
+   * visible. Defaults to "Loading".
+   */
+  ariaLabel?: string;
+  className?: string;
+  "data-testid"?: string;
+}
+
+/**
+ * Loading variant used by {@link OperationalStateSurface}. Exported so callers
+ * that manage their own state machine can render just the skeleton while
+ * preserving the shared surface chrome.
+ */
+export function OperationalSkeletonState({
+  rows = 5,
+  ariaLabel = "Loading",
+  className,
+  "data-testid": dataTestId,
+}: OperationalSkeletonStateProps) {
+  const rowCount = Math.max(1, Math.floor(rows));
+  return (
+    <div
+      className={cn(OPERATIONAL_SURFACE_CHROME, className)}
+      data-testid={dataTestId}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      aria-label={ariaLabel}
+    >
+      <Skeleton className="mb-4 h-6 w-1/3 rounded-md" />
+      <div className="space-y-3">
+        {Array.from({ length: rowCount }).map((_, index) => (
+          <Skeleton
+            // eslint-disable-next-line react/no-array-index-key
+            key={`operational-skeleton-row-${index}`}
+            className="h-8 w-full rounded-md"
+            data-testid="operational-skeleton-row"
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+interface OperationalErrorStateProps {
+  /** Title shown in the error card. */
+  title?: string;
+  /** Optional supporting copy below the title. */
+  description?: string;
+  /**
+   * Called when the user clicks the retry button. When omitted, the retry
+   * button is not rendered.
+   */
+  onRetry?: () => void;
+  /** Customise the retry button label. */
+  retryLabel?: string;
+  className?: string;
+  "data-testid"?: string;
+}
+
+/**
+ * Error variant used by {@link OperationalStateSurface}. Exported so callers
+ * can render the error chrome independently (for example inside a tab panel
+ * that already manages its own loading/empty state).
+ */
+export function OperationalErrorState({
+  title = "Unable to load data",
+  description = "An error occurred while loading this view. Please try again.",
+  onRetry,
+  retryLabel = "Try again",
+  className,
+  "data-testid": dataTestId,
+}: OperationalErrorStateProps) {
+  return (
+    <div
+      className={cn(
+        OPERATIONAL_SURFACE_CHROME,
+        "items-center justify-center",
+        className
+      )}
+      data-testid={dataTestId}
+      role="alert"
+      aria-live="assertive"
+    >
+      <div className="flex max-w-md flex-col items-center gap-3 text-center">
+        <AlertCircleIcon
+          className="h-12 w-12 text-destructive/70"
+          aria-hidden="true"
+        />
+        <h3 className="text-base font-medium text-foreground">{title}</h3>
+        <p className="text-sm text-muted-foreground">{description}</p>
+        {onRetry ? (
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            onClick={onRetry}
+            data-testid="operational-error-retry"
+          >
+            {retryLabel}
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+interface OperationalSurfaceEmptyConfig {
+  title: string;
+  description?: string;
+  variant?: EmptyVariant;
+  icon?: React.ReactNode;
+  searchActive?: boolean;
+  filterActive?: boolean;
+  action?: EmptyStateAction;
+  secondaryAction?: EmptyStateAction;
+}
+
+interface OperationalSurfaceErrorConfig {
+  title?: string;
+  description?: string;
+  onRetry?: () => void;
+  retryLabel?: string;
+}
+
+export type OperationalSurfaceState = "loading" | "empty" | "error" | "ok";
+
+interface OperationalStateSurfaceProps {
+  /** Current rendering state of the surface. */
+  state: OperationalSurfaceState;
+  /** Children only render when {@link state} is "ok". */
+  children?: React.ReactNode;
+  /** Number of rows for the loading skeleton (default: 5). */
+  skeletonRows?: number;
+  /** Configuration for the empty state. Required when state === "empty". */
+  empty?: OperationalSurfaceEmptyConfig;
+  /** Configuration for the error state. */
+  error?: OperationalSurfaceErrorConfig;
+  /** Accessible label for the loading skeleton. */
+  loadingLabel?: string;
+  className?: string;
+  "data-testid"?: string;
+}
+
+/**
+ * Unified 3-state wrapper for data-bearing surfaces. All non-ok states share
+ * identical outer card chrome (border radius, min height, padding) so swapping
+ * between loading, empty, and error variants does not cause layout reflow.
+ *
+ * @example
+ * ```tsx
+ * <OperationalStateSurface
+ *   state={
+ *     query.isLoading
+ *       ? "loading"
+ *       : query.error
+ *         ? "error"
+ *         : data?.length
+ *           ? "ok"
+ *           : "empty"
+ *   }
+ *   skeletonRows={6}
+ *   empty={{
+ *     title: "No invoices yet",
+ *     description: "Invoices will appear here once orders are finalized.",
+ *     variant: "invoices",
+ *     action: { label: "Create invoice", onClick: () => {} },
+ *   }}
+ *   error={{ onRetry: () => query.refetch() }}
+ * >
+ *   <InvoiceTable rows={data} />
+ * </OperationalStateSurface>
+ * ```
+ */
+export function OperationalStateSurface({
+  state,
+  children,
+  skeletonRows = 5,
+  empty,
+  error,
+  loadingLabel,
+  className,
+  "data-testid": dataTestId,
+}: OperationalStateSurfaceProps) {
+  if (state === "loading") {
+    return (
+      <OperationalSkeletonState
+        rows={skeletonRows}
+        ariaLabel={loadingLabel}
+        className={className}
+        data-testid={dataTestId}
+      />
+    );
+  }
+
+  if (state === "error") {
+    return (
+      <OperationalErrorState
+        title={error?.title}
+        description={error?.description}
+        onRetry={error?.onRetry}
+        retryLabel={error?.retryLabel}
+        className={className}
+        data-testid={dataTestId}
+      />
+    );
+  }
+
+  if (state === "empty") {
+    const shouldShowContextBadge =
+      Boolean(empty?.searchActive) || Boolean(empty?.filterActive);
+    return (
+      <div
+        className={cn(
+          OPERATIONAL_SURFACE_CHROME,
+          "items-center justify-center",
+          className
+        )}
+        data-testid={dataTestId}
+        role="status"
+        aria-live="polite"
+      >
+        <div className="flex max-w-md flex-col items-center gap-3 text-center">
+          {shouldShowContextBadge ? (
+            <Badge variant="outline" className="bg-background">
+              {empty?.searchActive && empty?.filterActive
+                ? "Filtered results"
+                : empty?.searchActive
+                  ? "Search results"
+                  : "Filtered queue"}
+            </Badge>
+          ) : null}
+          <EmptyState
+            variant={empty?.variant ?? "generic"}
+            icon={empty?.icon}
+            title={empty?.title ?? "Nothing to show yet"}
+            description={empty?.description}
+            action={empty?.action}
+            secondaryAction={empty?.secondaryAction}
+            size="md"
+            className="py-0"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }
 
 interface WorkspacePanelSkeletonProps {
