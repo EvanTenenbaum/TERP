@@ -36,36 +36,73 @@ process_file() {
   
   cp "$file" "$temp_file"
   
-  # Replace success colors (green) with CSS vars
-  if grep -q 'bg-green-\(50\|100\)' "$temp_file"; then
-    perl -pi -e 's/bg-green-(?:50|100)\b/bg-[var(--success-bg)]/g' "$temp_file"
+  # Replace success colors (green) with CSS vars - ALL shades
+  if grep -q 'bg-green-[0-9]' "$temp_file"; then
+    # Light backgrounds (50-200) → success-bg
+    perl -pi -e 's/bg-green-(?:50|100|200)\b/bg-[var(--success-bg)]/g' "$temp_file"
+    # Medium/dark backgrounds (500-950) → success with opacity
+    perl -pi -e 's/bg-green-(?:500|600|700|800|900|950)\b/bg-[var(--success)]/g' "$temp_file"
     ((changes++)) || true
   fi
   
-  if grep -q 'text-green-\(600\|700\|800\)' "$temp_file"; then
-    perl -pi -e 's/text-green-(?:600|700|800)\b/text-[var(--success)]/g' "$temp_file"
+  if grep -q 'text-green-[0-9]' "$temp_file"; then
+    perl -pi -e 's/text-green-(?:500|600|700|800|900|950)\b/text-[var(--success)]/g' "$temp_file"
     ((changes++)) || true
   fi
   
-  # Replace warning colors (yellow/orange) with CSS vars
-  if grep -q 'bg-\(yellow\|orange\)-\(50\|100\)' "$temp_file"; then
-    perl -pi -e 's/bg-(?:yellow|orange)-(?:50|100)\b/bg-[var(--warning-bg)]/g' "$temp_file"
+  # Replace warning colors (yellow/orange) with CSS vars - ALL shades
+  if grep -q 'bg-\(yellow\|orange\)-[0-9]' "$temp_file"; then
+    # Light backgrounds → warning-bg
+    perl -pi -e 's/bg-(?:yellow|orange)-(?:50|100|200)\b/bg-[var(--warning-bg)]/g' "$temp_file"
+    # Medium/dark backgrounds → warning
+    perl -pi -e 's/bg-(?:yellow|orange)-(?:500|600|700|800|900|950)\b/bg-[var(--warning)]/g' "$temp_file"
     ((changes++)) || true
   fi
   
-  if grep -q 'text-\(yellow\|orange\)-\(600\|700\|800\)' "$temp_file"; then
-    perl -pi -e 's/text-(?:yellow|orange)-(?:600|700|800)\b/text-[var(--warning)]/g' "$temp_file"
+  if grep -q 'text-\(yellow\|orange\)-[0-9]' "$temp_file"; then
+    perl -pi -e 's/text-(?:yellow|orange)-(?:500|600|700|800|900|950)\b/text-[var(--warning)]/g' "$temp_file"
     ((changes++)) || true
   fi
   
-  # Replace info colors (blue) with CSS vars
-  if grep -q 'bg-blue-\(50\|100\)' "$temp_file"; then
-    perl -pi -e 's/bg-blue-(?:50|100)\b/bg-[var(--info-bg)]/g' "$temp_file"
+  # Replace info colors (blue) with CSS vars - ALL shades
+  if grep -q 'bg-blue-[0-9]' "$temp_file"; then
+    # Light backgrounds → info-bg
+    perl -pi -e 's/bg-blue-(?:50|100|200)\b/bg-[var(--info-bg)]/g' "$temp_file"
+    # Medium/dark backgrounds → info
+    perl -pi -e 's/bg-blue-(?:500|600|700|800|900|950)\b/bg-[var(--info)]/g' "$temp_file"
     ((changes++)) || true
   fi
   
-  if grep -q 'text-blue-\(600\|700\|800\)' "$temp_file"; then
-    perl -pi -e 's/text-(?:blue)-(?:600|700|800)\b/text-[var(--info)]/g' "$temp_file"
+  if grep -q 'text-blue-[0-9]' "$temp_file"; then
+    perl -pi -e 's/text-blue-(?:500|600|700|800|900|950)\b/text-[var(--info)]/g' "$temp_file"
+    ((changes++)) || true
+  fi
+  
+  # Replace destructive colors (red) with CSS vars - ALL shades
+  if grep -q 'bg-red-[0-9]' "$temp_file"; then
+    # Light backgrounds → destructive with low opacity or use muted
+    perl -pi -e 's/bg-red-(?:50|100|200)\b/bg-destructive\/10/g' "$temp_file"
+    # Medium/dark backgrounds → destructive
+    perl -pi -e 's/bg-red-(?:500|600|700|800|900|950)\b/bg-destructive/g' "$temp_file"
+    ((changes++)) || true
+  fi
+  
+  if grep -q 'text-red-[0-9]' "$temp_file"; then
+    perl -pi -e 's/text-red-(?:500|600|700|800|900|950)\b/text-destructive/g' "$temp_file"
+    ((changes++)) || true
+  fi
+  
+  # Replace purple colors (can map to primary or muted depending on context)
+  if grep -q 'bg-purple-[0-9]' "$temp_file"; then
+    # Light purple → muted
+    perl -pi -e 's/bg-purple-(?:50|100|200)\b/bg-muted/g' "$temp_file"
+    # Dark purple → primary or accent
+    perl -pi -e 's/bg-purple-(?:500|600|700|800|900|950)\b/bg-primary/g' "$temp_file"
+    ((changes++)) || true
+  fi
+  
+  if grep -q 'text-purple-[0-9]' "$temp_file"; then
+    perl -pi -e 's/text-purple-(?:500|600|700|800|900|950)\b/text-primary/g' "$temp_file"
     ((changes++)) || true
   fi
   
