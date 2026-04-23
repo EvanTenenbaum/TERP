@@ -136,6 +136,7 @@ interface ReturnQueueRow {
   returnNumber: string;
   returnReason: string;
   processedBy: number;
+  processedByName?: string | null;
   processedAt: string;
   notes: string | null;
   derivedStatus:
@@ -238,6 +239,7 @@ interface ReturnListItem {
   returnReason: string;
   status: string; // DISC-RET-002: dedicated column
   processedBy: number;
+  processedByName?: string | null;
   processedAt: string | Date;
   notes: string | null;
 }
@@ -250,6 +252,7 @@ function mapReturnsToQueueRows(items: ReturnListItem[]): ReturnQueueRow[] {
     returnNumber: `RET-${item.id}`,
     returnReason: item.returnReason,
     processedBy: item.processedBy,
+    processedByName: item.processedByName,
     processedAt:
       item.processedAt instanceof Date
         ? item.processedAt.toISOString()
@@ -789,10 +792,13 @@ export function ReturnsPilotSurface({
       {
         field: "processedBy",
         headerName: "By",
-        minWidth: 80,
-        maxWidth: 100,
+        minWidth: 120,
+        maxWidth: 180,
         cellClass: "powersheet-cell--locked",
-        valueFormatter: params => `#${String(params.value ?? "")}`,
+        valueGetter: params => {
+          const row = params.data as ReturnQueueRow;
+          return row.processedByName || `User #${row.processedBy}`;
+        },
       },
     ],
     []
