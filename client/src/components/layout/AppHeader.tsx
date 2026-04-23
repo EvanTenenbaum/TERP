@@ -87,7 +87,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   };
 
   return (
-    <header className="border-b border-border/70 bg-background/90 backdrop-blur-md">
+    <header className="border-b border-border/70 bg-background">
       <div className="mx-auto flex min-h-[56px] w-full max-w-[1800px] items-center gap-2 px-3 py-2 md:px-4">
         <Button
           variant="ghost"
