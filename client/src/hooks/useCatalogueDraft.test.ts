@@ -301,4 +301,148 @@ describe("useCatalogueDraft", () => {
     );
     expect(toastSuccess).toHaveBeenCalledWith("Share link copied to clipboard");
   });
+
+  it("surfaces a loud error when share is requested without a finalized sheet", async () => {
+    const { result } = renderHook(() =>
+      useCatalogueDraft({
+        clientId: 1,
+        items: [{ id: 1 }] as never[],
+      })
+    );
+
+    let shareUrl: string | null = "initial" as string | null;
+    await act(async () => {
+      shareUrl = await result.current.generateShareLink();
+    });
+
+    expect(shareUrl).toBeNull();
+    expect(toastError).toHaveBeenCalledWith(
+      "Save the catalogue before generating a share link"
+    );
+    expect(shareLinkMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a loud error when share is requested with unsaved changes", async () => {
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result, rerender } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    await act(async () => {
+      await result.current.saveSheet();
+    });
+
+    await waitFor(() => {
+      expect(result.current.lastSavedSheetId).toBe(202);
+    });
+
+    // Dirty the catalogue with new items
+    rerender({
+      items: [item, { ...item, id: 2 }] as never[],
+    });
+
+    expect(result.current.hasUnsavedChanges).toBe(true);
+
+    shareLinkMutateAsync.mockClear();
+    toastError.mockClear();
+
+    let shareUrl: string | null = "initial" as string | null;
+    await act(async () => {
+      shareUrl = await result.current.generateShareLink();
+    });
+
+    expect(shareUrl).toBeNull();
+    expect(toastError).toHaveBeenCalledWith(
+      "Save your latest changes before generating a share link"
+    );
+    expect(shareLinkMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a loud error when the share-link server call fails", async () => {
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    await act(async () => {
+      await result.current.saveSheet();
+    });
+
+    await waitFor(() => {
+      expect(result.current.lastSavedSheetId).toBe(202);
+    });
+
+    shareLinkMutateAsync.mockRejectedValueOnce(
+      new Error("network unavailable")
+    );
+    toastError.mockClear();
+
+    let shareUrl: string | null = "initial" as string | null;
+    await act(async () => {
+      shareUrl = await result.current.generateShareLink();
+    });
+
+    expect(shareUrl).toBeNull();
+    expect(toastError).toHaveBeenCalledWith(
+      "Failed to generate share link: network unavailable"
+    );
+  });
+
+  it("surfaces a loud error when the share-link response has no URL", async () => {
+    const item = {
+      id: 1,
+      name: "Blue Dream",
+      basePrice: 10,
+      retailPrice: 20,
+      quantity: 2,
+      priceMarkup: 0,
+      appliedRules: [],
+    } as never;
+
+    const { result } = renderHook(
+      ({ items }) => useCatalogueDraft({ clientId: 1, items }),
+      { initialProps: { items: [item] as never[] } }
+    );
+
+    await act(async () => {
+      await result.current.saveSheet();
+    });
+
+    await waitFor(() => {
+      expect(result.current.lastSavedSheetId).toBe(202);
+    });
+
+    shareLinkMutateAsync.mockResolvedValueOnce({});
+    toastError.mockClear();
+
+    let shareUrl: string | null = "initial" as string | null;
+    await act(async () => {
+      shareUrl = await result.current.generateShareLink();
+    });
+
+    expect(shareUrl).toBeNull();
+    expect(toastError).toHaveBeenCalledWith(
+      "Share link could not be generated — the server returned no URL"
+    );
+  });
 });

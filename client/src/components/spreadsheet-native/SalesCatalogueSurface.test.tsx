@@ -609,6 +609,72 @@ describe("SalesCatalogueSurface", () => {
     expect(draftState.resetDraft).toHaveBeenCalled();
   });
 
+  it("shows a loud error when pop-ups are blocked on Print", async () => {
+    const windowOpen = vi.spyOn(window, "open").mockReturnValue(null);
+
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
+    fireEvent.click(screen.getByRole("button", { name: /Print/i }));
+
+    expect(windowOpen).toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledWith(
+      "Allow pop-ups to print the catalogue"
+    );
+    expect(toastSuccess).not.toHaveBeenCalledWith("Print dialog opened");
+
+    windowOpen.mockRestore();
+  });
+
+  it("shows a success toast when Print opens successfully", async () => {
+    const writeMock = vi.fn();
+    const closeMock = vi.fn();
+    const mockWindow = {
+      document: { write: writeMock, close: closeMock },
+      close: vi.fn(),
+    } as unknown as ReturnType<typeof window.open>;
+    const windowOpen = vi.spyOn(window, "open").mockReturnValue(mockWindow);
+
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
+    fireEvent.click(screen.getByRole("button", { name: /Print/i }));
+
+    expect(writeMock).toHaveBeenCalled();
+    expect(closeMock).toHaveBeenCalled();
+    expect(toastSuccess).toHaveBeenCalledWith("Print dialog opened");
+
+    windowOpen.mockRestore();
+  });
+
+  it("shows a loud error when Print fails to write the document", async () => {
+    const mockWindow = {
+      document: {
+        write: vi.fn(() => {
+          throw new Error("write denied");
+        }),
+        close: vi.fn(),
+      },
+      close: vi.fn(),
+    } as unknown as ReturnType<typeof window.open>;
+    const windowOpen = vi.spyOn(window, "open").mockReturnValue(mockWindow);
+
+    render(<SalesCatalogueSurface />);
+    fireEvent.click(screen.getByText("Select Client 1"));
+    fireEvent.click(screen.getByTestId("grid-Inventory"));
+    fireEvent.click(screen.getByRole("button", { name: "Add Row" }));
+    fireEvent.click(screen.getByRole("button", { name: /Print/i }));
+
+    expect(toastError).toHaveBeenCalledWith(
+      "Failed to prepare print dialog: write denied"
+    );
+    expect(toastSuccess).not.toHaveBeenCalledWith("Print dialog opened");
+
+    windowOpen.mockRestore();
+  });
+
   it("wires draft deletion from the dialog to the hook", () => {
     draftState.drafts = [
       {
