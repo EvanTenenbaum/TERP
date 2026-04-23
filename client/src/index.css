@@ -2,21 +2,9 @@
 @import "tw-animate-css";
 @import "./styles/print.css";
 
-@font-face {
-  font-family: "Fraunces";
-  src: url("/fonts/Fraunces-Light.woff2") format("woff2");
-  font-weight: 300;
-  font-style: normal;
-  font-display: swap;
-}
 
-@font-face {
-  font-family: "Fraunces";
-  src: url("/fonts/Fraunces-Regular.woff2") format("woff2");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+
+
 
 @font-face {
   font-family: "DM Mono";
@@ -92,6 +80,13 @@
 }
 
 :root {
+  /* TER-1244: Typography lockdown — 6-step scale */
+  --text-xs: 0.6875rem;   /* 11px */
+  --text-sm: 0.75rem;     /* 12px */
+  --text-base: 0.8125rem; /* 13px */
+  --text-md: 0.875rem;    /* 14px */
+  --text-lg: 1.125rem;    /* 18px */
+  --text-xl: 1.5rem;      /* 24px */
   --primary: oklch(0.53 0.13 44);
   --primary-foreground: oklch(0.98 0.003 76);
   --sidebar-primary: oklch(0.53 0.13 44);
@@ -183,7 +178,7 @@
     font-family: "Instrument Sans", system-ui, sans-serif;
   }
   .font-display {
-    font-family: "Fraunces", Georgia, serif;
+    font-family: "Instrument Sans", system-ui, sans-serif;
     font-weight: 300;
     letter-spacing: -0.015em;
   }
@@ -210,7 +205,7 @@
   }
 
   .terp-main-shell {
-    max-width: 1800px;
+    max-width: 1280px; /* TER-1239: unified with .container */
     margin: 0 auto;
     width: 100%;
     min-width: 0;
