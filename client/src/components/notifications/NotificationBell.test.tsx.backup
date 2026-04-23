@@ -101,39 +101,6 @@ describe("NotificationBell", () => {
     fireEvent.click(trigger);
   };
 
-  it("hides badge when unread count is 0", async () => {
-    const { trpc } = await import("@/lib/trpc");
-    vi.mocked(trpc.notifications.getUnreadCount.useQuery).mockReturnValueOnce({
-      data: { unread: 0 },
-      isLoading: false,
-    } as any);
-    
-    renderBell();
-    expect(screen.queryByText("0")).not.toBeInTheDocument();
-  });
-
-  it("shows numeric count for 5 unread", async () => {
-    const { trpc } = await import("@/lib/trpc");
-    vi.mocked(trpc.notifications.getUnreadCount.useQuery).mockReturnValueOnce({
-      data: { unread: 5 },
-      isLoading: false,
-    } as any);
-    
-    renderBell();
-    expect(screen.getByText("5")).toBeInTheDocument();
-  });
-
-  it("shows 9+ for 15 unread", async () => {
-    const { trpc } = await import("@/lib/trpc");
-    vi.mocked(trpc.notifications.getUnreadCount.useQuery).mockReturnValueOnce({
-      data: { unread: 15 },
-      isLoading: false,
-    } as any);
-    
-    renderBell();
-    expect(screen.getByText("9+")).toBeInTheDocument();
-  });
-
   it("renders unread badge from query data", () => {
     renderBell();
     expect(screen.getByText("1")).toBeInTheDocument();
