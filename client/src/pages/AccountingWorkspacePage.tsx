@@ -56,6 +56,7 @@ export default function AccountingWorkspacePage() {
       title={ACCOUNTING_WORKSPACE.title}
       activeTab={activeTab}
       tabs={ACCOUNTING_WORKSPACE.tabs}
+      tabGroups={ACCOUNTING_WORKSPACE.tabGroups}
       onTabChange={setActiveTab}
     >
       <LinearWorkspacePanel value="dashboard">

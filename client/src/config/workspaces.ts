@@ -3,11 +3,38 @@ export interface WorkspaceTabConfig<T extends string = string> {
   label: string;
 }
 
+/**
+ * Optional grouped view of a workspace's tabs. When present and the
+ * `ux.v2.workspace-tabs` feature flag is enabled, `LinearWorkspaceShell`
+ * renders a two-level rail (top row = group labels, secondary row = the
+ * selected group's tabs). The flat `tabs` array remains the source of truth
+ * for valid tab values so deep links (e.g. `?tab=invoices`) keep working
+ * regardless of flag state.
+ *
+ * Invariants:
+ * - Every tab value referenced in `tabGroups[].tabs[].value` MUST also exist
+ *   in the workspace's flat `tabs` array.
+ * - Tab values are unique across all groups (no tab appears in two groups).
+ *
+ * Introduced by TER-1305 (UX v2 tab grouping). See
+ * `docs/ux-review/02-Implementation_Strategy.md` §4.5.
+ */
+export interface WorkspaceTabGroupConfig<T extends string = string> {
+  label: string;
+  tabs: readonly WorkspaceTabConfig<T>[];
+}
+
 export interface WorkspaceConfig<T extends string = string> {
   title: string;
   homePath: string;
   description: string;
   tabs: readonly WorkspaceTabConfig<T>[];
+  /**
+   * Optional grouped presentation of the workspace's tabs. See
+   * {@link WorkspaceTabGroupConfig} for the invariants this field must
+   * uphold relative to the flat `tabs` array.
+   */
+  tabGroups?: readonly WorkspaceTabGroupConfig<T>[];
 }
 
 export const SALES_WORKSPACE = {
@@ -92,17 +119,55 @@ export const ACCOUNTING_WORKSPACE = {
   homePath: "/accounting",
   description:
     "Manage invoices, bills, payments, banking, and the ledger in one finance workspace.",
+  // Flat tab list is the source of truth for valid tab values. Deep links
+  // like `/accounting?tab=invoices` route by value and are unaffected by the
+  // `tabGroups` grouping introduced for TER-1305. Order here is aligned with
+  // the group order below for consistency when the flat rail is rendered
+  // (feature flag off / fallback path).
   tabs: [
     { value: "dashboard", label: "Dashboard" },
     { value: "invoices", label: "Invoices" },
-    { value: "bills", label: "Bills" },
     { value: "payments", label: "Payments" },
+    { value: "bills", label: "Bills" },
+    { value: "expenses", label: "Expenses" },
     { value: "general-ledger", label: "General Ledger" },
     { value: "chart-of-accounts", label: "Chart of Accounts" },
-    { value: "expenses", label: "Expenses" },
     { value: "bank-accounts", label: "Bank Accounts" },
     { value: "bank-transactions", label: "Bank Transactions" },
     { value: "fiscal-periods", label: "Fiscal Periods" },
+  ],
+  // Two-level rail grouping (TER-1305 / UX v2). Rendered by
+  // `LinearWorkspaceShell` only when the `ux.v2.workspace-tabs` flag is on.
+  // Tab values here MUST exist in the flat `tabs` array above.
+  tabGroups: [
+    {
+      label: "Overview",
+      tabs: [{ value: "dashboard", label: "Dashboard" }],
+    },
+    {
+      label: "Receivables",
+      tabs: [
+        { value: "invoices", label: "Invoices" },
+        { value: "payments", label: "Payments" },
+      ],
+    },
+    {
+      label: "Payables",
+      tabs: [
+        { value: "bills", label: "Bills" },
+        { value: "expenses", label: "Expenses" },
+      ],
+    },
+    {
+      label: "Ledger",
+      tabs: [
+        { value: "general-ledger", label: "General Ledger" },
+        { value: "chart-of-accounts", label: "Chart of Accounts" },
+        { value: "bank-accounts", label: "Bank Accounts" },
+        { value: "bank-transactions", label: "Bank Transactions" },
+        { value: "fiscal-periods", label: "Fiscal Periods" },
+      ],
+    },
   ],
 } as const satisfies WorkspaceConfig<
   | "dashboard"
