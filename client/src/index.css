@@ -530,6 +530,38 @@
     gap: 0.25rem;
   }
 
+  /**
+   * UX v2 filter strip row (TER-1310).
+   *
+   * Wraps a <WorkspaceFilterBar> rendered in the `filterStrip` slot of
+   * LinearWorkspaceShell. Sits directly below the tab row so the border
+   * seam reads as a continuation of the shell chrome.
+   */
+  .linear-workspace-filter-row {
+    display: flex;
+    min-width: 0;
+    background: var(--card);
+    border-bottom: 1px solid
+      color-mix(in oklab, var(--border) 76%, transparent);
+  }
+
+  .linear-workspace-filter-strip {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    padding: 0.55rem 1rem 0.6rem;
+    row-gap: 0.4rem;
+  }
+
+  .linear-workspace-shell[data-density="compact"]
+    .linear-workspace-filter-strip {
+    gap: 0.35rem;
+    padding: 0.4rem 0.85rem 0.45rem;
+  }
+
   .linear-workspace-content {
     margin-top: 0;
     min-height: 0;
