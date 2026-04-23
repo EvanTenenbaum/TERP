@@ -111,12 +111,12 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           onSubmit={handleSearch}
           className="flex min-w-0 flex-1 items-center xl:max-w-4xl"
         >
-          <div className="relative flex w-full items-center rounded-2xl border border-border/70 bg-card/90 shadow-sm">
+          <div className="relative flex w-full items-center rounded-[var(--radius)] border border-border/70 bg-card/90 shadow-sm">
             <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search, jump, or run a command..."
-              className="h-10 w-full rounded-2xl border-0 bg-transparent pl-10 pr-[5.5rem] text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
+              className="h-10 w-full rounded-[var(--radius)] border-0 bg-transparent pl-10 pr-[5.5rem] text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -133,7 +133,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           </div>
         </form>
 
-        <div className="ml-auto flex shrink-0 items-center gap-1 rounded-full border border-border/70 bg-card/90 p-1 shadow-sm">
+        <div className="ml-auto flex shrink-0 items-center gap-1 rounded-[var(--radius)] border border-border/70 bg-card/90 p-1 shadow-sm">
           <NotificationBell className="relative flex h-11 w-11 items-center justify-center sm:h-9 sm:w-9" />
           <Button
             variant="ghost"
