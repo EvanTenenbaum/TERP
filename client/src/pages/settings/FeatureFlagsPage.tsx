@@ -74,6 +74,11 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
   const [selectedFlag, setSelectedFlag] = useState<number | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isOverrideDialogOpen, setIsOverrideDialogOpen] = useState(false);
+  // TER-1295: Confirmation gate for the "Initialize Defaults" dev-tool action.
+  // Seeding default flags is a bulk mutation that touches every unseen flag
+  // in the system; require an explicit confirm step before running it.
+  const [isInitializeDefaultsOpen, setIsInitializeDefaultsOpen] =
+    useState(false);
 
   // FEAT-018: Only allow admins to seed defaults (development/setup feature)
   const showDevTools = isSuperAdmin || hasPermission("admin:dev-tools");
@@ -145,6 +150,8 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
         title: "Seed complete",
         description: `Created ${result.created} flags, skipped ${result.skipped} existing.`,
       });
+      // TER-1295: close the confirmation dialog after a successful seed.
+      setIsInitializeDefaultsOpen(false);
       refetch();
     },
     onError: error => {
@@ -226,19 +233,59 @@ function FeatureFlagsPageContent({ embedded = false }: FeatureFlagsPageProps) {
           </p>
         </div>
         <div className="flex gap-2">
-          {/* FEAT-018: Hide Seed Defaults button from non-admin users */}
+          {/* FEAT-018: Hide Seed Defaults button from non-admin users.
+              TER-1295: This is a bulk mutation that touches every unseen
+              default flag — gate it behind an explicit confirmation dialog
+              rather than firing on click. The trigger stays variant="outline"
+              (secondary) so it does not compete with the primary "Add
+              Control" action in this header. */}
           {showDevTools && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => seedDefaultsMutation.mutate()}
-              disabled={seedDefaultsMutation.isPending}
+            <Dialog
+              open={isInitializeDefaultsOpen}
+              onOpenChange={setIsInitializeDefaultsOpen}
             >
-              <Settings
-                className={`h-4 w-4 mr-2 ${seedDefaultsMutation.isPending ? "animate-spin" : ""}`}
-              />
-              Initialize Defaults
-            </Button>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={seedDefaultsMutation.isPending}
+                >
+                  <Settings
+                    className={`h-4 w-4 mr-2 ${seedDefaultsMutation.isPending ? "animate-spin" : ""}`}
+                  />
+                  Initialize Defaults
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Initialize default flags?</DialogTitle>
+                  <DialogDescription>
+                    This creates any missing default feature controls in the
+                    database. Existing flags are not modified. Only run this
+                    when setting up a new environment or after adding new
+                    default flags to the codebase.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsInitializeDefaultsOpen(false)}
+                    disabled={seedDefaultsMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={() => seedDefaultsMutation.mutate()}
+                    disabled={seedDefaultsMutation.isPending}
+                  >
+                    {seedDefaultsMutation.isPending && (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    )}
+                    Initialize Defaults
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           )}
           <Button
             variant="outline"
