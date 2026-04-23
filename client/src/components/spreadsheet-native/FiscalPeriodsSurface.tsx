@@ -86,7 +86,7 @@ function StatusBadgeCellRenderer(params: { value: PeriodStatus }) {
     return (
       <Badge
         variant="outline"
-        className="text-[9px] py-0 px-1.5 bg-green-50 text-green-700 border-green-200"
+        className="text-[9px] py-0 px-1.5 bg-[var(--success-bg)] text-[var(--success)] border-green-200"
       >
         OPEN
       </Badge>
@@ -106,7 +106,7 @@ function StatusBadgeCellRenderer(params: { value: PeriodStatus }) {
     return (
       <Badge
         variant="outline"
-        className="text-[9px] py-0 px-1.5 bg-red-50 text-red-700 border-red-200"
+        className="text-[9px] py-0 px-1.5 bg-destructive/10 text-destructive border-red-200"
       >
         LOCKED
       </Badge>
@@ -417,14 +417,14 @@ export function FiscalPeriodsSurface() {
         {/* KPI badges */}
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-blue-50 text-blue-700 border-blue-200"
+          className="text-[9px] py-0 px-1.5 bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
         >
           {totalPeriods} periods
         </Badge>
         {currentPeriodName && (
           <Badge
             variant="outline"
-            className="text-[9px] py-0 px-1.5 bg-green-50 text-green-700 border-green-200"
+            className="text-[9px] py-0 px-1.5 bg-[var(--success-bg)] text-[var(--success)] border-green-200"
           >
             {currentPeriodName}
           </Badge>

@@ -88,7 +88,7 @@ function trendVisual(direction: Trend) {
   if (direction === "down") {
     return {
       Icon: ArrowDownRight,
-      className: "text-red-600",
+      className: "text-destructive",
     };
   }
   return {

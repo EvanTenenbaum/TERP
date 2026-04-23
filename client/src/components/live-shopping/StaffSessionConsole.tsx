@@ -59,16 +59,16 @@ const STATUS_CONFIG = {
   INTERESTED: {
     label: "Interested / Negotiate",
     icon: "💭",
-    color: "border-blue-400 bg-blue-50",
-    headerBg: "bg-blue-500",
-    badge: "bg-blue-100 text-blue-800",
+    color: "border-blue-400 bg-[var(--info-bg)]",
+    headerBg: "bg-[var(--info)]",
+    badge: "bg-[var(--info-bg)] text-[var(--info)]",
   },
   TO_PURCHASE: {
     label: "Ready to Purchase",
     icon: "🛒",
-    color: "border-green-400 bg-green-50",
-    headerBg: "bg-green-500",
-    badge: "bg-green-100 text-green-800",
+    color: "border-green-400 bg-[var(--success-bg)]",
+    headerBg: "bg-[var(--success)]",
+    badge: "bg-[var(--success-bg)] text-[var(--success)]",
   },
 };
 
@@ -268,7 +268,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
           <span
             className={`px-3 py-1 text-xs font-bold rounded-full ${
               session.status === "ACTIVE"
-                ? "bg-red-100 text-red-600 animate-pulse"
+                ? "bg-destructive/10 text-destructive animate-pulse"
                 : "bg-gray-200 text-gray-600"
             }`}
           >
@@ -287,19 +287,19 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
             </div>
             <div className="text-center">
               <div className="text-xs text-gray-500">Interested</div>
-              <div className="text-lg font-bold text-blue-600">
+              <div className="text-lg font-bold text-[var(--info)]">
                 {totals?.interestedCount || 0}
               </div>
             </div>
             <div className="text-center">
               <div className="text-xs text-gray-500">To Buy</div>
-              <div className="text-lg font-bold text-green-600">
+              <div className="text-lg font-bold text-[var(--success)]">
                 {totals?.toPurchaseCount || 0}
               </div>
             </div>
             <div className="text-center border-l pl-6">
               <div className="text-xs text-gray-500">Purchase Value</div>
-              <div className="text-xl font-bold text-green-600">
+              <div className="text-xl font-bold text-[var(--success)]">
                 ${totals?.toPurchaseValue?.toFixed(2) || "0.00"}
               </div>
             </div>
@@ -316,7 +316,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
               </button>
               <button
                 onClick={() => handleEndSession(true)}
-                className="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow"
+                className="px-4 py-2 text-sm font-medium text-white bg-[var(--success)] hover:bg-[var(--success)] rounded-lg shadow"
               >
                 Convert to Order
               </button>
@@ -335,7 +335,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
               className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
             >
               <div className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-purple-600" />
+                <DollarSign className="h-5 w-5 text-primary" />
                 <span className="font-semibold text-gray-900">
                   Price Negotiations ({activeNegotiations.length})
                 </span>
@@ -358,7 +358,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                   return (
                     <div
                       key={item.id}
-                      className="bg-purple-50 rounded-lg p-3 border border-purple-200"
+                      className="bg-muted rounded-lg p-3 border border-purple-200"
                     >
                       <div className="flex justify-between items-start mb-2">
                         <div className="flex-1">
@@ -372,8 +372,8 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                         <span
                           className={`px-2 py-0.5 text-xs rounded-full ${
                             isPending
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-purple-100 text-purple-800"
+                              ? "bg-[var(--warning-bg)] text-[var(--warning)]"
+                              : "bg-muted text-primary"
                           }`}
                         >
                           {item.negotiationStatus}
@@ -392,7 +392,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                         </div>
                         <div>
                           <span className="text-gray-500">Requested:</span>
-                          <p className="font-bold text-purple-600">
+                          <p className="font-bold text-primary">
                             $
                             {parseFloat(
                               String(negotiation?.proposedPrice ?? 0)
@@ -416,7 +416,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                               handleRespondToNegotiation(item.id, "ACCEPT")
                             }
                             disabled={respondToNegotiationMutation.isPending}
-                            className="flex-1 px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700 flex items-center justify-center gap-1"
+                            className="flex-1 px-3 py-2 bg-[var(--success)] text-white text-sm rounded hover:bg-[var(--success)] flex items-center justify-center gap-1"
                           >
                             <Check className="h-4 w-4" />
                             Accept
@@ -426,7 +426,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                               handleRespondToNegotiation(item.id, "REJECT")
                             }
                             disabled={respondToNegotiationMutation.isPending}
-                            className="flex-1 px-3 py-2 bg-red-600 text-white text-sm rounded hover:bg-red-700 flex items-center justify-center gap-1"
+                            className="flex-1 px-3 py-2 bg-destructive text-white text-sm rounded hover:bg-destructive flex items-center justify-center gap-1"
                           >
                             <XIcon className="h-4 w-4" />
                             Reject
@@ -477,7 +477,7 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                                 }
                               }}
                               disabled={respondToNegotiationMutation.isPending}
-                              className="px-4 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                              className="px-4 py-2 bg-primary text-white text-sm rounded hover:bg-primary"
                             >
                               Send Counter
                             </button>
@@ -486,8 +486,8 @@ export const StaffSessionConsole: React.FC<StaffSessionConsoleProps> = ({
                       )}
 
                       {isCounterOffered && negotiation?.counterPrice && (
-                        <div className="mt-2 p-2 bg-purple-100 rounded">
-                          <p className="text-xs text-purple-800">
+                        <div className="mt-2 p-2 bg-muted rounded">
+                          <p className="text-xs text-primary">
                             Waiting for customer to respond to your
                             counter-offer of{" "}
                             <strong>
@@ -697,7 +697,7 @@ const StaffItemCard: React.FC<StaffItemCardProps> = ({
           </button>
           <button
             onClick={() => onRemove(item.id)}
-            className="p-1 rounded bg-gray-100 text-gray-400 hover:bg-red-100 hover:text-red-500"
+            className="p-1 rounded bg-gray-100 text-gray-400 hover:bg-destructive/10 hover:text-destructive"
             title="Remove item"
           >
             ✕

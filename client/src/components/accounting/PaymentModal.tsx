@@ -217,7 +217,7 @@ export function PaymentModal({
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Already Paid:</span>
-              <span className="font-medium text-green-600">
+              <span className="font-medium text-[var(--success)]">
                 {formatCurrency(amountPaid)}
               </span>
             </div>
@@ -253,8 +253,8 @@ export function PaymentModal({
               <div className="flex items-center gap-2 text-sm">
                 {isFullPayment ? (
                   <>
-                    <CheckCircle2 className="h-4 w-4 text-green-600" />
-                    <span className="text-green-600">
+                    <CheckCircle2 className="h-4 w-4 text-[var(--success)]" />
+                    <span className="text-[var(--success)]">
                       Full payment - invoice will be marked as paid
                     </span>
                   </>

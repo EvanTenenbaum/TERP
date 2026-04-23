@@ -355,10 +355,10 @@ export default function InterestListPage() {
             <CardTitle className="text-sm font-medium">
               Urgent Priority
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-red-500" />
+            <TrendingUp className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               {stats?.urgentCount || totalUrgent}
             </div>
           </CardContent>
@@ -368,10 +368,10 @@ export default function InterestListPage() {
             <CardTitle className="text-sm font-medium">
               Available Matches
             </CardTitle>
-            <Package className="h-4 w-4 text-green-500" />
+            <Package className="h-4 w-4 text-[var(--success)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[var(--success)]">
               {stats?.matchCount || totalMatches}
             </div>
           </CardContent>
@@ -381,7 +381,7 @@ export default function InterestListPage() {
             <CardTitle className="text-sm font-medium">
               Conversion Rate
             </CardTitle>
-            <ShoppingCart className="h-4 w-4 text-blue-500" />
+            <ShoppingCart className="h-4 w-4 text-[var(--info)]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -546,7 +546,7 @@ export default function InterestListPage() {
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleDeleteItem(item)}
-                                className="text-red-600"
+                                className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Remove

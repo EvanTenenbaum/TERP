@@ -120,7 +120,7 @@ export const AchievementsCard = React.memo(function AchievementsCard({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-yellow-500" />
+              <Trophy className="h-5 w-5 text-[var(--warning)]" />
               Achievements
             </CardTitle>
             <CardDescription>Earn medals and unlock rewards</CardDescription>
@@ -147,8 +147,8 @@ export const AchievementsCard = React.memo(function AchievementsCard({
         {/* Markup Discount Info */}
         {achievementsData?.summary?.achievementMarkupDiscount !== undefined &&
           achievementsData.summary.achievementMarkupDiscount > 0 && (
-            <div className="mt-3 p-3 bg-green-50 dark:bg-green-950 rounded-lg">
-              <div className="flex items-center gap-2 text-green-700 dark:text-green-300">
+            <div className="mt-3 p-3 bg-[var(--success-bg)] dark:bg-[var(--success)] rounded-lg">
+              <div className="flex items-center gap-2 text-[var(--success)] dark:text-green-300">
                 <Star className="h-4 w-4" />
                 <span className="text-sm font-medium">
                   Achievement Bonus:{" "}
@@ -196,7 +196,7 @@ export const AchievementsCard = React.memo(function AchievementsCard({
 
         {/* Error State */}
         {error && (
-          <div className="text-center py-8 text-red-600">
+          <div className="text-center py-8 text-destructive">
             <p>Error loading achievements: {error.message}</p>
           </div>
         )}

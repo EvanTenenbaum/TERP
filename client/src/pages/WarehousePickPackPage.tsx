@@ -195,17 +195,17 @@ const WarehousePickPackPage: React.FC = () => {
       PENDING: {
         label: "Pending",
         icon: Clock,
-        className: "bg-yellow-100 text-yellow-700 border-yellow-200",
+        className: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200",
       },
       PARTIAL: {
         label: "Picking",
         icon: Package,
-        className: "bg-blue-100 text-blue-700 border-blue-200",
+        className: "bg-[var(--info-bg)] text-[var(--info)] border-blue-200",
       },
       READY: {
         label: "Ready",
         icon: CheckCircle,
-        className: "bg-green-100 text-green-700 border-green-200",
+        className: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
       },
       SHIPPED: {
         label: "Shipped",
@@ -241,19 +241,19 @@ const WarehousePickPackPage: React.FC = () => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-3xl font-bold text-yellow-600">{stats.pending}</div>
+                  <div className="text-3xl font-bold text-[var(--warning)]">{stats.pending}</div>
                   <div className="text-sm text-gray-600 mt-1">Pending</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-3xl font-bold text-blue-600">{stats.partial}</div>
+                  <div className="text-3xl font-bold text-[var(--info)]">{stats.partial}</div>
                   <div className="text-sm text-gray-600 mt-1">Picking</div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
-                  <div className="text-3xl font-bold text-green-600">{stats.ready}</div>
+                  <div className="text-3xl font-bold text-[var(--success)]">{stats.ready}</div>
                   <div className="text-sm text-gray-600 mt-1">Ready</div>
                 </CardContent>
               </Card>
@@ -322,7 +322,7 @@ const WarehousePickPackPage: React.FC = () => {
                             {order.itemCount} items
                           </span>
                           {order.packedCount > 0 && (
-                            <span className="flex items-center gap-1 text-green-600">
+                            <span className="flex items-center gap-1 text-[var(--success)]">
                               <CheckCircle className="w-4 h-4" />
                               {order.packedCount} packed
                             </span>
@@ -387,7 +387,7 @@ const WarehousePickPackPage: React.FC = () => {
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
                   <div
-                    className="bg-green-500 h-3 rounded-full transition-all"
+                    className="bg-[var(--success)] h-3 rounded-full transition-all"
                     style={{
                       width: `${
                         (orderDetails.summary.packedItems /
@@ -400,7 +400,7 @@ const WarehousePickPackPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="text-red-600">Failed to load order details</div>
+            <div className="text-destructive">Failed to load order details</div>
           )}
         </div>
       </div>
@@ -445,7 +445,7 @@ const WarehousePickPackPage: React.FC = () => {
           {unpackedItems.length > 0 && (
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-yellow-600" />
+                <Clock className="w-5 h-5 text-[var(--warning)]" />
                 Items to Pick ({unpackedItems.length})
               </h2>
               <div className="space-y-3">
@@ -493,12 +493,12 @@ const WarehousePickPackPage: React.FC = () => {
           {packedItems.length > 0 && (
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-green-600" />
+                <CheckCircle className="w-5 h-5 text-[var(--success)]" />
                 Packed Items ({packedItems.length})
               </h2>
               <div className="space-y-3">
                 {packedItems.map((item) => (
-                  <Card key={item.id} className="bg-green-50 border-green-200">
+                  <Card key={item.id} className="bg-[var(--success-bg)] border-green-200">
                     <CardContent className="p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
@@ -511,13 +511,13 @@ const WarehousePickPackPage: React.FC = () => {
                               Qty: {item.quantity}
                             </span>
                             {item.bagIdentifier && (
-                              <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300">
+                              <Badge variant="outline" className="bg-[var(--success-bg)] text-[var(--success)] border-green-300">
                                 {item.bagIdentifier}
                               </Badge>
                             )}
                           </div>
                         </div>
-                        <CheckCircle className="w-8 h-8 text-green-600 flex-shrink-0" />
+                        <CheckCircle className="w-8 h-8 text-[var(--success)] flex-shrink-0" />
                       </div>
                     </CardContent>
                   </Card>
@@ -557,7 +557,7 @@ const WarehousePickPackPage: React.FC = () => {
               <Button
                 onClick={handleMarkReady}
                 disabled={markReadyMutation.isPending}
-                className="flex-1 min-h-[56px] text-base bg-green-600 hover:bg-green-700"
+                className="flex-1 min-h-[56px] text-base bg-[var(--success)] hover:bg-[var(--success)]"
               >
                 <Truck className="w-5 h-5 mr-2" />
                 Mark Ready for Fulfillment

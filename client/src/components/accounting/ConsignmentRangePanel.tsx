@@ -41,7 +41,7 @@ function getStatusBadgeProps(
     case "ABOVE_RANGE":
       return {
         label: "Above Range",
-        className: "border-blue-200 bg-blue-100 text-blue-800",
+        className: "border-blue-200 bg-[var(--info-bg)] text-[var(--info)]",
       };
     case "IN_RANGE":
       return {

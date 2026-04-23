@@ -144,7 +144,7 @@ export function InvoicePaymentHistory({
                     ? getMethodBadge(payment.paymentMethod)
                     : "-"}
                 </TableCell>
-                <TableCell className="text-right font-medium text-green-600">
+                <TableCell className="text-right font-medium text-[var(--success)]">
                   {formatCurrency(payment.allocatedAmount)}
                 </TableCell>
                 <TableCell>

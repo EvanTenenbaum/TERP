@@ -81,7 +81,7 @@ export const ExpiringSamplesWidget = React.memo(function ExpiringSamplesWidget({
     <Card className="p-4">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <AlertTriangle className={`h-5 w-5 ${expiredCount > 0 ? "text-red-500" : "text-yellow-500"}`} />
+          <AlertTriangle className={`h-5 w-5 ${expiredCount > 0 ? "text-destructive" : "text-[var(--warning)]"}`} />
           <h3 className="font-semibold">Expiring Samples</h3>
         </div>
         <Badge variant={expiredCount > 0 ? "destructive" : "secondary"}>

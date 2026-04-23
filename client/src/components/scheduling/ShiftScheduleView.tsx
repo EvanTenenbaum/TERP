@@ -35,10 +35,10 @@ type ShiftStatus =
   | "cancelled";
 
 const shiftStatusColors: Record<ShiftStatus, string> = {
-  scheduled: "bg-blue-100 border-blue-300 text-blue-800",
-  started: "bg-green-100 border-green-300 text-green-800",
+  scheduled: "bg-[var(--info-bg)] border-blue-300 text-[var(--info)]",
+  started: "bg-[var(--success-bg)] border-green-300 text-[var(--success)]",
   completed: "bg-gray-100 border-gray-300 text-gray-800",
-  absent: "bg-red-100 border-red-300 text-red-800",
+  absent: "bg-destructive/10 border-red-300 text-destructive",
   cancelled: "bg-gray-100 border-gray-200 text-gray-500",
 };
 
@@ -115,7 +115,7 @@ export function ShiftScheduleView({ userId }: ShiftScheduleViewProps) {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-purple-600" />
+          <Calendar className="h-5 w-5 text-primary" />
           Shift Schedule
         </h3>
 
@@ -166,7 +166,7 @@ export function ShiftScheduleView({ userId }: ShiftScheduleViewProps) {
             key={day.toISOString()}
             className={`text-center py-2 border-r last:border-r-0 ${
               isSameDay(day, new Date())
-                ? "bg-blue-50 text-blue-700"
+                ? "bg-[var(--info-bg)] text-[var(--info)]"
                 : "text-gray-700"
             }`}
           >
@@ -317,7 +317,7 @@ function ShiftCard({ shift, onDelete }: ShiftCardProps) {
             e.stopPropagation();
             onDelete();
           }}
-          className="p-0.5 text-gray-400 hover:text-red-600 rounded"
+          className="p-0.5 text-gray-400 hover:text-destructive rounded"
         >
           <X className="h-3 w-3" />
         </button>
@@ -553,7 +553,7 @@ function CreateShiftModal({
             <button
               type="submit"
               disabled={isPending || !userId}
-              className="px-4 py-2 text-white bg-purple-600 hover:bg-purple-700 rounded-lg disabled:opacity-50"
+              className="px-4 py-2 text-white bg-primary hover:bg-primary rounded-lg disabled:opacity-50"
             >
               {isPending ? "Creating..." : "Create Shift"}
             </button>

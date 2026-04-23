@@ -188,7 +188,7 @@ export function BalanceSheetReport({
             {/* Assets Section */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="h-4 w-4 text-green-600" />
+                <TrendingUp className="h-4 w-4 text-[var(--success)]" />
                 <h3 className="font-semibold">Assets</h3>
               </div>
               <div className="border rounded-lg overflow-hidden">
@@ -202,7 +202,7 @@ export function BalanceSheetReport({
                       <TableCell />
                     </TableRow>
                     {renderSection(data.assets)}
-                    <TableRow className="bg-green-50 dark:bg-green-950/20 font-bold">
+                    <TableRow className="bg-[var(--success-bg)] dark:bg-[var(--success)]/20 font-bold">
                       <TableCell>Total Assets</TableCell>
                       <TableCell className="text-right font-mono">
                         {formatCurrency(data.assets?.total)}
@@ -218,14 +218,14 @@ export function BalanceSheetReport({
             {/* Liabilities Section */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <TrendingDown className="h-4 w-4 text-red-600" />
+                <TrendingDown className="h-4 w-4 text-destructive" />
                 <h3 className="font-semibold">Liabilities</h3>
               </div>
               <div className="border rounded-lg overflow-hidden">
                 <Table>
                   <TableBody>
                     {renderSection(data.liabilities)}
-                    <TableRow className="bg-red-50 dark:bg-red-950/20 font-bold">
+                    <TableRow className="bg-destructive/10 dark:bg-destructive/20 font-bold">
                       <TableCell>Total Liabilities</TableCell>
                       <TableCell className="text-right font-mono">
                         {formatCurrency(data.liabilities?.total)}
@@ -241,14 +241,14 @@ export function BalanceSheetReport({
             {/* Equity Section */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Building2 className="h-4 w-4 text-blue-600" />
+                <Building2 className="h-4 w-4 text-[var(--info)]" />
                 <h3 className="font-semibold">Equity</h3>
               </div>
               <div className="border rounded-lg overflow-hidden">
                 <Table>
                   <TableBody>
                     {renderSection(data.equity)}
-                    <TableRow className="bg-blue-50 dark:bg-blue-950/20 font-bold">
+                    <TableRow className="bg-[var(--info-bg)] dark:bg-[var(--info)]/20 font-bold">
                       <TableCell>Total Equity</TableCell>
                       <TableCell className="text-right font-mono">
                         {formatCurrency(data.equity?.total)}

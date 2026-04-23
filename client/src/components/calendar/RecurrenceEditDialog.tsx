@@ -43,9 +43,9 @@ export default function RecurrenceEditDialog({
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
           <div className="flex items-center gap-2">
             {isDelete ? (
-              <AlertTriangle className="h-5 w-5 text-red-500" />
+              <AlertTriangle className="h-5 w-5 text-destructive" />
             ) : (
-              <Repeat className="h-5 w-5 text-blue-500" />
+              <Repeat className="h-5 w-5 text-[var(--info)]" />
             )}
             <h2 className="text-lg font-semibold text-gray-900">
               {actionVerb} Recurring Event
@@ -77,8 +77,8 @@ export default function RecurrenceEditDialog({
             {/* Single Instance */}
             <button
               onClick={() => onSelect("single")}
-              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 ${
-                isDelete ? "hover:border-red-300 hover:bg-red-50" : ""
+              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-[var(--info-bg)] ${
+                isDelete ? "hover:border-red-300 hover:bg-destructive/10" : ""
               }`}
             >
               <div className="font-medium text-gray-900">
@@ -93,8 +93,8 @@ export default function RecurrenceEditDialog({
             {/* This and Future */}
             <button
               onClick={() => onSelect("future")}
-              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 ${
-                isDelete ? "hover:border-red-300 hover:bg-red-50" : ""
+              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-[var(--info-bg)] ${
+                isDelete ? "hover:border-red-300 hover:bg-destructive/10" : ""
               }`}
             >
               <div className="font-medium text-gray-900">
@@ -109,8 +109,8 @@ export default function RecurrenceEditDialog({
             {/* All Events */}
             <button
               onClick={() => onSelect("all")}
-              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-blue-50 ${
-                isDelete ? "hover:border-red-300 hover:bg-red-50" : ""
+              className={`w-full rounded-lg border-2 p-4 text-left transition-colors hover:border-blue-300 hover:bg-[var(--info-bg)] ${
+                isDelete ? "hover:border-red-300 hover:bg-destructive/10" : ""
               }`}
             >
               <div className="font-medium text-gray-900">
@@ -119,7 +119,7 @@ export default function RecurrenceEditDialog({
               <p className="mt-1 text-sm text-gray-500">
                 All occurrences of this recurring event will be {isDelete ? "deleted" : "changed"}.
                 {isDelete && (
-                  <span className="mt-1 block text-red-600">
+                  <span className="mt-1 block text-destructive">
                     This action cannot be undone.
                   </span>
                 )}

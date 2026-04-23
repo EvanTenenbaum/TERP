@@ -371,7 +371,7 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
     cellRenderer: (params: { data?: InvoiceGridRow; value: string }) => {
       if (!params.data) return params.value ?? "-";
       if (params.data.daysOverdue > 0) {
-        return `<span class="text-red-600 font-medium">${params.value}</span> <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-red-100 text-red-700 text-xs font-medium ml-1">${params.data.daysOverdue}d</span>`;
+        return `<span class="text-destructive font-medium">${params.value}</span> <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-xs font-medium ml-1">${params.data.daysOverdue}d</span>`;
       }
       return params.value ?? "-";
     },
@@ -398,7 +398,7 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
       const display = params.value ?? "-";
       if (!params.data) return display;
       const due = parseFloat(params.data.amountDue);
-      const color = due > 0 ? "text-red-600" : "text-green-600";
+      const color = due > 0 ? "text-destructive" : "text-[var(--success)]";
       return <span className={`${color} font-mono`}>{display}</span>;
     },
   },
@@ -442,11 +442,11 @@ const ledgerColumnDefs: ColDef<LedgerGridRow>[] = [
     cellRenderer: (params: { value: string }) => {
       if (!params.value) return "";
       const cfgMap: Record<string, string> = {
-        SALE: LEDGER_TYPE_TOKENS.INVOICE ?? "bg-blue-100 text-blue-700",
+        SALE: LEDGER_TYPE_TOKENS.INVOICE ?? "bg-[var(--info-bg)] text-[var(--info)]",
         PAYMENT_RECEIVED:
-          LEDGER_TYPE_TOKENS.PAYMENT ?? "bg-green-100 text-green-700",
+          LEDGER_TYPE_TOKENS.PAYMENT ?? "bg-[var(--success-bg)] text-[var(--success)]",
         CREDIT: LEDGER_TYPE_TOKENS.CREDIT ?? "bg-teal-100 text-teal-700",
-        DEBIT: LEDGER_TYPE_TOKENS.REFUND ?? "bg-red-100 text-red-700",
+        DEBIT: LEDGER_TYPE_TOKENS.REFUND ?? "bg-destructive/10 text-destructive",
       };
       const cls =
         cfgMap[params.value] ?? "bg-gray-100 text-gray-700 border-gray-200";
@@ -747,7 +747,7 @@ export function InvoicesSurface() {
         count: data.currentCount ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS.current ??
-          "bg-green-50 border-green-200 text-green-700",
+          "bg-[var(--success-bg)] border-green-200 text-[var(--success)]",
       },
       {
         key: "30",
@@ -756,7 +756,7 @@ export function InvoicesSurface() {
         count: data.days30Count ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS["30"] ??
-          "bg-yellow-50 border-yellow-200 text-yellow-700",
+          "bg-[var(--warning-bg)] border-yellow-200 text-[var(--warning)]",
       },
       {
         key: "60",
@@ -765,7 +765,7 @@ export function InvoicesSurface() {
         count: data.days60Count ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS["60"] ??
-          "bg-orange-50 border-orange-200 text-orange-700",
+          "bg-[var(--warning-bg)] border-orange-200 text-[var(--warning)]",
       },
       {
         key: "90",
@@ -773,7 +773,7 @@ export function InvoicesSurface() {
         amount: data.days90,
         count: data.days90Count ?? 0,
         colorClass:
-          INVOICE_AGING_TOKENS["90"] ?? "bg-red-50 border-red-200 text-red-700",
+          INVOICE_AGING_TOKENS["90"] ?? "bg-destructive/10 border-red-200 text-destructive",
       },
       {
         key: "90+",
@@ -782,7 +782,7 @@ export function InvoicesSurface() {
         count: data.days90PlusCount ?? 0,
         colorClass:
           INVOICE_AGING_TOKENS["90+"] ??
-          "bg-red-100 border-red-300 text-red-800",
+          "bg-destructive/10 border-red-300 text-destructive",
       },
     ];
   }, [arAgingQuery.data]);
@@ -1120,7 +1120,7 @@ export function InvoicesSurface() {
         {/* KPI badges */}
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-green-50 text-green-700 border-green-200"
+          className="text-[9px] py-0 px-1.5 bg-[var(--success-bg)] text-[var(--success)] border-green-200"
         >
           {formatCurrencyCompact(summaryTotals.totalOutstanding)} AR
         </Badge>
@@ -1132,7 +1132,7 @@ export function InvoicesSurface() {
         </Badge>
         <Badge
           variant="outline"
-          className="text-[9px] py-0 px-1.5 bg-blue-50 text-blue-700 border-blue-200"
+          className="text-[9px] py-0 px-1.5 bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
         >
           {summaryTotals.totalInvoices} total
         </Badge>
@@ -1235,7 +1235,7 @@ export function InvoicesSurface() {
           <Button
             variant="outline"
             size="sm"
-            className="h-5 text-[9px] px-2 text-red-600 hover:text-red-700"
+            className="h-5 text-[9px] px-2 text-destructive hover:text-destructive"
             disabled={!canVoid}
             onClick={handleOpenVoidDialog}
             data-testid="action-void"
@@ -1473,7 +1473,7 @@ export function InvoicesSurface() {
                   <p
                     className={
                       selectedRow.daysOverdue > 0
-                        ? "text-red-600 font-medium text-sm"
+                        ? "text-destructive font-medium text-sm"
                         : "text-sm"
                     }
                   >
@@ -1499,7 +1499,7 @@ export function InvoicesSurface() {
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Paid</span>
-                  <span className="font-mono text-green-600">
+                  <span className="font-mono text-[var(--success)]">
                     {formatCurrency(selectedRow.amountPaid)}
                   </span>
                 </div>
@@ -1509,7 +1509,7 @@ export function InvoicesSurface() {
                   <span
                     className={cn(
                       "font-mono font-bold",
-                      selectedRow.daysOverdue > 0 && "text-red-600"
+                      selectedRow.daysOverdue > 0 && "text-destructive"
                     )}
                   >
                     {formatCurrency(selectedRow.amountDue)}
@@ -1622,7 +1622,7 @@ export function InvoicesSurface() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="w-full justify-start h-6 text-xs text-red-600"
+                    className="w-full justify-start h-6 text-xs text-destructive"
                     onClick={handleOpenVoidDialog}
                   >
                     <XCircle className="h-3 w-3 mr-1" />
@@ -1669,7 +1669,7 @@ export function InvoicesSurface() {
 
       {/* ── 5. Client Ledger Sub-View (collapsible) ── */}
       {selectedRow && (
-        <div className="mx-2 mb-1.5 p-2 bg-blue-50/40 border border-blue-200 rounded-md">
+        <div className="mx-2 mb-1.5 p-2 bg-[var(--info-bg)]/40 border border-blue-200 rounded-md">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <Button
               variant="ghost"
@@ -2080,8 +2080,8 @@ export function InvoicesSurface() {
                     className={cn(
                       "text-[10px]",
                       adjustmentForm.transactionType === "CREDIT"
-                        ? "bg-green-50 text-green-700"
-                        : "bg-red-50 text-red-700"
+                        ? "bg-[var(--success-bg)] text-[var(--success)]"
+                        : "bg-destructive/10 text-destructive"
                     )}
                   >
                     {adjustmentForm.transactionType}

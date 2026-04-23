@@ -150,13 +150,13 @@ function getExpirationIndicator(expirationDate: string | null | undefined): {
   const daysUntilExpiry = differenceInDays(parsed, new Date());
 
   if (isPast(parsed)) {
-    return { color: "text-red-600", label: "Expired" };
+    return { color: "text-destructive", label: "Expired" };
   }
   if (daysUntilExpiry <= 7) {
-    return { color: "text-red-500", label: `${daysUntilExpiry}d` };
+    return { color: "text-destructive", label: `${daysUntilExpiry}d` };
   }
   if (daysUntilExpiry <= 30) {
-    return { color: "text-yellow-500", label: `${daysUntilExpiry}d` };
+    return { color: "text-[var(--warning)]", label: `${daysUntilExpiry}d` };
   }
   return null;
 }
@@ -399,7 +399,7 @@ export const SampleList = React.memo(function SampleList({
                       </div>
                     )}
                     {sample.vendorReturnTrackingNumber && (
-                      <div className="text-xs text-blue-600">
+                      <div className="text-xs text-[var(--info)]">
                         Tracking: {sample.vendorReturnTrackingNumber}
                       </div>
                     )}

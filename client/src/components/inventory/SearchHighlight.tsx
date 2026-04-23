@@ -19,7 +19,7 @@ export function SearchHighlight({ text, query }: SearchHighlightProps) {
     <>
       {parts.map((part, _index) =>
         part.toLowerCase() === query.toLowerCase() ? (
-          <mark key={`highlight-${part}`} className="bg-yellow-200 dark:bg-yellow-900 font-semibold">
+          <mark key={`highlight-${part}`} className="bg-[var(--warning-bg)] dark:bg-[var(--warning)] font-semibold">
             {part}
           </mark>
         ) : (

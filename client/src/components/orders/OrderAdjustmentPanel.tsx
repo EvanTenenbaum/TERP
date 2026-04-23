@@ -186,7 +186,7 @@ export function OrderAdjustmentPanel({
                   {isDiscount ? "Total Discount:" : "Total Markup:"}
                 </span>
                 <span
-                  className={`text-lg font-semibold ${isDiscount ? "text-red-600" : "text-green-600"}`}
+                  className={`text-lg font-semibold ${isDiscount ? "text-destructive" : "text-[var(--success)]"}`}
                 >
                   {isDiscount ? "-" : "+"}${adjustmentAmount.toFixed(2)}
                 </span>

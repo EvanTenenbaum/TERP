@@ -87,13 +87,13 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
           <CardTitle className="text-base">Client Credit Capacity</CardTitle>
         </CardHeader>
         <CardContent className={compact ? "p-0" : ""}>
-          <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-            <Info className="h-5 w-5 text-blue-600 flex-shrink-0" />
+          <div className="flex items-center gap-3 p-4 bg-[var(--info-bg)] dark:bg-[var(--info)] rounded-lg border border-blue-200 dark:border-blue-800">
+            <Info className="h-5 w-5 text-[var(--info)] flex-shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              <p className="text-sm font-medium text-[var(--info)] dark:text-blue-100">
                 No Client Capacity Set
               </p>
-              <p className="text-xs text-blue-700 dark:text-blue-300 mt-0.5">
+              <p className="text-xs text-[var(--info)] dark:text-blue-300 mt-0.5">
                 Calculate client capacity from this client&apos;s payment
                 history and exposure
               </p>
@@ -130,23 +130,23 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
 
   // Determine status color
   const getStatusColor = (utilization: number): string => {
-    if (utilization >= 90) return "text-red-600";
-    if (utilization >= 75) return "text-yellow-600";
-    return "text-green-600";
+    if (utilization >= 90) return "text-destructive";
+    if (utilization >= 75) return "text-[var(--warning)]";
+    return "text-[var(--success)]";
   };
 
   const getProgressColor = (utilization: number): string => {
-    if (utilization >= 90) return "bg-red-600";
-    if (utilization >= 75) return "bg-yellow-600";
-    return "bg-green-600";
+    if (utilization >= 90) return "bg-destructive";
+    if (utilization >= 75) return "bg-[var(--warning)]";
+    return "bg-[var(--success)]";
   };
 
   const getStatusIcon = (utilization: number) => {
     if (utilization >= 90)
-      return <AlertTriangle className="h-4 w-4 text-red-600" />;
+      return <AlertTriangle className="h-4 w-4 text-destructive" />;
     if (utilization >= 75)
-      return <AlertTriangle className="h-4 w-4 text-yellow-600" />;
-    return <CheckCircle className="h-4 w-4 text-green-600" />;
+      return <AlertTriangle className="h-4 w-4 text-[var(--warning)]" />;
+    return <CheckCircle className="h-4 w-4 text-[var(--success)]" />;
   };
 
   return (
@@ -246,7 +246,7 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
                 {creditData.mode === "LEARNING" && (
                   <Badge
                     variant="outline"
-                    className="text-xs border-yellow-600 text-yellow-600"
+                    className="text-xs border-yellow-600 text-[var(--warning)]"
                   >
                     Learning Mode
                   </Badge>
@@ -292,13 +292,13 @@ export const CreditStatusCard = React.memo(function CreditStatusCard({
 
               {/* Learning Mode Warning */}
               {creditData.mode === "LEARNING" && (
-                <div className="flex gap-2 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                  <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                <div className="flex gap-2 p-3 bg-[var(--warning-bg)] dark:bg-[var(--warning)] rounded-lg border border-yellow-200 dark:border-yellow-800">
+                  <AlertTriangle className="h-4 w-4 text-[var(--warning)] flex-shrink-0 mt-0.5" />
                   <div className="text-xs">
-                    <p className="font-medium text-yellow-900 dark:text-yellow-100">
+                    <p className="font-medium text-[var(--warning)] dark:text-yellow-100">
                       Learning Mode Active
                     </p>
-                    <p className="text-yellow-800 dark:text-yellow-200 mt-0.5">
+                    <p className="text-[var(--warning)] dark:text-yellow-200 mt-0.5">
                       Limited transaction history. Credit capacity is
                       conservative until more data is available. Capacity
                       readiness:{" "}

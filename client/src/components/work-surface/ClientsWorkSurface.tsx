@@ -352,7 +352,7 @@ function ClientInspectorContent({
                 )}
               />
               {validation.getFieldState("name").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("name").error}
                 </p>
               )}
@@ -373,7 +373,7 @@ function ClientInspectorContent({
                 )}
               />
               {validation.getFieldState("email").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("email").error}
                 </p>
               )}
@@ -421,7 +421,7 @@ function ClientInspectorContent({
               <InspectorField label="Email Handle">
                 <a
                   href={`mailto:${client.email}`}
-                  className="flex items-center gap-2 text-blue-600 hover:underline"
+                  className="flex items-center gap-2 text-[var(--info)] hover:underline"
                 >
                   <Mail className="h-4 w-4" />
                   {client.email}
@@ -433,7 +433,7 @@ function ClientInspectorContent({
               <InspectorField label="Phone or Messaging Handle">
                 <a
                   href={`tel:${client.phone}`}
-                  className="flex items-center gap-2 text-blue-600 hover:underline"
+                  className="flex items-center gap-2 text-[var(--info)] hover:underline"
                 >
                   <Phone className="h-4 w-4" />
                   {client.phone}
@@ -479,7 +479,7 @@ function ClientInspectorContent({
               className={cn(
                 "font-semibold",
                 parseFloat(String(client.currentDebt || 0)) > 0 &&
-                  "text-red-600"
+                  "text-destructive"
               )}
             >
               {formatCurrency(client.currentDebt)}
@@ -487,7 +487,7 @@ function ClientInspectorContent({
           </div>
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">All Time Value</p>
-            <p className="font-semibold text-green-600">
+            <p className="font-semibold text-[var(--success)]">
               {formatCurrency(client.lifetimeValue)}
             </p>
           </div>
@@ -538,7 +538,7 @@ function ClientInspectorContent({
             <Button
               type="button"
               variant="outline"
-              className="w-full justify-start text-red-600 hover:text-red-700"
+              className="w-full justify-start text-destructive hover:text-destructive"
               data-testid="archive-client-btn"
               onClick={e => {
                 e.stopPropagation();
@@ -1242,14 +1242,14 @@ export function ClientsWorkSurface() {
                           .filter(Boolean)
                           .join(" · ") || "-"}
                       </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
+                      <TableCell className="text-right font-medium text-[var(--success)]">
                         {formatCurrency(client.lifetimeValue)}
                       </TableCell>
                       <TableCell
                         className={cn(
                           "text-right font-medium",
                           parseFloat(String(client.currentDebt || 0)) > 0 &&
-                            "text-red-600"
+                            "text-destructive"
                         )}
                       >
                         {formatCurrency(client.currentDebt)}

@@ -61,8 +61,8 @@ interface GLReversalStatusProps {
 const STATUS_CONFIG = {
   ACTIVE: {
     icon: CheckCircle,
-    color: "text-green-600",
-    bgColor: "bg-green-50 dark:bg-green-950/20",
+    color: "text-[var(--success)]",
+    bgColor: "bg-[var(--success-bg)] dark:bg-[var(--success)]/20",
     badge: "default" as const,
     label: "Active",
     description: "Transaction is posted to the general ledger.",
@@ -77,24 +77,24 @@ const STATUS_CONFIG = {
   },
   VOIDED: {
     icon: XCircle,
-    color: "text-red-600",
-    bgColor: "bg-red-50 dark:bg-red-950/20",
+    color: "text-destructive",
+    bgColor: "bg-destructive/10 dark:bg-destructive/20",
     badge: "destructive" as const,
     label: "Voided",
     description: "Transaction has been voided with reversing entries created.",
   },
   REVERSED: {
     icon: RotateCcw,
-    color: "text-orange-600",
-    bgColor: "bg-orange-50 dark:bg-orange-950/20",
+    color: "text-[var(--warning)]",
+    bgColor: "bg-[var(--warning-bg)] dark:bg-[var(--warning)]/20",
     badge: "secondary" as const,
     label: "Reversed",
     description: "All GL entries have been reversed.",
   },
   PARTIALLY_REVERSED: {
     icon: AlertTriangle,
-    color: "text-yellow-600",
-    bgColor: "bg-yellow-50 dark:bg-yellow-950/20",
+    color: "text-[var(--warning)]",
+    bgColor: "bg-[var(--warning-bg)] dark:bg-[var(--warning)]/20",
     badge: "outline" as const,
     label: "Partially Reversed",
     description: "Some GL entries have been reversed, but not all.",
@@ -190,7 +190,7 @@ export function GLReversalStatus({
                     <span className="text-muted-foreground">
                       Reversed Amount:
                     </span>
-                    <span className="text-red-600">
+                    <span className="text-destructive">
                       {formatCurrency(reversedAmount)}
                     </span>
                   </>

@@ -311,7 +311,7 @@ const AppointmentBooking = React.memo(function AppointmentBooking({
       {confirmation && (
         <Card>
           <CardHeader className="flex flex-row items-center gap-2">
-            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
             <div>
               <CardTitle className="text-lg">Request Submitted</CardTitle>
               <CardDescription>

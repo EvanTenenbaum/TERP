@@ -225,7 +225,7 @@ export default function GeneralLedger({ embedded }: { embedded?: boolean } = {})
       return (
         <Badge
           variant="outline"
-          className="bg-green-100 text-green-700 border-green-200"
+          className="bg-[var(--success-bg)] text-[var(--success)] border-green-200"
         >
           Posted
         </Badge>
@@ -301,7 +301,7 @@ export default function GeneralLedger({ embedded }: { embedded?: boolean } = {})
               {formatCurrency(totalCredits)}
             </div>
             {Math.abs(totalDebits - totalCredits) > 0.01 && (
-              <p className="text-xs text-red-600 mt-1">
+              <p className="text-xs text-destructive mt-1">
                 Out of balance by{" "}
                 {formatCurrency(Math.abs(totalDebits - totalCredits))}
               </p>

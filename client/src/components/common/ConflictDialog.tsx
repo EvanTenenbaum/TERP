@@ -83,10 +83,10 @@ export const ConflictDialog = React.memo(function ConflictDialog({
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-center gap-2">
-              <AlertOctagon className="h-5 w-5 text-red-600" />
+              <AlertOctagon className="h-5 w-5 text-destructive" />
               <AlertDialogTitle>Warning: Force Overwrite</AlertDialogTitle>
             </div>
-            <AlertDialogDescription className="pt-2 text-red-600 font-medium">
+            <AlertDialogDescription className="pt-2 text-destructive font-medium">
               You are about to overwrite changes made by another user!
             </AlertDialogDescription>
             <AlertDialogDescription className="pt-2 text-sm">
@@ -119,7 +119,7 @@ export const ConflictDialog = React.memo(function ConflictDialog({
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            <AlertTriangle className="h-5 w-5 text-[var(--warning)]" />
             <AlertDialogTitle>Concurrent Edit Detected</AlertDialogTitle>
           </div>
           <AlertDialogDescription className="pt-2">
@@ -142,8 +142,8 @@ export const ConflictDialog = React.memo(function ConflictDialog({
               </li>
               {onForceOverwrite && (
                 <li>
-                  <span className="font-medium text-red-600">Force Overwrite:</span>{" "}
-                  <span className="text-red-600">Save your changes anyway</span> (may discard the other user&apos;s work).
+                  <span className="font-medium text-destructive">Force Overwrite:</span>{" "}
+                  <span className="text-destructive">Save your changes anyway</span> (may discard the other user&apos;s work).
                 </li>
               )}
             </ul>
@@ -162,7 +162,7 @@ export const ConflictDialog = React.memo(function ConflictDialog({
             <Button
               onClick={() => setShowForceWarning(true)}
               variant="outline"
-              className="text-red-600 border-red-300 hover:bg-red-50"
+              className="text-destructive border-red-300 hover:bg-destructive/10"
               disabled={isLoading}
             >
               Force Overwrite
@@ -170,7 +170,7 @@ export const ConflictDialog = React.memo(function ConflictDialog({
           )}
           <AlertDialogAction
             onClick={handleRefresh}
-            className="bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1"
+            className="bg-[var(--info)] text-white hover:bg-[var(--info)] flex items-center gap-1"
             disabled={isLoading}
           >
             <RefreshCw className="h-4 w-4" />

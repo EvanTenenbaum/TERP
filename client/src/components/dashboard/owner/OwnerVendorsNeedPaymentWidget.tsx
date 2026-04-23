@@ -128,7 +128,7 @@ export const OwnerVendorsNeedPaymentWidget = memo(
                           {vendor.soldOutBatches !== 1 ? "es" : ""}
                         </p>
                       </TableCell>
-                      <TableCell className="text-right font-mono text-red-600 font-semibold">
+                      <TableCell className="text-right font-mono text-destructive font-semibold">
                         {formatCurrency(vendor.amountDue)}
                       </TableCell>
                       <TableCell className="text-right font-mono text-muted-foreground">
@@ -136,7 +136,7 @@ export const OwnerVendorsNeedPaymentWidget = memo(
                           <span
                             className={
                               vendor.oldestDueDays > 30
-                                ? "text-red-600 font-semibold"
+                                ? "text-destructive font-semibold"
                                 : ""
                             }
                           >

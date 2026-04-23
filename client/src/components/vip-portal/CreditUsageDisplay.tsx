@@ -59,12 +59,12 @@ export function CreditUsageDisplay({
   // Determine utilization status
   const getUtilizationStatus = (percentage: number) => {
     if (percentage >= 100)
-      return { status: "over", color: "text-red-600", bg: "bg-red-50" };
+      return { status: "over", color: "text-destructive", bg: "bg-destructive/10" };
     if (percentage >= 80)
       return { status: "warning", color: "text-amber-600", bg: "bg-amber-50" };
     if (percentage >= 50)
-      return { status: "moderate", color: "text-blue-600", bg: "bg-blue-50" };
-    return { status: "good", color: "text-green-600", bg: "bg-green-50" };
+      return { status: "moderate", color: "text-[var(--info)]", bg: "bg-[var(--info-bg)]" };
+    return { status: "good", color: "text-[var(--success)]", bg: "bg-[var(--success-bg)]" };
   };
 
   const utilizationStatus = getUtilizationStatus(creditUsage.utilizationPercentage);
@@ -142,22 +142,22 @@ export function CreditUsageDisplay({
 
           {/* Credit Stats Grid */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-3 rounded-lg bg-green-50 border border-green-200">
-              <div className="flex items-center gap-2 text-green-700 mb-1">
+            <div className="p-3 rounded-lg bg-[var(--success-bg)] border border-green-200">
+              <div className="flex items-center gap-2 text-[var(--success)] mb-1">
                 <CheckCircle className="h-4 w-4" />
                 <span className="text-sm font-medium">Available</span>
               </div>
-              <span className="text-xl font-bold text-green-700">
+              <span className="text-xl font-bold text-[var(--success)]">
                 ${creditUsage.availableCredit.toLocaleString()}
               </span>
             </div>
 
-            <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-              <div className="flex items-center gap-2 text-blue-700 mb-1">
+            <div className="p-3 rounded-lg bg-[var(--info-bg)] border border-blue-200">
+              <div className="flex items-center gap-2 text-[var(--info)] mb-1">
                 <CreditCard className="h-4 w-4" />
                 <span className="text-sm font-medium">Outstanding</span>
               </div>
-              <span className="text-xl font-bold text-blue-700">
+              <span className="text-xl font-bold text-[var(--info)]">
                 ${creditUsage.usedCredit.toLocaleString()}
               </span>
             </div>
@@ -165,9 +165,9 @@ export function CreditUsageDisplay({
 
           {/* Tier Bonus */}
           {creditUsage.tierMultiplier > 1 && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 border border-purple-200">
-              <TrendingUp className="h-4 w-4 text-purple-600" />
-              <span className="text-sm text-purple-700">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted border border-purple-200">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <span className="text-sm text-primary">
                 <strong>{creditUsage.tierName}</strong> tier gives you a{" "}
                 <strong>
                   {Math.round((creditUsage.tierMultiplier - 1) * 100)}%
@@ -222,7 +222,7 @@ export function CreditUsageDisplay({
               ${creditUsage.creditLimit.toLocaleString()}
             </div>
             {creditUsage.tierMultiplier > 1 && (
-              <div className="text-xs text-purple-600 mt-1 flex items-center gap-1">
+              <div className="text-xs text-primary mt-1 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
                 Base: ${creditUsage.baseCreditLimit.toLocaleString()} (+
                 {Math.round((creditUsage.tierMultiplier - 1) * 100)}% tier bonus)
@@ -232,7 +232,7 @@ export function CreditUsageDisplay({
 
           <div className="p-4 rounded-lg bg-card border">
             <div className="text-sm text-muted-foreground mb-1">Used Credit</div>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-[var(--info)]">
               ${creditUsage.usedCredit.toLocaleString()}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
@@ -240,9 +240,9 @@ export function CreditUsageDisplay({
             </div>
           </div>
 
-          <div className={cn("p-4 rounded-lg border", creditUsage.overCreditLimit ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200")}>
+          <div className={cn("p-4 rounded-lg border", creditUsage.overCreditLimit ? "bg-destructive/10 border-red-200" : "bg-[var(--success-bg)] border-green-200")}>
             <div className="text-sm text-muted-foreground mb-1">Available</div>
-            <div className={cn("text-2xl font-bold", creditUsage.overCreditLimit ? "text-red-600" : "text-green-600")}>
+            <div className={cn("text-2xl font-bold", creditUsage.overCreditLimit ? "text-destructive" : "text-[var(--success)]")}>
               ${creditUsage.availableCredit.toLocaleString()}
             </div>
             <div className="text-xs text-muted-foreground mt-1">
@@ -273,11 +273,11 @@ export function CreditUsageDisplay({
 
         {/* Status Messages */}
         {creditUsage.overCreditLimit && (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 border border-red-200">
-            <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex items-start gap-3 p-4 rounded-lg bg-destructive/10 border border-red-200">
+            <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-medium text-red-800">Over Credit Limit</h4>
-              <p className="text-sm text-red-700">
+              <h4 className="font-medium text-destructive">Over Credit Limit</h4>
+              <p className="text-sm text-destructive">
                 You've exceeded your credit limit by $
                 {(creditUsage.usedCredit - creditUsage.creditLimit).toLocaleString()}.
                 Please make a payment to restore your credit availability.

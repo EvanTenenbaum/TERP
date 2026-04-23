@@ -158,7 +158,7 @@ export default function EventInvitationDialog({
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-3">
-            <UserPlus className="h-6 w-6 text-blue-600" />
+            <UserPlus className="h-6 w-6 text-[var(--info)]" />
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
                 Send Invitations
@@ -223,7 +223,7 @@ export default function EventInvitationDialog({
                   onClick={() => setInviteeType("USER")}
                   className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium ${
                     inviteeType === "USER"
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      ? "border-blue-500 bg-[var(--info-bg)] text-[var(--info)]"
                       : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >
@@ -233,7 +233,7 @@ export default function EventInvitationDialog({
                   onClick={() => setInviteeType("CLIENT")}
                   className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium ${
                     inviteeType === "CLIENT"
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      ? "border-blue-500 bg-[var(--info-bg)] text-[var(--info)]"
                       : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >
@@ -243,7 +243,7 @@ export default function EventInvitationDialog({
                   onClick={() => setInviteeType("EXTERNAL")}
                   className={`flex-1 rounded-lg border px-4 py-2 text-sm font-medium ${
                     inviteeType === "EXTERNAL"
-                      ? "border-blue-500 bg-blue-50 text-blue-700"
+                      ? "border-blue-500 bg-[var(--info-bg)] text-[var(--info)]"
                       : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
                   }`}
                 >
@@ -349,7 +349,7 @@ export default function EventInvitationDialog({
 
             <button
               onClick={handleAddInvitee}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="w-full rounded-lg bg-[var(--info)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--info)]"
             >
               Add to List
             </button>
@@ -380,7 +380,7 @@ export default function EventInvitationDialog({
                     </div>
                     <button
                       onClick={() => handleRemoveInvitee(index)}
-                      className="rounded-lg p-1 text-red-600 hover:bg-red-50"
+                      className="rounded-lg p-1 text-destructive hover:bg-destructive/10"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -416,7 +416,7 @@ export default function EventInvitationDialog({
           <button
             onClick={handleSendInvitations}
             disabled={invitees.length === 0 || bulkSendInvitations.isPending}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-[var(--info)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--info)] disabled:opacity-50"
           >
             {bulkSendInvitations.isPending ? (
               <>

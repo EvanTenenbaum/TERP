@@ -101,16 +101,16 @@ function SaveStateIndicatorComponent({ state, className }: IndicatorProps) {
       case "saved":
         return {
           icon: CheckCircle,
-          color: "text-green-600",
-          bgColor: "bg-green-50",
+          color: "text-[var(--success)]",
+          bgColor: "bg-[var(--success-bg)]",
           label: "Saved",
           ariaLabel: "All changes saved",
         };
       case "saving":
         return {
           icon: Loader2,
-          color: "text-yellow-600",
-          bgColor: "bg-yellow-50",
+          color: "text-[var(--warning)]",
+          bgColor: "bg-[var(--warning-bg)]",
           label: "Saving...",
           ariaLabel: "Saving changes",
           animate: true,
@@ -118,16 +118,16 @@ function SaveStateIndicatorComponent({ state, className }: IndicatorProps) {
       case "error":
         return {
           icon: AlertCircle,
-          color: "text-red-600",
-          bgColor: "bg-red-50",
+          color: "text-destructive",
+          bgColor: "bg-destructive/10",
           label: state.message || "Needs attention",
           ariaLabel: `Error: ${state.message || "Changes could not be saved"}`,
         };
       case "queued":
         return {
           icon: CloudOff,
-          color: "text-orange-600",
-          bgColor: "bg-orange-50",
+          color: "text-[var(--warning)]",
+          bgColor: "bg-[var(--warning-bg)]",
           label: "Queued",
           ariaLabel: "Changes queued for sync when online",
         };

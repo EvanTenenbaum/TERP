@@ -185,7 +185,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <TrendingDown className="h-4 w-4 text-red-500" />
+            <TrendingDown className="h-4 w-4 text-destructive" />
             Shrinkage Summary
           </CardTitle>
         </CardHeader>
@@ -247,7 +247,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
-            <TrendingDown className="h-6 w-6 text-red-500" />
+            <TrendingDown className="h-6 w-6 text-destructive" />
             Shrinkage Report
           </h2>
           <p className="text-muted-foreground">
@@ -345,8 +345,8 @@ export const ShrinkageReport = memo(function ShrinkageReport({
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-red-100 rounded-lg">
-                    <AlertTriangle className="h-6 w-6 text-red-600" />
+                  <div className="p-3 bg-destructive/10 rounded-lg">
+                    <AlertTriangle className="h-6 w-6 text-destructive" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">
@@ -362,14 +362,14 @@ export const ShrinkageReport = memo(function ShrinkageReport({
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-orange-100 rounded-lg">
-                    <Package className="h-6 w-6 text-orange-600" />
+                  <div className="p-3 bg-[var(--warning-bg)] rounded-lg">
+                    <Package className="h-6 w-6 text-[var(--warning)]" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">
                       Total Qty Lost
                     </p>
-                    <p className="text-2xl font-bold text-red-600">
+                    <p className="text-2xl font-bold text-destructive">
                       {data?.summary.totalShrinkageQty?.toFixed(0) || 0}
                     </p>
                   </div>
@@ -379,14 +379,14 @@ export const ShrinkageReport = memo(function ShrinkageReport({
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-yellow-100 rounded-lg">
-                    <AlertCircle className="h-6 w-6 text-yellow-600" />
+                  <div className="p-3 bg-[var(--warning-bg)] rounded-lg">
+                    <AlertCircle className="h-6 w-6 text-[var(--warning)]" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">
                       Suspicious Events
                     </p>
-                    <p className="text-2xl font-bold text-yellow-600">
+                    <p className="text-2xl font-bold text-[var(--warning)]">
                       {data?.summary.suspiciousEvents || 0}
                     </p>
                   </div>
@@ -511,7 +511,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                     data?.items.slice(0, 50).map(item => (
                       <TableRow
                         key={item.id}
-                        className={item.isSuspicious ? "bg-red-50" : ""}
+                        className={item.isSuspicious ? "bg-destructive/10" : ""}
                       >
                         <TableCell className="text-sm">
                           {format(new Date(item.date), "MMM d, yyyy")}
@@ -527,7 +527,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <span className="font-mono font-bold text-red-600">
+                          <span className="font-mono font-bold text-destructive">
                             -{item.shrinkageQty.toFixed(0)}
                           </span>
                         </TableCell>
@@ -536,14 +536,14 @@ export const ShrinkageReport = memo(function ShrinkageReport({
                             variant="outline"
                             className={`${
                               item.reason === "THEFT" || item.reason === "LOST"
-                                ? "bg-red-100 text-red-700 border-red-200"
-                                : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                                ? "bg-destructive/10 text-destructive border-red-200"
+                                : "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200"
                             }`}
                           >
                             {item.reason}
                           </Badge>
                           {item.isSuspicious && (
-                            <AlertCircle className="h-4 w-4 text-red-500 inline ml-1" />
+                            <AlertCircle className="h-4 w-4 text-destructive inline ml-1" />
                           )}
                         </TableCell>
                         <TableCell className="text-sm">

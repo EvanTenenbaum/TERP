@@ -19,11 +19,11 @@ export function ReconciliationSummary() {
 
   if (isLoading) {
     return (
-      <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+      <Card className="border-blue-200 bg-[var(--info-bg)]/60 shadow-sm">
         <CardHeader>
           <Badge
             variant="outline"
-            className="w-fit border-blue-300 bg-white/80 text-blue-700"
+            className="w-fit border-blue-300 bg-white/80 text-[var(--info)]"
           >
             Reconciliation State
           </Badge>
@@ -46,11 +46,11 @@ export function ReconciliationSummary() {
     totalUnrecordedPayments;
 
   return (
-    <Card className="border-blue-200 bg-blue-50/60 shadow-sm">
+    <Card className="border-blue-200 bg-[var(--info-bg)]/60 shadow-sm">
       <CardHeader className="space-y-2">
         <Badge
           variant="outline"
-          className="w-fit border-blue-300 bg-white/80 text-blue-700"
+          className="w-fit border-blue-300 bg-white/80 text-[var(--info)]"
         >
           Reconciliation State
         </Badge>
@@ -75,11 +75,11 @@ export function ReconciliationSummary() {
           </div>
 
           {/* Unrecorded Payments */}
-          <div className="rounded-md border border-orange-200 bg-orange-50 p-3">
+          <div className="rounded-md border border-orange-200 bg-[var(--warning-bg)] p-3">
             <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
               Unrecorded Payments
             </p>
-            <p className="mt-2 text-2xl font-semibold text-orange-700">
+            <p className="mt-2 text-2xl font-semibold text-[var(--warning)]">
               {totalUnrecordedPayments}
             </p>
             <div className="mt-1 space-y-0.5 text-sm text-muted-foreground">
@@ -119,15 +119,15 @@ export function ReconciliationSummary() {
 
         {/* Needs Attention Section */}
         {needsAttentionCount > 0 ? (
-          <div className="rounded-md border border-red-200 bg-red-50 p-3">
+          <div className="rounded-md border border-red-200 bg-destructive/10 p-3">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="mt-0.5 h-5 w-5 text-red-600" />
+              <AlertTriangle className="mt-0.5 h-5 w-5 text-destructive" />
               <div className="flex-1">
-                <p className="text-sm font-semibold text-red-900">
+                <p className="text-sm font-semibold text-destructive">
                   {needsAttentionCount} item
                   {needsAttentionCount === 1 ? "" : "s"} need attention
                 </p>
-                <ul className="mt-2 space-y-1 text-sm text-red-800">
+                <ul className="mt-2 space-y-1 text-sm text-destructive">
                   {reconciliationData.invoices30PlusOverdue.count > 0 && (
                     <li>
                       • {reconciliationData.invoices30PlusOverdue.count} invoice
@@ -172,10 +172,10 @@ export function ReconciliationSummary() {
             </div>
           </div>
         ) : (
-          <div className="rounded-md border border-green-200 bg-green-50 p-3">
+          <div className="rounded-md border border-green-200 bg-[var(--success-bg)] p-3">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-green-600" />
-              <p className="text-sm font-semibold text-green-900">
+              <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
+              <p className="text-sm font-semibold text-[var(--success)]">
                 All reconciliation items are current
               </p>
             </div>

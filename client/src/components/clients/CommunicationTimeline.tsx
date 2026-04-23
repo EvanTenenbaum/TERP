@@ -52,15 +52,15 @@ export function CommunicationTimeline({
     const config: Record<string, { label: string; className: string }> = {
       CALL: {
         label: "Call",
-        className: "bg-blue-100 text-blue-800 border-blue-300",
+        className: "bg-[var(--info-bg)] text-[var(--info)] border-blue-300",
       },
       EMAIL: {
         label: "Email",
-        className: "bg-purple-100 text-purple-800 border-purple-300",
+        className: "bg-muted text-primary border-purple-300",
       },
       MEETING: {
         label: "Meeting",
-        className: "bg-green-100 text-green-800 border-green-300",
+        className: "bg-[var(--success-bg)] text-[var(--success)] border-green-300",
       },
       NOTE: {
         label: "Note",

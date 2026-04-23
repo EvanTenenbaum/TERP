@@ -143,7 +143,7 @@ export const RewardsCatalog = React.memo(function RewardsCatalog({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
-                <Gift className="h-5 w-5 text-purple-500" />
+                <Gift className="h-5 w-5 text-primary" />
                 Rewards Catalog
               </CardTitle>
               <CardDescription>
@@ -152,7 +152,7 @@ export const RewardsCatalog = React.memo(function RewardsCatalog({
             </div>
             {catalogData && (
               <div className="flex items-center gap-2">
-                <Coins className="h-5 w-5 text-yellow-500" />
+                <Coins className="h-5 w-5 text-[var(--warning)]" />
                 <span className="font-bold text-lg">
                   {catalogData.clientPoints.toLocaleString()}
                 </span>
@@ -176,7 +176,7 @@ export const RewardsCatalog = React.memo(function RewardsCatalog({
 
           {/* Error State */}
           {error && (
-            <div className="text-center py-8 text-red-600">
+            <div className="text-center py-8 text-destructive">
               <AlertCircle className="h-8 w-8 mx-auto mb-2" />
               <p>Error loading rewards: {error.message}</p>
               <Button
@@ -285,11 +285,11 @@ export const RewardsCatalog = React.memo(function RewardsCatalog({
                     <CardFooter className="pt-0">
                       <div className="w-full flex items-center justify-between">
                         <div className="flex items-center gap-1">
-                          <Coins className="h-4 w-4 text-yellow-500" />
+                          <Coins className="h-4 w-4 text-[var(--warning)]" />
                           <span
                             className={cn(
                               "font-bold",
-                              canAfford ? "text-foreground" : "text-red-500"
+                              canAfford ? "text-foreground" : "text-destructive"
                             )}
                           >
                             {reward.pointsCost.toLocaleString()}
@@ -359,7 +359,7 @@ export const RewardsCatalog = React.memo(function RewardsCatalog({
                     {selectedRewardData.description}
                   </p>
                   <div className="mt-2 flex items-center gap-2">
-                    <Coins className="h-4 w-4 text-yellow-500" />
+                    <Coins className="h-4 w-4 text-[var(--warning)]" />
                     <span className="font-bold">
                       {selectedRewardData.pointsCost.toLocaleString()} points
                     </span>
@@ -377,8 +377,8 @@ export const RewardsCatalog = React.memo(function RewardsCatalog({
                 />
               </div>
 
-              <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg">
-                <div className="flex items-center gap-2 text-yellow-700 dark:text-yellow-300">
+              <div className="mt-4 p-3 bg-[var(--warning-bg)] dark:bg-[var(--warning)] rounded-lg">
+                <div className="flex items-center gap-2 text-[var(--warning)] dark:text-yellow-300">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm">
                     After redemption, you will have{" "}

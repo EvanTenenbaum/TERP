@@ -10,9 +10,9 @@ interface TimeOffRequestFormProps {
 }
 
 const TIME_OFF_TYPES = [
-  { value: "vacation", label: "Vacation", color: "bg-blue-500" },
-  { value: "sick", label: "Sick Leave", color: "bg-red-500" },
-  { value: "personal", label: "Personal Time", color: "bg-purple-500" },
+  { value: "vacation", label: "Vacation", color: "bg-[var(--info)]" },
+  { value: "sick", label: "Sick Leave", color: "bg-destructive" },
+  { value: "personal", label: "Personal Time", color: "bg-primary" },
 ];
 
 export default function TimeOffRequestForm({
@@ -110,7 +110,7 @@ export default function TimeOffRequestForm({
                     onClick={() => setTimeOffType(type.value as "vacation" | "sick" | "personal")}
                     className={`flex items-center justify-center gap-2 rounded-lg border-2 p-3 text-sm font-medium transition-colors ${
                       timeOffType === type.value
-                        ? "border-blue-500 bg-blue-50 text-blue-700"
+                        ? "border-blue-500 bg-[var(--info-bg)] text-[var(--info)]"
                         : "border-gray-200 bg-white text-gray-700 hover:border-gray-300"
                     }`}
                   >
@@ -160,7 +160,7 @@ export default function TimeOffRequestForm({
                   type="checkbox"
                   checked={isFullDay}
                   onChange={(e) => setIsFullDay(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-gray-300 text-[var(--info)] focus:ring-blue-500"
                 />
                 <span className="text-sm font-medium text-gray-700">
                   Full day(s)
@@ -226,7 +226,7 @@ export default function TimeOffRequestForm({
             <button
               type="submit"
               disabled={requestMutation.isPending}
-              className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+              className="flex-1 rounded-md bg-[var(--info)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--info)] disabled:opacity-50"
             >
               {requestMutation.isPending ? "Submitting..." : "Submit Request"}
             </button>

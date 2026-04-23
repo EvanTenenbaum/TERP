@@ -59,10 +59,10 @@ export function LiveQueue() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-          <Users className="h-5 w-5 text-green-600" />
+          <Users className="h-5 w-5 text-[var(--success)]" />
           Live Queue
           {queue.length > 0 && (
-            <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded-full">
+            <span className="bg-[var(--success-bg)] text-[var(--success)] text-xs font-medium px-2 py-0.5 rounded-full">
               {queue.length}
             </span>
           )}
@@ -87,7 +87,7 @@ export function LiveQueue() {
           {/* In Progress Section */}
           {inProgress.length > 0 && (
             <div className="p-4">
-              <h4 className="flex items-center gap-2 text-sm font-medium text-green-700 mb-3">
+              <h4 className="flex items-center gap-2 text-sm font-medium text-[var(--success)] mb-3">
                 <PlayCircle className="h-4 w-4" />
                 In Progress ({inProgress.length})
               </h4>
@@ -107,7 +107,7 @@ export function LiveQueue() {
           {/* Waiting Section */}
           {waiting.length > 0 && (
             <div className="p-4">
-              <h4 className="flex items-center gap-2 text-sm font-medium text-yellow-700 mb-3">
+              <h4 className="flex items-center gap-2 text-sm font-medium text-[var(--warning)] mb-3">
                 <Clock className="h-4 w-4" />
                 Waiting ({waiting.length})
               </h4>
@@ -160,21 +160,21 @@ function QueueItem({
     <div
       className={`flex items-center justify-between p-3 rounded-lg border ${
         isInProgress
-          ? "bg-green-50 border-green-200"
+          ? "bg-[var(--success-bg)] border-green-200"
           : "bg-white border-gray-200"
       }`}
     >
       <div className="flex items-center gap-3">
         {/* Position Number */}
         {position !== undefined && (
-          <div className="w-8 h-8 rounded-full bg-yellow-100 text-yellow-800 flex items-center justify-center font-bold text-sm">
+          <div className="w-8 h-8 rounded-full bg-[var(--warning-bg)] text-[var(--warning)] flex items-center justify-center font-bold text-sm">
             {position}
           </div>
         )}
 
         {/* In Progress Icon */}
         {isInProgress && (
-          <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-full bg-[var(--success-bg)] text-[var(--success)] flex items-center justify-center">
             <PlayCircle className="h-5 w-5" />
           </div>
         )}
@@ -217,7 +217,7 @@ function QueueItem({
         {onStart && (
           <button
             onClick={() => onStart(item.id)}
-            className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center gap-1"
+            className="px-3 py-1.5 text-xs font-medium text-white bg-[var(--success)] hover:bg-[var(--success)] rounded-lg transition-colors flex items-center gap-1"
           >
             <PlayCircle className="h-3 w-3" />
             Start

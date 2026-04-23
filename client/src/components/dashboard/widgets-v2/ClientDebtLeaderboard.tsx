@@ -76,7 +76,7 @@ export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
                   <TableCell className="font-medium">
                     {client.customerName}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-red-600">
+                  <TableCell className="text-right font-mono text-destructive">
                     {formatCurrency(client.currentDebt)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-muted-foreground">

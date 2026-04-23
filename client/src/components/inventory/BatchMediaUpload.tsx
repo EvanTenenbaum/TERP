@@ -390,7 +390,7 @@ export const BatchMediaUpload = React.memo(function BatchMediaUpload({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           {image.isPrimary && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-[var(--warning-bg)] text-[var(--warning)]">
                               <Star className="h-3 w-3 mr-1 fill-current" />
                               Primary
                             </span>

@@ -1387,7 +1387,7 @@ export function InventoryManagementSurface() {
             <Button
               size="sm"
               variant="ghost"
-              className="h-6 text-[9px] text-red-500"
+              className="h-6 text-[9px] text-destructive"
               disabled={deleteViewMutation.isPending}
               onClick={() => {
                 deleteViewMutation.mutate(currentViewId);
@@ -1577,7 +1577,7 @@ export function InventoryManagementSurface() {
           {selectedBatchId !== null ? (
             <div className="space-y-4">
               {isDeepLinkedOutsideLoadedGrid && (
-                <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+                <div className="rounded-md border border-blue-200 bg-[var(--info-bg)] px-3 py-2 text-sm text-[var(--info)]">
                   This inspector was loaded from the workbook URL. The selected
                   batch is not in the current loaded grid rows yet.
                 </div>

@@ -47,7 +47,7 @@ export function ReferredBySelector({
   return (
     <div className="space-y-2">
       <Label className="flex items-center gap-2">
-        <Gift className="h-4 w-4 text-purple-500" />
+        <Gift className="h-4 w-4 text-primary" />
         Referred By (Optional)
       </Label>
       
@@ -60,7 +60,7 @@ export function ReferredBySelector({
             disabled={disabled}
             className={cn(
               "w-full justify-between",
-              selectedReferrerId && "border-purple-300 bg-purple-50"
+              selectedReferrerId && "border-purple-300 bg-muted"
             )}
           >
             {selectedReferrerId && selectedReferrer ? (
@@ -68,7 +68,7 @@ export function ReferredBySelector({
                 <User className="h-4 w-4" />
                 {selectedReferrer.name}
                 {selectedReferrer.tier && (
-                  <span className="text-xs text-purple-600">({selectedReferrer.tier})</span>
+                  <span className="text-xs text-primary">({selectedReferrer.tier})</span>
                 )}
               </span>
             ) : (
@@ -97,7 +97,7 @@ export function ReferredBySelector({
                   key={referrer.id}
                   className={cn(
                     "flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-100",
-                    selectedReferrerId === referrer.id && "bg-purple-50"
+                    selectedReferrerId === referrer.id && "bg-muted"
                   )}
                   onClick={() => {
                     onSelect(referrer.id, referrer.name);
@@ -122,8 +122,8 @@ export function ReferredBySelector({
       </Popover>
 
       {selectedReferrerId && (
-        <div className="flex items-center justify-between rounded-lg bg-purple-50 p-2 text-sm">
-          <span className="text-purple-700">
+        <div className="flex items-center justify-between rounded-lg bg-muted p-2 text-sm">
+          <span className="text-primary">
             <Gift className="mr-1 inline h-4 w-4" />
             {selectedReferrer?.name} will earn{" "}
             <strong>{settings?.globalPercentage || 10}%</strong> credit on this order
@@ -132,7 +132,7 @@ export function ReferredBySelector({
             variant="ghost"
             size="sm"
             onClick={() => onSelect(null)}
-            className="h-6 w-6 p-0 text-purple-500 hover:text-purple-700"
+            className="h-6 w-6 p-0 text-primary hover:text-primary"
           >
             <X className="h-4 w-4" />
           </Button>

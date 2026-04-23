@@ -511,11 +511,11 @@ export function InspectorField({
     <div className={cn("space-y-1.5", className)}>
       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
         {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+        {required && <span className="text-destructive ml-0.5">*</span>}
       </label>
       {children}
       {error && (
-        <p className="text-xs text-red-600 dark:text-red-400">{error}</p>
+        <p className="text-xs text-destructive dark:text-red-400">{error}</p>
       )}
       {hint && !error && (
         <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>

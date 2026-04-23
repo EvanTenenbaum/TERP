@@ -83,11 +83,11 @@ type CreditReason =
   | "OTHER";
 
 const statusColors: Record<CreditStatus, string> = {
-  ACTIVE: "bg-green-100 text-green-800",
-  PARTIALLY_USED: "bg-blue-100 text-blue-800",
+  ACTIVE: "bg-[var(--success-bg)] text-[var(--success)]",
+  PARTIALLY_USED: "bg-[var(--info-bg)] text-[var(--info)]",
   FULLY_USED: "bg-gray-100 text-gray-800",
-  EXPIRED: "bg-yellow-100 text-yellow-800",
-  VOID: "bg-red-100 text-red-800",
+  EXPIRED: "bg-[var(--warning-bg)] text-[var(--warning)]",
+  VOID: "bg-destructive/10 text-destructive",
 };
 
 const reasonLabels: Record<CreditReason, string> = {
@@ -343,7 +343,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="border-blue-200 bg-blue-50/70">
+        <Card className="border-blue-200 bg-[var(--info-bg)]/70">
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <div>
@@ -353,7 +353,7 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
                   limit, exposure guardrails, or override rules.
                 </CardDescription>
               </div>
-              <Shield className="h-5 w-5 text-blue-600" />
+              <Shield className="h-5 w-5 text-[var(--info)]" />
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -445,10 +445,10 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
               <CardTitle className="text-sm font-medium">
                 Open Credit Balance
               </CardTitle>
-              <DollarSign className="h-4 w-4 text-green-600" />
+              <DollarSign className="h-4 w-4 text-[var(--success)]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">
+              <div className="text-2xl font-bold text-[var(--success)]">
                 {formatCurrency(summary.totalCreditsRemaining)}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -462,10 +462,10 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
               <CardTitle className="text-sm font-medium">
                 Adjustments Used
               </CardTitle>
-              <TrendingUp className="h-4 w-4 text-blue-600" />
+              <TrendingUp className="h-4 w-4 text-[var(--info)]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-[var(--info)]">
                 {formatCurrency(summary.totalCreditsUsed)}
               </div>
               <p className="text-xs text-muted-foreground">
@@ -479,10 +479,10 @@ export default function CreditsPage({ embedded = false }: CreditsPageProps) {
               <CardTitle className="text-sm font-medium">
                 Expiring Adjustments
               </CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600" />
+              <Clock className="h-4 w-4 text-[var(--warning)]" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">
+              <div className="text-2xl font-bold text-[var(--warning)]">
                 {formatCurrency(summary.expiringWithin30Days.totalAmount)}
               </div>
               <p className="text-xs text-muted-foreground">

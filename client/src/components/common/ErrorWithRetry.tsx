@@ -10,7 +10,7 @@ interface Props {
 export function ErrorWithRetry({ error, onRetry, isRetrying }: Props) {
   return (
     <div className="p-8 text-center">
-      <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
+      <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
       <h3 className="mt-4 font-semibold">Failed to load data</h3>
       <p className="mt-2 text-muted-foreground">{error.message}</p>
       <Button onClick={onRetry} disabled={isRetrying} className="mt-4">

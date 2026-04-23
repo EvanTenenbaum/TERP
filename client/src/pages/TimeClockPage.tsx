@@ -200,7 +200,7 @@ export default function TimeClockPage() {
           <BackButton />
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Clock className="h-6 w-6 text-blue-600" />
+              <Clock className="h-6 w-6 text-[var(--info)]" />
               Time Clock
             </h1>
             <p className="text-muted-foreground">
@@ -266,7 +266,7 @@ export default function TimeClockPage() {
                     )}
                   </div>
                   {status.isOnBreak && (
-                    <div className="flex items-center gap-2 text-yellow-600">
+                    <div className="flex items-center gap-2 text-[var(--warning)]">
                       <Coffee className="h-4 w-4" />
                       <span className="text-sm font-medium">
                         Currently on break
@@ -293,7 +293,7 @@ export default function TimeClockPage() {
                   size="lg"
                   onClick={handleClockIn}
                   disabled={isLoading}
-                  className="bg-green-600 hover:bg-green-700"
+                  className="bg-[var(--success)] hover:bg-[var(--success)]"
                 >
                   {clockIn.isPending ? (
                     <Loader2 className="h-5 w-5 mr-2 animate-spin" />
@@ -310,7 +310,7 @@ export default function TimeClockPage() {
                     onClick={handleBreakToggle}
                     disabled={isLoading}
                     className={
-                      status.isOnBreak ? "border-green-500 text-green-600" : ""
+                      status.isOnBreak ? "border-green-500 text-[var(--success)]" : ""
                     }
                   >
                     {startBreak.isPending || endBreak.isPending ? (
@@ -364,7 +364,7 @@ export default function TimeClockPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">
+              <div className="text-2xl font-bold text-[var(--warning)]">
                 {timesheet.summary.overtimeHours}
               </div>
             </CardContent>
@@ -376,7 +376,7 @@ export default function TimeClockPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-[var(--info)]">
                 {timesheet.summary.grandTotal}
               </div>
             </CardContent>
@@ -483,7 +483,7 @@ export default function TimeClockPage() {
                         ? `${Math.floor(entry.regularHours / 60)}h ${entry.regularHours % 60}m`
                         : "-"}
                     </TableCell>
-                    <TableCell className="text-orange-600">
+                    <TableCell className="text-[var(--warning)]">
                       {entry.overtimeHours && entry.overtimeHours > 0
                         ? `${Math.floor(entry.overtimeHours / 60)}h ${entry.overtimeHours % 60}m`
                         : "-"}
@@ -503,9 +503,9 @@ export default function TimeClockPage() {
                         }
                         className={
                           entry.status === "approved"
-                            ? "bg-green-500"
+                            ? "bg-[var(--success)]"
                             : entry.status === "active"
-                              ? "bg-blue-100 text-blue-800"
+                              ? "bg-[var(--info-bg)] text-[var(--info)]"
                               : ""
                         }
                       >

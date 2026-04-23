@@ -136,7 +136,7 @@ export const NotificationBell = React.memo(function NotificationBell({
                     <div
                       className={`w-2 h-2 rounded-full ${
                         notification.type === "success"
-                          ? "bg-green-500"
+                          ? "bg-[var(--success)]"
                           : notification.type === "error"
                             ? "bg-destructive"
                             : notification.type === "warning"

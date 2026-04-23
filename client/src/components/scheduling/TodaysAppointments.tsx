@@ -40,17 +40,17 @@ const statusConfig: Record<
 > = {
   waiting: {
     label: "Waiting",
-    color: "bg-yellow-100 text-yellow-800",
+    color: "bg-[var(--warning-bg)] text-[var(--warning)]",
     icon: Clock,
   },
   checked_in: {
     label: "Checked In",
-    color: "bg-blue-100 text-blue-800",
+    color: "bg-[var(--info-bg)] text-[var(--info)]",
     icon: UserCheck,
   },
   in_progress: {
     label: "In Progress",
-    color: "bg-green-100 text-green-800",
+    color: "bg-[var(--success-bg)] text-[var(--success)]",
     icon: PlayCircle,
   },
   completed: {
@@ -60,7 +60,7 @@ const statusConfig: Record<
   },
   no_show: {
     label: "No Show",
-    color: "bg-red-100 text-red-800",
+    color: "bg-destructive/10 text-destructive",
     icon: XCircle,
   },
 };
@@ -142,7 +142,7 @@ export function TodaysAppointments({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b">
         <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-          <Clock className="h-5 w-5 text-blue-600" />
+          <Clock className="h-5 w-5 text-[var(--info)]" />
           Today's Appointments
         </h3>
         <button
@@ -164,7 +164,7 @@ export function TodaysAppointments({
           {/* Current Appointments */}
           {current.length > 0 && (
             <div className="p-4">
-              <h4 className="text-sm font-medium text-green-700 mb-3">
+              <h4 className="text-sm font-medium text-[var(--success)] mb-3">
                 Now ({current.length})
               </h4>
               <div className="space-y-3">
@@ -184,7 +184,7 @@ export function TodaysAppointments({
           {/* Upcoming Appointments */}
           {upcoming.length > 0 && (
             <div className="p-4">
-              <h4 className="text-sm font-medium text-blue-700 mb-3">
+              <h4 className="text-sm font-medium text-[var(--info)] mb-3">
                 Upcoming ({upcoming.length})
               </h4>
               <div className="space-y-3">
@@ -258,7 +258,7 @@ function AppointmentCard({
     <div
       className={`rounded-lg border p-3 transition-all ${
         isHighlighted
-          ? "bg-green-50 border-green-200"
+          ? "bg-[var(--success-bg)] border-green-200"
           : isPast
             ? "bg-gray-50 border-gray-200 opacity-75"
             : "bg-white border-gray-200 hover:border-gray-300"
@@ -318,7 +318,7 @@ function AppointmentCard({
                 const eventId = appointment.event?.id;
                 if (eventId) onCheckIn(eventId, appointment.client?.id);
               }}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-[var(--info)] hover:bg-[var(--info)] rounded-lg transition-colors"
             >
               Check In
             </button>
@@ -330,7 +330,7 @@ function AppointmentCard({
                 const checkInId = appointment.checkIn?.id;
                 if (checkInId) onStatusChange(checkInId, "in_progress");
               }}
-              className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-white bg-[var(--success)] hover:bg-[var(--success)] rounded-lg transition-colors"
             >
               Start
             </button>
@@ -355,7 +355,7 @@ function AppointmentCard({
                   const checkInId = appointment.checkIn?.id;
                   if (checkInId) onStatusChange(checkInId, "no_show");
                 }}
-                className="px-3 py-1.5 text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                className="px-3 py-1.5 text-xs font-medium text-destructive hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
               >
                 No Show
               </button>

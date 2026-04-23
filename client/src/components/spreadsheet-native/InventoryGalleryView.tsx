@@ -19,7 +19,7 @@ import {
 const STOCK_COLORS: Record<string, string> = {
   OPTIMAL: "bg-emerald-50 text-emerald-700",
   LOW: "bg-amber-50 text-amber-700",
-  CRITICAL: "bg-red-50 text-red-700",
+  CRITICAL: "bg-destructive/10 text-destructive",
   OUT_OF_STOCK: "bg-neutral-100 text-neutral-500",
 };
 
@@ -96,7 +96,7 @@ export function InventoryGalleryView({
               <span
                 className={cn(
                   "text-xs font-semibold",
-                  row.availableQty < 100 ? "text-red-600" : "text-foreground"
+                  row.availableQty < 100 ? "text-destructive" : "text-foreground"
                 )}
               >
                 {fmtQty(row.availableQty)} avail

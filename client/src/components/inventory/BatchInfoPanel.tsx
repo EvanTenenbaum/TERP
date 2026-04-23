@@ -108,7 +108,7 @@ export const BatchInfoPanel = memo(function BatchInfoPanel({
                 <Hash className="h-3 w-3 text-muted-foreground" />
                 <span className="font-mono text-xs">{batchInfo.batchId}</span>
                 {copiedField === "batch" ? (
-                  <Check className="h-3 w-3 text-green-500" />
+                  <Check className="h-3 w-3 text-[var(--success)]" />
                 ) : (
                   <Copy className="h-3 w-3 text-muted-foreground" />
                 )}
@@ -142,7 +142,7 @@ export const BatchInfoPanel = memo(function BatchInfoPanel({
             >
               {batchInfo.batchId}
               {copiedField === "batch" ? (
-                <Check className="h-3 w-3 text-green-500" />
+                <Check className="h-3 w-3 text-[var(--success)]" />
               ) : (
                 <Copy className="h-3 w-3 text-muted-foreground" />
               )}
@@ -194,7 +194,7 @@ export const BatchInfoPanel = memo(function BatchInfoPanel({
                   {batchInfo.batchId}
                 </span>
                 {copiedField === "batch" ? (
-                  <Check className="h-4 w-4 text-green-500" />
+                  <Check className="h-4 w-4 text-[var(--success)]" />
                 ) : (
                   <Copy className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 )}

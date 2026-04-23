@@ -139,10 +139,10 @@ const UOM_OPTIONS = [
 
 function getCategoryColor(category: string): string {
   const colors: Record<string, string> = {
-    Flower: "bg-green-100 text-green-800",
+    Flower: "bg-[var(--success-bg)] text-[var(--success)]",
     Concentrate: "bg-amber-100 text-amber-800",
-    Edible: "bg-purple-100 text-purple-800",
-    Preroll: "bg-blue-100 text-blue-800",
+    Edible: "bg-muted text-primary",
+    Preroll: "bg-[var(--info-bg)] text-[var(--info)]",
     Vape: "bg-indigo-100 text-indigo-800",
     Topical: "bg-pink-100 text-pink-800",
   };

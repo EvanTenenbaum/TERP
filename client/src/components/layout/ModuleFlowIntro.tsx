@@ -182,8 +182,8 @@ const MODULE_FLOW_INTROS: ModuleFlowIntroConfig[] = [
     themeClasses: {
       panel:
         "border-blue-200/70 bg-gradient-to-br from-blue-50/90 via-white to-indigo-50/70",
-      iconWrap: "bg-blue-100 text-blue-700 ring-blue-200",
-      badge: "bg-blue-100 text-blue-800",
+      iconWrap: "bg-[var(--info-bg)] text-[var(--info)] ring-blue-200",
+      badge: "bg-[var(--info-bg)] text-[var(--info)]",
       tipAccent: "border-l-blue-500",
     },
     steps: [
@@ -215,8 +215,8 @@ const MODULE_FLOW_INTROS: ModuleFlowIntroConfig[] = [
     themeClasses: {
       panel:
         "border-orange-200/70 bg-gradient-to-br from-orange-50/90 via-white to-amber-50/60",
-      iconWrap: "bg-orange-100 text-orange-700 ring-orange-200",
-      badge: "bg-orange-100 text-orange-800",
+      iconWrap: "bg-[var(--warning-bg)] text-[var(--warning)] ring-orange-200",
+      badge: "bg-[var(--warning-bg)] text-[var(--warning)]",
       tipAccent: "border-l-orange-500",
     },
     steps: [

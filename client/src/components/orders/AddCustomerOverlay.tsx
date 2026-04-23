@@ -152,7 +152,7 @@ export function AddCustomerOverlay({
           {/* TERI Code */}
           <div className="space-y-2">
             <Label htmlFor="teriCode">
-              TERI Code <span className="text-red-500">*</span>
+              TERI Code <span className="text-destructive">*</span>
             </Label>
             <Input
               id="teriCode"
@@ -168,7 +168,7 @@ export function AddCustomerOverlay({
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name">
-              Customer Name <span className="text-red-500">*</span>
+              Customer Name <span className="text-destructive">*</span>
             </Label>
             <Input
               id="name"

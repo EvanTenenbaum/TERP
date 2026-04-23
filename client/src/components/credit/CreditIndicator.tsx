@@ -71,28 +71,28 @@ export const CreditIndicator = React.memo(function CreditIndicator({
   const getStatus = (utilization: number) => {
     if (utilization >= 100)
       return {
-        color: "text-red-600",
-        bgColor: "bg-red-600",
+        color: "text-destructive",
+        bgColor: "bg-destructive",
         label: "Over Limit",
         icon: AlertTriangle,
       };
     if (utilization >= 90)
       return {
-        color: "text-red-600",
-        bgColor: "bg-red-600",
+        color: "text-destructive",
+        bgColor: "bg-destructive",
         label: "Critical",
         icon: AlertTriangle,
       };
     if (utilization >= 75)
       return {
-        color: "text-yellow-600",
-        bgColor: "bg-yellow-600",
+        color: "text-[var(--warning)]",
+        bgColor: "bg-[var(--warning)]",
         label: "Warning",
         icon: AlertCircle,
       };
     return {
-      color: "text-green-600",
-      bgColor: "bg-green-600",
+      color: "text-[var(--success)]",
+      bgColor: "bg-[var(--success)]",
       label: "Good",
       icon: CheckCircle,
     };
@@ -147,7 +147,7 @@ export const CreditIndicator = React.memo(function CreditIndicator({
             <div className="flex justify-between gap-4">
               <span className="text-muted-foreground">Headroom:</span>
               <span
-                className={`font-medium ${availableCredit < 0 ? "text-red-600" : "text-green-600"}`}
+                className={`font-medium ${availableCredit < 0 ? "text-destructive" : "text-[var(--success)]"}`}
               >
                 {formatCurrency(availableCredit)}
               </span>
@@ -192,9 +192,9 @@ export const CreditIndicatorDot = React.memo(function CreditIndicatorDot({
   const utilizationPercent = (owed / limit) * 100;
 
   const getColor = (utilization: number) => {
-    if (utilization >= 90) return "bg-red-600";
-    if (utilization >= 75) return "bg-yellow-600";
-    return "bg-green-600";
+    if (utilization >= 90) return "bg-destructive";
+    if (utilization >= 75) return "bg-[var(--warning)]";
+    return "bg-[var(--success)]";
   };
 
   return (

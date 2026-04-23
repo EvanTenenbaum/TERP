@@ -465,7 +465,7 @@ function BatchInspectorContent({
             <p
               className={cn(
                 "font-semibold text-lg",
-                available <= 0 && "text-red-600"
+                available <= 0 && "text-destructive"
               )}
             >
               {formatQuantity(available)}
@@ -480,9 +480,9 @@ function BatchInspectorContent({
             <p className="font-semibold">{formatQuantity(hold)}</p>
           </div>
           {quarantine > 0 && (
-            <div className="p-3 bg-red-50 rounded-lg col-span-2">
-              <p className="text-xs text-red-600">Quarantined</p>
-              <p className="font-semibold text-red-700">
+            <div className="p-3 bg-destructive/10 rounded-lg col-span-2">
+              <p className="text-xs text-destructive">Quarantined</p>
+              <p className="font-semibold text-destructive">
                 {formatQuantity(quarantine)}
               </p>
             </div>
@@ -496,7 +496,7 @@ function BatchInspectorContent({
             <p className="font-semibold">{formatCurrency(batch.unitCogs)}</p>
           </InspectorField>
           <InspectorField label="Total Value">
-            <p className="font-semibold text-green-600">
+            <p className="font-semibold text-[var(--success)]">
               {formatCurrency(totalValue)}
             </p>
           </InspectorField>
@@ -1926,7 +1926,7 @@ export function InventoryWorkSurface() {
       {successMessage && (
         <div
           data-testid="success-toast"
-          className="toast-success mx-6 mt-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
+          className="toast-success mx-6 mt-3 rounded-md border border-green-200 bg-[var(--success-bg)] px-3 py-2 text-sm text-[var(--success)]"
         >
           {successMessage}
         </div>
@@ -2013,7 +2013,7 @@ export function InventoryWorkSurface() {
         <div
           role="alert"
           aria-live="assertive"
-          className="mx-6 mt-3 flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          className="mx-6 mt-3 flex items-center justify-between rounded-md border border-red-200 bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           <span>{bulkDeleteError}</span>
           <div className="flex items-center gap-2">
@@ -2510,7 +2510,7 @@ export function InventoryWorkSurface() {
                                   <span
                                     className={cn(
                                       available <= 100 &&
-                                        "text-orange-600 font-semibold"
+                                        "text-[var(--warning)] font-semibold"
                                     )}
                                   >
                                     {formatQuantity(available)}

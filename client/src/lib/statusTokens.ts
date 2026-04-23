@@ -11,33 +11,33 @@
 // ─── Semantic Status Tokens ────────────────────────────────────────
 
 /** Positive/success states: paid, complete, live, approved */
-export const STATUS_SUCCESS = "bg-green-100 text-green-800 border-green-200";
+export const STATUS_SUCCESS = "bg-[var(--success-bg)] text-[var(--success)] border-green-200";
 /** Positive subtle: success backgrounds, completion highlights */
 export const STATUS_SUCCESS_SUBTLE =
-  "bg-green-50 text-green-800 border-green-200";
+  "bg-[var(--success-bg)] text-[var(--success)] border-green-200";
 /** Positive strong: progress bars, solid indicators */
-export const STATUS_SUCCESS_SOLID = "bg-green-500 text-white";
+export const STATUS_SUCCESS_SOLID = "bg-[var(--success)] text-white";
 
 /** Warning states: pending, partial, awaiting, 30-day aging */
-export const STATUS_WARNING = "bg-yellow-100 text-yellow-800 border-yellow-200";
+export const STATUS_WARNING = "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200";
 /** Warning subtle: backgrounds, section highlights */
 export const STATUS_WARNING_SUBTLE =
-  "bg-yellow-50 text-yellow-800 border-yellow-200";
+  "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200";
 
 /** Caution states: on-hold, 60-day aging, needs attention */
-export const STATUS_CAUTION = "bg-orange-100 text-orange-800 border-orange-200";
+export const STATUS_CAUTION = "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200";
 
 /** Danger states: overdue, quarantined, voided, 90-day aging */
-export const STATUS_DANGER = "bg-red-100 text-red-800 border-red-200";
+export const STATUS_DANGER = "bg-destructive/10 text-destructive border-red-200";
 /** Danger subtle: error backgrounds */
-export const STATUS_DANGER_SUBTLE = "bg-red-50 text-red-800 border-red-200";
+export const STATUS_DANGER_SUBTLE = "bg-destructive/10 text-destructive border-red-200";
 /** Danger strong: 90+ day aging, critical */
-export const STATUS_DANGER_STRONG = "bg-red-200 text-red-900 border-red-300";
+export const STATUS_DANGER_STRONG = "bg-destructive/10 text-destructive border-red-300";
 
 /** Info/active states: sent, picking, in-progress, selected */
-export const STATUS_INFO = "bg-blue-100 text-blue-800 border-blue-200";
+export const STATUS_INFO = "bg-[var(--info-bg)] text-[var(--info)] border-blue-200";
 /** Info subtle: selected row, active focus */
-export const STATUS_INFO_SUBTLE = "bg-blue-50 text-blue-800 border-blue-200";
+export const STATUS_INFO_SUBTLE = "bg-[var(--info-bg)] text-[var(--info)] border-blue-200";
 
 /** Neutral states: draft, new, default */
 export const STATUS_NEUTRAL = "bg-slate-100 text-slate-800 border-slate-200";
@@ -167,7 +167,7 @@ export const PO_STATUS_CLASSES: Record<string, string> = {
   SENT: "bg-cyan-50 text-cyan-700 border border-cyan-200",
   RECEIVING: "bg-violet-50 text-violet-700 border border-violet-200",
   RECEIVED: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  PARTIALLY_RECEIVED: "bg-purple-50 text-purple-700 border border-purple-200",
+  PARTIALLY_RECEIVED: "bg-muted text-primary border border-purple-200",
   VOIDED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
   CANCELLED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
 };
@@ -213,10 +213,10 @@ import { BATCH_STATUS_LABELS } from "../../../server/constants/batchStatuses";
 export { BATCH_STATUS_LABELS };
 
 export const BATCH_STATUS_CLASSES: Record<string, string> = {
-  AWAITING_INTAKE: "bg-blue-50 text-blue-700 border border-blue-200",
+  AWAITING_INTAKE: "bg-[var(--info-bg)] text-[var(--info)] border border-blue-200",
   LIVE: "bg-emerald-50 text-emerald-700 border border-emerald-200",
   ON_HOLD: "bg-amber-50 text-amber-700 border border-amber-200",
-  QUARANTINED: "bg-red-50 text-red-700 border border-red-200",
+  QUARANTINED: "bg-destructive/10 text-destructive border border-red-200",
   SOLD_OUT: "bg-neutral-100 text-neutral-500 border border-neutral-200",
   CLOSED: "bg-neutral-100 text-neutral-400 border border-neutral-200",
 };
@@ -272,7 +272,7 @@ export const INVOICE_STATUS_CLASSES: Record<string, string> = {
   SENT: "bg-sky-50 text-sky-700 border border-sky-200",
   PAID: "bg-emerald-50 text-emerald-700 border border-emerald-200",
   PARTIAL: "bg-violet-50 text-violet-700 border border-violet-200",
-  OVERDUE: "bg-red-50 text-red-700 border border-red-200 font-semibold",
+  OVERDUE: "bg-destructive/10 text-destructive border border-red-200 font-semibold",
   VOIDED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
   CANCELLED: "bg-neutral-100 text-neutral-500 border border-neutral-200",
   WRITE_OFF:

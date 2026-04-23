@@ -40,13 +40,13 @@ export const InventoryCard = memo(function InventoryCard({
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
       case "AWAITING_INTAKE":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+        return "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200";
       case "LIVE":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-[var(--success-bg)] text-[var(--success)] border-green-200";
       case "ON_HOLD":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200";
       case "QUARANTINED":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-destructive/10 text-destructive border-red-200";
       case "SOLD_OUT":
         return "bg-gray-100 text-gray-800 border-gray-200";
       case "CLOSED":
@@ -121,7 +121,7 @@ export const InventoryCard = memo(function InventoryCard({
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Available</p>
-              <p className="font-semibold text-green-600">
+              <p className="font-semibold text-[var(--success)]">
                 {parseFloat(batch.availableQty).toFixed(2)}
               </p>
             </div>

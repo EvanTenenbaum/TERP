@@ -49,11 +49,11 @@ export function MetricCard({
         {trend && !isLoading && (
           <div className="flex items-center text-xs">
             {trend.value >= 0 ? (
-              <TrendingUp className="h-3 w-3 text-green-500 mr-1" />
+              <TrendingUp className="h-3 w-3 text-[var(--success)] mr-1" />
             ) : (
-              <TrendingDown className="h-3 w-3 text-red-500 mr-1" />
+              <TrendingDown className="h-3 w-3 text-destructive mr-1" />
             )}
-            <span className={trend.value >= 0 ? "text-green-500" : "text-red-500"}>
+            <span className={trend.value >= 0 ? "text-[var(--success)]" : "text-destructive"}>
               {trend.value >= 0 ? "+" : ""}
               {trend.value.toFixed(1)}%
             </span>

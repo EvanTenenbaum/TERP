@@ -123,7 +123,7 @@ export const ClientGrid = React.memo(function ClientGrid() {
   const getRowStyle = useCallback((params: RowClassParams<ClientGridRow>) => {
     // Highlight entire row with green background if payment has been made
     if (params.data?.paid || (params.data?.paymentAmount ?? 0) > 0) {
-      return { backgroundColor: "#dcfce7" }; // Green (bg-green-100 equivalent)
+      return { backgroundColor: "#dcfce7" }; // Green (bg-[var(--success-bg)] equivalent)
     }
     return undefined;
   }, []);

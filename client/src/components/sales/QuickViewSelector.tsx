@@ -199,10 +199,10 @@ export function QuickViewSelector({
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         {view.isDefault && (
-                          <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+                          <Star className="h-3 w-3 text-[var(--warning)] fill-yellow-500 flex-shrink-0" />
                         )}
                         {currentViewId === view.id && (
-                          <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                          <Check className="h-3 w-3 text-[var(--success)] flex-shrink-0" />
                         )}
                         <span className="truncate">{view.name}</span>
                         {view.lastUsedAt && (
@@ -254,7 +254,7 @@ export function QuickViewSelector({
                     >
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         {currentViewId === view.id && (
-                          <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                          <Check className="h-3 w-3 text-[var(--success)] flex-shrink-0" />
                         )}
                         <span className="truncate">{view.name}</span>
                       </div>

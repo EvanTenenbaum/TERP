@@ -109,7 +109,7 @@ function ProfitabilitySection({ batchId }: { batchId: number }) {
   }
 
   const profitColor =
-    profitability.grossProfit >= 0 ? "text-green-600" : "text-red-600";
+    profitability.grossProfit >= 0 ? "text-[var(--success)]" : "text-destructive";
 
   return (
     <div className="space-y-3">
@@ -135,7 +135,7 @@ function ProfitabilitySection({ batchId }: { batchId: number }) {
             <div className="text-sm text-muted-foreground mb-1">
               Total Revenue
             </div>
-            <div className="text-lg font-semibold text-green-600">
+            <div className="text-lg font-semibold text-[var(--success)]">
               {formatCurrency(profitability.totalRevenue)}
             </div>
           </div>
@@ -186,7 +186,7 @@ function ProfitabilitySection({ batchId }: { batchId: number }) {
                 <span className="text-muted-foreground">
                   Potential Profit:{" "}
                 </span>
-                <span className="font-semibold text-blue-600">
+                <span className="font-semibold text-[var(--info)]">
                   {formatCurrency(profitability.potentialProfit)}
                 </span>
               </div>
@@ -581,7 +581,7 @@ export function BatchDetailDrawer({
                   <CheckCircle className="h-4 w-4" />
                   <span className="text-sm">Available</span>
                 </div>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-[var(--success)]">
                   {availableQty.toFixed(2)}
                 </p>
               </Card>

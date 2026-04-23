@@ -43,7 +43,7 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              <Lightbulb className="h-5 w-5 text-[var(--warning)]" />
               <CardTitle>Smart Opportunities</CardTitle>
             </div>
           </div>
@@ -66,7 +66,7 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Lightbulb className="h-5 w-5 text-yellow-500" />
+              <Lightbulb className="h-5 w-5 text-[var(--warning)]" />
               <CardTitle>Smart Opportunities</CardTitle>
             </div>
           </div>
@@ -109,7 +109,7 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-yellow-500" />
+            <Lightbulb className="h-5 w-5 text-[var(--warning)]" />
             <CardTitle>Smart Opportunities</CardTitle>
           </div>
           <Button
@@ -174,7 +174,7 @@ export const SmartOpportunitiesWidget = memo(function SmartOpportunitiesWidget({
                   />
                 )}
                 {opp.potentialRevenue && (
-                  <p className="text-xs font-medium text-green-600">
+                  <p className="text-xs font-medium text-[var(--success)]">
                     ${parseFloat(opp.potentialRevenue).toFixed(2)}
                   </p>
                 )}

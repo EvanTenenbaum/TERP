@@ -767,7 +767,7 @@ function OrderInspectorContent({
               </Button>
               <Button
                 variant="outline"
-                className="w-full justify-start text-red-600 hover:text-red-700"
+                className="w-full justify-start text-destructive hover:text-destructive"
                 data-testid="delete-draft-btn"
                 onClick={() => onDelete(order.id)}
               >
@@ -857,7 +857,7 @@ function OrderInspectorContent({
                 canProcessReturns && (
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-orange-600 hover:text-orange-700"
+                    className="w-full justify-start text-[var(--warning)] hover:text-[var(--warning)]"
                     onClick={() => onProcessReturn(order.id)}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />

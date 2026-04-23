@@ -86,7 +86,7 @@ export function PurchasePatternsWidget({
   // Get confidence badge
   const getConfidenceBadge = (confidence: number) => {
     if (confidence >= 80) {
-      return <Badge className="bg-green-600">High ({confidence}%)</Badge>;
+      return <Badge className="bg-[var(--success)]">High ({confidence}%)</Badge>;
     } else if (confidence >= 60) {
       return <Badge variant="secondary">Medium ({confidence}%)</Badge>;
     } else {
@@ -101,7 +101,7 @@ export function PurchasePatternsWidget({
         <Badge variant="destructive">Overdue by {Math.abs(daysUntil)}d</Badge>
       );
     } else if (daysUntil <= 7) {
-      return <Badge className="bg-orange-600">Due in {daysUntil}d</Badge>;
+      return <Badge className="bg-[var(--warning)]">Due in {daysUntil}d</Badge>;
     } else if (daysUntil <= 14) {
       return <Badge variant="secondary">Due in {daysUntil}d</Badge>;
     } else {
@@ -420,7 +420,7 @@ export function PurchasePatternsWidget({
                     <span className="text-sm text-muted-foreground">
                       Overdue
                     </span>
-                    <span className="text-2xl font-bold text-red-600">
+                    <span className="text-2xl font-bold text-destructive">
                       {
                         clientPredictions.filter(
                           (p: ReorderPrediction) =>
@@ -433,7 +433,7 @@ export function PurchasePatternsWidget({
                     <span className="text-sm text-muted-foreground">
                       Due Soon (7d)
                     </span>
-                    <span className="text-2xl font-bold text-orange-600">
+                    <span className="text-2xl font-bold text-[var(--warning)]">
                       {
                         clientPredictions.filter(
                           (p: ReorderPrediction) =>

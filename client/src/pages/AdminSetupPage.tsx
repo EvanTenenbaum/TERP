@@ -49,8 +49,8 @@ export default function AdminSetupPage() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-            <Shield className="w-6 h-6 text-blue-600" />
+          <div className="mx-auto mb-4 w-12 h-12 bg-[var(--info-bg)] rounded-full flex items-center justify-center">
+            <Shield className="w-6 h-6 text-[var(--info)]" />
           </div>
           <CardTitle className="text-2xl">Admin Setup</CardTitle>
           <CardDescription>
@@ -107,7 +107,7 @@ export default function AdminSetupPage() {
 
             {result?.success && (
               <div className="text-center space-y-2">
-                <p className="text-sm text-green-600 font-medium">
+                <p className="text-sm text-[var(--success)] font-medium">
                   ✓ Users promoted successfully!
                 </p>
                 <Button 

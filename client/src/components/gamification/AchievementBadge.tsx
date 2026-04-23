@@ -56,31 +56,27 @@ interface AchievementBadgeProps {
 // Medal color schemes
 const MEDAL_COLORS: Record<
   MedalType,
-  { bg: string; border: string; text: string; glow: string }
+  { bg: string; border: string; text: string }
 > = {
   BRONZE: {
     bg: "bg-amber-100",
     border: "border-amber-400",
     text: "text-amber-700",
-    glow: "shadow-amber-200",
   },
   SILVER: {
     bg: "bg-gray-100",
     border: "border-gray-400",
     text: "text-gray-600",
-    glow: "shadow-gray-200",
   },
   GOLD: {
-    bg: "bg-yellow-100",
+    bg: "bg-[var(--warning-bg)]",
     border: "border-yellow-400",
-    text: "text-yellow-700",
-    glow: "shadow-yellow-200",
+    text: "text-[var(--warning)]",
   },
   PLATINUM: {
-    bg: "bg-purple-100",
+    bg: "bg-muted",
     border: "border-purple-400",
-    text: "text-purple-700",
-    glow: "shadow-purple-200",
+    text: "text-primary",
   },
 };
 
@@ -143,7 +139,6 @@ export const AchievementBadge = React.memo(function AchievementBadge({
         colors.bg,
         colors.border,
         colors.text,
-        colors.glow,
         sizeConfig.container,
         isPinned && "ring-2 ring-primary ring-offset-2",
         onClick && "cursor-pointer"
@@ -157,8 +152,8 @@ export const AchievementBadge = React.memo(function AchievementBadge({
         className={cn(
           "absolute -bottom-1 -right-1 rounded-full flex items-center justify-center",
           "text-[8px] font-bold",
-          medal === "PLATINUM" && "bg-purple-500 text-white w-4 h-4",
-          medal === "GOLD" && "bg-yellow-500 text-white w-4 h-4",
+          medal === "PLATINUM" && "bg-primary text-white w-4 h-4",
+          medal === "GOLD" && "bg-[var(--warning)] text-white w-4 h-4",
           medal === "SILVER" && "bg-gray-400 text-white w-4 h-4",
           medal === "BRONZE" && "bg-amber-600 text-white w-4 h-4"
         )}

@@ -119,7 +119,7 @@ const RankBadge = React.memo(function RankBadge({
 
   if (rank === 1) {
     return (
-      <div className={cn(baseClasses, "bg-yellow-100 text-yellow-700")}>
+      <div className={cn(baseClasses, "bg-[var(--warning-bg)] text-[var(--warning)]")}>
         <Trophy className="h-4 w-4" />
       </div>
     );
@@ -160,14 +160,14 @@ const RankChange = React.memo(function RankChange({
   }
   if (change > 0) {
     return (
-      <span className="text-green-600 flex items-center gap-1">
+      <span className="text-[var(--success)] flex items-center gap-1">
         <TrendingUp className="h-4 w-4" />
         <span className="text-xs">+{change}</span>
       </span>
     );
   }
   return (
-    <span className="text-red-600 flex items-center gap-1">
+    <span className="text-destructive flex items-center gap-1">
       <TrendingDown className="h-4 w-4" />
       <span className="text-xs">{change}</span>
     </span>
@@ -238,7 +238,7 @@ export const AnonymizedLeaderboard = React.memo(function AnonymizedLeaderboard({
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="flex items-center gap-2">
-              <Crown className="h-5 w-5 text-yellow-500" />
+              <Crown className="h-5 w-5 text-[var(--warning)]" />
               VIP Leaderboard
             </CardTitle>
             <CardDescription>
@@ -322,7 +322,7 @@ export const AnonymizedLeaderboard = React.memo(function AnonymizedLeaderboard({
 
         {/* Error State */}
         {error && (
-          <div className="text-center py-8 text-red-600">
+          <div className="text-center py-8 text-destructive">
             <p>Error loading leaderboard: {error.message}</p>
             <Button
               variant="outline"

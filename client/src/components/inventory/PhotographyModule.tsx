@@ -539,7 +539,7 @@ export function PhotographyModule({
                   <span className="truncate">{item.filename}</span>
                   <span className="text-muted-foreground">
                     {item.status === "complete" ? (
-                      <Check className="h-4 w-4 text-green-500" />
+                      <Check className="h-4 w-4 text-[var(--success)]" />
                     ) : item.status === "error" ? (
                       <AlertCircle className="h-4 w-4 text-destructive" />
                     ) : (

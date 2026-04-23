@@ -43,22 +43,22 @@ export default function InvitationStatusBadge({
     },
     PENDING: {
       label: "Pending",
-      color: "bg-yellow-100 text-yellow-700 border-yellow-300",
+      color: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-300",
       icon: Send,
     },
     ACCEPTED: {
       label: "Accepted",
-      color: "bg-green-100 text-green-700 border-green-300",
+      color: "bg-[var(--success-bg)] text-[var(--success)] border-green-300",
       icon: CheckCircle,
     },
     DECLINED: {
       label: "Declined",
-      color: "bg-red-100 text-red-700 border-red-300",
+      color: "bg-destructive/10 text-destructive border-red-300",
       icon: XCircle,
     },
     AUTO_ACCEPTED: {
       label: "Auto-Accepted",
-      color: "bg-blue-100 text-blue-700 border-blue-300",
+      color: "bg-[var(--info-bg)] text-[var(--info)] border-blue-300",
       icon: CheckCircle,
     },
     CANCELLED: {
@@ -68,7 +68,7 @@ export default function InvitationStatusBadge({
     },
     EXPIRED: {
       label: "Expired",
-      color: "bg-orange-100 text-orange-700 border-orange-300",
+      color: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-300",
       icon: AlertCircle,
     },
   };

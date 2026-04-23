@@ -96,7 +96,7 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
                       data.weekly.prior7Days
                     );
                     const color =
-                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                      variance.amount >= 0 ? "text-[var(--success)]" : "text-destructive";
                     return (
                       <span className={color}>
                         {variance.amount >= 0 ? "+" : ""}
@@ -126,7 +126,7 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
                       data.monthly.prior30Days
                     );
                     const color =
-                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                      variance.amount >= 0 ? "text-[var(--success)]" : "text-destructive";
                     return (
                       <span className={color}>
                         {variance.amount >= 0 ? "+" : ""}
@@ -156,9 +156,9 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
                       data.sixMonth.prior6Months
                     );
                     const color =
-                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                      variance.amount >= 0 ? "text-[var(--success)]" : "text-destructive";
                     const bgColor =
-                      variance.amount < 0 ? "bg-red-50 dark:bg-red-950/20" : "";
+                      variance.amount < 0 ? "bg-destructive/10 dark:bg-destructive/20" : "";
                     return (
                       <span className={`${color} ${bgColor} px-2 py-1 rounded`}>
                         {variance.amount >= 0 ? "+" : ""}
@@ -188,9 +188,9 @@ export const SalesComparisonWidget = memo(function SalesComparisonWidget() {
                       data.yearly.prior365
                     );
                     const color =
-                      variance.amount >= 0 ? "text-green-600" : "text-red-600";
+                      variance.amount >= 0 ? "text-[var(--success)]" : "text-destructive";
                     const bgColor =
-                      variance.amount < 0 ? "bg-red-50 dark:bg-red-950/20" : "";
+                      variance.amount < 0 ? "bg-destructive/10 dark:bg-destructive/20" : "";
                     return (
                       <span className={`${color} ${bgColor} px-2 py-1 rounded`}>
                         {variance.amount >= 0 ? "+" : ""}

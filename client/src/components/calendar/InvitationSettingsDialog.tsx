@@ -137,7 +137,7 @@ export default function InvitationSettingsDialog({
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-3">
-            <Settings className="h-6 w-6 text-blue-600" />
+            <Settings className="h-6 w-6 text-[var(--info)]" />
             <h2 className="text-xl font-semibold text-gray-900">
               Invitation Settings
             </h2>
@@ -159,7 +159,7 @@ export default function InvitationSettingsDialog({
                 type="checkbox"
                 checked={autoAcceptAll}
                 onChange={e => setAutoAcceptAll(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                className="h-4 w-4 rounded border-gray-300 text-[var(--info)] focus:ring-blue-500"
               />
               <div>
                 <div className="text-sm font-medium text-gray-900">
@@ -185,7 +185,7 @@ export default function InvitationSettingsDialog({
                       type="checkbox"
                       checked={autoAcceptFromOrganizers.includes(user.id)}
                       onChange={() => toggleOrganizer(user.id)}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-gray-300 text-[var(--info)] focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-900">{user.name}</span>
                   </label>
@@ -207,7 +207,7 @@ export default function InvitationSettingsDialog({
                       type="checkbox"
                       checked={autoAcceptByEventType.includes(type)}
                       onChange={() => toggleEventType(type)}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-gray-300 text-[var(--info)] focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-900">{type}</span>
                   </label>
@@ -229,7 +229,7 @@ export default function InvitationSettingsDialog({
                       type="checkbox"
                       checked={autoAcceptByModule.includes(module)}
                       onChange={() => toggleModule(module)}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-gray-300 text-[var(--info)] focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-900">{module}</span>
                   </label>
@@ -250,7 +250,7 @@ export default function InvitationSettingsDialog({
                   type="checkbox"
                   checked={notifyOnInvitation}
                   onChange={e => setNotifyOnInvitation(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-gray-300 text-[var(--info)] focus:ring-blue-500"
                 />
                 <div>
                   <div className="text-sm font-medium text-gray-900">
@@ -266,7 +266,7 @@ export default function InvitationSettingsDialog({
                   type="checkbox"
                   checked={notifyOnAutoAccept}
                   onChange={e => setNotifyOnAutoAccept(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded border-gray-300 text-[var(--info)] focus:ring-blue-500"
                 />
                 <div>
                   <div className="text-sm font-medium text-gray-900">
@@ -292,7 +292,7 @@ export default function InvitationSettingsDialog({
           <button
             onClick={handleSave}
             disabled={updateSettings.isPending}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg bg-[var(--info)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--info)] disabled:opacity-50"
           >
             {updateSettings.isPending ? (
               <>

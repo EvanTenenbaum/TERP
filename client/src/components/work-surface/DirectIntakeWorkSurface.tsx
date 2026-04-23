@@ -409,7 +409,7 @@ const getInlineErrorCellClass = (
   field: keyof IntakeFieldErrorMap
 ) =>
   row?.fieldErrors?.[field]
-    ? "border-l-2 border-red-400 bg-red-50/70"
+    ? "border-l-2 border-red-400 bg-destructive/10/70"
     : undefined;
 
 const getMissingCostCellClass = (row: IntakeGridRow | undefined) =>
@@ -425,7 +425,7 @@ function StatusCellRenderer({ data }: { data?: IntakeGridRow }) {
 
   if (status === "submitted") {
     return (
-      <div className="flex items-center gap-1 text-green-600">
+      <div className="flex items-center gap-1 text-[var(--success)]">
         <CheckCircle2 className="h-4 w-4" />
         <span>Submitted</span>
       </div>
@@ -435,7 +435,7 @@ function StatusCellRenderer({ data }: { data?: IntakeGridRow }) {
   if (status === "error") {
     return (
       <div
-        className="flex items-center gap-1 text-red-600"
+        className="flex items-center gap-1 text-destructive"
         title={errorMessage}
       >
         <AlertCircle className="h-4 w-4" />
@@ -574,7 +574,7 @@ function RowInspectorContent({
             ))}
           </datalist>
           {validation.getFieldState("vendorName").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("vendorName").error}
             </p>
           )}
@@ -595,7 +595,7 @@ function RowInspectorContent({
             placeholder="Enter brand or farmer name"
           />
           {validation.getFieldState("brandName").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("brandName").error}
             </p>
           )}
@@ -671,19 +671,19 @@ function RowInspectorContent({
             ))}
           </datalist>
           {validation.getFieldState("item").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("item").error}
             </p>
           )}
           {/* TER-222: Strain validation assistant — show matched strain info */}
           {row.strainId && row.productId && (
-            <div className="flex items-center gap-2 mt-1 p-1.5 bg-green-50 rounded text-xs text-green-700">
+            <div className="flex items-center gap-2 mt-1 p-1.5 bg-[var(--success-bg)] rounded text-xs text-[var(--success)]">
               <CheckCircle2 className="h-3 w-3" />
               <span>Matched to existing product (strain #{row.strainId})</span>
             </div>
           )}
           {row.item && !row.productId && (
-            <div className="flex items-center gap-2 mt-1 p-1.5 bg-yellow-50 rounded text-xs text-yellow-700">
+            <div className="flex items-center gap-2 mt-1 p-1.5 bg-[var(--warning-bg)] rounded text-xs text-[var(--warning)]">
               <AlertCircle className="h-3 w-3" />
               <span>New product — will be created on submit</span>
             </div>
@@ -719,7 +719,7 @@ function RowInspectorContent({
               )}
             />
             {validation.getFieldState("qty").showError && (
-              <p className="text-xs text-red-500 mt-1">
+              <p className="text-xs text-destructive mt-1">
                 {validation.getFieldState("qty").error}
               </p>
             )}
@@ -764,7 +764,7 @@ function RowInspectorContent({
               )}
             />
             {validation.getFieldState("cogs").showError && (
-              <p className="text-xs text-red-500 mt-1">
+              <p className="text-xs text-destructive mt-1">
                 {validation.getFieldState("cogs").error}
               </p>
             )}
@@ -789,7 +789,7 @@ function RowInspectorContent({
                 )}
               />
               {validation.getFieldState("cogsMin").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("cogsMin").error}
                 </p>
               )}
@@ -812,7 +812,7 @@ function RowInspectorContent({
                 )}
               />
               {validation.getFieldState("cogsMax").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("cogsMax").error}
                 </p>
               )}
@@ -878,7 +878,7 @@ function RowInspectorContent({
             </SelectContent>
           </Select>
           {validation.getFieldState("site").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("site").error}
             </p>
           )}
@@ -1403,7 +1403,7 @@ export function DirectIntakeWorkSurface() {
           return hasNotes ? (
             <span
               title={`Notes: ${params.data?.notes}`}
-              className="text-blue-600 cursor-help"
+              className="text-[var(--info)] cursor-help"
             >
               📝
             </span>
@@ -2301,7 +2301,7 @@ export function DirectIntakeWorkSurface() {
           <Badge variant="outline">Submitted {submittedCount}</Badge>
           <Badge
             variant="outline"
-            className={cn(errorCount > 0 && "border-red-200 text-red-600")}
+            className={cn(errorCount > 0 && "border-red-200 text-destructive")}
           >
             Errors {errorCount}
           </Badge>
@@ -2544,7 +2544,7 @@ export function DirectIntakeWorkSurface() {
           </div>
         </div>
         {selectedRow?.status === "error" && selectedRow.errorMessage && (
-          <p className="mt-2 text-xs font-medium text-red-600">
+          <p className="mt-2 text-xs font-medium text-destructive">
             {selectedRow.errorMessage}
           </p>
         )}
@@ -2734,8 +2734,8 @@ export function DirectIntakeWorkSurface() {
                 onSelectionChanged={handleSelectionChanged}
                 getRowId={params => params.data.id}
                 rowClassRules={{
-                  "bg-green-50": params => params.data?.status === "submitted",
-                  "bg-red-50": params => params.data?.status === "error",
+                  "bg-[var(--success-bg)]": params => params.data?.status === "submitted",
+                  "bg-destructive/10": params => params.data?.status === "error",
                 }}
               />
             </div>

@@ -34,27 +34,27 @@ export function AgingBadge({
       case "current":
         return {
           label: "Current",
-          className: "bg-green-100 text-green-700 border-green-200",
+          className: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
         };
       case "30":
         return {
           label: "30 Days",
-          className: "bg-yellow-100 text-yellow-700 border-yellow-200",
+          className: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200",
         };
       case "60":
         return {
           label: "60 Days",
-          className: "bg-orange-100 text-orange-700 border-orange-200",
+          className: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200",
         };
       case "90":
         return {
           label: "90 Days",
-          className: "bg-red-100 text-red-700 border-red-200",
+          className: "bg-destructive/10 text-destructive border-red-200",
         };
       case "90+":
         return {
           label: "90+ Days",
-          className: "bg-red-200 text-red-800 border-red-300 font-semibold",
+          className: "bg-destructive/10 text-destructive border-red-300 font-semibold",
         };
       default:
         return {

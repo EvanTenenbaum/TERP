@@ -463,13 +463,13 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Amount Paid:</span>
-                    <span className="font-mono text-green-600">
+                    <span className="font-mono text-[var(--success)]">
                       {formatCurrency(selectedBill.amountPaid)}
                     </span>
                   </div>
                   <div className="flex justify-between font-semibold">
                     <span>Amount Due:</span>
-                    <span className="font-mono text-red-600">
+                    <span className="font-mono text-destructive">
                       {formatCurrency(selectedBill.amountDue)}
                     </span>
                   </div>

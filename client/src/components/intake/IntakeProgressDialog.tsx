@@ -29,11 +29,11 @@ interface IntakeProgressDialogProps {
 function StepIcon({ step }: { step: IntakeStep }) {
   switch (step.status) {
     case "complete":
-      return <CheckCircle2 className="h-5 w-5 text-green-600" />;
+      return <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />;
     case "failed":
-      return <XCircle className="h-5 w-5 text-red-600" />;
+      return <XCircle className="h-5 w-5 text-destructive" />;
     case "running":
-      return <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />;
+      return <Loader2 className="h-5 w-5 text-[var(--info)] animate-spin" />;
     default:
       return <Circle className="h-5 w-5 text-gray-300" />;
   }
@@ -92,19 +92,19 @@ export function IntakeProgressDialog({
           <DialogTitle className="flex items-center gap-2">
             {isSuccess && (
               <>
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-[var(--success)]" />
                 Intake Completed
               </>
             )}
             {isFailed && (
               <>
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <AlertTriangle className="h-5 w-5 text-destructive" />
                 Intake Failed
               </>
             )}
             {!isSuccess && !isFailed && (
               <>
-                <Loader2 className="h-5 w-5 text-blue-600 animate-spin" />
+                <Loader2 className="h-5 w-5 text-[var(--info)] animate-spin" />
                 Processing Intake...
               </>
             )}
@@ -112,7 +112,7 @@ export function IntakeProgressDialog({
           <DialogDescription>
             {isSuccess && "All steps completed successfully."}
             {isFailed && (
-              <span className="text-red-600">
+              <span className="text-destructive">
                 {error || "Transaction failed. You can roll back the completed steps."}
               </span>
             )}
@@ -132,7 +132,7 @@ export function IntakeProgressDialog({
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">{step.label}</p>
                 {step.error && (
-                  <p className="text-xs text-red-600 mt-1">{step.error}</p>
+                  <p className="text-xs text-destructive mt-1">{step.error}</p>
                 )}
                 {step.status === "complete" && step.entityId && (
                   <p className="text-xs text-gray-500 mt-1">ID: {step.entityId}</p>
@@ -143,8 +143,8 @@ export function IntakeProgressDialog({
         </div>
 
         {isSuccess && (
-          <div className="rounded bg-green-50 border border-green-200 p-3">
-            <p className="text-sm text-green-800">
+          <div className="rounded bg-[var(--success-bg)] border border-green-200 p-3">
+            <p className="text-sm text-[var(--success)]">
               Successfully created {progress.completedSteps.length} entities
             </p>
           </div>

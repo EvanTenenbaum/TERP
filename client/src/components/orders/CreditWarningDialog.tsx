@@ -102,9 +102,9 @@ export function CreditWarningDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isHardBlock ? (
-              <XCircle className="h-5 w-5 text-red-600" />
+              <XCircle className="h-5 w-5 text-destructive" />
             ) : (
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <AlertTriangle className="h-5 w-5 text-[var(--warning)]" />
             )}
             {isHardBlock ? "Order Blocked" : "Credit Limit Warning"}
           </DialogTitle>
@@ -126,9 +126,9 @@ export function CreditWarningDialog({
 
           {/* Warning Message */}
           {creditCheck.warning && (
-            <div className="flex gap-2 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
-              <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+            <div className="flex gap-2 p-3 bg-[var(--warning-bg)] dark:bg-[var(--warning)] rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <AlertTriangle className="h-4 w-4 text-[var(--warning)] flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-[var(--warning)] dark:text-yellow-200">
                 {creditCheck.warning}
               </p>
             </div>
@@ -155,7 +155,7 @@ export function CreditWarningDialog({
             <div className="space-y-1">
               <p className="text-muted-foreground">New Exposure</p>
               <p
-                className={`font-semibold ${creditCheck.newExposure > creditCheck.creditLimit ? "text-red-600" : ""}`}
+                className={`font-semibold ${creditCheck.newExposure > creditCheck.creditLimit ? "text-destructive" : ""}`}
               >
                 {formatCurrency(creditCheck.newExposure)}
               </p>
@@ -166,7 +166,7 @@ export function CreditWarningDialog({
             <div className="space-y-2">
               <Label htmlFor="override-reason">
                 Override / Credit Request Reason{" "}
-                <span className="text-red-500">*</span>
+                <span className="text-destructive">*</span>
               </Label>
               <Textarea
                 id="override-reason"
@@ -183,9 +183,9 @@ export function CreditWarningDialog({
 
           {/* Info for WARNING mode */}
           {creditCheck.enforcementMode === "WARNING" && !isHardBlock && (
-            <div className="flex gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-              <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-800 dark:text-blue-200">
+            <div className="flex gap-2 p-3 bg-[var(--info-bg)] dark:bg-[var(--info)] rounded-lg border border-blue-200 dark:border-blue-800">
+              <Info className="h-4 w-4 text-[var(--info)] flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-[var(--info)] dark:text-blue-200">
                 You can proceed with this order. The warning is for your
                 awareness.
               </p>
@@ -194,9 +194,9 @@ export function CreditWarningDialog({
 
           {/* Hard Block Message */}
           {isHardBlock && (
-            <div className="flex gap-2 p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
-              <XCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-800 dark:text-red-200">
+            <div className="flex gap-2 p-3 bg-destructive/10 dark:bg-destructive rounded-lg border border-red-200 dark:border-red-800">
+              <XCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive dark:text-red-200">
                 Credit enforcement is set to Hard Block. Contact an
                 administrator to adjust the client's credit limit or change
                 enforcement settings.

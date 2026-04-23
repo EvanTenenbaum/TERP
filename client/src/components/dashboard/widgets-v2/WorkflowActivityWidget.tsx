@@ -38,7 +38,7 @@ export const WorkflowActivityWidget = memo(function WorkflowActivityWidget() {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <History className="h-5 w-5 text-purple-600" />
+          <History className="h-5 w-5 text-primary" />
           Recent Workflow Activity
         </CardTitle>
         <Button

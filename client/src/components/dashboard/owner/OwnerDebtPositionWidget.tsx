@@ -81,8 +81,8 @@ export const OwnerDebtPositionWidget = memo(function OwnerDebtPositionWidget() {
                   className={cn(
                     "rounded-lg p-3 text-sm font-medium flex items-start gap-2",
                     isPositive
-                      ? "bg-green-50 text-green-800 border border-green-200"
-                      : "bg-red-50 text-red-800 border border-red-200"
+                      ? "bg-[var(--success-bg)] text-[var(--success)] border border-green-200"
+                      : "bg-destructive/10 text-destructive border border-red-200"
                   )}
                 >
                   {net > 0 ? (
@@ -121,14 +121,14 @@ export const OwnerDebtPositionWidget = memo(function OwnerDebtPositionWidget() {
                       Outstanding receivables
                     </p>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-green-600 font-semibold">
+                  <TableCell className="text-right font-mono text-[var(--success)] font-semibold">
                     {formatCurrency(data.totalDebtOwedToMe)}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-xs h-7 text-green-700"
+                      className="text-xs h-7 text-[var(--success)]"
                       onClick={e => {
                         e.stopPropagation();
                         setLocation("/clients?hasDebt=true");
@@ -148,14 +148,14 @@ export const OwnerDebtPositionWidget = memo(function OwnerDebtPositionWidget() {
                       Outstanding payables
                     </p>
                   </TableCell>
-                  <TableCell className="text-right font-mono text-red-600 font-semibold">
+                  <TableCell className="text-right font-mono text-destructive font-semibold">
                     {formatCurrency(data.totalDebtIOwedToVendors)}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-xs h-7 text-red-700"
+                      className="text-xs h-7 text-destructive"
                       onClick={e => {
                         e.stopPropagation();
                         setLocation("/accounting/bills");
@@ -175,8 +175,8 @@ export const OwnerDebtPositionWidget = memo(function OwnerDebtPositionWidget() {
                 className={cn(
                   "font-mono font-bold text-base",
                   data.totalDebtOwedToMe - data.totalDebtIOwedToVendors >= 0
-                    ? "text-green-600"
-                    : "text-red-600"
+                    ? "text-[var(--success)]"
+                    : "text-destructive"
                 )}
               >
                 {formatCurrency(

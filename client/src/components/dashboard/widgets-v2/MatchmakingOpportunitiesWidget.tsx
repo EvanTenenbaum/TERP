@@ -238,7 +238,7 @@ export const MatchmakingOpportunitiesWidget = memo(
               {/* Urgent Needs Section */}
               {urgentNeeds.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 text-orange-600">
+                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 text-[var(--warning)]">
                     <AlertTriangle className="h-4 w-4" />
                     Urgent Needs - No Good Matches
                   </h4>
@@ -268,7 +268,7 @@ export const MatchmakingOpportunitiesWidget = memo(
                           </div>
                           <Badge variant="destructive">{need.priority}</Badge>
                         </div>
-                        <p className="text-xs text-orange-600">
+                        <p className="text-xs text-[var(--warning)]">
                           {need.confidence < 30
                             ? "No good matches found - consider sourcing"
                             : `Only ${need.confidence}% confidence match`}

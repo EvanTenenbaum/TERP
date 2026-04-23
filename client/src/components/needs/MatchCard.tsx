@@ -180,7 +180,7 @@ export const MatchCard = memo(function MatchCard({
                   key={`reason-${r}`}
                   className="text-sm text-muted-foreground flex items-start gap-2"
                 >
-                  <span className="text-green-500 mt-0.5">✓</span>
+                  <span className="text-[var(--success)] mt-0.5">✓</span>
                   <span>{String(r)}</span>
                 </li>
               ))}

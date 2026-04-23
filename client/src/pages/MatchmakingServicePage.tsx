@@ -734,7 +734,7 @@ export default function MatchmakingServicePage({
                             Supplier: {supplierName}
                           </p>
                           {item.unitPrice && (
-                            <p className="text-xs font-medium text-green-600">
+                            <p className="text-xs font-medium text-[var(--success)]">
                               ${parseFloat(String(item.unitPrice)).toFixed(2)}
                               /lb
                               {quantityLabel
@@ -847,7 +847,7 @@ export default function MatchmakingServicePage({
                               key={`reason-${i}`}
                               className="flex items-start gap-1"
                             >
-                              <span className="text-green-600">✓</span>
+                              <span className="text-[var(--success)]">✓</span>
                               <span>{reason}</span>
                             </li>
                           ))}

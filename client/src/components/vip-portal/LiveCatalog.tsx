@@ -1082,17 +1082,17 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
                             !item.stillAvailable) && (
                             <div className="mt-2 space-y-1">
                               {item.priceChanged && (
-                                <p className="text-sm font-bold text-red-600">
+                                <p className="text-sm font-bold text-destructive">
                                   Price changed
                                 </p>
                               )}
                               {item.quantityChanged && (
-                                <p className="text-sm font-bold text-red-600">
+                                <p className="text-sm font-bold text-destructive">
                                   Quantity changed
                                 </p>
                               )}
                               {!item.stillAvailable && (
-                                <p className="text-sm font-bold text-red-600">
+                                <p className="text-sm font-bold text-destructive">
                                   Out of stock
                                 </p>
                               )}
@@ -1406,7 +1406,7 @@ function MyPriceAlerts() {
             key={alert.id}
             className={cn(
               "flex items-center justify-between p-4 border rounded-lg",
-              priceDropped && "bg-green-50 border-green-200"
+              priceDropped && "bg-[var(--success-bg)] border-green-200"
             )}
           >
             <div className="flex-1">
@@ -1415,7 +1415,7 @@ function MyPriceAlerts() {
                 {priceDropped && (
                   <Badge
                     variant={getStatusBadgeVariant("triggered")}
-                    className="bg-green-600"
+                    className="bg-[var(--success)]"
                   >
                     <Check className="h-3 w-3 mr-1" />
                     Price Dropped!
@@ -1430,13 +1430,13 @@ function MyPriceAlerts() {
                     Current:
                     <span
                       className={
-                        priceDropped ? "text-green-600 font-bold ml-1" : "ml-1"
+                        priceDropped ? "text-[var(--success)] font-bold ml-1" : "ml-1"
                       }
                     >
                       ${alert.currentPrice.toFixed(2)}
                     </span>
                     {priceDropped && priceDropPercentage !== null && (
-                      <span className="text-green-600 ml-1">
+                      <span className="text-[var(--success)] ml-1">
                         ({priceDropPercentage.toFixed(1)}% off)
                       </span>
                     )}
