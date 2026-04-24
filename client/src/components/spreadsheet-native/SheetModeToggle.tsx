@@ -68,10 +68,16 @@ export function SheetModeToggle({
       role="tablist"
       aria-label="Surface view mode"
     >
+      {/*
+        TER-1364: View-mode toggle is not a primary action. The active tab
+        uses the "secondary" variant (neutral selected state) and the
+        inactive tab uses "outline" so neither button competes with the
+        filled primary "New Order" CTA in the Sales workspace header.
+      */}
       <Button
         ref={sheetNativeButtonRef}
         size="sm"
-        variant={surfaceMode === "sheet-native" ? "default" : "outline"}
+        variant={surfaceMode === "sheet-native" ? "secondary" : "outline"}
         role="tab"
         aria-selected={surfaceMode === "sheet-native"}
         aria-controls="surface-panel"
@@ -84,7 +90,7 @@ export function SheetModeToggle({
       <Button
         ref={classicButtonRef}
         size="sm"
-        variant={surfaceMode === "classic" ? "default" : "outline"}
+        variant={surfaceMode === "classic" ? "secondary" : "outline"}
         role="tab"
         aria-selected={surfaceMode === "classic"}
         aria-controls="surface-panel"

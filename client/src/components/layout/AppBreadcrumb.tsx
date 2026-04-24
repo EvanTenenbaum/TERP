@@ -12,7 +12,7 @@
  */
 
 import React from "react";
-import { useLocation } from "wouter";
+import { useLocation, useSearch } from "wouter";
 import { Home, ChevronRight } from "lucide-react";
 import {
   Breadcrumb,
@@ -28,6 +28,10 @@ import {
   type BreadcrumbTrailEntry,
   type RouteEntityType,
 } from "@/config/routes";
+import {
+  useBreadcrumbResolvedNamesMap,
+  type BreadcrumbResolvedNames,
+} from "@/contexts/BreadcrumbContext";
 import { useFeatureFlag } from "@/hooks/useFeatureFlag";
 import { FEATURE_FLAGS } from "@/lib/constants/featureFlags";
 import { trpc } from "@/lib/trpc";
@@ -218,16 +222,55 @@ function useResolvedEntityLabel(
 }
 
 /**
+ * Look up an entry in the merged `resolvedNames` map (TER-1362). Accepts
+ * several candidate keys because page-level code tends to index by the
+ * entity id (`"105"`), but workspace-tab crumbs (`/sales?tab=create-order`)
+ * are only identifiable by the tab value. Returns the first non-empty match.
+ */
+function lookupResolvedName(
+  resolvedNames: BreadcrumbResolvedNames,
+  crumb: BreadcrumbTrailEntry
+): string | null {
+  const candidates: string[] = [];
+  if (crumb.entityId) candidates.push(crumb.entityId);
+
+  // Last path segment (e.g. `"create-order"` for `/sales?tab=create-order`).
+  const lastSegment = crumb.path
+    .split(/[?#]/, 1)[0]
+    ?.split("/")
+    .filter(Boolean)
+    .pop();
+  if (lastSegment) candidates.push(lastSegment);
+
+  for (const key of candidates) {
+    const value = resolvedNames[key];
+    if (typeof value === "string" && value.length > 0) {
+      return value;
+    }
+  }
+  return null;
+}
+
+/**
  * Map a registry-derived trail to the flat `BreadcrumbSegment[]` used by the
- * renderer. Applies the resolved label (if any) to the deepest entity-bearing
- * crumb and falls back to `<title> #<id>` for other (or unresolved) segments.
+ * renderer.
+ *
+ * Precedence for each crumb's display name (highest first):
+ *  1. Caller-supplied `resolvedNames` (prop + context, TER-1362).
+ *  2. Async tRPC entity resolution (for the shallowest entity-bearing crumb).
+ *  3. Literal registry title + `#<id>` fallback so users still see the id.
  */
 function trailToSegments(
   trail: readonly BreadcrumbTrailEntry[],
   resolvedFor: BreadcrumbTrailEntry | undefined,
-  resolvedLabel: string | null
+  resolvedLabel: string | null,
+  resolvedNames: BreadcrumbResolvedNames
 ): BreadcrumbSegment[] {
   return trail.map(crumb => {
+    const callerResolved = lookupResolvedName(resolvedNames, crumb);
+    if (callerResolved) {
+      return { name: callerResolved, path: crumb.path, isLast: crumb.isLast };
+    }
     if (
       resolvedFor &&
       resolvedLabel &&
@@ -252,22 +295,44 @@ interface AppBreadcrumbProps {
   customBreadcrumbs?: Array<{ name: string; path?: string }>;
   /** Optional class name for styling */
   className?: string;
+  /**
+   * TER-1362: Optional map from a raw route segment / tab value to a
+   * human-friendly display name. Useful for pages that want to supply an
+   * entity name directly rather than relying on the built-in tRPC resolver
+   * (or for query-param-driven sub-views such as `?tab=create-order`).
+   *
+   * Keys are matched against the crumb's entity id (e.g. `"105"`) and the
+   * last path segment (e.g. `"create-order"` for `/sales?tab=create-order`).
+   * Merged on top of any values registered via `BreadcrumbProvider`, with
+   * props winning on collision.
+   */
+  resolvedNames?: BreadcrumbResolvedNames;
 }
 
 export const AppBreadcrumb = React.memo(function AppBreadcrumb({
   customBreadcrumbs,
   className,
+  resolvedNames: resolvedNamesProp,
 }: AppBreadcrumbProps) {
   const [location] = useLocation();
+  const search = useSearch();
   const { enabled: registryEnabled } = useFeatureFlag(
     FEATURE_FLAGS.uxV2BreadcrumbRegistry
+  );
+  const resolvedNamesFromContext = useBreadcrumbResolvedNamesMap();
+
+  // TER-1362: prop values win over context values on key collision so
+  // direct callers retain full control.
+  const mergedResolvedNames = React.useMemo<BreadcrumbResolvedNames>(
+    () => ({ ...resolvedNamesFromContext, ...(resolvedNamesProp ?? {}) }),
+    [resolvedNamesFromContext, resolvedNamesProp]
   );
 
   // Derive the registry-backed trail (only used when the flag is on).
   const trail = React.useMemo<BreadcrumbTrailEntry[]>(() => {
     if (!registryEnabled || customBreadcrumbs) return [];
-    return buildBreadcrumbTrail(location);
-  }, [registryEnabled, customBreadcrumbs, location]);
+    return buildBreadcrumbTrail(location, search);
+  }, [registryEnabled, customBreadcrumbs, location, search]);
 
   // Resolve the shallowest entity-bearing crumb so parents like
   // `/clients/:id/ledger` still show the client name at the intermediate
@@ -289,7 +354,12 @@ export const AppBreadcrumb = React.memo(function AppBreadcrumb({
         isLast: index === customBreadcrumbs.length - 1,
       }))
     : registryEnabled
-      ? trailToSegments(trail, resolvableEntry, resolvedLabel)
+      ? trailToSegments(
+          trail,
+          resolvableEntry,
+          resolvedLabel,
+          mergedResolvedNames
+        )
       : buildLegacyBreadcrumbs(location);
 
   // Don't render if no breadcrumbs (home page)

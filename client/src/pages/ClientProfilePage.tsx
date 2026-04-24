@@ -18,6 +18,7 @@ import { SupplierProfileSection } from "@/components/clients/SupplierProfileSect
 import { VIPPortalSettings } from "@/components/clients/VIPPortalSettings";
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { BackButton } from "@/components/common/BackButton";
+import { useBreadcrumbResolvedNames } from "@/contexts/BreadcrumbContext";
 import { ConsignmentRangePanel } from "@/components/accounting/ConsignmentRangePanel";
 import { CreditStatusCard } from "@/components/credit/CreditStatusCard";
 import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
@@ -375,6 +376,14 @@ export default function ClientProfilePage() {
     supplyQuery.data?.supplier?.context?.settlementSummary ?? null;
   const isCustomer = shell?.roles.includes("Customer") ?? false;
   const isSupplier = shell?.roles.includes("Supplier") ?? false;
+
+  // TER-1362: Contribute the loaded client's name to the global breadcrumb so
+  // `/clients/:id` renders "Clients > <Name>" instead of falling back to the
+  // raw `#<id>` label. Keyed by the raw URL id so AppBreadcrumb picks it up
+  // regardless of whether the route param is `id` or `clientId`.
+  useBreadcrumbResolvedNames(
+    params.id ? { [params.id]: shell?.name ?? null } : {}
+  );
 
   const handleOpenPaymentFollowUp = (type: PaymentCommunicationType) => {
     if (!moneySummary) {

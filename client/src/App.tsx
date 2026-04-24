@@ -13,6 +13,7 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { BreadcrumbProvider } from "./contexts/BreadcrumbContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import DashboardHomePage from "./pages/DashboardHomePage";
 import { AppShell } from "./components/layout/AppShell";
@@ -1114,24 +1115,26 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light" switchable>
-        <TooltipProvider>
-          <Toaster />
-          <VersionChecker />
-          <StagingAgentation />
-          <Router />
-          <CommandPalette
-            open={showCommandPalette}
-            onOpenChange={setShowCommandPalette}
-          />
-          <QuickAddTaskModal
-            isOpen={showQuickAddTask}
-            onClose={() => setShowQuickAddTask(false)}
-          />
-          <KeyboardShortcutsModal
-            open={showKeyboardShortcuts}
-            onOpenChange={setShowKeyboardShortcuts}
-          />
-        </TooltipProvider>
+        <BreadcrumbProvider>
+          <TooltipProvider>
+            <Toaster />
+            <VersionChecker />
+            <StagingAgentation />
+            <Router />
+            <CommandPalette
+              open={showCommandPalette}
+              onOpenChange={setShowCommandPalette}
+            />
+            <QuickAddTaskModal
+              isOpen={showQuickAddTask}
+              onClose={() => setShowQuickAddTask(false)}
+            />
+            <KeyboardShortcutsModal
+              open={showKeyboardShortcuts}
+              onOpenChange={setShowKeyboardShortcuts}
+            />
+          </TooltipProvider>
+        </BreadcrumbProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
