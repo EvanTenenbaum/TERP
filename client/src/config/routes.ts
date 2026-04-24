@@ -296,6 +296,22 @@ export interface BreadcrumbTrailEntry {
   isLast: boolean;
 }
 
+/**
+ * TER-1363: Known workspace `?tab=…` values that should contribute an extra
+ * breadcrumb crumb (e.g. `/sales?tab=create-order` → "Sales > New Order").
+ *
+ * Keyed by the pathname, then by the tab value. Kept as a static map rather
+ * than a dynamic lookup so the breadcrumb stays predictable across pages and
+ * query-param nav remains a first-class breadcrumb citizen.
+ */
+const WORKSPACE_TAB_CRUMB_TITLES: Readonly<
+  Record<string, Readonly<Record<string, string>>>
+> = {
+  "/sales": {
+    "create-order": "New Order",
+  },
+};
+
 function humaniseSegment(segment: string): string {
   if (/^\d+$/.test(segment)) return `#${segment}`;
   return segment
@@ -303,14 +319,36 @@ function humaniseSegment(segment: string): string {
     .replace(/\b\w/g, char => char.toUpperCase());
 }
 
+function extractTabFromSearch(search: string | undefined): string | null {
+  if (!search) return null;
+  const trimmed = search.startsWith("?") ? search.slice(1) : search;
+  if (!trimmed) return null;
+  try {
+    const params = new URLSearchParams(trimmed);
+    const tab = params.get("tab");
+    return tab && tab.length > 0 ? tab : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Walk a pathname one segment at a time and return a breadcrumb trail whose
  * titles come from the registry where possible, falling back to navigation
  * items and then to a humanised version of the raw segment.
  *
+ * When `search` is provided, a recognised `?tab=…` value for the current
+ * pathname contributes an extra trailing crumb — this is how breadcrumbs like
+ * `/sales?tab=create-order` → "Sales > New Order" (TER-1363) stay correct
+ * even though the active sub-view lives in a query parameter rather than the
+ * path.
+ *
  * Returns `[]` for the root path to signal "do not render a breadcrumb".
  */
-export function buildBreadcrumbTrail(pathname: string): BreadcrumbTrailEntry[] {
+export function buildBreadcrumbTrail(
+  pathname: string,
+  search?: string
+): BreadcrumbTrailEntry[] {
   const normalised = normalisePathname(pathname);
   if (normalised === "/" || normalised === "") return [];
 
@@ -344,6 +382,25 @@ export function buildBreadcrumbTrail(pathname: string): BreadcrumbTrailEntry[] {
     const title = navItem?.name ?? humaniseSegment(segment);
     trail.push({ path: accumulated, title, isLast });
   });
+
+  // TER-1363: Append a workspace-tab crumb when the current pathname opts in
+  // via WORKSPACE_TAB_CRUMB_TITLES. We preserve the existing crumbs as
+  // non-last and hand the `isLast` marker to the tab crumb so the render
+  // layer shows "Sales > New Order" rather than "Sales" alone.
+  const tabTitles = WORKSPACE_TAB_CRUMB_TITLES[normalised];
+  const tabValue = tabTitles ? extractTabFromSearch(search) : null;
+  const tabTitle = tabValue && tabTitles ? tabTitles[tabValue] : undefined;
+  if (tabTitle && trail.length > 0) {
+    for (const crumb of trail) {
+      crumb.isLast = false;
+    }
+    const tabSearch = `?tab=${encodeURIComponent(tabValue as string)}`;
+    trail.push({
+      path: `${normalised}${tabSearch}`,
+      title: tabTitle,
+      isLast: true,
+    });
+  }
 
   return trail;
 }
