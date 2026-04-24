@@ -53,7 +53,7 @@ export function OrderAdjustmentsBar({
             />
           ) : (
             <p className="text-sm text-muted-foreground">
-              Select a customer to choose a referral source.
+              Select a client to choose a referral source.
             </p>
           )}
         </div>

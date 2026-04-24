@@ -534,7 +534,7 @@ export function ProfileQuickPanel({
               <CardTitle className="text-base">
                 {shell.roles.includes("Supplier")
                   ? "Purchase Orders"
-                  : "Customer Needs"}
+                  : "Client Needs"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">

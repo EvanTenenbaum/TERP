@@ -27,7 +27,7 @@ export function ReturnHistorySection({ orderId }: ReturnHistorySectionProps) {
       DEFECTIVE: 'Defective',
       WRONG_ITEM: 'Wrong Item',
       NOT_AS_DESCRIBED: 'Not as Described',
-      CUSTOMER_CHANGED_MIND: 'Customer Changed Mind',
+      CUSTOMER_CHANGED_MIND: 'Client Changed Mind',
       OTHER: 'Other',
     };
     return labels[reason] || reason;

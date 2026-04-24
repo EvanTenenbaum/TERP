@@ -45,7 +45,7 @@ export function AddCustomerOverlay({
   const createClientMutation = trpc.clients.create.useMutation({
     onSuccess: data => {
       if (data) {
-        toast.success("Customer created successfully!");
+        toast.success("Client created successfully!");
         onSuccess(data as number);
         onOpenChange(false);
         resetForm();
@@ -64,10 +64,10 @@ export function AddCustomerOverlay({
 
       switch (errorCode) {
         case "CONFLICT":
-          toast.error("Customer already exists", {
+          toast.error("Client already exists", {
             description: errorMessage.includes("TERI code")
               ? errorMessage
-              : "A customer with this TERI code already exists.",
+              : "A client with this TERI code already exists.",
           });
           break;
 
@@ -141,9 +141,9 @@ export function AddCustomerOverlay({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add New Customer</DialogTitle>
+          <DialogTitle>Add New Client</DialogTitle>
           <DialogDescription>
-            Create a new customer to add to this order. Required fields are
+            Create a new client to add to this order. Required fields are
             marked with *.
           </DialogDescription>
         </DialogHeader>
@@ -168,7 +168,7 @@ export function AddCustomerOverlay({
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="name">
-              Customer Name <span className="text-destructive">*</span>
+              Client Name <span className="text-destructive">*</span>
             </Label>
             <Input
               id="name"
@@ -225,7 +225,7 @@ export function AddCustomerOverlay({
           <div className="flex items-center space-x-2">
             <Checkbox id="isBuyer" checked={formData.isBuyer} disabled />
             <Label htmlFor="isBuyer" className="text-sm text-muted-foreground">
-              Customer is a buyer
+              Client is a buyer
             </Label>
           </div>
 
@@ -245,7 +245,7 @@ export function AddCustomerOverlay({
               {createClientMutation.isPending && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               )}
-              {createClientMutation.isPending ? "Creating..." : "Save Customer"}
+              {createClientMutation.isPending ? "Creating..." : "Save Client"}
             </Button>
           </DialogFooter>
         </form>

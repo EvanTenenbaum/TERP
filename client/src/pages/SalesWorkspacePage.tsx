@@ -18,7 +18,7 @@ const ReturnsPilotSurface = lazy(
 );
 import ReturnsPage from "@/pages/ReturnsPage";
 import OrderCreatorPage from "@/pages/OrderCreatorPage";
-import SalesSheetCreatorPage from "@/pages/SalesSheetCreatorPage";
+import SalesCatalogueSurface from "@/components/spreadsheet-native/SalesCatalogueSurface";
 import LiveShoppingPage from "@/pages/LiveShoppingPage";
 import { useQueryTabState } from "@/hooks/useQueryTabState";
 import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
@@ -102,12 +102,9 @@ export default function SalesWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={SALES_WORKSPACE.title}
-      description={SALES_WORKSPACE.description}
-      section="Sell"
       activeTab={activeTab}
       tabs={SALES_TABS_CONFIG}
       onTabChange={tab => setActiveTab(tab)}
-      meta={[{ label: "Primary flow", value: "Quote -> Order -> Shipping" }]}
       commandStrip={
         activeTab === "orders" || activeTab === "create-order" ? (
           <SheetModeToggle
@@ -166,7 +163,7 @@ export default function SalesWorkspacePage() {
       <LinearWorkspacePanel value="sales-sheets">
         {salesSheetsPilotEnabled &&
         salesSheetsSurfaceMode === "sheet-native" ? (
-          <PilotSurfaceBoundary fallback={<SalesSheetCreatorPage embedded />}>
+          <PilotSurfaceBoundary fallback={<SalesCatalogueSurface />}>
             <SalesSheetsPilotSurface
               onOpenClassic={() =>
                 setLocation(buildSalesWorkspacePath("sales-sheets"))
@@ -174,7 +171,7 @@ export default function SalesWorkspacePage() {
             />
           </PilotSurfaceBoundary>
         ) : (
-          <SalesSheetCreatorPage embedded />
+          <SalesCatalogueSurface />
         )}
       </LinearWorkspacePanel>
       <LinearWorkspacePanel value="live-shopping">

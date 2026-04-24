@@ -83,7 +83,7 @@ export function CustomerWishlistCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Heart className="h-5 w-5 text-pink-500" />
-            <CardTitle className="text-lg">Customer Wishlist</CardTitle>
+            <CardTitle className="text-lg">Client Wishlist</CardTitle>
           </div>
           {!isEditing && (
             <Button

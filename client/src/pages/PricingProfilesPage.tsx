@@ -200,7 +200,7 @@ export default function PricingProfilesPage() {
           id="name"
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-          placeholder="e.g., Premium Customer Pricing"
+          placeholder="e.g., Premium Client Pricing"
         />
       </div>
 

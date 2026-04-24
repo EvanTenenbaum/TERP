@@ -1869,7 +1869,7 @@ export function SalesCatalogueSurface() {
                 onClick={handleManageClientPricing}
               >
                 <Settings2 className="mr-1 h-3 w-3" />
-                Customer Pricing
+                Client Pricing
               </Button>
               <Button
                 size="sm"

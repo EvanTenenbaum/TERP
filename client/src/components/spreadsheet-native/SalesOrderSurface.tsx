@@ -1177,15 +1177,15 @@ export function SalesOrderSurface({
           ? "New order"
           : "New draft";
   const emptyStateTitle = isQuoteCreateEntry
-    ? "Select a customer to start this quote"
+    ? "Select a client to start this quote"
     : isCreateOrderEntry
-      ? "Select a customer to start this order"
-      : "Select a customer to start the order sheet";
+      ? "Select a client to start this order"
+      : "Select a client to start the order sheet";
   const emptyStateDescription = isQuoteCreateEntry
-    ? "Choose a customer above to begin a new quote without leaving the sales workspace."
+    ? "Choose a client above to begin a new quote without leaving the sales workspace."
     : isCreateOrderEntry
-      ? "Choose a customer above to begin a new order without leaving the sales workspace."
-      : "Choose a customer above to begin.";
+      ? "Choose a client above to begin a new order without leaving the sales workspace."
+      : "Choose a client above to begin.";
   const inventoryPanel = (
     <div className="space-y-1">
       <div>
@@ -1407,8 +1407,8 @@ export function SalesOrderSurface({
               onValueChange={handleClientChange}
               clients={clientList}
               isLoading={clientsQuery.isLoading}
-              placeholder="Customer..."
-              emptyText="No customers"
+              placeholder="Client..."
+              emptyText="No clients"
               selectedLabel={selectedClientLabel}
             />
           </div>

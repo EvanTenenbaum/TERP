@@ -60,7 +60,7 @@ export function CogsGlobalSettings() {
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription>
-              Staff views keep the full vendor range visible. Customer-facing
+              Staff views keep the full vendor range visible. Client-facing
               outputs only publish the selected sell price for the active
               channel.
             </AlertDescription>

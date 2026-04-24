@@ -60,7 +60,7 @@ const shortcuts: KeyboardShortcut[] = [
   },
   {
     keys: ["C"],
-    description: "Go to Customers",
+    description: "Go to Clients",
     category: "Quick Navigation",
   },
 

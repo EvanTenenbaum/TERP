@@ -32,10 +32,10 @@ export const OwnerDebtPositionWidget = memo(function OwnerDebtPositionWidget() {
       return "No outstanding balances on either side.";
     }
     if (net > 0) {
-      return `Customers owe you ${formatCurrency(net)} more than you owe suppliers — you're net positive.`;
+      return `Clients owe you ${formatCurrency(net)} more than you owe suppliers — you're net positive.`;
     }
     if (net < 0) {
-      return `You owe suppliers ${formatCurrency(Math.abs(net))} more than customers owe you — collect faster.`;
+      return `You owe suppliers ${formatCurrency(Math.abs(net))} more than clients owe you — collect faster.`;
     }
     return "Your incoming and outgoing balances are exactly even.";
   };
@@ -116,7 +116,7 @@ export const OwnerDebtPositionWidget = memo(function OwnerDebtPositionWidget() {
                   onClick={() => setLocation("/clients?hasDebt=true")}
                 >
                   <TableCell>
-                    <p className="font-medium">Customers owe you</p>
+                    <p className="font-medium">Clients owe you</p>
                     <p className="text-xs text-muted-foreground">
                       Outstanding receivables
                     </p>

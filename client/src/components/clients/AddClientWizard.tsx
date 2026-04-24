@@ -275,7 +275,7 @@ export function AddClientWizard({
   // Get client types as display strings
   const getSelectedClientTypes = useCallback(() => {
     const types: string[] = [];
-    if (formData.isBuyer) types.push("Buyer");
+    if (formData.isBuyer) types.push("Client");
     if (formData.isSeller) types.push("Supplier");
     if (formData.isBrand) types.push("Brand");
     if (formData.isReferee) types.push("Referee");

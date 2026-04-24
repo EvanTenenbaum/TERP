@@ -114,7 +114,7 @@ export function ReferredBySelector({
               ))
             ) : (
               <div className="p-4 text-center text-sm text-gray-500">
-                No customers found
+                No clients found
               </div>
             )}
           </div>

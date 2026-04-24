@@ -1733,7 +1733,7 @@ export function FulfillmentPilotSurface({
                   <SelectItem value="DHL">DHL</SelectItem>
                   <SelectItem value="Local Delivery">Local Delivery</SelectItem>
                   <SelectItem value="Customer Pickup">
-                    Customer Pickup
+                    Client Pickup
                   </SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>

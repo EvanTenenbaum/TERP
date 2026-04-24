@@ -286,7 +286,7 @@ export default function SearchResultsPage() {
                                           string,
                                           unknown
                                         >
-                                      )?.relationshipLabel || "Customer"
+                                      )?.relationshipLabel || "Client"
                                     )}
                                   </Badge>
                                 </div>

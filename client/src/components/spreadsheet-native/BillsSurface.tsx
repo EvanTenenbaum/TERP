@@ -736,7 +736,7 @@ export function BillsSurface() {
             data-testid="action-pay-vendor"
           >
             <DollarSign className="h-3 w-3 mr-1" />
-            Pay Vendor
+            Pay Supplier
           </Button>
           <Button
             variant="outline"

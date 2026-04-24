@@ -534,7 +534,7 @@ export default function ClientProfilePage() {
                               <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              This account acts as both a Customer (you sell to
+                              This account acts as both a Client (you sell to
                               them) and a Supplier (you buy from them). Sales
                               data appears in Sales &amp; Pricing; purchase
                               history and payables appear in Supply &amp;
@@ -1082,7 +1082,7 @@ export default function ClientProfilePage() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Customer Needs</CardTitle>
+                  <CardTitle className="text-base">Client Needs</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {supplyQuery.data?.buyerNeeds.length ? (
@@ -1472,7 +1472,7 @@ export default function ClientProfilePage() {
               <Label>Roles</Label>
               <div className="grid grid-cols-2 gap-2 md:grid-cols-5">
                 {[
-                  ["isBuyer", "Customer"],
+                  ["isBuyer", "Client"],
                   ["isSeller", "Supplier"],
                   ["isBrand", "Brand"],
                   ["isReferee", "Referee"],
