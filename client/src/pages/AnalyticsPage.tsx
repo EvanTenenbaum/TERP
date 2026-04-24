@@ -50,8 +50,63 @@ import {
 } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
 import { useLocation } from "wouter";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type Period = "day" | "week" | "month" | "quarter" | "year" | "all";
+
+/**
+ * Format large revenue numbers for YAxis ticks (e.g. "$12.5k", "$1.2M").
+ */
+function formatCompactCurrency(value: number): string {
+  if (!Number.isFinite(value)) return "$0";
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
+  if (abs >= 1_000) return `$${(value / 1_000).toFixed(1)}k`;
+  return `$${Math.round(value)}`;
+}
+
+interface RevenueChartTooltipProps {
+  active?: boolean;
+  label?: string | number;
+  payload?: Array<{
+    payload?: { name: string; revenue: number; orders: number };
+  }>;
+}
+
+function RevenueChartTooltip({
+  active,
+  label,
+  payload,
+}: RevenueChartTooltipProps) {
+  if (!active || !payload || payload.length === 0) return null;
+  const point = payload[0]?.payload;
+  if (!point) return null;
+  return (
+    <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-sm">
+      <div className="mb-1 font-semibold text-foreground">{label}</div>
+      <div className="text-muted-foreground">
+        Revenue:{" "}
+        <span className="font-medium text-foreground">
+          {formatCurrency(point.revenue)}
+        </span>
+      </div>
+      <div className="text-muted-foreground">
+        Orders:{" "}
+        <span className="font-medium text-foreground">
+          {point.orders.toLocaleString()}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 const periodLabels: Record<Period, string> = {
   day: "Last 24 hours",
@@ -330,7 +385,55 @@ export default function AnalyticsPage() {
               {trendsLoading ? (
                 <LoadingState message="Loading revenue trends..." size="sm" />
               ) : chartData.length > 0 ? (
-                <RevenueTrendsTable data={chartData} maxRows={6} />
+                <div className="space-y-4">
+                  <div
+                    className="h-[220px] w-full"
+                    role="img"
+                    aria-label="Revenue trend bar chart"
+                  >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={chartData}
+                        margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="hsl(var(--border))"
+                          strokeOpacity={0.5}
+                          vertical={false}
+                        />
+                        <XAxis
+                          dataKey="name"
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <YAxis
+                          stroke="hsl(var(--muted-foreground))"
+                          fontSize={12}
+                          tickLine={false}
+                          axisLine={false}
+                          tickFormatter={formatCompactCurrency}
+                          width={64}
+                        />
+                        <Tooltip
+                          cursor={{
+                            fill: "hsl(var(--muted))",
+                            opacity: 0.3,
+                          }}
+                          content={<RevenueChartTooltip />}
+                        />
+                        <Bar
+                          dataKey="revenue"
+                          fill="hsl(var(--primary))"
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <RevenueTrendsTable data={chartData} maxRows={6} />
+                </div>
               ) : (
                 <EmptyState
                   {...emptyStateConfigs.analytics}
