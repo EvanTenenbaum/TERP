@@ -112,6 +112,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { FreshnessBadge } from "@/components/ui/freshness-badge";
 
 // ============================================================================
 // TYPES
@@ -1011,7 +1012,7 @@ export function OrdersWorkSurface({
   }, [search, statusFilter, sortKey]);
 
   // Work Surface hooks
-  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  const { setSaving, setSaved, setError } = useSaveState();
   const inspector = useInspectorPanel();
 
   // Concurrent edit detection for optimistic locking (UXS-705)
@@ -1035,11 +1036,12 @@ export function OrdersWorkSurface({
   );
 
   const draftQueryInput = useMemo(() => buildDraftQueryInput(), []);
+  const draftOrdersQuery = trpc.orders.getAll.useQuery(draftQueryInput);
   const {
     data: draftOrdersData,
     isLoading: loadingDrafts,
     refetch: refetchDrafts,
-  } = trpc.orders.getAll.useQuery(draftQueryInput);
+  } = draftOrdersQuery;
   const draftOrders = useMemo(
     () => extractItems<Order>(draftOrdersData),
     [draftOrdersData]
