@@ -2,6 +2,7 @@ import { memo } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
   ArrowDownRight,
@@ -32,6 +33,13 @@ interface KpiTileProps {
   icon: LucideIcon;
   value: string;
   secondary?: string;
+  /**
+   * Short label indicating the time window the value represents
+   * (e.g. "Live", "Today", "Last 7 days"). Rendered as a small chip
+   * next to the title so readers can interpret the number in context —
+   * TER-1335. Omit to hide the chip entirely (e.g. skeleton placeholders).
+   */
+  period?: string;
   trend?: {
     direction: Trend;
     label: string;
@@ -102,6 +110,7 @@ const KpiTile = memo(function KpiTile({
   icon: Icon,
   value,
   secondary,
+  period,
   trend,
   onClick,
   loading,
@@ -125,9 +134,19 @@ const KpiTile = memo(function KpiTile({
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              {title}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {title}
+              </p>
+              {period && (
+                <Badge
+                  variant="outline"
+                  className="rounded-full px-2 py-0 text-[10px] font-normal uppercase tracking-wide text-muted-foreground"
+                >
+                  {period}
+                </Badge>
+              )}
+            </div>
             {loading ? (
               <Skeleton className="mt-2 h-8 w-24" />
             ) : (
@@ -202,6 +221,7 @@ export const OperationalKpisWidget = memo(function OperationalKpisWidget() {
           title="Open Orders"
           icon={ShoppingCart}
           value=""
+          period="Live"
           onClick={() => {}}
           loading
         />
@@ -209,6 +229,7 @@ export const OperationalKpisWidget = memo(function OperationalKpisWidget() {
           title="Fulfilled Today"
           icon={PackageCheck}
           value=""
+          period="Today"
           onClick={() => {}}
           loading
         />
@@ -216,6 +237,7 @@ export const OperationalKpisWidget = memo(function OperationalKpisWidget() {
           title="Outstanding Receivables"
           icon={CircleDollarSign}
           value=""
+          period="Live"
           onClick={() => {}}
           loading
         />
@@ -223,6 +245,7 @@ export const OperationalKpisWidget = memo(function OperationalKpisWidget() {
           title="Cash Collected (7d)"
           icon={Wallet}
           value=""
+          period="Last 7 days"
           onClick={() => {}}
           loading
         />
@@ -230,6 +253,7 @@ export const OperationalKpisWidget = memo(function OperationalKpisWidget() {
           title="Inventory Value"
           icon={Package}
           value=""
+          period="Live"
           onClick={() => {}}
           loading
         />
@@ -275,6 +299,7 @@ export const OperationalKpisWidget = memo(function OperationalKpisWidget() {
         title="Open Orders"
         icon={ShoppingCart}
         value={formatNumber(openOrdersCount)}
+        period="Live"
         secondary={
           openOrdersCount > 0
             ? `${formatCurrency(openOrdersValue)} in flight`
@@ -289,6 +314,7 @@ export const OperationalKpisWidget = memo(function OperationalKpisWidget() {
         title="Fulfilled Today"
         icon={PackageCheck}
         value={formatNumber(fulfilledTodayCount)}
+        period="Today"
         secondary={
           fulfilledTodayCount > 0
             ? "Shipped or delivered today"
@@ -305,6 +331,7 @@ export const OperationalKpisWidget = memo(function OperationalKpisWidget() {
         title="Outstanding Receivables"
         icon={CircleDollarSign}
         value={formatCurrency(receivablesTotal)}
+        period="Live"
         secondary={
           receivablesInvoices > 0
             ? `${receivablesInvoices} open invoice${
@@ -319,6 +346,7 @@ export const OperationalKpisWidget = memo(function OperationalKpisWidget() {
         title="Cash Collected (7d)"
         icon={Wallet}
         value={formatCurrency(thisWeekCash)}
+        period="Last 7 days"
         secondary={`Last week ${formatCurrency(lastWeekCash)}`}
         trend={{ direction: cashTrend, label: cashTrendLabel }}
         onClick={() => setLocation("/accounting/payments")}
@@ -328,6 +356,7 @@ export const OperationalKpisWidget = memo(function OperationalKpisWidget() {
         title="Inventory Value"
         icon={Package}
         value={formatCompactCurrency(inventoryValue)}
+        period="Live"
         secondary={
           inventoryUnits > 0
             ? `${formatNumber(Math.round(inventoryUnits))} live units`
