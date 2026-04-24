@@ -374,9 +374,11 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
     },
   },
   {
+    // TER-1329: minWidth widened so the "Invoice Date" header (12 chars +
+    // sort affordance) fits without truncation at the default column width.
     field: "invoiceDate",
     headerName: "Invoice Date",
-    minWidth: 120,
+    minWidth: 140,
     maxWidth: 140,
     cellClass: "powersheet-cell--locked",
   },
@@ -411,9 +413,11 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
     headerClass: "text-right",
   },
   {
+    // TER-1329: minWidth widened so the "Amount Due" header (10 chars +
+    // sort affordance) fits without truncation at the default column width.
     field: "amountDueFormatted",
     headerName: "Amount Due",
-    minWidth: 120,
+    minWidth: 130,
     maxWidth: 150,
     cellClass: "powersheet-cell--locked font-mono text-right",
     headerClass: "text-right",
