@@ -862,6 +862,11 @@ export function PurchaseOrdersPilotSurface({
       </div>
 
       {/* Primary queue grid */}
+      {/* TER-889: Use single-row selection so a plain row click wires
+          setSelectedPoId, which enables the "Start Receiving" action.
+          onRowClicked is wired as a belt-and-suspenders guarantee in case
+          the AG Grid selection event is swallowed (e.g. if the click lands
+          on a cell that is already the focused cell). */}
       <PowersheetGrid
         surfaceId="po-queue"
         requirementIds={["PROC-PO-001", "PROC-PO-005"]}
@@ -873,7 +878,12 @@ export function PurchaseOrdersPilotSurface({
         getRowId={row => row.identity.rowKey}
         selectedRowId={selectedRow?.identity.rowKey ?? null}
         onSelectedRowChange={row => setSelectedPoId(row?.poId ?? null)}
-        selectionMode="cell-range"
+        onRowClicked={event => {
+          const row = event.data;
+          if (!row) return;
+          setSelectedPoId(row.poId);
+        }}
+        selectionMode="single-row"
         enableFillHandle={false}
         enableUndoRedo={false}
         onSelectionSummaryChange={setQueueSelectionSummary}

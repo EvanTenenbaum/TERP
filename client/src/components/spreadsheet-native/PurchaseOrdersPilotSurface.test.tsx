@@ -3,11 +3,12 @@ import React from "react";
  * @vitest-environment jsdom
  */
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PurchaseOrdersPilotSurface } from "./PurchaseOrdersPilotSurface";
 
 const mockSetLocation = vi.fn();
+const powersheetGridCalls: Array<Record<string, unknown>> = [];
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/operations?tab=purchase-orders", mockSetLocation],
@@ -86,6 +87,8 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 
+const mockSetSelectedPoId = vi.fn();
+
 vi.mock("@/lib/spreadsheet-native", async () => {
   const actual = await vi.importActual<
     typeof import("@/lib/spreadsheet-native")
@@ -95,24 +98,58 @@ vi.mock("@/lib/spreadsheet-native", async () => {
     ...actual,
     useSpreadsheetSelectionParam: () => ({
       selectedId: null,
-      setSelectedId: vi.fn(),
+      setSelectedId: mockSetSelectedPoId,
     }),
   };
 });
 
+type MockRow = {
+  identity?: { rowKey: string };
+  poId?: number;
+  poNumber?: string;
+};
+
+type MockPowersheetGridProps = {
+  title: string;
+  description?: string;
+  rows?: MockRow[];
+  selectionMode?: string;
+  onSelectedRowChange?: (row: MockRow | null) => void;
+  onRowClicked?: (event: { data: MockRow | undefined }) => void;
+};
+
 vi.mock("./PowersheetGrid", () => ({
-  PowersheetGrid: ({
-    title,
-    description,
-  }: {
-    title: string;
-    description?: string;
-  }) => (
-    <div>
-      <h2>{title}</h2>
-      {description ? <p>{description}</p> : null}
-    </div>
-  ),
+  PowersheetGrid: (props: MockPowersheetGridProps) => {
+    powersheetGridCalls.push({
+      title: props.title,
+      selectionMode: props.selectionMode,
+    });
+    const firstRow = props.rows?.[0];
+    return (
+      <div>
+        <h2>{props.title}</h2>
+        {props.description ? <p>{props.description}</p> : null}
+        {firstRow && props.onRowClicked ? (
+          <button
+            type="button"
+            onClick={() =>
+              props.onRowClicked?.({ data: firstRow as MockRow | undefined })
+            }
+          >
+            Click first purchase order row ({props.title})
+          </button>
+        ) : null}
+        {firstRow && props.onSelectedRowChange ? (
+          <button
+            type="button"
+            onClick={() => props.onSelectedRowChange?.(firstRow)}
+          >
+            Select first purchase order ({props.title})
+          </button>
+        ) : null}
+      </div>
+    );
+  },
 }));
 
 vi.mock("./SpreadsheetPilotGrid", () => ({
@@ -188,6 +225,7 @@ vi.mock("@/lib/workspaceRoutes", () => ({
 describe("PurchaseOrdersPilotSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    powersheetGridCalls.length = 0;
   });
 
   it("renders without crashing", () => {
@@ -243,5 +281,31 @@ describe("PurchaseOrdersPilotSurface", () => {
     expect(
       screen.getByRole("button", { name: /launch receiving for selected po/i })
     ).toBeInTheDocument();
+  });
+
+  // TER-889: Row click must wire through to the selection state so the
+  // "Start Receiving" action can enable. The pilot queue historically used
+  // cell-range mode, which left the action permanently disabled because
+  // a plain row click never fired selection.
+  it("uses single-row selection for the PO queue so row clicks emit selection (TER-889)", () => {
+    render(<PurchaseOrdersPilotSurface onOpenClassic={vi.fn()} />);
+
+    const queueCall = powersheetGridCalls.find(
+      call => call.title === "Purchase Orders Queue"
+    );
+    expect(queueCall).toBeDefined();
+    expect(queueCall).toMatchObject({ selectionMode: "single-row" });
+  });
+
+  it("wires the PO queue row click to setSelectedPoId (TER-889)", () => {
+    render(<PurchaseOrdersPilotSurface onOpenClassic={vi.fn()} />);
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /click first purchase order row \(purchase orders queue\)/i,
+      })
+    );
+
+    expect(mockSetSelectedPoId).toHaveBeenCalledWith(1);
   });
 });
