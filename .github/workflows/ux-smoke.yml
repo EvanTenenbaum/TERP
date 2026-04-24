@@ -1,0 +1,55 @@
+name: UX Smoke Check
+
+# Post-deploy smoke test — TER-1372.
+# Runs 8 targeted DOM assertions against staging after every push to main
+# to catch the class of UX v2 regressions (tabGroups, raw HTML cells,
+# drawer close buttons, primary-action count, glossary drift, etc.)
+# that a full E2E suite would miss for speed reasons.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      STAGING_URL: https://terp-staging-yicld.ondigitalocean.app
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run UX v2 smoke test
+        run: pnpm smoke:staging
+
+      - name: Write step summary
+        if: always()
+        run: |
+          {
+            echo "## UX v2 Smoke Check"
+            echo ""
+            echo "- Target: $STAGING_URL"
+            echo "- Script: scripts/qa/ux-v2-smoke.ts"
+            echo "- Linear: TER-1372"
+          } >> "$GITHUB_STEP_SUMMARY"

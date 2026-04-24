@@ -47,6 +47,7 @@
     "db:status": "tsx testing/db-util.ts status",
     "qa:accounting:dev:start": "bash scripts/qa/start-accounting-browser-dev.sh",
     "qa:accounting:dev:probe": "tsx scripts/qa/probe-accounting-route-health.ts",
+    "smoke:staging": "tsx scripts/qa/ux-v2-smoke.ts",
     "mega:qa": "tsx scripts/mega-qa/index.ts",
     "mega:qa:local": "tsx scripts/mega-qa/index.ts --scenario=full",
     "mega:qa:ci": "tsx scripts/mega-qa/index.ts --scenario=full --ci",
