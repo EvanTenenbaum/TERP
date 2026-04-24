@@ -44,7 +44,15 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-import { Search, Plus, Package, Users, Target, Loader2 } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Package,
+  Users,
+  Target,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
 import { ListSkeleton } from "@/components/ui/skeleton-loaders";
 import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
@@ -175,21 +183,33 @@ export default function MatchmakingServicePage({
   // ERR-001: Get tRPC utils for proper cache invalidation
   const utils = trpc.useUtils();
 
+  // TER-1336: Track in-flight state for the primary "Compute Matches" action
+  const [isComputingMatches, setIsComputingMatches] = useState(false);
+
   // Fetch client needs with match counts
-  const { data: needsData, isLoading: needsLoading } =
-    trpc.clientNeeds.getAllWithMatches.useQuery({
-      status: statusFilter as "ACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED",
-    });
+  const {
+    data: needsData,
+    isLoading: needsLoading,
+    refetch: refetchNeeds,
+  } = trpc.clientNeeds.getAllWithMatches.useQuery({
+    status: statusFilter as "ACTIVE" | "FULFILLED" | "EXPIRED" | "CANCELLED",
+  });
 
   // Fetch vendor supply
-  const { data: supplyData, isLoading: supplyLoading } =
-    trpc.vendorSupply.getAllWithMatches.useQuery({
-      status: "AVAILABLE",
-    });
+  const {
+    data: supplyData,
+    isLoading: supplyLoading,
+    refetch: refetchSupply,
+  } = trpc.vendorSupply.getAllWithMatches.useQuery({
+    status: "AVAILABLE",
+  });
 
   // Fetch all active needs with their matches (for suggested matches section)
-  const { data: matchesData, isLoading: matchesLoading } =
-    trpc.matching.getAllActiveNeedsWithMatches.useQuery();
+  const {
+    data: matchesData,
+    isLoading: matchesLoading,
+    refetch: refetchMatches,
+  } = trpc.matching.getAllActiveNeedsWithMatches.useQuery();
 
   // FE-QA-010: Fetch buyers for selected supply item
   const { data: buyersData, isLoading: buyersLoading } =
@@ -268,6 +288,22 @@ export default function MatchmakingServicePage({
       toast.error(error.message || "Failed to add supply item");
     },
   });
+
+  // TER-1336: Compute/Update Matches — primary action on the page.
+  // Refreshes client needs, supplier supply, and suggested matches so users
+  // can recompute the matching snapshot after changes upstream.
+  const handleComputeMatches = useCallback(async () => {
+    if (isComputingMatches) return;
+    setIsComputingMatches(true);
+    try {
+      await Promise.all([refetchNeeds(), refetchSupply(), refetchMatches()]);
+      toast.success("Matches updated");
+    } catch {
+      toast.error("Failed to update matches");
+    } finally {
+      setIsComputingMatches(false);
+    }
+  }, [isComputingMatches, refetchNeeds, refetchSupply, refetchMatches]);
 
   // TER-888: Handle Add Need form submit
   const handleAddNeedSubmit = useCallback(() => {
@@ -478,8 +514,21 @@ export default function MatchmakingServicePage({
               matching
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={() => setAddNeedOpen(true)}>
+          <div className="flex flex-wrap gap-2">
+            {/* TER-1336: Primary action — recompute/refresh matches */}
+            <Button
+              onClick={handleComputeMatches}
+              disabled={isComputingMatches}
+              aria-label="Compute or update matches"
+            >
+              {isComputingMatches ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-2 h-4 w-4" />
+              )}
+              {isComputingMatches ? "Updating..." : "Compute Matches"}
+            </Button>
+            <Button variant="outline" onClick={() => setAddNeedOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Need
             </Button>
