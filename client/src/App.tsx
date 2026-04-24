@@ -1098,7 +1098,7 @@ function App() {
     {
       key: "c",
       callback: () => setLocation("/relationships?tab=customers"),
-      description: "Customers",
+      description: "Clients",
     },
     {
       key: "Escape",

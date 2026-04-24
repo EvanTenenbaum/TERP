@@ -669,7 +669,7 @@ export default function AccountingDashboard({
                   <TableHeader>
                     <TableRow>
                       <TableHead>Invoice #</TableHead>
-                      <TableHead>Customer</TableHead>
+                      <TableHead>Client</TableHead>
                       <TableHead>Due Date</TableHead>
                       <TableHead>Days Overdue</TableHead>
                       <TableHead className="text-right">Amount Due</TableHead>

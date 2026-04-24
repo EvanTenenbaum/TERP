@@ -126,7 +126,7 @@ function VendorTypeBadges({ vendor }: { vendor: Vendor }) {
   badges.push({ label: "Supplier", className: "bg-[var(--success-bg)] text-[var(--success)]" });
 
   if (vendor.isBuyer)
-    badges.push({ label: "Customer", className: "bg-[var(--info-bg)] text-[var(--info)]" });
+    badges.push({ label: "Client", className: "bg-[var(--info-bg)] text-[var(--info)]" });
   if (vendor.isBrand)
     badges.push({ label: "Brand", className: "bg-muted text-primary" });
 

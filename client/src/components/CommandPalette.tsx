@@ -205,7 +205,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     },
     {
       id: "pinned-customers",
-      label: "Customers",
+      label: "Clients",
       path: "/relationships?tab=clients",
       icon: Users,
     },

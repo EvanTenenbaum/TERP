@@ -64,7 +64,7 @@ interface LeaderboardFilters {
 // Constants
 const CLIENT_TYPE_OPTIONS: { value: ClientType; label: string }[] = [
   { value: "ALL", label: "All Clients" },
-  { value: "CUSTOMER", label: "Customers Only" },
+  { value: "CUSTOMER", label: "Clients Only" },
   { value: "SUPPLIER", label: "Suppliers Only" },
   { value: "DUAL", label: "Dual (Both)" },
 ];

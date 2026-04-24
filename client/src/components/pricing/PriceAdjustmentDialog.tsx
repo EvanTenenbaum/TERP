@@ -336,7 +336,7 @@ export function PriceAdjustmentDialog({
               <SelectContent>
                 <SelectItem value="bulk_order">Bulk Order Discount</SelectItem>
                 <SelectItem value="repeat_customer">
-                  Repeat Customer Discount
+                  Repeat Client Discount
                 </SelectItem>
                 <SelectItem value="price_match">
                   Price Match Competition
@@ -346,7 +346,7 @@ export function PriceAdjustmentDialog({
                 </SelectItem>
                 <SelectItem value="promotional">Promotional Offer</SelectItem>
                 <SelectItem value="negotiation">
-                  Customer Negotiation
+                  Client Negotiation
                 </SelectItem>
                 <SelectItem value="clearance">Clearance Pricing</SelectItem>
                 <SelectItem value="other">Other</SelectItem>

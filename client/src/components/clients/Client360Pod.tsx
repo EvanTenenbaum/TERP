@@ -125,7 +125,7 @@ export const Client360Pod = React.memo(function Client360Pod({
       variant: "default" | "secondary" | "outline";
     }[] = [];
     if (data.client.isBuyer)
-      badges.push({ label: "Buyer", variant: "default" });
+      badges.push({ label: "Client", variant: "default" });
     if (data.client.isSeller)
       badges.push({ label: "Supplier", variant: "secondary" });
     if (data.client.isBrand)

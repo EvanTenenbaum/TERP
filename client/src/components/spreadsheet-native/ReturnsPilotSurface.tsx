@@ -1293,7 +1293,7 @@ export function ReturnsPilotSurface({
                     Not As Described
                   </SelectItem>
                   <SelectItem value="CUSTOMER_CHANGED_MIND">
-                    Customer Changed Mind
+                    Client Changed Mind
                   </SelectItem>
                   <SelectItem value="OTHER">Other</SelectItem>
                 </SelectContent>

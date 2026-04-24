@@ -148,7 +148,7 @@ const CLIENT_TYPE_FILTERS: {
   label: string;
 }[] = [
   { value: "all", label: "All Types" },
-  { value: "buyer", label: "Customers" },
+  { value: "buyer", label: "Clients" },
   { value: "seller", label: "Suppliers" },
   { value: "brand", label: "Brands" },
   { value: "referee", label: "Referees" },
@@ -217,7 +217,7 @@ function ClientTypeBadges({ client }: { client: Client }) {
   const badges: { label: string; className: string }[] = [];
   if (client.isBuyer)
     badges.push({
-      label: "Customer",
+      label: "Client",
       className: RELATIONSHIP_ROLE_TOKENS.Customer,
     });
   if (client.isSeller)

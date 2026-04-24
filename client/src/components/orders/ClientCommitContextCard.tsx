@@ -96,7 +96,7 @@ export function ClientCommitContextCard({
     return (
       <Card>
         <CardContent className="py-6 text-center text-sm text-muted-foreground">
-          Customer context is unavailable right now.
+          Client context is unavailable right now.
         </CardContent>
       </Card>
     );
@@ -112,7 +112,7 @@ export function ClientCommitContextCard({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                Customer Context
+                Client Context
               </p>
               <h3 className="truncate text-base font-semibold">{shell.name}</h3>
               <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">

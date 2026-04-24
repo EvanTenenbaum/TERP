@@ -198,7 +198,7 @@ export function SuggestedBuyers({
           Suggested Buyers
         </CardTitle>
         <CardDescription>
-          Customers most likely to purchase based on history
+          Clients most likely to purchase based on history
         </CardDescription>
       </CardHeader>
       <CardContent>

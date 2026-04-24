@@ -469,7 +469,7 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
                     Not As Described
                   </SelectItem>
                   <SelectItem value="CUSTOMER_CHANGED_MIND">
-                    Customer Changed Mind
+                    Client Changed Mind
                   </SelectItem>
                   <SelectItem value="OTHER">Other</SelectItem>
                 </SelectContent>
