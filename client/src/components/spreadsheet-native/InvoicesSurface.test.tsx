@@ -525,4 +525,35 @@ describe("InvoicesSurface", () => {
 
     expect(mockNavigate).toHaveBeenCalledWith("/clients/10?section=overview");
   });
+
+  // TER-1333: Delinquent invoices (past due, not PAID/VOID) must receive a
+  // visual priority indicator on the main invoice grid so users can spot
+  // overdue accounts at a glance. We assert both the row-level class from
+  // `getRowClass` and the derived `isDelinquent` flag on the row data.
+  it("marks delinquent invoice rows with a destructive row class", () => {
+    render(<InvoicesSurface />);
+
+    const gridProps = gridPropsByTitle.get("Invoices") as unknown as {
+      rows: Array<{ invoiceId: number; status: string; isDelinquent: boolean }>;
+      getRowClass?: (params: {
+        data?: { isDelinquent: boolean };
+      }) => string | undefined;
+    };
+
+    expect(gridProps).toBeDefined();
+    expect(gridProps.getRowClass).toBeTypeOf("function");
+
+    const overdue = gridProps.rows.find(r => r.status === "OVERDUE");
+    const paid = gridProps.rows.find(r => r.status === "PAID");
+
+    expect(overdue?.isDelinquent).toBe(true);
+    expect(paid?.isDelinquent).toBe(false);
+
+    const overdueClass = gridProps.getRowClass?.({ data: overdue });
+    const paidClass = gridProps.getRowClass?.({ data: paid });
+
+    expect(overdueClass).toContain("bg-destructive/5");
+    expect(overdueClass).toContain("border-l-destructive");
+    expect(paidClass).toBeUndefined();
+  });
 });
