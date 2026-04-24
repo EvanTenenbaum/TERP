@@ -367,23 +367,24 @@ export default function PhotographyPage({
             </div>
             <div className="flex items-center gap-2">
               {selectedItems.length > 0 && (
-                <>
-                  <span className="text-sm text-muted-foreground">
-                    {selectedItems.length} selected
-                  </span>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={handleBulkMarkComplete}
-                    disabled={markComplete.isPending}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Mark Selected Shot
-                  </Button>
-                </>
+                <span className="text-sm text-muted-foreground">
+                  {selectedItems.length} selected
+                </span>
               )}
               <Button variant="outline" size="sm" onClick={selectAll}>
                 Select All Ready to Review
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleBulkMarkComplete}
+                disabled={
+                  selectedItems.length === 0 || markComplete.isPending
+                }
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Mark Shot
+                {selectedItems.length > 0 ? ` (${selectedItems.length})` : ""}
               </Button>
             </div>
           </div>
