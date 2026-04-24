@@ -191,6 +191,8 @@ export const analyticsRouter = router({
           outstandingBalance: 0,
           profitMargin: 0,
           growthRate: 0,
+          ordersGrowthRate: 0,
+          clientsGrowthRate: 0,
           ordersThisPeriod: 0,
           revenueThisPeriod: 0,
           newClientsThisPeriod: 0,
@@ -246,7 +248,10 @@ export const analyticsRouter = router({
       const periodLength = endDate.getTime() - startDate.getTime();
       const prevStartDate = new Date(startDate.getTime() - periodLength);
       const [prevPeriodStats] = await db
-        .select({ revenue: sum(orders.total) })
+        .select({
+          revenue: sum(orders.total),
+          orders: count(),
+        })
         .from(orders)
         .where(
           and(
@@ -270,6 +275,16 @@ export const analyticsRouter = router({
             lte(clients.createdAt, endDate)
           )
         );
+      const [prevNewClientStats] = await db
+        .select({ newClients: count() })
+        .from(clients)
+        .where(
+          and(
+            isNull(clients.deletedAt),
+            gte(clients.createdAt, prevStartDate),
+            lte(clients.createdAt, startDate)
+          )
+        );
       const [inventoryStats] = await db
         .select({
           totalInventoryItems: count(),
@@ -288,6 +303,19 @@ export const analyticsRouter = router({
         previousRevenue > 0
           ? ((currentRevenue - previousRevenue) / previousRevenue) * 100
           : 0;
+      const currentOrders = Number(periodStats?.ordersThisPeriod || 0);
+      const previousOrders = Number(prevPeriodStats?.orders || 0);
+      const ordersGrowthRate =
+        previousOrders > 0
+          ? ((currentOrders - previousOrders) / previousOrders) * 100
+          : 0;
+      const currentNewClients = Number(newClientStats?.newClients || 0);
+      const previousNewClients = Number(prevNewClientStats?.newClients || 0);
+      const clientsGrowthRate =
+        previousNewClients > 0
+          ? ((currentNewClients - previousNewClients) / previousNewClients) *
+            100
+          : 0;
       const totalRevenue = Number(allTimeStats?.totalRevenue || 0);
       const totalPayments = Number(paymentStats?.totalPayments || 0);
 
@@ -301,9 +329,11 @@ export const analyticsRouter = router({
         outstandingBalance: Math.max(0, totalRevenue - totalPayments),
         profitMargin: 25,
         growthRate: Math.round(growthRate * 100) / 100,
-        ordersThisPeriod: Number(periodStats?.ordersThisPeriod || 0),
+        ordersGrowthRate: Math.round(ordersGrowthRate * 100) / 100,
+        clientsGrowthRate: Math.round(clientsGrowthRate * 100) / 100,
+        ordersThisPeriod: currentOrders,
         revenueThisPeriod: currentRevenue,
-        newClientsThisPeriod: Number(newClientStats?.newClients || 0),
+        newClientsThisPeriod: currentNewClients,
         totalInventoryValue: canViewCogsData
           ? Number(inventoryStats?.totalInventoryValue || 0)
           : null,
