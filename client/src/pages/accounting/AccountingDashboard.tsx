@@ -261,18 +261,27 @@ export default function AccountingDashboard({
                 need attention
               </p>
             </div>
+            {/* TER-1327: Replaced "Queue pressure" UI-artifact stat
+                (recentInvoicesList.length + recentBillsList.length +
+                recentPaymentsList.length) with a real finance signal — the
+                combined count of overdue invoices and bills that need
+                follow-up. Uses already-fetched overdueInvoices/overdueBills
+                pagination totals; no new tRPC calls. */}
             <div className="rounded-xl border border-slate-200 bg-white/90 p-3 shadow-sm">
               <p className="text-xs font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                Queue pressure
+                Items needing attention
               </p>
-              <p className="mt-2 text-2xl font-semibold text-slate-900">
-                {recentInvoicesList.length +
-                  recentBillsList.length +
-                  recentPaymentsList.length}
+              <p
+                className={`mt-2 text-2xl font-semibold ${
+                  overdueInvoiceCount + overdueBillCount > 0
+                    ? "text-destructive"
+                    : "text-slate-900"
+                }`}
+              >
+                {overdueInvoiceCount + overdueBillCount}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Recent invoices, bills, and payments currently visible in the
-                dashboard.
+                Overdue invoices and bills requiring follow-up.
               </p>
             </div>
           </div>
