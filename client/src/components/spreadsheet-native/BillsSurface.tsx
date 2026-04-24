@@ -279,11 +279,21 @@ function mapBillsToGridRows(items: BillItem[]): BillGridRow[] {
 // STATUS BADGE CELL RENDERER
 // ============================================================================
 
-function statusCellRenderer(params: { value: string }): string {
+// TER-1360: AG Grid React renders strings returned from cellRenderer as
+// escaped text nodes, so returning an HTML string surfaced raw markup in
+// the cell (e.g. `<span class="...">Paid</span>`). Return JSX so the badge
+// is rendered as an actual DOM element, mirroring the TER-1253 Amount Due fix.
+function statusCellRenderer(params: { value: string }) {
   const status = params.value ?? "DRAFT";
   const color = getBillStatusClass(status);
   const label = getBillStatusLabel(status);
-  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium ${color}">${label}</span>`;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium ${color}`}
+    >
+      {label}
+    </span>
+  );
 }
 
 // ============================================================================
@@ -318,10 +328,18 @@ const billColumnDefs: ColDef<BillGridRow>[] = [
     minWidth: 120,
     maxWidth: 140,
     cellClass: "powersheet-cell--locked",
+    // TER-1360: Return JSX so the overdue badge renders as a DOM element.
     cellRenderer: (params: { data?: BillGridRow; value: string }) => {
       if (!params.data) return params.value ?? "-";
       if (params.data.daysOverdue > 0) {
-        return `<span class="text-destructive font-medium">${params.value}</span> <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-xs font-medium ml-1">${params.data.daysOverdue}d</span>`;
+        return (
+          <span>
+            <span className="text-destructive font-medium">{params.value}</span>{" "}
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-xs font-medium ml-1">
+              {params.data.daysOverdue}d
+            </span>
+          </span>
+        );
       }
       return params.value ?? "-";
     },
@@ -341,13 +359,20 @@ const billColumnDefs: ColDef<BillGridRow>[] = [
     maxWidth: 150,
     cellClass: "powersheet-cell--locked font-mono text-right",
     headerClass: "text-right",
+    // TER-1360: Return JSX so the formatted amount renders as text inside
+    // a styled span instead of surfacing escaped `<span class="...">` markup.
     cellRenderer: (params: { data?: BillGridRow; value: string }) => {
-      if (!params.data) return params.value ?? "-";
+      const display = params.value ?? "-";
+      if (!params.data) return display;
       const due = parseFloat(params.data.amountDue);
       if (due > 0) {
-        return `<span class="text-destructive font-bold font-mono">${params.value}</span>`;
+        return (
+          <span className="text-destructive font-bold font-mono">
+            {display}
+          </span>
+        );
       }
-      return `<span class="font-mono">${params.value}</span>`;
+      return <span className="font-mono">{display}</span>;
     },
   },
   {
