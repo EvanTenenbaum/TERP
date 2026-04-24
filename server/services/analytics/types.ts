@@ -18,6 +18,8 @@ export interface ExtendedAnalytics extends AnalyticsSummary {
   outstandingBalance: number;
   profitMargin: number;
   growthRate: number;
+  ordersGrowthRate: number;
+  clientsGrowthRate: number;
   ordersThisPeriod: number;
   revenueThisPeriod: number;
   newClientsThisPeriod: number;

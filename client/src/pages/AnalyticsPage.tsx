@@ -291,6 +291,14 @@ export default function AnalyticsPage() {
               }
               icon={TrendingUp}
               isLoading={isLoading}
+              trend={
+                period !== "all" && data?.ordersGrowthRate !== undefined
+                  ? {
+                      value: data.ordersGrowthRate,
+                      label: "orders vs previous period",
+                    }
+                  : undefined
+              }
             />
             <MetricCard
               title="Active Clients"
@@ -302,6 +310,14 @@ export default function AnalyticsPage() {
               }
               icon={Users}
               isLoading={isLoading}
+              trend={
+                period !== "all" && data?.clientsGrowthRate !== undefined
+                  ? {
+                      value: data.clientsGrowthRate,
+                      label: "new clients vs previous period",
+                    }
+                  : undefined
+              }
             />
             <MetricCard
               title="Batches"
