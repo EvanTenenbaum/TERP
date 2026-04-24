@@ -12,6 +12,9 @@ interface Event {
   priority: string;
   description?: string | null;
   location?: string | null;
+  // TER-1332: optional enrichment so pills can show "ClientName ($amount)"
+  clientName?: string | null;
+  amount?: string | number | null;
 }
 
 interface DayViewProps {
@@ -77,7 +80,7 @@ export default function DayView({ currentDate, events, onEventClick }: DayViewPr
                   event
                 )} hover:opacity-80`}
               >
-                <div className="font-medium">{event.title}</div>
+                <div className="font-medium truncate">{getEventPillLabel(event)}</div>
                 {event.location && (
                   <div className="mt-1 text-xs opacity-75">{event.location}</div>
                 )}
@@ -118,7 +121,7 @@ export default function DayView({ currentDate, events, onEventClick }: DayViewPr
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="font-medium">{event.title}</div>
+                        <div className="font-medium truncate">{getEventPillLabel(event)}</div>
                         {event.description && (
                           <div className="mt-1 text-xs opacity-75 line-clamp-2">
                             {event.description}
@@ -180,4 +183,32 @@ function getEventColorClass(event: Event): string {
   } else {
     return "bg-gray-100 text-gray-800";
   }
+}
+
+// TER-1332: Render meaningful pill labels based on event type.
+// DELIVERY / PAYMENT_DUE → "ClientName ($amount)" (fallback to title)
+// INTAKE → client name if present (fallback to title)
+function getEventPillLabel(event: Event): string {
+  const clientName = event.clientName?.trim();
+  if (event.eventType === "DELIVERY" || event.eventType === "PAYMENT_DUE") {
+    if (clientName) {
+      const formattedAmount = formatAmount(event.amount);
+      return formattedAmount ? `${clientName} (${formattedAmount})` : clientName;
+    }
+    return event.title;
+  }
+  if (event.eventType === "INTAKE") {
+    return clientName || event.title;
+  }
+  return event.title;
+}
+
+function formatAmount(amount: string | number | null | undefined): string {
+  if (amount === null || amount === undefined) return "";
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (!Number.isFinite(num)) return "";
+  return `$${num.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
 }
