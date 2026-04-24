@@ -233,6 +233,18 @@ const getDaysOverdue = (dueDate: Date | string): number => {
   return Math.max(0, differenceInDays(new Date(), due));
 };
 
+// TER-1328: Client-side "overdue" predicate derived from due date rather than
+// DB status. The `status` column only flips to 'OVERDUE' after the
+// `invoices.checkOverdue` mutation runs, so the server-side summary can under-
+// count overdue invoices indefinitely. Anchoring the chip (and the Overdue
+// tab) on this predicate keeps them consistent with what users actually see.
+const isInvoiceOverdue = (item: InvoiceItem): boolean => {
+  const status = item.status ?? "DRAFT";
+  if (status === "PAID" || status === "VOID") return false;
+  if (!item.dueDate) return false;
+  return getDaysOverdue(item.dueDate) > 0;
+};
+
 const getPaymentProgress = (item: InvoiceItem): number => {
   const total = parseFloat(String(item.totalAmount ?? "0"));
   const paid = parseFloat(String(item.amountPaid ?? "0"));
@@ -607,10 +619,15 @@ export function InvoicesSurface() {
   // ─── Queries ───────────────────────────────────────────────────────────────
 
   const summaryQuery = trpc.invoices.getSummary.useQuery();
+  // TER-1328: The "Overdue" tab is filtered client-side (by due date) to match
+  // the client-side overdue chip. Sending `status: 'OVERDUE'` to the server
+  // would only return rows whose DB status has been flipped to OVERDUE, which
+  // requires the `checkOverdue` mutation to have run recently. Let the server
+  // return all active invoices, then apply the predicate in `filteredItems`.
   const invoicesQuery = trpc.invoices.list.useQuery({
     status:
-      statusFilter !== "ALL"
-        ? (statusFilter as Exclude<StatusTab, "ALL">)
+      statusFilter !== "ALL" && statusFilter !== "OVERDUE"
+        ? (statusFilter as Exclude<StatusTab, "ALL" | "OVERDUE">)
         : undefined,
     limit: PAGE_SIZE,
     offset: (page - 1) * PAGE_SIZE,
@@ -678,9 +695,14 @@ export function InvoicesSurface() {
   );
 
   const filteredItems = useMemo(() => {
-    if (!searchTerm.trim()) return rawItems;
+    // TER-1328: When the Overdue tab is active, filter client-side by due date
+    // (not DB status). The server query already omits the OVERDUE status filter
+    // above so `rawItems` contains all active invoices to scan.
+    const dateFiltered =
+      statusFilter === "OVERDUE" ? rawItems.filter(isInvoiceOverdue) : rawItems;
+    if (!searchTerm.trim()) return dateFiltered;
     const q = searchTerm.trim().toLowerCase();
-    return rawItems.filter(item => {
+    return dateFiltered.filter(item => {
       const invNum = (item.invoiceNumber ?? "").toLowerCase();
       const displayInvoiceNumber = formatInvoiceNumberForDisplay(
         item.invoiceNumber
@@ -697,7 +719,7 @@ export function InvoicesSurface() {
         clientName.includes(q)
       );
     });
-  }, [rawItems, searchTerm, clientNamesById]);
+  }, [rawItems, searchTerm, clientNamesById, statusFilter]);
 
   const gridRows = useMemo(
     () => mapInvoicesToGridRows(filteredItems, clientNamesById),
@@ -715,13 +737,16 @@ export function InvoicesSurface() {
     totalOutstanding: 0,
     overdueAmount: 0,
   };
-  const overdueCount = useMemo(() => {
-    const byStatus = summaryQuery.data?.byStatus ?? [];
-    const overdueRow = byStatus.find(
-      (s: { status: string; count: number }) => s.status === "OVERDUE"
-    );
-    return overdueRow?.count ?? 0;
-  }, [summaryQuery.data]);
+  // TER-1328: Derive overdue count from the loaded invoice rows using the due
+  // date, not from `summaryQuery.data.byStatus`. The server summary counts DB
+  // rows where `status = 'OVERDUE'`, which only flips via the `checkOverdue`
+  // mutation — so the old chip could read "0 overdue" while the grid clearly
+  // showed past-due invoices. Deriving from the same rows the grid renders
+  // keeps the chip and the Overdue tab in sync.
+  const overdueCount = useMemo(
+    () => rawItems.filter(isInvoiceOverdue).length,
+    [rawItems]
+  );
 
   // Ledger rows
   const ledgerRows = useMemo<LedgerGridRow[]>(() => {
@@ -1108,13 +1133,21 @@ export function InvoicesSurface() {
 
   // ─── Status bar ────────────────────────────────────────────────────────────
 
+  // TER-1328: When the Overdue tab is active the server query no longer
+  // applies a status filter (so it can return all active invoices for the
+  // client-side overdue scan). Surface the client-derived overdue count here
+  // instead of the server-wide total so the status bar agrees with the chip.
+  const statusBarTotal =
+    statusFilter === "OVERDUE"
+      ? overdueCount
+      : (invoicesQuery.data?.total ?? 0);
+
   const statusBarLeft = (
     <span className="text-[10px]">
       {selectionSummary
         ? `${selectionSummary.selectedRowCount} selected`
         : "0 selected"}{" "}
-      | {statusFilter !== "ALL" ? statusFilter : "All"} |{" "}
-      {invoicesQuery.data?.total ?? 0} total
+      | {statusFilter !== "ALL" ? statusFilter : "All"} | {statusBarTotal} total
       {selectedRow ? ` | ${selectedRow.clientName}` : ""}
     </span>
   );
@@ -1450,8 +1483,7 @@ export function InvoicesSurface() {
               emptyDescription="Adjust the search or status filter, or create a new invoice."
               summary={
                 <span className="text-[10px]">
-                  {gridRows.length} visible · {invoicesQuery.data?.total ?? 0}{" "}
-                  total ·{" "}
+                  {gridRows.length} visible · {statusBarTotal} total ·{" "}
                   {statusFilter !== "ALL" ? statusFilter : "All statuses"}
                 </span>
               }
