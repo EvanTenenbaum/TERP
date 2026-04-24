@@ -87,6 +87,7 @@ import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { getRelationshipSummary } from "@/lib/relationshipSummary";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { OperationalEmptyState } from "@/components/ui/operational-states";
+import { FreshnessBadge } from "@/components/ui/freshness-badge";
 import {
   RELATIONSHIP_ROLE_TOKENS,
   RELATIONSHIP_STATUS_TOKENS,
@@ -657,7 +658,7 @@ export function ClientsWorkSurface() {
 
   // Work Surface hooks
   // QA-005 FIX: Removed unused saveState variable
-  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  const { setSaving, setSaved, setError } = useSaveState();
   const inspector = useInspectorPanel();
 
   // Concurrent edit detection for optimistic locking (UXS-705)
@@ -673,17 +674,18 @@ export function ClientsWorkSurface() {
   });
 
   // Data queries
-  const {
-    data: clientsData,
-    isLoading,
-    error,
-    refetch,
-  } = trpc.clients.list.useQuery({
+  const clientsQuery = trpc.clients.list.useQuery({
     limit,
     offset: page * limit,
     search: search || undefined,
     clientTypes: typeFilter !== "all" ? [typeFilter] : undefined,
   });
+  const {
+    data: clientsData,
+    isLoading,
+    error,
+    refetch,
+  } = clientsQuery;
 
   const clients = useMemo(
     () =>
