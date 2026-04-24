@@ -13,6 +13,7 @@ import { getDb } from "../db";
 import {
   calendarEvents,
   calendarRecurrenceInstances,
+  clients,
   orders,
   invoices,
 } from "../../drizzle/schema";
@@ -51,6 +52,7 @@ export const calendarRouter = router({
 
       try {
         // 1. Get intake appointments from calendar_events
+        // TER-1332: include clientName so pill can display it (amount is null for intake)
         const intakeAppointments = await db
           .select({
             id: calendarEvents.id,
@@ -61,8 +63,11 @@ export const calendarRouter = router({
             entityType: sql<string>`'calendar'`,
             entityId: calendarEvents.id,
             clientId: calendarEvents.clientId,
+            clientName: clients.name,
+            amount: sql<string | null>`NULL`,
           })
           .from(calendarEvents)
+          .leftJoin(clients, eq(calendarEvents.clientId, clients.id))
           .where(
             and(
               eq(calendarEvents.eventType, "INTAKE"),
@@ -73,6 +78,7 @@ export const calendarRouter = router({
           );
 
         // 2. Get order delivery dates from orders.dueDate
+        // TER-1332: include client name + order total so pill can display "ClientName ($amount)"
         const orderDeliveries = await db
           .select({
             id: orders.id,
@@ -83,8 +89,11 @@ export const calendarRouter = router({
             entityType: sql<string>`'order'`,
             entityId: orders.id,
             clientId: orders.clientId,
+            clientName: clients.name,
+            amount: orders.total,
           })
           .from(orders)
+          .leftJoin(clients, eq(orders.clientId, clients.id))
           .where(
             and(
               sql`${orders.dueDate} IS NOT NULL`,
@@ -96,6 +105,7 @@ export const calendarRouter = router({
           );
 
         // 3. Get payment due dates from invoices.dueDate
+        // TER-1332: include client name + invoice total so pill can display "ClientName ($amount)"
         const paymentDueDates = await db
           .select({
             id: invoices.id,
@@ -106,8 +116,11 @@ export const calendarRouter = router({
             entityType: sql<string>`'invoice'`,
             entityId: invoices.id,
             clientId: invoices.customerId,
+            clientName: clients.name,
+            amount: invoices.totalAmount,
           })
           .from(invoices)
+          .leftJoin(clients, eq(invoices.customerId, clients.id))
           .where(
             and(
               gte(invoices.dueDate, startDate),

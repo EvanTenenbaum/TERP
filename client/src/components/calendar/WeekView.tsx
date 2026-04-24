@@ -11,6 +11,9 @@ interface Event {
   entityType?: string;
   entityId?: number;
   clientId?: number | null;
+  // TER-1332: optional enrichment so pills can show "ClientName ($amount)"
+  clientName?: string | null;
+  amount?: string | number | null;
   status: string;
   priority: string;
 }
@@ -112,7 +115,7 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
                         event
                       )} hover:opacity-80`}
                     >
-                      {event.title}
+                      {getEventPillLabel(event)}
                     </button>
                   ))}
                 </div>
@@ -163,4 +166,32 @@ function getEventColorClass(event: Event): string {
     // Fallback for other event types
     return "bg-gray-100 text-gray-800";
   }
+}
+
+// TER-1332: Render meaningful pill labels based on event type.
+// DELIVERY / PAYMENT_DUE → "ClientName ($amount)" (fallback to title)
+// INTAKE → client name if present (fallback to title)
+function getEventPillLabel(event: Event): string {
+  const clientName = event.clientName?.trim();
+  if (event.eventType === "DELIVERY" || event.eventType === "PAYMENT_DUE") {
+    if (clientName) {
+      const formattedAmount = formatAmount(event.amount);
+      return formattedAmount ? `${clientName} (${formattedAmount})` : clientName;
+    }
+    return event.title;
+  }
+  if (event.eventType === "INTAKE") {
+    return clientName || event.title;
+  }
+  return event.title;
+}
+
+function formatAmount(amount: string | number | null | undefined): string {
+  if (amount === null || amount === undefined) return "";
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (!Number.isFinite(num)) return "";
+  return `$${num.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
 }

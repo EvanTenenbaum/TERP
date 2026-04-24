@@ -107,6 +107,8 @@ export default function CalendarPage() {
   );
 
   // Convert to format expected by view components
+  // TER-1332: pass through clientName + amount so event pills can show
+  // "ClientName ($amount)" instead of "Order N Delivery"
   const formattedEvents = dashboardEvents.map(event => ({
     id: event.id,
     title: event.title,
@@ -118,6 +120,8 @@ export default function CalendarPage() {
     entityType: event.entityType,
     entityId: event.entityId,
     clientId: event.clientId,
+    clientName: event.clientName,
+    amount: event.amount,
     status: "SCHEDULED",
     priority: "MEDIUM",
     module: "",

@@ -11,6 +11,9 @@ interface Event {
   entityType?: string;
   entityId?: number;
   clientId?: number | null;
+  // TER-1332: optional enrichment so pills can show "ClientName ($amount)"
+  clientName?: string | null;
+  amount?: string | number | null;
   status: string;
   priority: string;
 }
@@ -144,7 +147,7 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
                       {formatTime(event.startTime)}
                     </span>
                   )}
-                  {event.title}
+                  {getEventPillLabel(event)}
                 </button>
               ))}
               {day.events.length > 3 && (
@@ -191,4 +194,32 @@ function formatTime(time: string): string {
   const ampm = hour >= 12 ? "PM" : "AM";
   const displayHour = hour % 12 || 12;
   return `${displayHour}:${minutes}${ampm}`;
+}
+
+// TER-1332: Render meaningful pill labels based on event type.
+// DELIVERY / PAYMENT_DUE → "ClientName ($amount)" (fallback to title)
+// INTAKE → client name if present (fallback to title)
+function getEventPillLabel(event: Event): string {
+  const clientName = event.clientName?.trim();
+  if (event.eventType === "DELIVERY" || event.eventType === "PAYMENT_DUE") {
+    if (clientName) {
+      const formattedAmount = formatAmount(event.amount);
+      return formattedAmount ? `${clientName} (${formattedAmount})` : clientName;
+    }
+    return event.title;
+  }
+  if (event.eventType === "INTAKE") {
+    return clientName || event.title;
+  }
+  return event.title;
+}
+
+function formatAmount(amount: string | number | null | undefined): string {
+  if (amount === null || amount === undefined) return "";
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  if (!Number.isFinite(num)) return "";
+  return `$${num.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  })}`;
 }
