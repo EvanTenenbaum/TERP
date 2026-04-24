@@ -175,7 +175,7 @@ export function MarketplaceSupply({
       return <Badge variant="destructive">Expired</Badge>;
     } else if (daysUntilExpiry <= 1) {
       return (
-        <Badge variant="outline" className="border-orange-500 text-orange-500">
+        <Badge variant="outline" className="border-orange-500 text-[var(--warning)]">
           Expires Soon
         </Badge>
       );
@@ -401,7 +401,7 @@ export function MarketplaceSupply({
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <CardTitle className="text-base md:text-lg flex items-center gap-2 flex-wrap">
-                      <Package className="h-4 w-4 text-green-500 flex-shrink-0" />
+                      <Package className="h-4 w-4 text-[var(--success)] flex-shrink-0" />
                       <span className="truncate">{supply.strain}</span>
                     </CardTitle>
                     <CardDescription className="text-sm mt-1">

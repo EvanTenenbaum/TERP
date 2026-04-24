@@ -1,0 +1,108 @@
+{
+  "baseUrl": "http://127.0.0.1:3001",
+  "outputPath": "/Users/evan/spec-erp-docker/TERP/worktrees/open-ticket-atomic-train-20260409/docs/execution/open-ticket-atomic-train-2026-04-09/runtime-ui-checks.json",
+  "runAt": "2026-04-10T10:44:21.490Z",
+  "viewport": {
+    "width": 1280,
+    "height": 900
+  },
+  "auth": {
+    "ok": true,
+    "strategy": "http://127.0.0.1:3001/api/auth/login",
+    "status": 200
+  },
+  "sessionHealth": {
+    "beforeOperations": {
+      "label": "before-operations-runtime-proof",
+      "ok": true,
+      "status": 200,
+      "email": "qa.superadmin@terp.test"
+    }
+  },
+  "tickets": {
+    "TER-1135": {
+      "status": "fail",
+      "evidence": [
+        {
+          "route": "/sales",
+          "title": null,
+          "eyebrow": null,
+          "description": null,
+          "dominant": false
+        },
+        {
+          "route": "/inventory",
+          "title": null,
+          "eyebrow": null,
+          "description": null,
+          "dominant": false
+        },
+        {
+          "route": "/relationships",
+          "title": null,
+          "eyebrow": null,
+          "description": null,
+          "dominant": false
+        },
+        {
+          "route": "/accounting",
+          "title": null,
+          "eyebrow": null,
+          "description": null,
+          "dominant": false
+        },
+        {
+          "route": "/purchase-orders",
+          "title": null,
+          "eyebrow": null,
+          "description": null,
+          "dominant": false
+        }
+      ]
+    },
+    "TER-1126": {
+      "status": "fail",
+      "evidence": {
+        "financialPeriodLabel": {
+          "text": "Financial period",
+          "visible": false,
+          "withinViewport": false,
+          "box": null
+        },
+        "financialPeriodValue": {
+          "text": "Current fiscal year",
+          "visible": false,
+          "withinViewport": false,
+          "box": null
+        }
+      }
+    },
+    "TER-1121": {
+      "status": "fail",
+      "evidence": {
+        "procurementRedirectRoute": "/login?returnUrl=%2Fpurchase-orders",
+        "procurementRedirectAction": {
+          "text": "Open Operations",
+          "visible": false,
+          "withinViewport": false,
+          "box": null
+        }
+      }
+    },
+    "TER-1117": {
+      "status": "fail",
+      "evidence": {
+        "intakeRoute": "/inventory?tab=intake",
+        "directIntakeLabel": {
+          "text": "Direct intake",
+          "visible": false,
+          "withinViewport": false,
+          "box": null
+        },
+        "intakeSubmitButtons": 0,
+        "intakePilotDocumentCount": 0
+      }
+    }
+  },
+  "runtimeError": "Error: tRPC POST call to clients.list failed: 429 Too many requests from this IP, please try again later."
+}

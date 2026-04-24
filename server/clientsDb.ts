@@ -22,6 +22,29 @@ import {
 // ============================================================================
 
 /**
+ * TER-1259: QA / test-client exclusion
+ *
+ * Excludes test fixtures from client list / picker results so they
+ * never appear in the New Order flow or any client-facing combobox.
+ * This is a filter-only change — rows remain in the database and are
+ * still reachable by direct ID lookups / admin tooling.
+ *
+ * Patterns (name + email, OR-combined at the row level is AND-excluded here):
+ * - name LIKE 'QA Write-Path%'   → legacy QA fixture prefix
+ * - name LIKE 'ZZZ%'             → manual placeholder / sort-to-bottom
+ * - name = 'wer werwe'           → specific stray fixture
+ * - email = 'qa-edited@example.com' → QA automation mailbox
+ */
+function qaTestClientExclusionConditions(): SQL<unknown>[] {
+  return [
+    sql`${clients.name} NOT LIKE 'QA Write-Path%'`,
+    sql`${clients.name} NOT LIKE 'ZZZ%'`,
+    sql`(${clients.name} IS NULL OR ${clients.name} <> 'wer werwe')`,
+    sql`(${clients.email} IS NULL OR ${clients.email} <> 'qa-edited@example.com')`,
+  ];
+}
+
+/**
  * Get all clients (with pagination and filters)
  */
 export async function getClients(options: {
@@ -106,6 +129,9 @@ export async function getClients(options: {
 
   // FIX: Always filter out soft-deleted clients unless explicitly requested
   conditions.push(sql`${clients.deletedAt} IS NULL`);
+
+  // TER-1259: Always filter out QA / test-client fixtures
+  conditions.push(...qaTestClientExclusionConditions());
 
   // Enhanced multi-field search (TERI code, name, email, phone, address)
   if (search) {
@@ -238,6 +264,9 @@ export async function getClientCount(options: {
 
   // FIX: Always filter out soft-deleted clients
   conditions.push(sql`${clients.deletedAt} IS NULL`);
+
+  // TER-1259: Always filter out QA / test-client fixtures
+  conditions.push(...qaTestClientExclusionConditions());
 
   // Enhanced multi-field search (same as getClients)
   if (search) {

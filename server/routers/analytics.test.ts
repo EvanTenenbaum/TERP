@@ -15,10 +15,13 @@ import { appRouter } from "../routers";
 import { createContext } from "../_core/context";
 import { db } from "../db";
 import { strainService } from "../services/strainService";
+import * as permissionService from "../services/permissionService";
+import { canViewCogsAnalytics, redactInventoryExportRows } from "./analytics";
 
 // Mock user for authenticated requests
 const mockUser = {
   id: 1,
+  openId: "user-open-id-1",
   email: "test@terp.com",
   name: "Test User",
 };
@@ -46,17 +49,25 @@ describe("Analytics Router", () => {
   describe("getSummary", () => {
     it("should retrieve summary analytics with real data", async () => {
       // Arrange - mock database responses
-      // Note: orders and clients queries don't use .where(), inventory does
-      const mockDb = db as unknown as { select: ReturnType<typeof vi.fn>; };
+      const mockDb = db as unknown as { select: ReturnType<typeof vi.fn> };
 
-      // For orders - .select().from() directly returns array
-      mockDb.select = vi.fn()
+      // For orders - .select().from().where() returns array
+      mockDb.select = vi
+        .fn()
         .mockReturnValueOnce({
-          from: vi.fn().mockResolvedValue([{ totalOrders: 100, totalRevenue: "50000.00" }]),
+          from: vi.fn().mockReturnValue({
+            where: vi
+              .fn()
+              .mockResolvedValue([
+                { totalOrders: 100, totalRevenue: "50000.00" },
+              ]),
+          }),
         })
-        // For clients - .select().from() directly returns array
+        // For clients - .select().from().where() returns array
         .mockReturnValueOnce({
-          from: vi.fn().mockResolvedValue([{ totalClients: 25 }]),
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ totalClients: 25 }]),
+          }),
         })
         // For batches - .select().from().where() returns array
         .mockReturnValueOnce({
@@ -81,16 +92,23 @@ describe("Analytics Router", () => {
 
     it("should handle empty database gracefully", async () => {
       // Arrange - mock empty database
-      const mockDb = db as unknown as { select: ReturnType<typeof vi.fn>; };
+      const mockDb = db as unknown as { select: ReturnType<typeof vi.fn> };
 
-      // For orders
-      mockDb.select = vi.fn()
+      // For orders - .select().from().where() returns array
+      mockDb.select = vi
+        .fn()
         .mockReturnValueOnce({
-          from: vi.fn().mockResolvedValue([{ totalOrders: 0, totalRevenue: null }]),
+          from: vi.fn().mockReturnValue({
+            where: vi
+              .fn()
+              .mockResolvedValue([{ totalOrders: 0, totalRevenue: null }]),
+          }),
         })
-        // For clients
+        // For clients - .select().from().where() returns array
         .mockReturnValueOnce({
-          from: vi.fn().mockResolvedValue([{ totalClients: 0 }]),
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ totalClients: 0 }]),
+          }),
         })
         // For batches
         .mockReturnValueOnce({
@@ -107,6 +125,128 @@ describe("Analytics Router", () => {
       expect(result.totalOrders).toBe(0);
       expect(result.totalClients).toBe(0);
       expect(result.totalInventoryItems).toBe(0);
+    });
+  });
+
+  describe("COGS visibility helpers", () => {
+    it("treats legacy visible mode as admin-only policy", () => {
+      expect(
+        canViewCogsAnalytics({
+          cogsDisplayMode: "VISIBLE",
+          isSuperAdmin: false,
+          hasCogsAccess: false,
+        })
+      ).toBe(false);
+      expect(
+        canViewCogsAnalytics({
+          cogsDisplayMode: "VISIBLE",
+          isSuperAdmin: true,
+          hasCogsAccess: false,
+        })
+      ).toBe(true);
+    });
+
+    it("redacts unit COGS from inventory exports when cost access is denied", () => {
+      expect(
+        redactInventoryExportRows(
+          [
+            {
+              batchId: 11,
+              batchCode: "B-11",
+              onHandQty: "8",
+              unitCogs: "12.50",
+              createdAt: new Date("2026-03-01T00:00:00.000Z"),
+            },
+          ],
+          false
+        )
+      ).toEqual([
+        {
+          batchId: 11,
+          batchCode: "B-11",
+          onHandQty: 8,
+          createdAt: "2026-03-01T00:00:00.000Z",
+        },
+      ]);
+    });
+  });
+
+  describe("getExtendedSummary", () => {
+    it("redacts inventory value when the viewer lacks cost access", async () => {
+      const mockDb = db as unknown as { select: ReturnType<typeof vi.fn> };
+
+      vi.mocked(permissionService.isSuperAdmin).mockResolvedValue(false);
+      vi.mocked(permissionService.hasAnyPermission).mockResolvedValue(false);
+
+      mockDb.select = vi
+        .fn()
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi
+                .fn()
+                .mockResolvedValue([{ value: JSON.stringify("VISIBLE") }]),
+            }),
+          }),
+        })
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([
+              {
+                totalOrders: 20,
+                totalRevenue: "1200.00",
+                avgOrderValue: "60.00",
+              },
+            ]),
+          }),
+        })
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([
+              {
+                ordersThisPeriod: 5,
+                revenueThisPeriod: "300.00",
+              },
+            ]),
+          }),
+        })
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ revenue: "250.00" }]),
+          }),
+        })
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ totalClients: 8 }]),
+          }),
+        })
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ newClients: 2 }]),
+          }),
+        })
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([
+              {
+                totalInventoryItems: 14,
+                totalInventoryValue: "987.65",
+              },
+            ]),
+          }),
+        })
+        .mockReturnValueOnce({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([{ totalPayments: "700.00" }]),
+          }),
+        });
+
+      const result = await caller.analytics.getExtendedSummary({
+        period: "month",
+      });
+
+      expect(result.totalInventoryItems).toBe(14);
+      expect(result.totalInventoryValue).toBeNull();
     });
   });
 

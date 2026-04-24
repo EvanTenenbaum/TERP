@@ -92,15 +92,15 @@ export const CreditExplanation = React.memo(function CreditExplanation({
   ];
 
   const getTrendIcon = (trend: number) => {
-    if (trend > 0) return <TrendingUp className="h-3 w-3 text-green-600" />;
-    if (trend < 0) return <TrendingDown className="h-3 w-3 text-red-600" />;
+    if (trend > 0) return <TrendingUp className="h-3 w-3 text-[var(--success)]" />;
+    if (trend < 0) return <TrendingDown className="h-3 w-3 text-destructive" />;
     return <Minus className="h-3 w-3 text-gray-400" />;
   };
 
   const getScoreColor = (score: number): string => {
-    if (score >= 80) return "text-green-600";
-    if (score >= 60) return "text-yellow-600";
-    return "text-red-600";
+    if (score >= 80) return "text-[var(--success)]";
+    if (score >= 60) return "text-[var(--warning)]";
+    return "text-destructive";
   };
 
   const getScoreLabel = (score: number): string => {
@@ -111,16 +111,16 @@ export const CreditExplanation = React.memo(function CreditExplanation({
   };
 
   const getBarColor = (score: number): string => {
-    if (score >= 80) return "bg-green-600";
-    if (score >= 60) return "bg-yellow-600";
-    return "bg-red-600";
+    if (score >= 80) return "bg-[var(--success)]";
+    if (score >= 60) return "bg-[var(--warning)]";
+    return "bg-destructive";
   };
 
   return (
     <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <Info className="h-4 w-4 text-blue-600" />
+        <Info className="h-4 w-4 text-[var(--info)]" />
         <span className="text-sm font-medium">
           How client capacity was calculated
         </span>

@@ -38,31 +38,35 @@ preconditions:
 
 steps:
   - action: navigate
-    path: "/orders"
-    wait_for: "[data-testid='orders-table'], table, main"
+    path: "/sales?tab=orders"
+    wait_for: "input[placeholder='Search order or client'], [role='grid'], main"
 
   - action: wait
     network_idle: true
     timeout: 10000
 
+  - action: wait
+    for: "input[placeholder='Search order or client'], [role='grid'], main"
+    timeout: 20000
+
   - action: type
-    target: "[data-testid='orders-search-input']"
+    target: "input[placeholder='Search order or client']"
     value: "{{temp:invoice_source_order.orderNumber}}"
     clear_first: true
 
   - action: wait
-    for: "table tbody tr:has-text('{{temp:invoice_source_order.orderNumber}}'), table tbody tr"
+    for: "[role='row']:has-text('{{temp:invoice_source_order.orderNumber}}')"
     timeout: 10000
 
   - action: click
-    target: "table tbody tr:has-text('{{temp:invoice_source_order.orderNumber}}'), table tbody tr:first-of-type"
+    target: "[role='row']:has-text('{{temp:invoice_source_order.orderNumber}}')"
 
   - action: wait
-    for: "[data-testid='generate-invoice-btn'], button:has-text('Generate Invoice')"
+    for: "button:has-text('Generate Invoice')"
     timeout: 10000
 
   - action: click
-    target: "[data-testid='generate-invoice-btn'], button:has-text('Generate Invoice')"
+    target: "button:has-text('Generate Invoice')"
     wait_after: 2000
 
   - action: wait

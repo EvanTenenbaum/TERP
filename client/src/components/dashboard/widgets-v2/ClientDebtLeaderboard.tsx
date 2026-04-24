@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState, DatabaseErrorState } from "@/components/ui/empty-state";
 import { trpc } from "@/lib/trpc";
 
 // LINT-005: Define interface for client debt data
@@ -20,10 +21,12 @@ interface ClientDebtData {
 }
 
 export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
-  const { data: response, isLoading } = trpc.dashboard.getClientDebt.useQuery(
-    {},
-    { refetchInterval: 60000 }
-  );
+  const {
+    data: response,
+    isLoading,
+    error,
+    refetch,
+  } = trpc.dashboard.getClientDebt.useQuery({}, { refetchInterval: 60000 });
 
   const data = response?.data || [];
 
@@ -48,6 +51,12 @@ export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
+        ) : error ? (
+          <DatabaseErrorState
+            entity="client debt"
+            errorMessage={error.message}
+            onRetry={() => void refetch()}
+          />
         ) : data.length > 0 ? (
           <Table>
             <TableHeader>
@@ -67,7 +76,7 @@ export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
                   <TableCell className="font-medium">
                     {client.customerName}
                   </TableCell>
-                  <TableCell className="text-right font-mono text-red-600">
+                  <TableCell className="text-right font-mono text-destructive">
                     {formatCurrency(client.currentDebt)}
                   </TableCell>
                   <TableCell className="text-right font-mono text-muted-foreground">
@@ -78,9 +87,12 @@ export const ClientDebtLeaderboard = memo(function ClientDebtLeaderboard() {
             </TableBody>
           </Table>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            No client debt data available
-          </div>
+          <EmptyState
+            variant="clients"
+            size="sm"
+            title="No client debt yet"
+            description="Client debt will appear once invoices are outstanding."
+          />
         )}
       </CardContent>
     </Card>

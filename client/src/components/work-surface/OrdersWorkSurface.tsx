@@ -40,6 +40,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { MonoId } from "@/components/ui/mono-id";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
@@ -63,6 +64,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -81,6 +83,13 @@ import {
   InspectorField,
   useInspectorPanel,
 } from "./InspectorPanel";
+import {
+  BulkActionsBar,
+  useTableSelection,
+  SelectAllCheckbox,
+  SelectRowCheckbox,
+  type StatusOption,
+} from "@/components/ui/bulk-actions";
 
 // Icons
 import {
@@ -103,6 +112,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { FreshnessBadge } from "@/components/ui/freshness-badge";
 
 // ============================================================================
 // TYPES
@@ -142,35 +152,31 @@ interface Order {
 }
 
 export function canDownloadInvoice(
-  order: Pick<Order, "invoiceId"> | null,
+  invoiceId: number | null,
   canAccessAccounting: boolean
 ): boolean {
-  return Boolean(canAccessAccounting && order?.invoiceId);
+  return Boolean(canAccessAccounting && invoiceId);
 }
 
 export function canGenerateInvoice(
-  order:
-    | {
-        orderType?: string | null;
-        invoiceId?: number | null;
-        fulfillmentStatus?: string | null;
-      }
-    | null,
+  order: {
+    orderType?: string | null;
+    invoiceId?: number | null;
+    fulfillmentStatus?: string | null;
+  } | null,
   canCreateAccounting: boolean
 ): boolean {
   return Boolean(
     canCreateAccounting &&
-      order?.orderType === "SALE" &&
-      !order.invoiceId &&
-      order.fulfillmentStatus &&
-      ["READY_FOR_PACKING", "PACKED", "SHIPPED"].includes(
-        order.fulfillmentStatus
-      )
+    order?.orderType === "SALE" &&
+    !order.invoiceId &&
+    order.fulfillmentStatus &&
+    ["READY_FOR_PACKING", "PACKED", "SHIPPED"].includes(order.fulfillmentStatus)
   );
 }
 
 export function getMakePaymentRoute(
-  order: Pick<Order, "id" | "invoiceId"> | null
+  order: { id: number; invoiceId: number | null } | null
 ): string | null {
   if (!order?.invoiceId) {
     return null;
@@ -178,13 +184,41 @@ export function getMakePaymentRoute(
 
   const params = new URLSearchParams({
     tab: "invoices",
-    id: String(order.invoiceId),
+    invoiceId: String(order.invoiceId),
     orderId: String(order.id),
-    openRecordPayment: "true",
     from: "sales",
   });
 
   return `/accounting?${params.toString()}`;
+}
+
+export function resolveOrderInvoiceId(
+  directInvoiceId: number | null | undefined,
+  linkedInvoiceId: number | null | undefined
+): number | null {
+  if (
+    typeof directInvoiceId === "number" &&
+    Number.isInteger(directInvoiceId) &&
+    directInvoiceId > 0
+  ) {
+    return directInvoiceId;
+  }
+
+  if (
+    typeof linkedInvoiceId === "number" &&
+    Number.isInteger(linkedInvoiceId) &&
+    linkedInvoiceId > 0
+  ) {
+    return linkedInvoiceId;
+  }
+
+  return null;
+}
+
+export function canViewOrderCogsDetails(settings?: {
+  display?: { canViewCogsData?: boolean };
+}): boolean {
+  return Boolean(settings?.display?.canViewCogsData);
 }
 
 interface ClientSummary {
@@ -257,18 +291,18 @@ const STATUS_ICONS: Record<FulfillmentDisplayStatus, ReactNode> = {
   CANCELLED: <XCircle className="h-4 w-4" />,
 };
 
-// WSQA-003: Added return status colors
+// WSQA-003: Added return status colors — updated 420-fork Wave 1 to semantic tokens
 const STATUS_COLORS: Record<FulfillmentDisplayStatus, string> = {
-  DRAFT: "bg-gray-100 text-gray-800",
-  CONFIRMED: "bg-blue-100 text-blue-800",
-  PENDING: "bg-yellow-100 text-yellow-800",
-  READY: "bg-purple-100 text-purple-800",
-  SHIPPED: "bg-indigo-100 text-indigo-800",
-  DELIVERED: "bg-green-100 text-green-800",
-  RETURNED: "bg-orange-100 text-orange-800",
-  RESTOCKED: "bg-emerald-100 text-emerald-800",
-  RETURNED_TO_VENDOR: "bg-amber-100 text-amber-800",
-  CANCELLED: "bg-red-100 text-red-800",
+  DRAFT: "bg-amber-50 text-amber-700 border-amber-200",
+  CONFIRMED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  PENDING: "bg-amber-50 text-amber-700 border-amber-200",
+  READY: "bg-sky-50 text-sky-700 border-sky-200",
+  SHIPPED: "bg-sky-50 text-sky-700 border-sky-200",
+  DELIVERED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  RETURNED: "bg-neutral-100 text-neutral-500 border-neutral-200",
+  RESTOCKED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  RETURNED_TO_VENDOR: "bg-neutral-100 text-neutral-500 border-neutral-200",
+  CANCELLED: "bg-neutral-100 text-neutral-500 border-neutral-200",
 };
 
 // ============================================================================
@@ -301,22 +335,23 @@ const extractItems = <T,>(data: unknown): T[] => {
   return [];
 };
 
+// TER-1257: Drop the `orderType: "SALE"` constraint so Standard View mirrors
+// the Spreadsheet View queue. The SALE-only filter caused Standard View to
+// return 0 orders while Spreadsheet View rendered data correctly — the
+// divergence was this over-narrow filter, not the data itself.
 export const buildConfirmedQueryInput = (
   fulfillmentStatus?: string
 ): {
-  orderType: "SALE";
   isDraft: boolean;
   fulfillmentStatus?: string;
 } =>
   fulfillmentStatus && fulfillmentStatus !== "ALL"
-    ? { orderType: "SALE", isDraft: false, fulfillmentStatus }
-    : { orderType: "SALE", isDraft: false };
+    ? { isDraft: false, fulfillmentStatus }
+    : { isDraft: false };
 
 export const buildDraftQueryInput = (): {
-  orderType: "SALE";
   isDraft: boolean;
 } => ({
-  orderType: "SALE",
   isDraft: true,
 });
 
@@ -464,8 +499,10 @@ function OrderStatusBadge({
 // WSQA-003: Added return processing handlers
 interface OrderInspectorProps {
   order: Order | null;
+  resolvedInvoiceId: number | null;
   clientName: string;
   cogsLineItems: OrderCOGSLineItem[];
+  canViewCogsDetails: boolean;
   returnHistory: OrderReturnEntry[];
   shippingEnabled: boolean;
   canManageShipping: boolean;
@@ -505,8 +542,10 @@ interface OrderInspectorProps {
 
 function OrderInspectorContent({
   order,
+  resolvedInvoiceId,
   clientName,
   cogsLineItems,
+  canViewCogsDetails,
   returnHistory,
   shippingEnabled,
   canManageShipping,
@@ -544,8 +583,10 @@ function OrderInspectorContent({
     0
   );
   const fulfillmentStatus = normalizeFulfillmentStatus(order.fulfillmentStatus);
-  const invoiceId =
-    typeof order.invoiceId === "number" ? order.invoiceId : null;
+  const invoiceId = resolveOrderInvoiceId(
+    order.invoiceId ?? null,
+    resolvedInvoiceId
+  );
 
   return (
     <div className="space-y-6">
@@ -625,9 +666,11 @@ function OrderInspectorContent({
         )}
       </InspectorSection>
 
-      <InspectorSection title="COGS Details" defaultOpen>
-        <OrderCOGSDetails lineItems={cogsLineItems} />
-      </InspectorSection>
+      {canViewCogsDetails ? (
+        <InspectorSection title="COGS Details" defaultOpen>
+          <OrderCOGSDetails lineItems={cogsLineItems} />
+        </InspectorSection>
+      ) : null}
 
       <InspectorSection title="GL Entries" defaultOpen>
         <GLEntriesViewer
@@ -684,9 +727,7 @@ function OrderInspectorContent({
               `Order #${order.id}`
             }
             isUpdating={isStatusUpdating}
-            onStatusChange={newStatus =>
-              onStatusChange?.(order.id, newStatus)
-            }
+            onStatusChange={newStatus => onStatusChange?.(order.id, newStatus)}
             customHandlers={{
               SHIPPED: () => onShip(order.id),
               RETURNED: onProcessReturn
@@ -727,7 +768,7 @@ function OrderInspectorContent({
               </Button>
               <Button
                 variant="outline"
-                className="w-full justify-start text-red-600 hover:text-red-700"
+                className="w-full justify-start text-destructive hover:text-destructive"
                 data-testid="delete-draft-btn"
                 onClick={() => onDelete(order.id)}
               >
@@ -748,7 +789,7 @@ function OrderInspectorContent({
               {!shippingEnabled &&
                 order.orderType === "SALE" &&
                 canAccessAccounting &&
-                getMakePaymentRoute(order) && (
+                getMakePaymentRoute({ id: order.id, invoiceId }) && (
                   <Button
                     variant="default"
                     className="w-full justify-start"
@@ -793,7 +834,7 @@ function OrderInspectorContent({
               {canGenerateInvoice(
                 {
                   orderType: order.orderType,
-                  invoiceId: order.invoiceId,
+                  invoiceId,
                   fulfillmentStatus,
                 },
                 canCreateAccounting
@@ -817,7 +858,7 @@ function OrderInspectorContent({
                 canProcessReturns && (
                   <Button
                     variant="outline"
-                    className="w-full justify-start text-orange-600 hover:text-orange-700"
+                    className="w-full justify-start text-[var(--warning)] hover:text-[var(--warning)]"
                     onClick={() => onProcessReturn(order.id)}
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
@@ -850,7 +891,7 @@ function OrderInspectorContent({
                 </>
               )}
               {invoiceId !== null &&
-                canDownloadInvoice(order, canAccessAccounting) &&
+                canDownloadInvoice(invoiceId, canAccessAccounting) &&
                 onDownloadInvoice && (
                   <Button
                     variant="outline"
@@ -876,11 +917,17 @@ function OrderInspectorContent({
 // MAIN COMPONENT
 // ============================================================================
 
-export function OrdersWorkSurface() {
+export function OrdersWorkSurface({
+  onNewOrder,
+}: {
+  onNewOrder?: () => void;
+} = {}) {
   const [location, setLocation] = useLocation();
   const routeSearch = useRouteSearch();
   const trpcUtils = trpc.useUtils();
   const { hasAnyPermission } = usePermissions();
+  const { data: displaySettings } =
+    trpc.organizationSettings.getDisplaySettings.useQuery();
   const searchInputRef = useRef<HTMLInputElement>(null);
   const appliedOrderDeepLinkRef = useRef<number | null>(null);
 
@@ -909,6 +956,7 @@ export function OrdersWorkSurface() {
     "accounting:transactions:create",
     "accounting:manage",
   ]);
+  const canViewCogsDetails = canViewOrderCogsDetails(displaySettings);
 
   // State — Parse localStorage once and distribute
   const savedViewState = useMemo(() => {
@@ -964,7 +1012,7 @@ export function OrdersWorkSurface() {
   }, [search, statusFilter, sortKey]);
 
   // Work Surface hooks
-  const { setSaving, setSaved, setError, SaveStateIndicator } = useSaveState();
+  const { setSaving, setSaved, setError } = useSaveState();
   const inspector = useInspectorPanel();
 
   // Concurrent edit detection for optimistic locking (UXS-705)
@@ -988,11 +1036,12 @@ export function OrdersWorkSurface() {
   );
 
   const draftQueryInput = useMemo(() => buildDraftQueryInput(), []);
+  const draftOrdersQuery = trpc.orders.getAll.useQuery(draftQueryInput);
   const {
     data: draftOrdersData,
     isLoading: loadingDrafts,
     refetch: refetchDrafts,
-  } = trpc.orders.getAll.useQuery(draftQueryInput);
+  } = draftOrdersQuery;
   const draftOrders = useMemo(
     () => extractItems<Order>(draftOrdersData),
     [draftOrdersData]
@@ -1105,7 +1154,9 @@ export function OrdersWorkSurface() {
       }
       const message = getStatusFilterExitMessage({
         orderNumber:
-          getDisplayOrderNumber(order) || order.orderNumber || `Order #${order.id}`,
+          getDisplayOrderNumber(order) ||
+          order.orderNumber ||
+          `Order #${order.id}`,
         fromFilter: statusFilter,
         toStatus: nextStatus,
       });
@@ -1123,6 +1174,18 @@ export function OrdersWorkSurface() {
       return client?.name || "Unknown";
     },
     [clients]
+  );
+
+  // TER-1065: Get display name for order creator
+  const getSubmittedByName = useCallback(
+    (order: Order) => {
+      const withUser = order as Order & {
+        createdByUser?: { name?: string | null; email?: string | null } | null;
+      };
+      if (!withUser.createdByUser) return "Unknown";
+      return withUser.createdByUser.name || withUser.createdByUser.email || "Unknown";
+    },
+    []
   );
 
   // Filtered orders
@@ -1167,11 +1230,55 @@ export function OrdersWorkSurface() {
     });
   }, [activeTab, draftOrders, confirmedOrders, search, getClientName, sortKey]);
 
+  const orderEmptyStateAction = useMemo(() => {
+    if (search || statusFilter !== "ALL") {
+      return {
+        label: "Clear Filters",
+        onClick: () => {
+          setSearch("");
+          setStatusFilter("ALL");
+        },
+      };
+    }
+
+    if (activeTab === "draft") {
+      return {
+        label: "Create Order",
+        onClick: () => setLocation(buildSalesWorkspacePath("create-order")),
+      };
+    }
+
+    return {
+      label: "View Draft Orders",
+      onClick: () => setActiveTab("draft"),
+    };
+  }, [activeTab, search, setLocation, statusFilter]);
+
+  // TER-1056: Bulk selection state
+  const selection = useTableSelection<Order>(displayOrders as Order[]);
+
+  // TER-1056: Clear selection when changing tabs or filters
+  useEffect(() => {
+    selection.clearSelection();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, search, statusFilter]);
+
   // Selected order
   const selectedOrderSummary = useMemo(
     () =>
       (displayOrders as Order[]).find(o => o.id === selectedOrderId) || null,
     [displayOrders, selectedOrderId]
+  );
+
+  const linkedInvoiceQuery = trpc.accounting.invoices.getByReference.useQuery(
+    {
+      referenceId: selectedOrderSummary?.id ?? 0,
+      referenceTypes: ["ORDER", "SALE"],
+    },
+    {
+      enabled:
+        selectedOrderSummary !== null && selectedOrderSummary.isDraft === false,
+    }
   );
 
   const { data: orderDetails } = trpc.orders.getOrderWithLineItems.useQuery(
@@ -1223,6 +1330,15 @@ export function OrdersWorkSurface() {
       })),
     };
   }, [orderDetails, selectedOrderSummary]);
+
+  const selectedOrderInvoiceId = useMemo(
+    () =>
+      resolveOrderInvoiceId(
+        selectedOrder?.invoiceId,
+        linkedInvoiceQuery.data?.id
+      ),
+    [linkedInvoiceQuery.data?.id, selectedOrder?.invoiceId]
+  );
 
   const normalizedOrderReturns = useMemo<OrderReturnEntry[]>(
     () =>
@@ -1295,7 +1411,8 @@ export function OrdersWorkSurface() {
           "READY_FOR_PACKING"
       ).length,
       ready: confirmedOrders.filter(
-        (o: Order) => normalizeFulfillmentStatus(o.fulfillmentStatus) === "PACKED"
+        (o: Order) =>
+          normalizeFulfillmentStatus(o.fulfillmentStatus) === "PACKED"
       ).length,
       shipped: confirmedOrders.filter(
         (o: Order) => o.fulfillmentStatus === "SHIPPED"
@@ -1489,6 +1606,31 @@ export function OrdersWorkSurface() {
     },
   });
 
+  // TER-1056: Batch update order status mutation
+  const batchUpdateStatusMutation =
+    trpc.orders.batchUpdateOrderStatus.useMutation({
+      onMutate: () => setSaving("Updating order statuses..."),
+      onSuccess: result => {
+        const { succeeded, failed } = result.summary;
+        if (failed > 0) {
+          toast.warning(
+            `Updated ${succeeded} order${succeeded !== 1 ? "s" : ""}, ${failed} failed`
+          );
+        } else {
+          toast.success(
+            `Successfully updated ${succeeded} order${succeeded !== 1 ? "s" : ""}`
+          );
+        }
+        setSaved();
+        selection.clearSelection();
+        void refetchConfirmed();
+      },
+      onError: err => {
+        toast.error(err.message || "Failed to update order statuses");
+        setError(err.message);
+      },
+    });
+
   // Track version for optimistic locking when order is selected (UXS-705)
   useEffect(() => {
     if (selectedOrder && selectedOrder.version !== undefined) {
@@ -1512,11 +1654,19 @@ export function OrdersWorkSurface() {
       },
       "cmd+n": e => {
         e.preventDefault();
-        setLocation(buildSalesWorkspacePath("create-order"));
+        if (onNewOrder) {
+          onNewOrder();
+        } else {
+          setLocation(buildSalesWorkspacePath("create-order"));
+        }
       },
       "ctrl+n": e => {
         e.preventDefault();
-        setLocation(buildSalesWorkspacePath("create-order"));
+        if (onNewOrder) {
+          onNewOrder();
+        } else {
+          setLocation(buildSalesWorkspacePath("create-order"));
+        }
       },
       arrowdown: e => {
         e.preventDefault();
@@ -1560,6 +1710,57 @@ export function OrdersWorkSurface() {
     },
   });
 
+  // TER-1056: Bulk action status options (only for confirmed orders)
+  const bulkStatusOptions: StatusOption[] = useMemo(
+    () => [
+      { value: "READY_FOR_PACKING", label: "Pending" },
+      { value: "PACKED", label: "Ready" },
+      { value: "SHIPPED", label: "Shipped" },
+      { value: "DELIVERED", label: "Delivered" },
+      { value: "CANCELLED", label: "Cancelled" },
+    ],
+    []
+  );
+
+  // TER-1056: Handle bulk status change
+  const handleBulkStatusChange = useCallback(
+    (newStatus: string) => {
+      if (selection.selectedCount === 0) {
+        toast.error("No orders selected");
+        return;
+      }
+
+      if (activeTab === "draft") {
+        toast.error("Bulk status update is only available for confirmed orders");
+        return;
+      }
+
+      const validStatus = [
+        "READY_FOR_PACKING",
+        "PACKED",
+        "SHIPPED",
+        "DELIVERED",
+        "CANCELLED",
+      ].find(s => s === newStatus);
+
+      if (!validStatus) {
+        toast.error("Invalid status selected");
+        return;
+      }
+
+      batchUpdateStatusMutation.mutate({
+        orderIds: selection.selectedItems.map(o => o.id),
+        newStatus: validStatus as
+          | "READY_FOR_PACKING"
+          | "PACKED"
+          | "SHIPPED"
+          | "DELIVERED"
+          | "CANCELLED",
+      });
+    },
+    [selection, activeTab, batchUpdateStatusMutation]
+  );
+
   // Handlers
   const handleEdit = (orderId: number) =>
     setLocation(buildSalesWorkspacePath("create-order", { draftId: orderId }));
@@ -1580,10 +1781,24 @@ export function OrdersWorkSurface() {
     setShowShipDialog(true);
   };
   const handleMakePayment = (orderId: number) => {
-    const sourceOrder =
-      (selectedOrder?.id === orderId ? selectedOrder : null) ??
+    const matchedFallbackOrder =
       confirmedOrders.find(order => order.id === orderId) ??
       draftOrders.find(order => order.id === orderId) ??
+      null;
+
+    const sourceOrder =
+      (selectedOrder?.id === orderId
+        ? {
+            id: selectedOrder.id,
+            invoiceId: selectedOrderInvoiceId,
+          }
+        : null) ??
+      (matchedFallbackOrder
+        ? {
+            id: matchedFallbackOrder.id,
+            invoiceId: matchedFallbackOrder.invoiceId ?? null,
+          }
+        : null) ??
       null;
 
     const destination = getMakePaymentRoute(sourceOrder);
@@ -1726,7 +1941,9 @@ export function OrdersWorkSurface() {
               </Button>
               <Button
                 onClick={() =>
-                  setLocation(buildSalesWorkspacePath("create-order"))
+                  onNewOrder
+                    ? onNewOrder()
+                    : setLocation(buildSalesWorkspacePath("create-order"))
                 }
                 data-testid="new-order-button"
               >
@@ -1742,97 +1959,182 @@ export function OrdersWorkSurface() {
       <div className="flex-1 flex overflow-hidden">
         <div
           className={cn(
-            "flex-1 overflow-auto transition-all duration-200",
+            "flex-1 flex flex-col overflow-hidden transition-all duration-200",
             inspector.isOpen && "mr-96"
           )}
         >
-          <Table data-testid="orders-table" className="min-h-[420px]">
-            <TableHeader>
-              <TableRow>
-                <TableHead>Order #</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Payment</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+          <div className="flex-1 overflow-auto">
+            <Table data-testid="orders-table" className="min-h-[420px]">
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="h-64 text-center">
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                      <span>Loading orders…</span>
-                    </div>
-                  </TableCell>
+                  <TableHead className="w-12">
+                    <SelectAllCheckbox
+                      checked={selection.isAllSelected}
+                      indeterminate={selection.isIndeterminate}
+                      onCheckedChange={selection.toggleSelectAll}
+                    />
+                  </TableHead>
+                  <TableHead>Order #</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Submitted By</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Payment</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead></TableHead>
                 </TableRow>
-              ) : displayOrders.length === 0 ? (
-                <TableRow data-testid="orders-empty-state">
-                  <TableCell colSpan={7} className="h-64 text-center">
-                    <div className="mx-auto max-w-xl">
-                      <div className="flex items-center justify-center gap-2 text-foreground">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                        <p className="font-medium">No orders found</p>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-64 text-center">
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        <span>Loading orders…</span>
                       </div>
-                      <p className="text-sm text-muted-foreground mt-2">
-                        {search
-                          ? "Try adjusting your search"
-                          : statusFilter !== "ALL"
-                            ? `No ${statusFilter.toLowerCase()} orders. Try switching to "All" status.`
-                            : activeTab === "draft"
-                              ? "No draft orders. Create a new order to get started."
-                              : "No confirmed orders yet. Confirm a draft order to see it here."}
-                      </p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                displayOrders.map((order: Order, index: number) => (
-                  <TableRow
-                    key={order.id}
-                    data-testid={`order-row-${order.id}`}
-                    data-orderid={order.id}
-                    className={cn(
-                      "cursor-pointer hover:bg-muted/50",
-                      selectedOrderId === order.id && "bg-muted",
-                      selectedIndex === index &&
-                        "ring-1 ring-inset ring-primary"
-                    )}
-                    onClick={() => {
-                      setSelectedOrderId(order.id);
-                      setSelectedIndex(index);
-                      inspector.open();
-                    }}
-                  >
-                    <TableCell className="font-medium">
-                      {getDisplayOrderNumber(order) || order.orderNumber}
-                    </TableCell>
-                    <TableCell>{getClientName(order.clientId)}</TableCell>
-                    <TableCell>{formatDate(order.createdAt)}</TableCell>
-                    <TableCell>
-                      {formatPaymentStatus(order.saleStatus)}
-                    </TableCell>
-                    <TableCell>
-                      <OrderStatusBadge
-                        status={order.fulfillmentStatus}
-                        isDraft={order.isDraft}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(order.total)}
-                    </TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
                     </TableCell>
                   </TableRow>
-                ))
+                ) : displayOrders.length === 0 ? (
+                  <TableRow data-testid="orders-empty-state">
+                    <TableCell colSpan={9} className="h-64 text-center">
+                      <EmptyState
+                        variant="orders"
+                        title="No orders found"
+                        description={
+                          search
+                            ? "No orders match this search yet. Clear the filters and try a broader lookup."
+                            : statusFilter !== "ALL"
+                              ? `No ${statusFilter.toLowerCase()} orders match the current status filter.`
+                              : activeTab === "draft"
+                                ? "Create a sales order draft so pricing, review, and final confirmation can all happen from one place."
+                                : "Confirmed orders appear here once a draft is finalized."
+                        }
+                        action={orderEmptyStateAction}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  displayOrders.map((order: Order, index: number) => (
+                    <TableRow
+                      key={order.id}
+                      data-testid={`order-row-${order.id}`}
+                      data-orderid={order.id}
+                      className={cn(
+                        "cursor-pointer hover:bg-muted/50",
+                        selectedOrderId === order.id && "bg-muted",
+                        selectedIndex === index &&
+                          "ring-1 ring-inset ring-primary"
+                      )}
+                      onClick={() => {
+                        setSelectedOrderId(order.id);
+                        setSelectedIndex(index);
+                        inspector.open();
+                      }}
+                    >
+                      <TableCell className="w-12" onClick={e => e.stopPropagation()}>
+                        <SelectRowCheckbox
+                          checked={selection.isSelected(order.id)}
+                          onCheckedChange={() => selection.toggleSelection(order.id)}
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        <MonoId
+                          value={
+                            getDisplayOrderNumber(order) ||
+                            order.orderNumber ||
+                            `#${order.id}`
+                          }
+                          truncate={14}
+                        />
+                      </TableCell>
+                      <TableCell>{getClientName(order.clientId)}</TableCell>
+                      <TableCell>{getSubmittedByName(order)}</TableCell>
+                      <TableCell>{formatDate(order.createdAt)}</TableCell>
+                      <TableCell>
+                        {formatPaymentStatus(order.saleStatus)}
+                      </TableCell>
+                      <TableCell>
+                        <OrderStatusBadge
+                          status={order.fulfillmentStatus}
+                          isDraft={order.isDraft}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right font-medium tabular-nums">
+                        {formatCurrency(order.total)}
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Quick-action bottom panel — slides up when a row is selected */}
+          {selectedOrder && (
+            <div className="animate-in slide-in-from-bottom-2 duration-200 border-t bg-card px-4 py-3 flex items-center gap-4 flex-shrink-0">
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-[15px] truncate">
+                  {getClientName(selectedOrder.clientId)}
+                </p>
+                {(selectedOrder.lineItems ?? []).length > 0 && (
+                  <p className="text-xs text-muted-foreground truncate mt-0.5">
+                    {(selectedOrder.lineItems ?? [])
+                      .slice(0, 3)
+                      .map(
+                        item =>
+                          `${item.productName} × ${item.quantity} @ ${formatCurrency(item.unitPrice)}`
+                      )
+                      .join(" · ")}
+                    {(selectedOrder.lineItems ?? []).length > 3 && " …"}
+                  </p>
+                )}
+              </div>
+              <p className="text-[18px] font-bold tabular-nums flex-shrink-0">
+                {formatCurrency(selectedOrder.total)}
+              </p>
+              {selectedOrder.isDraft && (
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white flex-shrink-0"
+                  onClick={() => handleConfirm(selectedOrder.id)}
+                >
+                  Confirm Order
+                </Button>
               )}
-            </TableBody>
-          </Table>
+              {!selectedOrder.isDraft &&
+                (selectedOrder.fulfillmentStatus === "CONFIRMED" ||
+                  selectedOrder.fulfillmentStatus === null) && (
+                  <Button
+                    className="bg-sky-600 hover:bg-sky-700 text-white flex-shrink-0"
+                    onClick={() => handleConfirmFulfillment(selectedOrder.id)}
+                  >
+                    Fulfill
+                  </Button>
+                )}
+              {!selectedOrder.isDraft &&
+                selectedOrder.fulfillmentStatus === "DELIVERED" && (
+                  <Button
+                    variant="default"
+                    className="flex-shrink-0"
+                    onClick={() => handleGenerateInvoice(selectedOrder.id)}
+                  >
+                    Create Invoice
+                  </Button>
+                )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-shrink-0 text-muted-foreground"
+                onClick={() => setSelectedOrderId(null)}
+              >
+                ×
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Inspector */}
@@ -1850,10 +2152,12 @@ export function OrdersWorkSurface() {
         >
           <OrderInspectorContent
             order={selectedOrder}
+            resolvedInvoiceId={selectedOrderInvoiceId}
             clientName={
               selectedOrder ? getClientName(selectedOrder.clientId) : ""
             }
             cogsLineItems={cogsLineItems}
+            canViewCogsDetails={canViewCogsDetails}
             returnHistory={normalizedOrderReturns}
             shippingEnabled={shippingEnabled}
             canManageShipping={canManageShipping}
@@ -2178,6 +2482,18 @@ export function OrdersWorkSurface() {
 
       {/* Concurrent Edit Conflict Dialog (UXS-705) */}
       <ConflictDialog />
+
+      {/* TER-1056: Bulk Actions Bar */}
+      {activeTab === "confirmed" && selection.selectedCount > 0 && (
+        <BulkActionsBar
+          selectedCount={selection.selectedCount}
+          totalCount={displayOrders.length}
+          onClearSelection={selection.clearSelection}
+          onSelectAll={selection.selectAll}
+          statusOptions={bulkStatusOptions}
+          onStatusChange={handleBulkStatusChange}
+        />
+      )}
     </div>
   );
 }

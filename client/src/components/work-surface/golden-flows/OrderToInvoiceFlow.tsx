@@ -258,7 +258,7 @@ function StepIndicator({
                 "flex items-center gap-2 p-2 rounded-lg transition-colors",
                 isActive && "bg-primary text-primary-foreground",
                 isCompleted &&
-                  "bg-green-100 text-green-800 hover:bg-green-200 cursor-pointer",
+                  "bg-[var(--success-bg)] text-[var(--success)] hover:bg-[var(--success-bg)] cursor-pointer",
                 !isActive && !isCompleted && "bg-muted text-muted-foreground",
                 !isClickable && !isActive && "cursor-not-allowed"
               )}
@@ -267,7 +267,7 @@ function StepIndicator({
                 className={cn(
                   "w-6 h-6 rounded-full flex items-center justify-center text-xs",
                   isActive && "bg-primary-foreground/20",
-                  isCompleted && "bg-green-600 text-white"
+                  isCompleted && "bg-[var(--success)] text-white"
                 )}
               >
                 {isCompleted ? <Check className="h-3 w-3" /> : step.id}
@@ -328,7 +328,7 @@ function ReviewOrderStep({
                 {order.confirmedAt ? formatDate(order.confirmedAt) : "N/A"}
               </CardDescription>
             </div>
-            <Badge variant="outline" className="bg-green-100 text-green-800">
+            <Badge variant="outline" className="bg-[var(--success-bg)] text-[var(--success)]">
               Confirmed
             </Badge>
           </div>
@@ -522,7 +522,7 @@ function AdjustmentsStep({
             </div>
           </div>
           {config.discount > 0 && (
-            <p className="text-sm text-green-600">
+            <p className="text-sm text-[var(--success)]">
               Discount: -{formatCurrency(discountAmount)}
             </p>
           )}
@@ -580,7 +580,7 @@ function AdjustmentsStep({
                   variant="ghost"
                   size="icon"
                   onClick={() => removeCharge(index)}
-                  className="text-red-600 hover:text-red-700"
+                  className="text-destructive hover:text-destructive"
                 >
                   <Minus className="h-4 w-4" />
                 </Button>
@@ -598,7 +598,7 @@ function AdjustmentsStep({
             <span>{formatCurrency(orderTotal)}</span>
           </div>
           {config.discount > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
+            <div className="flex justify-between text-sm text-[var(--success)]">
               <span>Discount</span>
               <span>-{formatCurrency(discountAmount)}</span>
             </div>

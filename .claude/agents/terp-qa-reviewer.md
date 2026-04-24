@@ -30,12 +30,12 @@ Confirm you're in the correct repository and on the correct branch.
 
 ## Severity Classification
 
-| Level | Criteria | Examples |
-|-------|----------|----------|
+| Level          | Criteria                                                  | Examples                                    |
+| -------------- | --------------------------------------------------------- | ------------------------------------------- |
 | **P0 BLOCKER** | Security hole, data loss, money wrong, CI-blocked pattern | Auth bypass, negative inventory, `any` type |
-| **P1 MAJOR** | Feature broken, bad UX, data inconsistency | Form doesn't submit, wrong totals |
-| **P2 MINOR** | Edge case failures, cosmetic | Empty state missing, alignment |
-| **P3 NIT** | Style, optimization | Could be cleaner |
+| **P1 MAJOR**   | Feature broken, bad UX, data inconsistency                | Form doesn't submit, wrong totals           |
+| **P2 MINOR**   | Edge case failures, cosmetic                              | Empty state missing, alignment              |
+| **P3 NIT**     | Style, optimization                                       | Could be cleaner                            |
 
 ## The 5 Lenses (ALL REQUIRED)
 
@@ -72,6 +72,7 @@ For each modified function:
 4. **Trace error paths** — What happens when each operation fails?
 
 Ask for each branch:
+
 - What input triggers this branch?
 - Is this branch tested?
 - What happens if this branch throws?
@@ -79,17 +80,20 @@ Ask for each branch:
 ### Lens 3: Data Flow Analysis
 
 For each function, map:
+
 ```
 INPUT → TRANSFORMS → OUTPUT
 ```
 
 At each transform verify:
+
 - Null/undefined handling?
 - Empty array/object handling?
 - Type coercion issues (string vs number)?
 - Precision loss for decimals?
 
 **State Mutation Audit**: For each place state changes:
+
 - What if mutation fails mid-transaction?
 - What if called twice (idempotency)?
 - What if concurrent modification?
@@ -98,17 +102,18 @@ At each transform verify:
 
 Generate and document at least 10 attack scenarios:
 
-| Category | Test Cases |
-|----------|------------|
-| Null/Undefined | null, undefined, missing key |
-| Empty | "", [], {}, 0 |
-| Boundary | MAX_INT, MIN_INT, 0, -1, 0.0001 |
-| Type Confusion | "123" vs 123, "true" vs true |
-| Injection | SQL: `'; DROP TABLE`, XSS: `<script>` |
-| Race Condition | Same action twice in 100ms |
-| Privilege | Lower role calling higher role API |
+| Category       | Test Cases                            |
+| -------------- | ------------------------------------- |
+| Null/Undefined | null, undefined, missing key          |
+| Empty          | "", [], {}, 0                         |
+| Boundary       | MAX_INT, MIN_INT, 0, -1, 0.0001       |
+| Type Confusion | "123" vs 123, "true" vs true          |
+| Injection      | SQL: `'; DROP TABLE`, XSS: `<script>` |
+| Race Condition | Same action twice in 100ms            |
+| Privilege      | Lower role calling higher role API    |
 
 **TERP-Specific Attacks**:
+
 - Negative inventory creation
 - Price manipulation after order confirmed
 - Backdated transactions
@@ -117,6 +122,7 @@ Generate and document at least 10 attack scenarios:
 ### Lens 5: Integration & Blast Radius
 
 **Map dependencies**:
+
 ```
 [Changed Code]
     ↓ calls
@@ -128,6 +134,7 @@ Generate and document at least 10 attack scenarios:
 ```
 
 **Side Effect Inventory**: What happens if:
+
 - DB write fails?
 - Later step fails after this succeeds?
 - External service times out?
@@ -144,6 +151,14 @@ pnpm build
 ```
 
 **If you cannot run commands**: Mark as UNVERIFIED and note which commands could not be executed.
+
+## UI Runtime Truth
+
+If the review involves local UI behavior, styling, conditional rendering, or wrapper-component ambiguity, use the `terp-domscribe` skill before guessing from source:
+
+- treat `browserConnected: false` as missing evidence
+- treat `rendered: false` on wrapper components as a signal to query the nearest native rendered element
+- treat `domSnapshot` as the primary local browser-truth payload
 
 ## The "Probably Fine" Rule
 

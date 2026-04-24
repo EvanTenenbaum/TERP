@@ -78,7 +78,7 @@ export function PriceSimulationModal({
   const formatDelta = (value: number, isCurrency: boolean = true) => {
     const formatted = isCurrency ? formatCurrency(Math.abs(value)) : formatPercent(Math.abs(value));
     const sign = value >= 0 ? '+' : '-';
-    const color = value >= 0 ? 'text-green-600' : 'text-red-600';
+    const color = value >= 0 ? 'text-[var(--success)]' : 'text-destructive';
     return <span className={color}>{sign}{formatted}</span>;
   };
 
@@ -140,7 +140,7 @@ export function PriceSimulationModal({
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Total Revenue</div>
-                  <div className="text-lg font-semibold text-green-600">{formatCurrency(currentRevenue)}</div>
+                  <div className="text-lg font-semibold text-[var(--success)]">{formatCurrency(currentRevenue)}</div>
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Total Cost</div>
@@ -148,7 +148,7 @@ export function PriceSimulationModal({
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Gross Profit</div>
-                  <div className="text-lg font-semibold text-blue-600">{formatCurrency(currentProfit)}</div>
+                  <div className="text-lg font-semibold text-[var(--info)]">{formatCurrency(currentProfit)}</div>
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Margin</div>
@@ -167,7 +167,7 @@ export function PriceSimulationModal({
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Total Revenue</div>
-                  <div className="text-lg font-semibold text-green-600">
+                  <div className="text-lg font-semibold text-[var(--success)]">
                     {formatCurrency(simRevenue)}
                     <span className="text-sm ml-2">{formatDelta(revenueDelta)}</span>
                   </div>
@@ -178,7 +178,7 @@ export function PriceSimulationModal({
                 </div>
                 <div>
                   <div className="text-xs text-muted-foreground mb-1">Gross Profit</div>
-                  <div className="text-lg font-semibold text-blue-600">
+                  <div className="text-lg font-semibold text-[var(--info)]">
                     {formatCurrency(simProfit)}
                     <span className="text-sm ml-2">{formatDelta(profitDelta)}</span>
                   </div>

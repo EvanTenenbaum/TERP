@@ -32,23 +32,16 @@ export { OrdersWorkSurface } from "./OrdersWorkSurface";
 // Inventory Work Surface - UXS-401
 export { InventoryWorkSurface } from "./InventoryWorkSurface";
 
-// Invoices Work Surface - UXS-501
-export { InvoicesWorkSurface } from "./InvoicesWorkSurface";
-
 // Quotes Work Surface - UXS-302
 export { QuotesWorkSurface } from "./QuotesWorkSurface";
 
 // Pick & Pack Work Surface - UXS-402
 export { PickPackWorkSurface } from "./PickPackWorkSurface";
 
-// Client Ledger Work Surface - UXS-502
-export { ClientLedgerWorkSurface } from "./ClientLedgerWorkSurface";
-
-// Golden Flows - UXS-601, UXS-602, UXS-603
+// Golden Flows - UXS-601, UXS-602
 export {
   OrderCreationFlow,
   OrderToInvoiceFlow,
-  InvoiceToPaymentFlow,
 } from "./golden-flows";
 
 // Status Bar
@@ -56,6 +49,4 @@ export { WorkSurfaceStatusBar } from "./WorkSurfaceStatusBar";
 export { KeyboardHintBar } from "./KeyboardHintBar";
 
 // Inspector Replacements (UXS-601)
-export { PaymentInspector } from "./PaymentInspector";
-export { InvoiceEditInspector } from "./InvoiceEditInspector";
 export { InlinePriceEditor } from "./InlinePriceEditor";

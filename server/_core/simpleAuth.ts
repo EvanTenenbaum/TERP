@@ -4,9 +4,14 @@ import type { User } from "../../drizzle/schema";
 import * as db from "../db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { env } from "./env";
+import { env, shouldBlockDemoModeInProduction } from "./env";
 import { logger } from "./logger";
-import { invalidateToken } from "./tokenInvalidation";
+import { getSessionCookieOptions } from "./cookies";
+import {
+  invalidateToken,
+  isTokenInvalidated,
+  isUserTokensInvalidated,
+} from "./tokenInvalidation";
 
 // JWT_SECRET is accessed lazily to prevent startup crashes
 // This allows the server to start even if JWT_SECRET validation fails
@@ -17,6 +22,20 @@ const COOKIE_NAME = "terp_session";
 interface SessionPayload {
   userId: string;
   email: string;
+  // jsonwebtoken auto-populates iat (seconds since epoch) on verify.
+  iat?: number;
+}
+
+/**
+ * TER-1149: Classify why an auth attempt did (or did not) succeed. Callers
+ * like the tRPC context gate DEMO_MODE auto-re-auth on this so a cookie that
+ * was just revoked is never silently re-provisioned as Super Admin.
+ */
+export type AuthStatus = "ok" | "no-cookie" | "invalid" | "invalidated";
+
+export interface AuthAttemptResult {
+  status: AuthStatus;
+  user: User | null;
 }
 
 class SimpleAuthService {
@@ -57,31 +76,61 @@ class SimpleAuthService {
   }
 
   /**
-   * Authenticate a request using session cookie
+   * TER-1149: Authenticate and return a classified result rather than
+   * throwing. Callers that need to distinguish "no cookie" from "cookie was
+   * just invalidated" (e.g. tRPC context gating DEMO_MODE auto-re-auth) must
+   * use this method. REST callers that want the legacy throwing behavior use
+   * `authenticateRequest` below.
+   */
+  async authenticateRequestWithStatus(
+    req: Request
+  ): Promise<AuthAttemptResult> {
+    const token = req.cookies?.[COOKIE_NAME];
+    if (!token || typeof token !== "string") {
+      return { status: "no-cookie", user: null };
+    }
+
+    const payload = this.verifySessionToken(token);
+    if (!payload) {
+      return { status: "invalid", user: null };
+    }
+
+    // TER-1149: Per-token blacklist. `invalidateToken` is called on logout
+    // but until this check was added the same JWT kept authenticating until
+    // its 30-day expiry.
+    if (isTokenInvalidated(token)) {
+      return { status: "invalidated", user: null };
+    }
+
+    const user = await db.getUser(payload.userId);
+    if (!user) {
+      return { status: "invalid", user: null };
+    }
+
+    // TER-1149: Per-user bulk invalidation (covers multi-tab / stolen-token
+    // scenarios where every JWT issued before the event should be rejected).
+    if (
+      typeof payload.iat === "number" &&
+      isUserTokensInvalidated(user.id, new Date(payload.iat * 1000))
+    ) {
+      return { status: "invalidated", user: null };
+    }
+
+    return { status: "ok", user };
+  }
+
+  /**
+   * Authenticate a request using session cookie. Throws ForbiddenError on any
+   * failure — used by the REST `/api/auth/me`, `/push-schema`, `/seed`
+   * endpoints which map every failure to 401.
    */
   async authenticateRequest(req: Request): Promise<User> {
     try {
-      // Get session token from cookie
-      const token = req.cookies[COOKIE_NAME];
-
-      if (!token) {
-        throw ForbiddenError("Not authenticated - no session token");
+      const result = await this.authenticateRequestWithStatus(req);
+      if (result.status === "ok" && result.user) {
+        return result.user;
       }
-
-      // Verify token
-      const payload = this.verifySessionToken(token);
-      if (!payload) {
-        throw ForbiddenError("Invalid session token");
-      }
-
-      // Get user from database
-      const user = await db.getUser(payload.userId);
-
-      if (!user) {
-        throw ForbiddenError("User not found");
-      }
-
-      return user;
+      throw ForbiddenError("Authentication failed");
     } catch (_error) {
       // Error logging handled by error handling middleware
       throw ForbiddenError("Authentication failed");
@@ -176,10 +225,14 @@ class SimpleAuthService {
 export const simpleAuth = new SimpleAuthService();
 
 export function registerSimpleAuthRoutes(app: Express) {
-  // BUG-W7-1: Guard against DEMO_MODE in production — this is a security risk
+  // Keep demo auth out of the real production app, but allow the explicitly
+  // named staging app which intentionally runs with DEMO_MODE=true.
   if (
-    process.env.DEMO_MODE === "true" &&
-    process.env.NODE_ENV === "production"
+    shouldBlockDemoModeInProduction({
+      demoMode: process.env.DEMO_MODE,
+      nodeEnv: process.env.NODE_ENV,
+      appId: process.env.VITE_APP_ID,
+    })
   ) {
     throw new Error(
       "DEMO_MODE must not be enabled in production — this is a security risk"
@@ -201,9 +254,7 @@ export function registerSimpleAuthRoutes(app: Express) {
 
       // Set session cookie
       res.cookie(COOKIE_NAME, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax", // Changed from 'none' - this is a same-origin app
+        ...getSessionCookieOptions(req),
         maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       });
 
@@ -236,7 +287,7 @@ export function registerSimpleAuthRoutes(app: Express) {
         reason: "LOGOUT",
       });
     }
-    res.clearCookie(COOKIE_NAME);
+    res.clearCookie(COOKIE_NAME, getSessionCookieOptions(req));
     res.json({ success: true });
   });
 

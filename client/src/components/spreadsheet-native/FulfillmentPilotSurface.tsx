@@ -12,7 +12,7 @@
  *   - PowersheetGrid queue of fulfillment-eligible orders
  *   - Selected-order detail panel: item list, bag display, pack actions
  *   - Explicit sidecar CTAs: Pack Selected, Pack All, Unpack, Mark Ready, Ship
- *   - Manifest CSV export
+ *   - Pick-list CSV export with batch locations
  *   - InspectorPanel for order/item deep context
  *   - Status filter exit notifications (FUL-023)
  *   - Permission tiers: canAccessPickPack (view) vs canManagePickPack (mutations)
@@ -45,7 +45,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useExport } from "@/hooks/work-surface/useExport";
 import { usePowersheetSelection } from "@/hooks/work-surface";
@@ -77,6 +77,10 @@ import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
 import { PICK_PACK_STATUS_TOKENS, STATUS_NEUTRAL } from "@/lib/statusTokens";
+import {
+  buildPickListExportOptions,
+  type PickListRow,
+} from "./fulfillmentPickList";
 
 // ============================================================================
 // Types
@@ -114,17 +118,6 @@ interface FulfillmentQueueRow {
   createdAt: string | null;
 }
 
-interface ManifestRow extends Record<string, unknown> {
-  orderNumber: string;
-  clientName: string;
-  productName: string;
-  quantity: number;
-  location: string;
-  bagIdentifier: string;
-  packed: string;
-  packedAt: string;
-}
-
 // ============================================================================
 // Constants
 // ============================================================================
@@ -155,7 +148,7 @@ const queueAffordances: PowersheetAffordance[] = [
   { label: "Fill", available: false },
   { label: "Edit", available: false },
   { label: "Workflow actions", available: true },
-  { label: "Export manifest", available: true },
+  { label: "Generate pick list", available: true },
 ];
 
 // ============================================================================
@@ -311,9 +304,9 @@ function ItemRow({ item, isSelected, onToggle, onInspect }: ItemRowProps) {
       className={cn(
         "group flex items-center gap-3 p-3 rounded-lg border transition-all min-h-[44px] cursor-pointer",
         item.isPacked
-          ? "bg-green-50 border-green-200 cursor-default"
+          ? "bg-[var(--success-bg)] border-green-200 cursor-default"
           : isSelected
-            ? "bg-blue-50 border-blue-300 ring-2 ring-blue-200"
+            ? "bg-[var(--info-bg)] border-blue-300 ring-2 ring-blue-200"
             : "bg-white hover:bg-gray-50 border-border"
       )}
     >
@@ -322,9 +315,9 @@ function ItemRow({ item, isSelected, onToggle, onInspect }: ItemRowProps) {
         className={cn(
           "w-5 h-5 rounded border flex items-center justify-center flex-shrink-0",
           item.isPacked
-            ? "bg-green-500 border-green-500"
+            ? "bg-[var(--success)] border-green-500"
             : isSelected
-              ? "bg-blue-500 border-blue-500"
+              ? "bg-[var(--info)] border-blue-500"
               : "border-gray-300"
         )}
       >
@@ -337,10 +330,18 @@ function ItemRow({ item, isSelected, onToggle, onInspect }: ItemRowProps) {
       <div className="flex-1 min-w-0">
         <div className="font-medium text-gray-900 truncate">
           {item.productName}
+          {item.productId && (
+            <span className="ml-1 text-xs text-muted-foreground font-normal">
+              #{item.productId}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3 text-sm text-gray-500">
           <span>Qty: {item.quantity}</span>
-          {item.location && (
+          {item.unitPrice !== null && item.unitPrice !== undefined && (
+            <span>{formatCurrency(item.unitPrice)}/unit</span>
+          )}
+          {item.location && item.location !== "N/A" && (
             <span className="flex items-center gap-1">
               <MapPin className="w-3 h-3" />
               {item.location}
@@ -353,7 +354,7 @@ function ItemRow({ item, isSelected, onToggle, onInspect }: ItemRowProps) {
       {item.isPacked && item.bagIdentifier && (
         <Badge
           variant="outline"
-          className="bg-green-100 text-green-700 border-green-200"
+          className="bg-[var(--success-bg)] text-[var(--success)] border-green-200"
         >
           {item.bagIdentifier}
         </Badge>
@@ -444,7 +445,7 @@ function OrderInspector({
           </p>
         </InspectorField>
         <InspectorField label="Total">
-          <p className="font-semibold">${parseFloat(order.total).toFixed(2)}</p>
+          <p className="font-semibold">{formatCurrency(order.total)}</p>
         </InspectorField>
         <InspectorField label="Created">
           <p>
@@ -459,7 +460,7 @@ function OrderInspector({
         <div className="flex items-center gap-3">
           <div className="flex-1 bg-gray-200 rounded-full h-3">
             <div
-              className="bg-green-500 h-3 rounded-full transition-all"
+              className="bg-[var(--success)] h-3 rounded-full transition-all"
               style={{
                 width: `${
                   summary.totalItems > 0
@@ -557,25 +558,25 @@ function ItemInspector({ item, isOpen, onClose }: ItemInspectorProps) {
 
       <InspectorSection title="Pack Status">
         {item.isPacked ? (
-          <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center gap-2 text-green-700 mb-1">
+          <div className="p-3 bg-[var(--success-bg)] border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2 text-[var(--success)] mb-1">
               <PackageCheck className="w-5 h-5" />
               <span className="font-medium">Packed</span>
             </div>
             {item.bagIdentifier && (
-              <p className="text-sm text-green-600">
+              <p className="text-sm text-[var(--success)]">
                 Bag: {item.bagIdentifier}
               </p>
             )}
             {item.packedAt && (
-              <p className="text-sm text-green-600">
+              <p className="text-sm text-[var(--success)]">
                 At: {new Date(item.packedAt).toLocaleString()}
               </p>
             )}
           </div>
         ) : (
-          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center gap-2 text-yellow-700">
+          <div className="p-3 bg-[var(--warning-bg)] border border-yellow-200 rounded-lg">
+            <div className="flex items-center gap-2 text-[var(--warning)]">
               <Clock className="w-5 h-5" />
               <span className="font-medium">Not Packed</span>
             </div>
@@ -653,7 +654,7 @@ export function FulfillmentPilotSurface({
     { enabled: selectedOrderId !== null }
   );
 
-  const { exportCSV, state: exportState } = useExport<ManifestRow>();
+  const { exportCSV, state: exportState } = useExport<PickListRow>();
 
   // ── Derived data ───────────────────────────────────────────────────────────
 
@@ -750,14 +751,14 @@ export function FulfillmentPilotSurface({
     [statsQuery.data]
   );
 
-  const manifestRows = useMemo<ManifestRow[]>(() => {
+  const pickListRows = useMemo<PickListRow[]>(() => {
     if (!orderDetails) return [];
     return orderDetails.items.map(item => ({
       orderNumber: orderDetails.order.orderNumber,
       clientName: orderDetails.order.clientName,
       productName: item.productName,
       quantity: item.quantity,
-      location: item.location,
+      batchLocation: item.location,
       bagIdentifier: item.bagIdentifier ?? "UNASSIGNED",
       packed: item.isPacked ? "Yes" : "No",
       packedAt: item.packedAt ? new Date(item.packedAt).toLocaleString() : "",
@@ -975,27 +976,19 @@ export function FulfillmentPilotSurface({
     shipNotes,
   ]);
 
-  const handleExportManifest = useCallback(() => {
-    if (!orderDetails || manifestRows.length === 0) {
-      notifyToast("error", "Select an order with items to export a manifest");
+  const handleGeneratePickList = useCallback(() => {
+    if (!orderDetails || pickListRows.length === 0) {
+      notifyToast(
+        "error",
+        "Select a fulfillment order with items to generate a pick list"
+      );
       return;
     }
-    const safeNum = orderDetails.order.orderNumber.replace(/\s+/g, "_");
-    void exportCSV(manifestRows, {
-      filename: `fulfillment_manifest_${safeNum}`,
-      addTimestamp: true,
-      columns: [
-        { key: "orderNumber", label: "Order Number" },
-        { key: "clientName", label: "Client" },
-        { key: "productName", label: "Product" },
-        { key: "quantity", label: "Quantity" },
-        { key: "location", label: "Location" },
-        { key: "bagIdentifier", label: "Bag" },
-        { key: "packed", label: "Packed" },
-        { key: "packedAt", label: "Packed At" },
-      ],
-    });
-  }, [exportCSV, orderDetails, manifestRows, notifyToast]);
+    void exportCSV(
+      pickListRows,
+      buildPickListExportOptions(orderDetails.order.orderNumber)
+    );
+  }, [exportCSV, orderDetails, pickListRows, notifyToast]);
 
   const resetQueueView = useCallback(() => {
     setStatusFilter("ALL");
@@ -1086,7 +1079,8 @@ export function FulfillmentPilotSurface({
     () => [
       {
         field: "orderNumber",
-        headerName: "Order",
+        headerName: "Order #",
+        headerTooltip: "S-... = Sale order, O-... = Draft/quote order",
         minWidth: 130,
         maxWidth: 150,
         cellClass: "powersheet-cell--locked",
@@ -1251,30 +1245,40 @@ export function FulfillmentPilotSurface({
       </div>
 
       {/* ── Status summary cards (FUL-006) ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="text-center p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-          <div className="text-xl font-bold text-yellow-700">
-            {statusCounts.pending}
-          </div>
-          <div className="text-xs text-yellow-600">Pending</div>
+      <div className="space-y-1">
+        <div className="text-xs text-muted-foreground px-1">
+          Queue totals as of{" "}
+          {new Date().toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
         </div>
-        <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-100">
-          <div className="text-xl font-bold text-blue-700">
-            {statusCounts.partial}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="text-center p-3 bg-[var(--warning-bg)] rounded-lg border border-yellow-100">
+            <div className="text-xl font-bold text-[var(--warning)]">
+              {statusCounts.pending}
+            </div>
+            <div className="text-xs text-[var(--warning)]">Pending</div>
           </div>
-          <div className="text-xs text-blue-600">Partial</div>
-        </div>
-        <div className="text-center p-3 bg-green-50 rounded-lg border border-green-100">
-          <div className="text-xl font-bold text-green-700">
-            {statusCounts.ready}
+          <div className="text-center p-3 bg-[var(--info-bg)] rounded-lg border border-blue-100">
+            <div className="text-xl font-bold text-[var(--info)]">
+              {statusCounts.partial}
+            </div>
+            <div className="text-xs text-[var(--info)]">Partial</div>
           </div>
-          <div className="text-xs text-green-600">Ready</div>
-        </div>
-        <div className="text-center p-3 bg-slate-50 rounded-lg border border-slate-100">
-          <div className="text-xl font-bold text-slate-700">
-            {statusCounts.shipped}
+          <div className="text-center p-3 bg-[var(--success-bg)] rounded-lg border border-green-100">
+            <div className="text-xl font-bold text-[var(--success)]">
+              {statusCounts.ready}
+            </div>
+            <div className="text-xs text-[var(--success)]">Ready</div>
           </div>
-          <div className="text-xs text-slate-600">Shipped</div>
+          <div className="text-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+            <div className="text-xl font-bold text-slate-700">
+              {statusCounts.shipped}
+            </div>
+            <div className="text-xs text-slate-600">Shipped</div>
+          </div>
         </div>
       </div>
 
@@ -1290,7 +1294,6 @@ export function FulfillmentPilotSurface({
           "FUL-010",
           "FUL-026",
         ]}
-        releaseGateIds={["FUL-G1"]}
         affordances={queueAffordances}
         title="Fulfillment Queue"
         description="Orders eligible for pick and pack. Select a row to open the detail panel."
@@ -1323,7 +1326,6 @@ export function FulfillmentPilotSurface({
               : ""}
           </span>
         }
-        antiDriftSummary="Queue must show only SALE + non-draft + no D-/Q- prefix orders. FUL-026."
         minHeight={280}
       />
 
@@ -1369,9 +1371,7 @@ export function FulfillmentPilotSurface({
                     {orderDetails.summary.totalItems} packed
                   </span>
                   <span>{orderDetails.summary.bagCount} bags</span>
-                  <span>
-                    ${parseFloat(orderDetails.order.total).toFixed(2)}
-                  </span>
+                  <span>{formatCurrency(orderDetails.order.total)}</span>
                 </div>
                 <Button
                   variant="ghost"
@@ -1481,17 +1481,19 @@ export function FulfillmentPilotSurface({
                 Unpack Selected
               </Button>
 
-              {/* FUL-019: export manifest */}
+              {/* FUL-019: generate pick list */}
               <Button
                 variant="outline"
                 size="sm"
                 className="min-h-[44px]"
-                onClick={handleExportManifest}
-                disabled={exportState.isExporting || manifestRows.length === 0}
-                title="Export fulfillment manifest to CSV"
+                onClick={handleGeneratePickList}
+                disabled={exportState.isExporting || pickListRows.length === 0}
+                title="Generate pick list with batch locations"
               >
                 <Download className="w-4 h-4 mr-2" />
-                {exportState.isExporting ? "Exporting..." : "Export Manifest"}
+                {exportState.isExporting
+                  ? "Generating..."
+                  : "Generate Pick List"}
               </Button>
 
               <div className="flex-1" />
@@ -1500,7 +1502,7 @@ export function FulfillmentPilotSurface({
               {canShipSelectedOrder ? (
                 <Button
                   size="sm"
-                  className="min-h-[44px] bg-green-600 hover:bg-green-700"
+                  className="min-h-[44px] bg-[var(--success)] hover:bg-[var(--success)]"
                   onClick={handleShip}
                   disabled={shipOrderMutation.isPending || !canManagePickPack}
                   title={
@@ -1519,7 +1521,7 @@ export function FulfillmentPilotSurface({
               ) : (
                 <Button
                   size="sm"
-                  className="min-h-[44px] bg-green-600 hover:bg-green-700"
+                  className="min-h-[44px] bg-[var(--success)] hover:bg-[var(--success)]"
                   onClick={handleMarkReady}
                   disabled={
                     orderDetails.summary.packedItems <

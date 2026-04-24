@@ -117,7 +117,7 @@ Each status change is timestamped and logged for tracking purposes.
 
 **Creating Orders**
 
-Navigate to "Create Order," select a client, add products, and save. The system automatically reserves inventory and calculates totals based on the client's pricing profile.
+Navigate to "New Order," select a client, add products, and save. The system automatically reserves inventory and calculates totals based on the client's pricing profile.
 
 **Working with Quotes**
 
@@ -235,7 +235,7 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-4">
-            <BookOpen className="w-8 h-8 text-blue-600" />
+            <BookOpen className="w-8 h-8 text-[var(--info)]" />
             <h1 className="text-3xl font-bold text-gray-900">
               TERP Help Center
             </h1>
@@ -272,8 +272,8 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                 className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all cursor-pointer"
               >
                 <div className="flex items-start gap-4 overflow-hidden">
-                  <div className="p-3 bg-blue-50 rounded-lg flex-shrink-0">
-                    <Icon className="w-6 h-6 text-blue-600" />
+                  <div className="p-3 bg-[var(--info-bg)] rounded-lg flex-shrink-0">
+                    <Icon className="w-6 h-6 text-[var(--info)]" />
                   </div>
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-start justify-between gap-2">
@@ -295,7 +295,7 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                           key={`topic-${topic.substring(0, 30)}`}
                           className="flex items-start gap-2"
                         >
-                          <span className="text-blue-600 mt-1">•</span>
+                          <span className="text-[var(--info)] mt-1">•</span>
                           <span className="text-sm text-gray-700">{topic}</span>
                         </li>
                       ))}
@@ -372,7 +372,7 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
         <div className="mt-12 pt-8 border-t border-gray-200">
           <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-8 border border-blue-100">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-blue-600 rounded-lg flex-shrink-0">
+              <div className="p-3 bg-[var(--info)] rounded-lg flex-shrink-0">
                 <BookOpen className="w-8 h-8 text-white" />
               </div>
               <div className="flex-1">
@@ -389,7 +389,7 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                   <a
                     href="/TERP_Training_Guide.pdf"
                     download
-                    className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[var(--info)] text-white rounded-lg hover:bg-[var(--info)] transition-colors font-medium shadow-sm"
                     onClick={e => e.stopPropagation()}
                   >
                     <Download className="w-5 h-5" />
@@ -398,7 +398,7 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                   <a
                     href="/TERP_Training_Guide.md"
                     download
-                    className="inline-flex items-center gap-2 px-6 py-3 border-2 border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors font-medium"
+                    className="inline-flex items-center gap-2 px-6 py-3 border-2 border-blue-600 text-[var(--info)] rounded-lg hover:bg-[var(--info-bg)] transition-colors font-medium"
                     onClick={e => e.stopPropagation()}
                   >
                     <FileText className="w-5 h-5" />

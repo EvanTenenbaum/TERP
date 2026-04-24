@@ -32,6 +32,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
+import { OperationalEmptyState } from "@/components/ui/operational-states";
 import { ChevronRight } from "lucide-react";
 
 export interface ResponsiveTableColumn<T> {
@@ -85,7 +86,7 @@ export function ResponsiveTable<T extends Record<string, unknown>>({
   columns,
   data,
   onRowClick,
-  emptyMessage = "No data found",
+  emptyMessage = "No records match this view yet.",
   keyExtractor = (_, index) => index,
   className,
   isLoading = false,
@@ -100,9 +101,13 @@ export function ResponsiveTable<T extends Record<string, unknown>>({
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="text-muted-foreground">{emptyMessage}</p>
-      </div>
+      <OperationalEmptyState
+        variant="generic"
+        title={emptyMessage}
+        description="Adjust this view or add new records to populate the table."
+        className={cn("min-h-[14rem]", className)}
+        data-testid="responsive-table-empty-state"
+      />
     );
   }
 

@@ -62,12 +62,13 @@ All mutations MUST use `getAuthenticatedUserId(ctx)` — never `input.createdBy`
 
 ## Deployment
 
-`PR` → `main` → `staging` (auto-deploy) → verify → `production` (manual promote by Evan)
+`PR` → `main` (staging auto-deploy) → verify → `production` (manual promote by Evan)
 
+- As of March 28, 2026, `main` is the current staging branch
 - Staging URL: `https://terp-staging-yicld.ondigitalocean.app`
 - Staging deploy is automatic on push to `main`
 - Production is a manual promotion — agents never deploy to production
-- Add `[skip-staging-sync]` to commit message to merge docs without triggering deploy
+- Add `[skip-staging-sync]` to the commit message for docs-only changes that should not redeploy staging
 
 ## Autonomy Modes
 
@@ -118,13 +119,13 @@ Before investigating any bug, check `.claude/known-bug-patterns.md` first. Run a
 
 ## Essential References
 
-| File                                            | Purpose                                    |
-| ----------------------------------------------- | ------------------------------------------ |
-| `docs/roadmaps/MASTER_ROADMAP.md`               | Task source of truth (backup to Linear)    |
-| `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json` | Machine-readable TER-795 row-status and build snapshot |
-| `docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md` | Generated local Orders runtime gate snapshot |
-| `docs/specs/spreadsheet-native-foundation/orders-runtime/PROOF_BUDGET.md` | Generated local advisory proof-budget snapshot |
-| `docs/ACTIVE_SESSIONS.md`                       | Currently active agent work                |
-| `.claude/known-bug-patterns.md`                 | Recurring bug catalog                      |
-| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md` | Prod migration procedures                  |
-| `docs/TESTING.md`                               | Testing guide — all test commands & layers |
+| File                                                                            | Purpose                                                |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `docs/roadmaps/MASTER_ROADMAP.md`                                               | Task source of truth (backup to Linear)                |
+| `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json`    | Machine-readable TER-795 row-status and build snapshot |
+| `docs/specs/spreadsheet-native-foundation/orders-runtime/ACTIVE_GATE_STATUS.md` | Generated local Orders runtime gate snapshot           |
+| `docs/specs/spreadsheet-native-foundation/orders-runtime/PROOF_BUDGET.md`       | Generated local advisory proof-budget snapshot         |
+| `docs/ACTIVE_SESSIONS.md`                                                       | Currently active agent work                            |
+| `.claude/known-bug-patterns.md`                                                 | Recurring bug catalog                                  |
+| `docs/runbooks/PRODUCTION_MIGRATION_RUNBOOK.md`                                 | Prod migration procedures                              |
+| `docs/TESTING.md`                                                               | Testing guide — all test commands & layers             |

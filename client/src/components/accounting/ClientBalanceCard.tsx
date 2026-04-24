@@ -130,7 +130,7 @@ export function ClientBalanceCard({
         ) : (
           <Badge
             variant="outline"
-            className="bg-green-100 text-green-700 border-green-200"
+            className="bg-[var(--success-bg)] text-[var(--success)] border-green-200"
           >
             <CheckCircle className="h-3 w-3 mr-1" />
             Synced

@@ -1,6 +1,8 @@
 # Development Workflow Quick Start
 
-**TL;DR**: Work on `develop` branch, test on dev site, promote to `main` for production.
+**TL;DR**: Historical quick start for a proposed `develop` workflow. As of March 28, 2026, the live TERP deployment model is `main` -> staging auto-deploy -> manual production promotion.
+
+> Current-state note: Do not treat this guide as the active branch/environment contract. Use `docs/STAGING_ENVIRONMENT.md` and `docs/runbooks/STAGING_DEPLOYMENT_RUNBOOK.md` for the live workflow.
 
 ---
 

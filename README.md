@@ -47,7 +47,7 @@ Below is the original README for the TERP application itself.
 A world-class, production-ready ERP system with intelligent needs matching, comprehensive accounting, and modern authentication.
 
 **🌐 Live Production:** https://terp-app-b9s35.ondigitalocean.app
-** staging:** https://terp-staging-yicld.ondigitalocean.app
+**🧪 Staging:** https://terp-staging-yicld.ondigitalocean.app
 
 ---
 
@@ -64,8 +64,8 @@ pnpm dev
 ### Deployment Workflow
 
 1. **Merge PR to `main`**: This integrates the code.
-2. **Auto-deploy to Staging**: Merging to `main` automatically triggers a deployment to the staging environment for verification.
-3. **Deploy to Production**: To deploy to production, promote the staging deployment or create a release branch.
+2. **Auto-deploy to Staging**: As of March 28, 2026, `main` is the staging branch, so merging to `main` automatically deploys the staging environment for verification.
+3. **Deploy to Production**: Production remains a separate manual promotion path.
 
 ### 🧪 Testing
 
@@ -409,14 +409,15 @@ NODE_ENV=development
 ### DigitalOcean App Platform
 
 **Live URL:** https://terp-app-b9s35.ondigitalocean.app
-** staging:** https://terp-staging-yicld.ondigitalocean.app
+**Staging URL:** https://terp-staging-yicld.ondigitalocean.app
+**Current Branch Mapping:** As of March 28, 2026, `main` is the staging deployment branch. Production is promoted manually.
 
 **Auto-Deploy:**
 
 ```bash
 git add .
 git commit -m "Your changes"
-git push origin staging # Triggers automatic deployment to staging
+git push origin main # Triggers automatic deployment to staging
 ```
 
 **Manual Deployment via API:**

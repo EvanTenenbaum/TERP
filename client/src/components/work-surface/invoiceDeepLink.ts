@@ -2,6 +2,8 @@ export interface InvoiceDeepLinkContext {
   invoiceId: number | null;
   openRecordPayment: boolean;
   statusFilter: InvoiceStatusFilter | null;
+  orderId: number | null;
+  from: string | null;
 }
 
 type InvoiceStatusFilter =
@@ -13,7 +15,9 @@ type InvoiceStatusFilter =
   | "OVERDUE"
   | "VOID";
 
-function parseInvoiceStatusFilter(value: string | null): InvoiceStatusFilter | null {
+function parseInvoiceStatusFilter(
+  value: string | null
+): InvoiceStatusFilter | null {
   switch (value) {
     case "DRAFT":
     case "SENT":
@@ -44,5 +48,7 @@ export function parseInvoiceDeepLink(search: string): InvoiceDeepLinkContext {
     invoiceId: parsePositiveInt(params.get("id") ?? params.get("invoiceId")),
     openRecordPayment: params.get("openRecordPayment") === "true",
     statusFilter: parseInvoiceStatusFilter(params.get("status")),
+    orderId: parsePositiveInt(params.get("orderId")),
+    from: params.get("from"),
   };
 }

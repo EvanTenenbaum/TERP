@@ -62,6 +62,52 @@ export const accountingRouter = router({
             clientId: invoices.customerId,
             clientName: clients.name,
             totalOwed: sql<number>`SUM(CAST(${invoices.amountDue} AS DECIMAL(15,2)))`,
+            currentAmount: sql<number>`
+              SUM(
+                CASE
+                  WHEN ${invoices.dueDate} IS NULL OR ${invoices.dueDate} >= CURDATE()
+                    THEN CAST(${invoices.amountDue} AS DECIMAL(15,2))
+                  ELSE 0
+                END
+              )
+            `,
+            days30Amount: sql<number>`
+              SUM(
+                CASE
+                  WHEN ${invoices.dueDate} < CURDATE()
+                    AND DATEDIFF(CURDATE(), ${invoices.dueDate}) <= 30
+                    THEN CAST(${invoices.amountDue} AS DECIMAL(15,2))
+                  ELSE 0
+                END
+              )
+            `,
+            days60Amount: sql<number>`
+              SUM(
+                CASE
+                  WHEN DATEDIFF(CURDATE(), ${invoices.dueDate}) BETWEEN 31 AND 60
+                    THEN CAST(${invoices.amountDue} AS DECIMAL(15,2))
+                  ELSE 0
+                END
+              )
+            `,
+            days90Amount: sql<number>`
+              SUM(
+                CASE
+                  WHEN DATEDIFF(CURDATE(), ${invoices.dueDate}) BETWEEN 61 AND 90
+                    THEN CAST(${invoices.amountDue} AS DECIMAL(15,2))
+                  ELSE 0
+                END
+              )
+            `,
+            days90PlusAmount: sql<number>`
+              SUM(
+                CASE
+                  WHEN DATEDIFF(CURDATE(), ${invoices.dueDate}) > 90
+                    THEN CAST(${invoices.amountDue} AS DECIMAL(15,2))
+                  ELSE 0
+                END
+              )
+            `,
           })
           .from(invoices)
           .leftJoin(clients, eq(invoices.customerId, clients.id))
@@ -104,6 +150,13 @@ export const accountingRouter = router({
             clientId: d.clientId,
             clientName: d.clientName,
             totalOwed: Number(d.totalOwed || 0),
+            agingBreakdown: {
+              current: Number(d.currentAmount || 0),
+              days30: Number(d.days30Amount || 0),
+              days60: Number(d.days60Amount || 0),
+              days90: Number(d.days90Amount || 0),
+              days90Plus: Number(d.days90PlusAmount || 0),
+            },
           })),
           invoiceCount: outstanding.invoices.length,
           statusCounts: statusCounts.reduce(
@@ -148,7 +201,15 @@ export const accountingRouter = router({
           .from(bills)
           .where(
             and(
-              inArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
+              // TER-1255: APPROVED bills are awaiting payment and must roll
+              // up into Top Suppliers Owed; without this filter they were
+              // silently dropped and the AP card stayed at $0.
+              inArray(bills.status, [
+                "PENDING",
+                "APPROVED",
+                "PARTIAL",
+                "OVERDUE",
+              ]),
               sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
               sql`${bills.deletedAt} IS NULL`
             )
@@ -222,6 +283,8 @@ export const accountingRouter = router({
             invoiceNumber: invoices.invoiceNumber,
             customerId: invoices.customerId,
             customerName: clients.name,
+            customerEmail: clients.email,
+            customerPhone: clients.phone,
             invoiceDate: invoices.invoiceDate,
             dueDate: invoices.dueDate,
             totalAmount: invoices.totalAmount,
@@ -474,6 +537,118 @@ export const accountingRouter = router({
           input.limit,
           input.offset
         );
+      }),
+
+    // Get reconciliation summary for Accountant role users (TER-1229)
+    getReconciliationSummary: protectedProcedure
+      .use(requirePermission("accounting:read"))
+      .query(async () => {
+        const db = await getDb();
+        if (!db) throw new Error("Database not available");
+
+        logger.info({ msg: "[Accounting] Getting reconciliation summary" });
+
+        // Get outstanding invoices count (SENT, VIEWED, PARTIAL, OVERDUE with amountDue > 0)
+        const [outstandingInvoicesResult] = await db
+          .select({
+            count: sql<number>`COUNT(*)`,
+            totalAmount: sql<number>`SUM(CAST(${invoices.amountDue} AS DECIMAL(15,2)))`,
+          })
+          .from(invoices)
+          .where(
+            and(
+              inArray(invoices.status, [
+                "SENT",
+                "VIEWED",
+                "PARTIAL",
+                "OVERDUE",
+              ]),
+              sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
+              sql`${invoices.deletedAt} IS NULL`
+            )
+          );
+
+        // Get unrecorded AR payments (RECEIVED payments without invoiceId)
+        const [unrecordedARPaymentsResult] = await db
+          .select({
+            count: sql<number>`COUNT(*)`,
+            totalAmount: sql<number>`SUM(CAST(${payments.amount} AS DECIMAL(15,2)))`,
+          })
+          .from(payments)
+          .where(
+            and(
+              eq(payments.paymentType, "RECEIVED"),
+              sql`${payments.invoiceId} IS NULL`,
+              sql`${payments.deletedAt} IS NULL`
+            )
+          );
+
+        // Get unrecorded AP payments (SENT payments without billId)
+        const [unrecordedAPPaymentsResult] = await db
+          .select({
+            count: sql<number>`COUNT(*)`,
+            totalAmount: sql<number>`SUM(CAST(${payments.amount} AS DECIMAL(15,2)))`,
+          })
+          .from(payments)
+          .where(
+            and(
+              eq(payments.paymentType, "SENT"),
+              sql`${payments.billId} IS NULL`,
+              sql`${payments.deletedAt} IS NULL`
+            )
+          );
+
+        // Get last reconciled date (most recent reconciledAt timestamp)
+        const [lastReconciledResult] = await db
+          .select({
+            lastReconciledAt: sql<Date>`MAX(${payments.reconciledAt})`,
+          })
+          .from(payments)
+          .where(
+            and(
+              eq(payments.isReconciled, true),
+              sql`${payments.reconciledAt} IS NOT NULL`
+            )
+          );
+
+        // Get invoices 30+ days overdue
+        const [invoices30PlusOverdueResult] = await db
+          .select({
+            count: sql<number>`COUNT(*)`,
+            totalAmount: sql<number>`SUM(CAST(${invoices.amountDue} AS DECIMAL(15,2)))`,
+          })
+          .from(invoices)
+          .where(
+            and(
+              eq(invoices.status, "OVERDUE"),
+              sql`${invoices.dueDate} IS NOT NULL`,
+              sql`DATEDIFF(CURDATE(), ${invoices.dueDate}) >= 30`,
+              sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
+              sql`${invoices.deletedAt} IS NULL`
+            )
+          );
+
+        return {
+          outstandingInvoices: {
+            count: outstandingInvoicesResult?.count || 0,
+            totalAmount: outstandingInvoicesResult?.totalAmount || 0,
+          },
+          unrecordedPayments: {
+            ar: {
+              count: unrecordedARPaymentsResult?.count || 0,
+              totalAmount: unrecordedARPaymentsResult?.totalAmount || 0,
+            },
+            ap: {
+              count: unrecordedAPPaymentsResult?.count || 0,
+              totalAmount: unrecordedAPPaymentsResult?.totalAmount || 0,
+            },
+          },
+          lastReconciledAt: lastReconciledResult?.lastReconciledAt || null,
+          invoices30PlusOverdue: {
+            count: invoices30PlusOverdueResult?.count || 0,
+            totalAmount: invoices30PlusOverdueResult?.totalAmount || 0,
+          },
+        };
       }),
   }),
 
@@ -795,6 +970,21 @@ export const accountingRouter = router({
       .input(z.object({ id: z.number() }))
       .query(async ({ input }) => {
         return await arApDb.getInvoiceById(input.id);
+      }),
+
+    getByReference: protectedProcedure
+      .use(requirePermission("accounting:read"))
+      .input(
+        z.object({
+          referenceId: z.number(),
+          referenceTypes: z.array(z.string()).optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        return await arApDb.getInvoiceByReference(
+          input.referenceId,
+          input.referenceTypes
+        );
       }),
 
     create: protectedProcedure

@@ -47,6 +47,23 @@ const shortcuts: KeyboardShortcut[] = [
     category: "Actions",
   },
 
+  // TER-1221: Quick navigation shortcuts (when not in input field)
+  {
+    keys: ["N"],
+    description: "New Order",
+    category: "Quick Navigation",
+  },
+  {
+    keys: ["I"],
+    description: "Go to Inventory",
+    category: "Quick Navigation",
+  },
+  {
+    keys: ["C"],
+    description: "Go to Customers",
+    category: "Quick Navigation",
+  },
+
   // In Command Palette
   { keys: ["D"], description: "Go to Dashboard", category: "Command Palette" },
   {

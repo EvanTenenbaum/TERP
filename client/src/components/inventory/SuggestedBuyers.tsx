@@ -214,11 +214,11 @@ export function SuggestedBuyers({
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
                       idx === 0
-                        ? "bg-yellow-500 text-yellow-950"
+                        ? "bg-[var(--warning)] text-[var(--warning)]"
                         : idx === 1
                           ? "bg-gray-300 text-gray-700"
                           : idx === 2
-                            ? "bg-orange-400 text-orange-950"
+                            ? "bg-orange-400 text-[var(--warning)]"
                             : "bg-primary/10 text-primary"
                     }`}
                   >

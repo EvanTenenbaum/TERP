@@ -136,9 +136,9 @@ describe("ST-050: Error Propagation in ordersDb", () => {
   });
 
   describe("getAllOrders - JSON parsing errors", () => {
-    it("should throw error when any order has corrupted JSON", async () => {
-      // getAllOrders calls db.select({orders, clients}).from().leftJoin().where().orderBy().limit().offset()
-      // All chain methods return `this`, offset() resolves to the rows
+    it("should return partial results when any order has corrupted JSON", async () => {
+      // TER-1146: getAllOrders tolerates corrupted JSON by returning items=[] for corrupted orders
+      // This allows the list view to still render instead of 500-ing
       const resolvedRows = [
         {
           orders: {
@@ -146,8 +146,23 @@ describe("ST-050: Error Propagation in ordersDb", () => {
             orderNumber: "O-1",
             items: '{"invalid": json}', // Invalid JSON
             subtotal: "50",
+            orderType: "SALE",
+            isDraft: false,
+            createdAt: new Date().toISOString(),
           },
           clients: { id: 1, name: "Test Client" },
+        },
+        {
+          orders: {
+            id: 2,
+            orderNumber: "O-2",
+            items: JSON.stringify([{ batchId: 1, quantity: 5 }]),
+            subtotal: "100",
+            orderType: "SALE",
+            isDraft: false,
+            createdAt: new Date().toISOString(),
+          },
+          clients: { id: 2, name: "Valid Client" },
         },
       ];
 
@@ -165,10 +180,70 @@ describe("ST-050: Error Propagation in ordersDb", () => {
         mockDb as unknown as Awaited<ReturnType<typeof getDb>>
       );
 
-      // Should throw when encountering corrupted data
-      await expect(ordersDb.getAllOrders()).rejects.toThrow(
-        /Data corruption detected.*order 1/
+      // Should return partial results instead of throwing
+      const result = await ordersDb.getAllOrders();
+      expect(result).toHaveLength(2);
+      
+      // Corrupted order should have empty items array
+      expect(result[0]?.id).toBe(1);
+      expect(result[0]?.items).toEqual([]);
+      
+      // Valid order should parse correctly
+      expect(result[1]?.id).toBe(2);
+      expect(result[1]?.items).toEqual([
+        expect.objectContaining({
+          batchId: 1,
+          quantity: 5,
+        }),
+      ]);
+    });
+
+    it("keeps legacy seeded orders readable when batchIds are missing but item text is present", async () => {
+      const resolvedRows = [
+        {
+          orders: {
+            id: 50,
+            orderNumber: "SO-50",
+            items: JSON.stringify([
+              {
+                batchId: 0,
+                displayName: "Legacy Flower",
+                quantity: 3,
+                unitPrice: 12,
+                lineTotal: 36,
+              },
+            ]),
+            subtotal: "36",
+          },
+          clients: { id: 1, name: "Legacy Client" },
+        },
+      ];
+
+      const mockDb = {
+        select: vi.fn().mockReturnThis(),
+        from: vi.fn().mockReturnThis(),
+        leftJoin: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        offset: vi.fn().mockResolvedValue(resolvedRows),
+      };
+
+      vi.mocked(getDb).mockResolvedValue(
+        mockDb as unknown as Awaited<ReturnType<typeof getDb>>
       );
+
+      const result = await ordersDb.getAllOrders();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]?.items).toEqual([
+        expect.objectContaining({
+          batchId: 0,
+          displayName: "Legacy Flower",
+          quantity: 3,
+          unitPrice: 12,
+        }),
+      ]);
     });
   });
 

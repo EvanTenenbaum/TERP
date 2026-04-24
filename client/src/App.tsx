@@ -49,7 +49,6 @@ import ShrinkageReportPage from "@/pages/ShrinkageReportPage"; // NAV-018: Shrin
 import ImpersonatePage from "@/pages/vip-portal/auth/ImpersonatePage";
 import SessionEndedPage from "@/pages/vip-portal/SessionEndedPage";
 import AccountPage from "@/pages/AccountPage";
-import { TodoListsPage } from "@/pages/TodoListsPage";
 import { TodoListDetailPage } from "@/pages/TodoListDetailPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 // MEET-049 FIX: Use lazy loading to isolate CalendarPage import
@@ -59,10 +58,12 @@ const CalendarPage = lazy(() => import("@/pages/CalendarPage"));
 const SchedulingPage = lazy(() => import("@/pages/SchedulingPage"));
 // MEET-048: Hour Tracking / Time Clock
 const TimeClockPage = lazy(() => import("@/pages/TimeClockPage"));
+const SystemMetricsPage = lazy(() => import("@/pages/SystemMetricsPage"));
 import WorkflowQueuePage from "@/pages/WorkflowQueuePage";
 import AnalyticsPage from "@/pages/AnalyticsPage";
 import SearchResultsPage from "@/pages/SearchResultsPage";
 import LeaderboardPage from "@/pages/LeaderboardPage";
+import WarehousePickPackPage from "@/pages/WarehousePickPackPage"; // TER-1225: Warehouse mobile pick & pack
 import { QuickAddTaskModal } from "@/components/todos/QuickAddTaskModal";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -80,6 +81,7 @@ import {
   type RouteComponentProps as WouterRouteComponentProps,
 } from "wouter";
 import { VersionChecker } from "@/components/VersionChecker";
+import { StagingAgentation } from "@/components/staging/StagingAgentation";
 import { PageErrorBoundary } from "@/components/common/PageErrorBoundary";
 import { PageLoading } from "@/components/ui/loading-state";
 
@@ -377,6 +379,14 @@ function Router() {
                   component={withErrorBoundary(SalesWorkspacePage)}
                 />
                 <Route
+                  path="/sales/new"
+                  component={RedirectWithTab(
+                    "/sales/new",
+                    "/sales",
+                    "create-order"
+                  )}
+                />
+                <Route
                   path="/relationships"
                   component={withErrorBoundary(RelationshipsWorkspacePage)}
                 />
@@ -403,6 +413,22 @@ function Router() {
                   component={withErrorBoundary(
                     lazy(() => import("@/pages/ProductsPage"))
                   )}
+                />
+                <Route
+                  path="/strains"
+                  component={RedirectWithSearch("/strains", "/products")}
+                />
+                <Route
+                  path="/strains/new"
+                  component={RedirectWithSearch("/strains/new", "/products")}
+                />
+                <Route
+                  path="/strains/:id"
+                  component={RedirectWithSearch("/strains/:id", "/products")}
+                />
+                <Route
+                  path="/admin/strains"
+                  component={RedirectWithSearch("/admin/strains", "/products")}
                 />
                 {/* Accounting workspace — all sub-pages as tabs */}
                 <Route
@@ -553,9 +579,27 @@ function Router() {
                   path="/orders"
                   component={RedirectWithTab("/orders", "/sales", "orders")}
                 />
+                {/* TER-1252: Redirect legacy /sell/orders path to /sales?tab=orders */}
+                <Route
+                  path="/sell/orders"
+                  component={RedirectWithTab(
+                    "/sell/orders",
+                    "/sales",
+                    "orders"
+                  )}
+                />
+                <Route
+                  path="/sell"
+                  component={RedirectWithSearch("/sell", "/sales")}
+                />
                 <Route
                   path="/pick-pack"
                   component={RedirectToOperationsTab("/pick-pack", "shipping")}
+                />
+                {/* TER-1225: Warehouse mobile/tablet pick & pack */}
+                <Route
+                  path="/warehouse/pick-pack"
+                  component={withErrorBoundary(WarehousePickPackPage)}
                 />
                 <Route
                   path="/photography"
@@ -596,6 +640,13 @@ function Router() {
                   )}
                 />
                 <Route
+                  path="/settings/display"
+                  component={RedirectWithSearch(
+                    "/settings/display",
+                    "/account"
+                  )}
+                />
+                <Route
                   path="/settings/feature-flags"
                   component={RedirectWithTab(
                     "/settings/feature-flags",
@@ -606,6 +657,26 @@ function Router() {
                 <Route
                   path="/settings"
                   component={withErrorBoundary(Settings)}
+                />
+                <Route
+                  path="/admin/users"
+                  component={RedirectWithTab(
+                    "/admin/users",
+                    "/settings",
+                    "users"
+                  )}
+                />
+                <Route
+                  path="/admin/roles/new"
+                  component={RedirectWithTab(
+                    "/admin/roles/new",
+                    "/settings",
+                    "roles"
+                  )}
+                />
+                <Route
+                  path="/admin/metrics"
+                  component={withLazyErrorBoundary(SystemMetricsPage)}
                 />
                 <Route
                   path="/account"
@@ -674,9 +745,10 @@ function Router() {
                 />
                 <Route
                   path="/procurement"
-                  component={RedirectWithSearch(
+                  component={RedirectWithTab(
                     "/procurement",
-                    "/purchase-orders"
+                    "/purchase-orders",
+                    "purchase-orders"
                   )}
                 />
                 <Route
@@ -792,14 +864,22 @@ function Router() {
                   path="/clients/:clientId/vip-portal-config"
                   component={withErrorBoundary(VIPPortalConfigPage)}
                 />
-                {/* Todo Lists - support both /todo and /todos */}
+                {/* Todo Lists - redirect to notifications with todos tab */}
                 <Route
                   path="/todo"
-                  component={withErrorBoundary(TodoListsPage)}
+                  component={RedirectWithTab(
+                    "/todo",
+                    "/notifications",
+                    "todos"
+                  )}
                 />
                 <Route
                   path="/todos"
-                  component={withErrorBoundary(TodoListsPage)}
+                  component={RedirectWithTab(
+                    "/todos",
+                    "/notifications",
+                    "todos"
+                  )}
                 />
                 <Route
                   path="/todos/:listId"
@@ -817,6 +897,14 @@ function Router() {
                 <Route
                   path="/calendar"
                   component={withLazyErrorBoundary(CalendarPage)}
+                />
+                <Route
+                  path="/calendar/invitations"
+                  component={RedirectWithTab(
+                    "/calendar/invitations",
+                    "/calendar",
+                    "invitations"
+                  )}
                 />
                 {/* Sprint 4 Track D: Scheduling System */}
                 <Route
@@ -909,11 +997,45 @@ function Router() {
                 />
                 <Route
                   path="/todo-lists"
-                  component={RedirectWithSearch("/todo-lists", "/todos")}
+                  component={RedirectWithTab(
+                    "/todo-lists",
+                    "/notifications",
+                    "todos"
+                  )}
+                />
+
+                {/* TER-859: Dead route redirects */}
+                <Route
+                  path="/suppliers"
+                  component={RedirectWithTab(
+                    "/suppliers",
+                    "/relationships",
+                    "suppliers"
+                  )}
+                />
+                <Route
+                  path="/accounts-receivable"
+                  component={RedirectWithTab(
+                    "/accounts-receivable",
+                    "/accounting",
+                    "invoices"
+                  )}
+                />
+                <Route
+                  path="/payments"
+                  component={RedirectWithTab(
+                    "/payments",
+                    "/accounting",
+                    "payments"
+                  )}
+                />
+                <Route
+                  path="/admin"
+                  component={RedirectWithSearch("/admin", "/settings")}
                 />
 
                 <Route path="/404" component={withErrorBoundary(NotFound)} />
-                {/* Final fallback route */}
+                {/* Final fallback route — TER-902: shows user-friendly 404 page */}
                 <Route component={withErrorBoundary(NotFound)} />
               </Switch>
             </AppShell>
@@ -935,7 +1057,7 @@ function App() {
   const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
 
-  // Global keyboard shortcuts (ENH-001)
+  // Global keyboard shortcuts (ENH-001, TER-1221)
   useKeyboardShortcuts([
     {
       key: "k",
@@ -961,6 +1083,32 @@ function App() {
       callback: () => setShowKeyboardShortcuts(true),
       description: "Show keyboard shortcuts",
     },
+    // TER-1221: Single-key navigation shortcuts
+    {
+      key: "n",
+      callback: () => setLocation("/sales?tab=create-order"),
+      description: "New Order",
+    },
+    {
+      key: "i",
+      callback: () => setLocation("/inventory"),
+      description: "Inventory",
+    },
+    {
+      key: "c",
+      callback: () => setLocation("/relationships?tab=customers"),
+      description: "Customers",
+    },
+    {
+      key: "Escape",
+      callback: () => {
+        // Close any open modals
+        setShowCommandPalette(false);
+        setShowQuickAddTask(false);
+        setShowKeyboardShortcuts(false);
+      },
+      description: "Close modal/drawer",
+    },
   ]);
 
   return (
@@ -969,6 +1117,7 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <VersionChecker />
+          <StagingAgentation />
           <Router />
           <CommandPalette
             open={showCommandPalette}

@@ -57,7 +57,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 import { trpc } from "@/lib/trpc";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { Badge } from "@/components/ui/badge";
@@ -252,8 +252,30 @@ const getItemLineTotal = (
   return unitPrice !== null ? item.quantity * unitPrice : null;
 };
 
-const getExpiryLabel = (validUntil: string | null | undefined): string => {
-  if (!validUntil) return "No expiry";
+const getQuoteValidUntilDisplay = (
+  validUntil: string | null | undefined,
+  createdAt: string | null | undefined
+): string => {
+  if (validUntil) {
+    return formatDate(validUntil);
+  }
+
+  if (createdAt) {
+    try {
+      return format(addDays(new Date(createdAt), 30), "MMM d, yyyy");
+    } catch {
+      return "30 days from creation";
+    }
+  }
+
+  return "30 days from creation";
+};
+
+const getExpiryLabel = (
+  validUntil: string | null | undefined,
+  createdAt: string | null | undefined
+): string => {
+  if (!validUntil) return createdAt ? "Default 30-day window" : "30-day window";
   try {
     const d = new Date(validUntil);
     if (Number.isNaN(d.getTime())) return "—";
@@ -292,7 +314,7 @@ function mapQuoteToRegistryRow(
     lineItemCount: items.length,
     createdAt: q.createdAt ?? null,
     validUntil: q.validUntil ?? null,
-    expiryLabel: getExpiryLabel(q.validUntil),
+    expiryLabel: getExpiryLabel(q.validUntil, q.createdAt ?? null),
   };
 }
 
@@ -309,14 +331,14 @@ const STATUS_ICON_MAP: Record<QuoteStatus, ReactNode> = {
 
 const STATUS_COLOR_MAP: Record<QuoteStatus, string> = {
   UNSENT: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-  SENT: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+  SENT: "bg-[var(--info-bg)] text-[var(--info)] dark:bg-[var(--info)] dark:text-blue-200",
   VIEWED:
-    "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    "bg-muted text-primary dark:bg-primary dark:text-purple-200",
   CONVERTED:
-    "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-  REJECTED: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    "bg-[var(--success-bg)] text-[var(--success)] dark:bg-[var(--success)] dark:text-green-200",
+  REJECTED: "bg-destructive/10 text-destructive dark:bg-destructive dark:text-red-200",
   EXPIRED:
-    "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    "bg-[var(--warning-bg)] text-[var(--warning)] dark:bg-[var(--warning)] dark:text-orange-200",
 };
 
 function QuoteStatusBadge({ status }: { status: QuoteStatus }) {
@@ -392,17 +414,15 @@ function QuoteInspectorContent({
           </InspectorField>
           <InspectorField label="Valid Until">
             <p className="text-sm">
-              {quote.validUntil ? formatDate(quote.validUntil) : "No expiry"}
+              {getQuoteValidUntilDisplay(quote.validUntil, quote.createdAt)}
             </p>
           </InspectorField>
         </div>
-        {quote.validUntil && (
-          <InspectorField label="Expiry">
-            <p className="text-sm text-muted-foreground">
-              {getExpiryLabel(quote.validUntil)}
-            </p>
-          </InspectorField>
-        )}
+        <InspectorField label="Expiry">
+          <p className="text-sm text-muted-foreground">
+            {getExpiryLabel(quote.validUntil, quote.createdAt)}
+          </p>
+        </InspectorField>
       </InspectorSection>
 
       <InspectorSection title={`Line Items (${items.length})`} defaultOpen>
@@ -455,7 +475,7 @@ function QuoteInspectorContent({
             </div>
           )}
           {parseFloat(quote.discount) > 0 && (
-            <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+            <div className="flex justify-between text-sm text-[var(--success)] dark:text-green-400">
               <span>Discount</span>
               <span className="font-mono">
                 -{formatCurrency(quote.discount)}
@@ -517,7 +537,7 @@ function QuoteInspectorContent({
             <Button
               variant="outline"
               size="sm"
-              className="w-full justify-start text-orange-600 hover:text-orange-700 dark:text-orange-400"
+              className="w-full justify-start text-[var(--warning)] hover:text-[var(--warning)] dark:text-orange-400"
               onClick={() => onReject(quote.id)}
             >
               <XCircle className="h-3.5 w-3.5 mr-2" />
@@ -537,7 +557,7 @@ function QuoteInspectorContent({
             <Button
               variant="outline"
               size="sm"
-              className="w-full justify-start text-red-600 hover:text-red-700 dark:text-red-400"
+              className="w-full justify-start text-destructive hover:text-destructive dark:text-red-400"
               onClick={() => onDelete(quote.id)}
             >
               <Trash2 className="h-3.5 w-3.5 mr-2" />
@@ -592,10 +612,18 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
     orderType: "QUOTE",
     quoteStatus: statusFilter === "ALL" ? undefined : statusFilter,
   });
-  const quotesRaw: QuoteRecord[] = useMemo(
-    () => extractItems(quotesQuery.data) as QuoteRecord[],
-    [quotesQuery.data]
-  );
+  // BUG-006: Filter client-side to ensure only QUOTE records appear.
+  // The server uses orderType: "QUOTE" but if mixed results are returned
+  // (e.g., due to caching or query bugs), this guard prevents ORD-... records
+  // from polluting the quotes registry.
+  const quotesRaw: QuoteRecord[] = useMemo(() => {
+    const all = extractItems(quotesQuery.data) as Array<
+      QuoteRecord & { orderType?: string | null }
+    >;
+    return all.filter(
+      q => !q.orderType || q.orderType.toUpperCase() === "QUOTE"
+    );
+  }, [quotesQuery.data]);
 
   // Email capability probe (QUO-029)
   const emailEnabledQuery = trpc.quotes.isEmailEnabled.useQuery();
@@ -701,15 +729,46 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
 
   // ─── Mutations ──────────────────────────────────────────────────────────────
 
+  // BUG-010: Improved error handling for large quote conversions.
+  // BUG-011: Navigate to the newly-created order after conversion.
   const convertMutation = trpc.orders.convertQuoteToSale.useMutation({
-    onSuccess: () => {
+    onSuccess: result => {
       toast.success("Quote converted to sales order");
       void quotesQuery.refetch();
       setShowConvertDialog(false);
       setSelectedQuoteId(null);
+      // Navigate to the created sales order if the ID is available
+      const createdOrderId = (result as Record<string, unknown> | null)?.id;
+      if (typeof createdOrderId === "number" && createdOrderId > 0) {
+        setLocation(
+          buildSalesWorkspacePath("orders", { orderId: createdOrderId })
+        );
+      }
     },
     onError: err => {
-      toast.error(err.message || "Failed to convert quote");
+      // BUG-010: Provide actionable guidance on conversion failures.
+      const raw = err.message || "";
+      let friendly = raw;
+      if (raw.toLowerCase().includes("insufficient")) {
+        friendly =
+          "Conversion failed: insufficient inventory for one or more line items. Review stock levels before retrying.";
+      } else if (
+        raw.toLowerCase().includes("expired") ||
+        raw.toLowerCase().includes("expir")
+      ) {
+        friendly =
+          "This quote has expired and can no longer be converted. Create a new quote with current pricing.";
+      } else if (
+        raw.toLowerCase().includes("converted") ||
+        raw.toLowerCase().includes("invalid transition")
+      ) {
+        friendly =
+          "This quote has already been converted or is in a state that does not allow conversion.";
+      } else if (!raw) {
+        friendly =
+          "Conversion failed. The server did not return an error message — please try again or contact support.";
+      }
+      toast.error(friendly);
     },
   });
 
@@ -759,7 +818,10 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
 
   const handleEdit = useCallback(
     (id: number) => {
-      setLocation(buildSalesWorkspacePath("create-order", { quoteId: id }));
+      // BUG-007/BUG-008: pass mode=quote so the creator labels correctly
+      setLocation(
+        buildSalesWorkspacePath("create-order", { quoteId: id, mode: "quote" })
+      );
     },
     [setLocation]
   );
@@ -787,6 +849,7 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
         buildSalesWorkspacePath("create-order", {
           quoteId: id,
           mode: "duplicate",
+          // Note: duplicate mode already implies quote context via quoteId
         })
       );
     },
@@ -810,6 +873,11 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
     [setSelectedQuoteId]
   );
 
+  // BUG-007: Navigate to the quote creation flow (create-order with mode=quote)
+  const handleNewQuote = useCallback(() => {
+    setLocation(buildSalesWorkspacePath("create-order", { mode: "quote" }));
+  }, [setLocation]);
+
   // Keyboard handlers
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -820,10 +888,10 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
       }
       if (meta && e.key === "n") {
         e.preventDefault();
-        setLocation(buildSalesWorkspacePath("create-order"));
+        handleNewQuote();
       }
     },
-    [setLocation]
+    [handleNewQuote]
   );
 
   // ─── Status bar content ──────────────────────────────────────────────────────
@@ -850,10 +918,6 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
   const selectedStatus = selectedRow ? selectedRow.status : null;
   const multiRowSelected = (selectionSummary?.selectedRowCount ?? 0) > 1;
   const actionsBlocked = multiRowSelected;
-
-  const workflowTargetLabel = selectedRow
-    ? `Workflow target: ${selectedRow.orderNumber}`
-    : "Workflow target: select a quote";
 
   // ─── Render ──────────────────────────────────────────────────────────────────
 
@@ -923,10 +987,8 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
           >
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button
-            size="sm"
-            onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}
-          >
+          {/* BUG-007: Route to quote creation flow, not generic sales-order builder */}
+          <Button size="sm" onClick={handleNewQuote}>
             <Plus className="mr-2 h-4 w-4" />
             New Quote
           </Button>
@@ -943,18 +1005,11 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
         <span className="text-sm font-medium text-foreground">
           {selectedRow
             ? `${selectedRow.orderNumber} selected`
-            : "Registry evaluation active"}
+            : "Select a quote to take action"}
         </span>
-        <Badge
-          variant={actionsBlocked ? "secondary" : "outline"}
-          className="max-w-full text-xs"
-        >
-          {workflowTargetLabel}
-        </Badge>
         {actionsBlocked && (
           <span className="text-xs text-muted-foreground">
-            Selection spans multiple rows — workflow actions locked to focused
-            row.
+            Multiple rows selected — actions apply to one quote at a time.
           </span>
         )}
         <div className="ml-auto flex flex-wrap items-center gap-2">
@@ -1016,7 +1071,7 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
             variant="outline"
             disabled={selectedStatus !== "UNSENT" || actionsBlocked}
             onClick={() => selectedQuoteId && handleDelete(selectedQuoteId)}
-            className="text-red-600 hover:text-red-700 dark:text-red-400"
+            className="text-destructive hover:text-destructive dark:text-red-400"
           >
             <Trash2 className="mr-2 h-3.5 w-3.5" />
             Delete
@@ -1028,7 +1083,6 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
       <PowersheetGrid
         surfaceId="quotes-registry"
         requirementIds={["QUO-WF-001", "QUO-WF-002"]}
-        releaseGateIds={["SALE-QUO-001", "SALE-QUO-002", "SALE-QUO-026"]}
         affordances={registryAffordances}
         title="Quotes Registry"
         description="Read-only registry of all quotes. Row selection drives inspector and workflow action context."
@@ -1055,7 +1109,6 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
             {stats.sent} sent · {stats.converted} converted
           </span>
         }
-        antiDriftSummary="Registry release gates: status filtering, row-scoped actions, inspector parity, and QUO-026 rejection."
         minHeight={360}
       />
 
@@ -1187,21 +1240,44 @@ export function QuotesPilotSurface({ onOpenClassic }: QuotesPilotSurfaceProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Convert dialog (QUO-015, QUO-016) */}
-      <ConfirmDialog
-        open={showConvertDialog}
-        onOpenChange={setShowConvertDialog}
-        title="Convert Quote to Sales Order?"
-        description="This will create a new sales order from the quote and mark it as converted. Inventory will be reserved."
-        confirmLabel={
-          convertMutation.isPending ? "Converting..." : "Convert to Sales Order"
-        }
-        onConfirm={() => {
-          if (!selectedQuoteId) return;
-          convertMutation.mutate({ quoteId: selectedQuoteId });
-        }}
-        isLoading={convertMutation.isPending}
-      />
+      {/* Convert dialog (QUO-015, QUO-016) — BUG-009: explicit aria-describedby */}
+      <Dialog open={showConvertDialog} onOpenChange={setShowConvertDialog}>
+        <DialogContent aria-describedby="quote-convert-description">
+          <DialogHeader>
+            <DialogTitle>Convert Quote to Sales Order?</DialogTitle>
+            <DialogDescription id="quote-convert-description">
+              This will create a new sales order from the quote and mark it as
+              converted. Inventory will be reserved. This action cannot be
+              undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowConvertDialog(false)}
+              disabled={convertMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!selectedQuoteId) return;
+                convertMutation.mutate({ quoteId: selectedQuoteId });
+              }}
+              disabled={convertMutation.isPending || !selectedQuoteId}
+            >
+              {convertMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Converting...
+                </>
+              ) : (
+                "Convert to Sales Order"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete dialog (QUO-018) */}
       <ConfirmDialog

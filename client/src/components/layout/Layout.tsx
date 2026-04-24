@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { Sidebar } from "./Sidebar";
 import { AppHeader } from "./AppHeader";
 import { MobileNav } from "./MobileNav";
+import { AdminImpersonationWarning } from "./AdminImpersonationWarning";
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -17,6 +18,9 @@ export const Layout = React.memo(function Layout({
 
   const handleOpenSidebar = () => setSidebarOpen(true);
   const handleCloseSidebar = () => setSidebarOpen(false);
+  // BUG-111: toggle so MobileNav button closes an open drawer rather than
+  // trying to open it again
+  const handleToggleSidebar = () => setSidebarOpen(prev => !prev);
 
   return (
     <div className="terp-shell-root flex h-screen overflow-hidden bg-background">
@@ -26,13 +30,20 @@ export const Layout = React.memo(function Layout({
       <div className="flex flex-col flex-1 overflow-hidden">
         {showSidebar && (
           <>
-            <MobileNav onMenuClick={handleOpenSidebar} />
+            <MobileNav
+              onMenuClick={handleToggleSidebar}
+              isMenuOpen={sidebarOpen}
+            />
             <div className="hidden md:block">
               <AppHeader onMenuClick={handleOpenSidebar} />
             </div>
+            {/* TER-1219: Show warning banner when admin has active impersonation sessions */}
+            <AdminImpersonationWarning />
           </>
         )}
-        <main className={cn("terp-main-shell flex-1 overflow-y-auto p-3 md:p-4")}>
+        <main
+          className={cn("terp-main-shell flex-1 overflow-y-auto p-2.5 md:p-4")}
+        >
           {children}
         </main>
       </div>

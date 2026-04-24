@@ -98,11 +98,13 @@ export function SaveViewDialog({
     let count = 0;
     if (filters.search) count++;
     if (filters.categories.length > 0) count++;
+    if (filters.brands.length > 0) count++;
     if (filters.grades.length > 0) count++;
     if (filters.strainFamilies.length > 0) count++;
     if (filters.vendors.length > 0) count++;
     if (filters.priceMin !== null || filters.priceMax !== null) count++;
     if (filters.inStockOnly) count++;
+    if (filters.includeUnavailable) count++;
     return count;
   })();
 
@@ -207,8 +209,17 @@ export function SaveViewDialog({
                   {filters.grades.length !== 1 ? "s" : ""}
                 </Badge>
               )}
+              {filters.brands.length > 0 && (
+                <Badge variant="secondary">
+                  {filters.brands.length} grower
+                  {filters.brands.length !== 1 ? "s" : ""}
+                </Badge>
+              )}
               {filters.inStockOnly && (
                 <Badge variant="secondary">In Stock Only</Badge>
+              )}
+              {filters.includeUnavailable && (
+                <Badge variant="secondary">Include unavailable</Badge>
               )}
               {(filters.priceMin !== null || filters.priceMax !== null) && (
                 <Badge variant="secondary">

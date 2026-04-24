@@ -463,10 +463,10 @@ export default function VIPDashboard() {
                         </Button>
                         <Button
                           variant="outline"
-                          className="h-auto flex-col gap-2 p-4 md:p-6 border-green-200 bg-green-50 hover:bg-green-100"
+                          className="h-auto flex-col gap-2 p-4 md:p-6 border-green-200 bg-[var(--success-bg)] hover:bg-[var(--success-bg)]"
                           onClick={() => setActiveTab("live-shopping")}
                         >
-                          <Video className="h-5 w-5 md:h-6 md:w-6 text-green-600" />
+                          <Video className="h-5 w-5 md:h-6 md:w-6 text-[var(--success)]" />
                           <span className="text-xs md:text-sm">
                             Live Shopping
                           </span>

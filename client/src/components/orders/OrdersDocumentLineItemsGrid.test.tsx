@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { OrdersDocumentLineItemsGrid } from "./OrdersDocumentLineItemsGrid";
-import type { LineItem } from "./LineItemTable";
+import type { LineItem } from "./types";
 
 const mockPowersheetGrid = vi.fn(
   ({
@@ -149,10 +149,37 @@ describe("OrdersDocumentLineItemsGrid", () => {
     expect(call?.columnDefs[2].cellClass).toBe("powersheet-cell--editable");
     expect(call?.columnDefs[2].suppressPaste).toBe(false);
     expect(call?.columnDefs[2].suppressFillHandle).toBe(false);
+    expect(call?.description).toBeUndefined();
+    expect(call?.summary).toBeUndefined();
+    expect(
+      screen.queryByRole("button", { name: /add item/i })
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /duplicate/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /delete/i })).toBeEnabled();
     expect(screen.getByRole("button", { name: /fill price/i })).toBeEnabled();
-    expect(screen.getByText(/4 selected cells/i)).toBeInTheDocument();
+  });
+
+  it("hides COGS and margin columns when cost visibility is disabled", () => {
+    render(
+      <OrdersDocumentLineItemsGrid
+        clientId={123}
+        items={[buildLineItem({ id: 1 })]}
+        onChange={vi.fn()}
+        showCogsColumn={false}
+        showMarginColumn={false}
+      />
+    );
+
+    const call = mockPowersheetGrid.mock.calls[0]?.[0];
+    const cogsColumn = call?.columnDefs.find(
+      (column: { field?: string }) => column.field === "cogsPerUnit"
+    );
+    const marginColumn = call?.columnDefs.find(
+      (column: { field?: string }) => column.field === "marginPercent"
+    );
+
+    expect(cogsColumn?.hide).toBe(true);
+    expect(marginColumn?.hide).toBe(true);
   });
 
   it("uses a deterministic vertical fill callback for approved document fields", () => {
@@ -846,9 +873,8 @@ describe("OrdersDocumentLineItemsGrid", () => {
     );
   });
 
-  it("fills price, clears samples, and delegates add-item insertion without replacing orchestration", () => {
+  it("fills price and clears samples without replacing orchestration", () => {
     const onChange = vi.fn();
-    const onAddItem = vi.fn();
 
     render(
       <OrdersDocumentLineItemsGrid
@@ -864,7 +890,6 @@ describe("OrdersDocumentLineItemsGrid", () => {
           }),
         ]}
         onChange={onChange}
-        onAddItem={onAddItem}
       />
     );
 
@@ -876,9 +901,6 @@ describe("OrdersDocumentLineItemsGrid", () => {
     fireEvent.click(screen.getByRole("button", { name: /clear samples/i }));
     const cleared = onChange.mock.calls[1][0] as LineItem[];
     expect(cleared.every(item => item.isSample === false)).toBe(true);
-
-    fireEvent.click(screen.getByRole("button", { name: /add item/i }));
-    expect(onAddItem).toHaveBeenCalledTimes(1);
   });
 
   it("reverts fill-end when a filled value fails field validation", () => {

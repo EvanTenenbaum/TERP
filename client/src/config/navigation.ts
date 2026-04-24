@@ -24,6 +24,7 @@ import {
   GitMerge, // Consolidated demand/supply workspace
   Tag, // NAV-012: Pricing Rules
   Workflow, // NAV-013: Workflow Queue
+  Inbox,
   Clock, // MEET-048: Time Clock
   Bell, // TER-569: Notifications Hub navigation
   Download, // TERP-0005: Intake
@@ -134,14 +135,15 @@ export const navigationItems: NavigationItem[] = [
     sidebarVisible: false,
     // NOTE: Feature flag intentionally omitted to ensure BUG-073 fix remains active
   },
-  // NAV-006: Leaderboard absorbed — hidden from sidebar
+  // TER-1234: Gamification resurfaced - leaderboard visible in sidebar
   {
     name: "Leaderboard",
     path: "/leaderboard",
     icon: Trophy,
     group: "sales",
     ariaLabel: "Sales performance leaderboard",
-    sidebarVisible: false,
+    sidebarVisible: true,
+    featureFlag: "leaderboard",
   },
 
   // ─── Buy group (1 sidebar item) ────────────────────────────────────────────
@@ -164,7 +166,7 @@ export const navigationItems: NavigationItem[] = [
     sidebarVisible: true,
   },
   {
-    name: "Intake",
+    name: "Direct Intake",
     path: "/direct-intake",
     icon: Download,
     group: "operations",
@@ -191,7 +193,7 @@ export const navigationItems: NavigationItem[] = [
   },
   // TERP-0005: Receiving absorbed into Operations workspace
   {
-    name: "Receiving",
+    name: "Product Intake",
     path: "/inventory?tab=receiving",
     icon: Download,
     group: "operations",
@@ -308,6 +310,14 @@ export const navigationItems: NavigationItem[] = [
     group: "admin",
     sidebarVisible: false,
   },
+  {
+    name: "Roles",
+    path: "/settings?tab=roles",
+    icon: UserCog,
+    group: "admin",
+    ariaLabel: "Manage roles and permissions",
+    sidebarVisible: false,
+  },
   // TERP-0005: Locations absorbed into Settings workspace
   {
     name: "Locations",
@@ -332,6 +342,14 @@ export const navigationItems: NavigationItem[] = [
     icon: Clock,
     group: "admin",
     ariaLabel: "Clock in/out and manage timesheets",
+    sidebarVisible: false,
+  },
+  {
+    name: "Calendar Invitations",
+    path: "/calendar?tab=invitations",
+    icon: Inbox,
+    group: "admin",
+    ariaLabel: "Review and respond to pending calendar invitations",
     sidebarVisible: false,
   },
   // FEAT-017: Feature Flags absorbed into Settings workspace
@@ -359,6 +377,14 @@ export const navigationItems: NavigationItem[] = [
     icon: CheckSquare,
     group: "admin",
     ariaLabel: "Personal task management and todo lists",
+    sidebarVisible: false,
+  },
+  {
+    name: "System Metrics",
+    path: "/admin/metrics",
+    icon: BarChart3,
+    group: "admin",
+    ariaLabel: "Runtime health and resource usage metrics",
     sidebarVisible: false,
   },
 ];

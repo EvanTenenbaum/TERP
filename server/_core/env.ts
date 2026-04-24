@@ -8,6 +8,8 @@ let cachedJwtSecret: string | null = null;
 
 export type AutoMigrateMode = "apply" | "detect-only" | "off";
 
+const STAGING_APP_IDS = new Set(["terp-staging"]);
+
 /**
  * Normalize AUTO_MIGRATE_MODE for predictable startup behavior.
  * Default is "apply" to preserve current behavior when unset.
@@ -35,6 +37,28 @@ export function parseAutoMigrateMode(value?: string): AutoMigrateMode {
   }
 
   return "apply";
+}
+
+export function isStagingAppId(appId?: string): boolean {
+  const normalized = (appId ?? "").trim().toLowerCase();
+  return normalized.length > 0 && STAGING_APP_IDS.has(normalized);
+}
+
+export function shouldBlockDemoModeInProduction(params?: {
+  demoMode?: string;
+  nodeEnv?: string;
+  appId?: string;
+}): boolean {
+  const demoModeEnabled =
+    (params?.demoMode ?? "").trim().toLowerCase() === "true";
+  const isProduction =
+    (params?.nodeEnv ?? "").trim().toLowerCase() === "production";
+
+  if (!demoModeEnabled || !isProduction) {
+    return false;
+  }
+
+  return !isStagingAppId(params?.appId);
 }
 
 const getJwtSecret = (): string => {

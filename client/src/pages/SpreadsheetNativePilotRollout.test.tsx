@@ -62,8 +62,19 @@ vi.mock("@/components/work-surface/QuotesWorkSurface", () => ({
   default: () => <div>Quotes Surface</div>,
 }));
 
+vi.mock("@/components/spreadsheet-native/QuotesPilotSurface", () => ({
+  default: () => <div>Quotes Sheet Pilot</div>,
+}));
+
+vi.mock("@/components/spreadsheet-native/ReturnsPilotSurface", () => ({
+  default: () => <div>Returns Sheet Pilot</div>,
+}));
+
 vi.mock("@/components/spreadsheet-native/InventorySheetPilotSurface", () => ({
   default: () => <div>Inventory Sheet Pilot</div>,
+}));
+vi.mock("@/components/spreadsheet-native/InventoryManagementSurface", () => ({
+  InventoryManagementSurface: () => <div>Inventory Management Surface</div>,
 }));
 
 vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
@@ -75,14 +86,14 @@ vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
   ),
 }));
 
+vi.mock("@/components/spreadsheet-native/SalesOrderSurface", () => ({
+  default: () => <div>SalesOrderSurface</div>,
+}));
+
 vi.mock("@/pages/ReturnsPage", () => ({
   default: ({ embedded }: { embedded?: boolean }) => (
     <div>Returns {embedded ? "Embedded" : "Standalone"}</div>
   ),
-}));
-
-vi.mock("@/pages/OrderCreatorPage", () => ({
-  default: () => <div>Order Creator</div>,
 }));
 
 describe("spreadsheet-native pilot rollout gating", () => {
@@ -97,34 +108,38 @@ describe("spreadsheet-native pilot rollout gating", () => {
     mockRefetchFlags.mockClear();
   });
 
-  it("keeps inventory classic and does not expose a visible pilot toggle", () => {
+  it("renders unified InventoryManagementSurface and exposes no pilot toggle for inventory", () => {
     render(<InventoryWorkspacePage />);
 
-    expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
+    expect(
+      screen.getByText("Inventory Management Surface")
+    ).toBeInTheDocument();
     expect(screen.queryByText("Inventory Sheet Pilot")).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: "Sheet-Native Pilot" })
+      screen.queryByRole("button", { name: "Spreadsheet View" })
     ).not.toBeInTheDocument();
   });
 
-  it("strips a stale inventory sheet-native URL when the pilot is disabled", () => {
+  it("renders unified surface even when surface=sheet-native is in the URL", () => {
     mockSearch = "?tab=inventory&surface=sheet-native";
 
     render(<InventoryWorkspacePage />);
 
-    expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
-    expect(mockSetLocation).toHaveBeenCalledWith("/operations?tab=inventory", {
-      replace: true,
-    });
+    expect(
+      screen.getByText("Inventory Management Surface")
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Inventory Sheet Pilot")).not.toBeInTheDocument();
   });
 
-  it("does not rewrite the URL while pilot availability is still loading", () => {
+  it("renders unified surface while pilot flag is loading", () => {
     mockSearch = "?tab=inventory&surface=sheet-native";
     mockPilotFlagLoading = true;
 
     render(<InventoryWorkspacePage />);
 
-    expect(screen.getByText("Inventory Surface")).toBeInTheDocument();
+    expect(
+      screen.getByText("Inventory Management Surface")
+    ).toBeInTheDocument();
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 
@@ -140,14 +155,14 @@ describe("spreadsheet-native pilot rollout gating", () => {
       expect(screen.getByText("Orders Sheet Pilot")).toBeInTheDocument();
     });
     expect(
-      screen.getByRole("button", { name: "Sheet-Native Pilot" })
+      screen.getByRole("button", { name: "Spreadsheet View" })
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Classic Surface" })
+      screen.getByRole("button", { name: "Standard View" })
     ).toBeInTheDocument();
   });
 
-  it("keeps create-order classic by default even when the pilot is enabled", () => {
+  it("renders the unified create-order surface even when the pilot is enabled", async () => {
     mockPath = "/sales";
     mockSearch = "?tab=create-order&draftId=91";
     mockActiveTab = "create-order";
@@ -155,11 +170,11 @@ describe("spreadsheet-native pilot rollout gating", () => {
 
     render(<SalesWorkspacePage />);
 
-    expect(screen.getByText("Order Creator")).toBeInTheDocument();
+    expect(await screen.findByText("SalesOrderSurface")).toBeInTheDocument();
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 
-  it("renders the sheet-native document surface on create-order when sheet-native is explicitly requested", async () => {
+  it("renders the unified create-order surface when sheet-native is explicitly requested", async () => {
     mockPath = "/sales";
     mockSearch =
       "?tab=create-order&surface=sheet-native&quoteId=91&mode=duplicate&fromSalesSheet=true";
@@ -169,14 +184,46 @@ describe("spreadsheet-native pilot rollout gating", () => {
     render(<SalesWorkspacePage />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText("Orders Sheet Pilot Document")
-      ).toBeInTheDocument();
+      expect(screen.getByText("SalesOrderSurface")).toBeInTheDocument();
     });
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 
-  it("preserves the classic create-order route when classic=true is requested", () => {
+  it("renders the quotes sheet-native pilot when the master flag is on and requested", async () => {
+    mockPath = "/sales";
+    mockSearch = "?tab=quotes&surface=sheet-native";
+    mockActiveTab = "quotes";
+    mockPilotFlagEnabled = true;
+
+    render(<SalesWorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Quotes Sheet Pilot")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("button", { name: "Spreadsheet View" })
+    ).toBeInTheDocument();
+    expect(mockSetLocation).not.toHaveBeenCalled();
+  });
+
+  it("renders the returns sheet-native pilot when the master flag is on and requested", async () => {
+    mockPath = "/sales";
+    mockSearch = "?tab=returns&surface=sheet-native";
+    mockActiveTab = "returns";
+    mockPilotFlagEnabled = true;
+
+    render(<SalesWorkspacePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Returns Sheet Pilot")).toBeInTheDocument();
+    });
+    expect(
+      screen.getByRole("button", { name: "Spreadsheet View" })
+    ).toBeInTheDocument();
+    expect(mockSetLocation).not.toHaveBeenCalled();
+  });
+
+  it("keeps create-order unified even when classic=true is requested", async () => {
     mockPath = "/sales";
     mockSearch = "?tab=create-order&classic=true&draftId=91";
     mockActiveTab = "create-order";
@@ -184,7 +231,7 @@ describe("spreadsheet-native pilot rollout gating", () => {
 
     render(<SalesWorkspacePage />);
 
-    expect(screen.getByText("Order Creator")).toBeInTheDocument();
+    expect(await screen.findByText("SalesOrderSurface")).toBeInTheDocument();
     expect(mockSetLocation).not.toHaveBeenCalled();
   });
 });

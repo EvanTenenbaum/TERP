@@ -11,6 +11,7 @@
 ## Stability Requirements (READ FIRST)
 
 This wave is the FINAL GATE before user testing. MUST:
+
 1. ✅ Verify ALL fixes from previous waves
 2. ✅ Run full test suite
 3. ✅ Test on staging before production
@@ -27,22 +28,26 @@ Before starting, verify all waves are complete:
 ## Wave Completion Status
 
 ### Wave 1A (Backend Critical)
+
 - [ ] BUG-040 PR merged
 - [ ] BUG-041 PR merged
 - [ ] BUG-043 PR merged
 - [ ] All tests pass
 
 ### Wave 1B (Frontend Critical)
+
 - [ ] QA-049 PR merged
 - [ ] QA-050 PR merged
 - [ ] Root cause documented
 
 ### Wave 1C (Test Infrastructure)
+
 - [ ] Smoke tests ready
 - [ ] Verification checklist ready
 - [ ] Deployment runbook ready
 
 ### Wave 2A (Search & Forms)
+
 - [ ] BUG-042 PR merged
 - [ ] BUG-045 PR merged
 - [ ] BUG-046 PR merged
@@ -50,6 +55,7 @@ Before starting, verify all waves are complete:
 - [ ] Database migration ready
 
 ### Wave 2B (Navigation)
+
 - [ ] BUG-070 resolved
 - [ ] Navigation audit complete
 - [ ] Regression tests added
@@ -179,8 +185,8 @@ psql $STAGING_DB_URL -c "SELECT indexname FROM pg_indexes WHERE indexname LIKE '
 ### If Staging Environment Exists
 
 ```bash
-# Push to staging branch
-git push origin main:staging
+# Push the approved change to main
+git push origin main
 
 # Wait for deployment
 # Monitor DigitalOcean dashboard
@@ -221,13 +227,14 @@ TEST_URL=https://terp-app-b9s35.ondigitalocean.app pnpm test:smoke
 ```markdown
 ## Thursday Verification Results
 
-**Tester**: ___________
-**Date**: ___________
-**Environment**: ___________
+**Tester**: \***\*\_\_\_\*\***
+**Date**: \***\*\_\_\_\*\***
+**Environment**: \***\*\_\_\_\*\***
 
 ### Critical Path Tests
 
 #### 1. Order Creation (BUG-040)
+
 - [ ] Navigate to /orders/create
 - [ ] Select customer
 - [ ] Inventory loads (no error)
@@ -235,9 +242,10 @@ TEST_URL=https://terp-app-b9s35.ondigitalocean.app pnpm test:smoke
 - [ ] Can submit order
 
 **Result**: PASS / FAIL
-**Notes**: ___________
+**Notes**: \***\*\_\_\_\*\***
 
 #### 2. Batch Detail View (BUG-041)
+
 - [ ] Navigate to /inventory
 - [ ] Click View on any batch
 - [ ] Drawer opens without crash
@@ -245,54 +253,59 @@ TEST_URL=https://terp-app-b9s35.ondigitalocean.app pnpm test:smoke
 - [ ] Audit log section visible
 
 **Result**: PASS / FAIL
-**Notes**: ___________
+**Notes**: \***\*\_\_\_\*\***
 
 #### 3. Products Page (QA-049)
+
 - [ ] Navigate to /products
 - [ ] Products are displayed
 - [ ] Count shows 121+ products
 
 **Result**: PASS / FAIL
-**Notes**: ___________
+**Notes**: \***\*\_\_\_\*\***
 
 #### 4. Samples Page (QA-050)
+
 - [ ] Navigate to /samples
 - [ ] Samples are displayed
 - [ ] Tab counts are accurate
 
 **Result**: PASS / FAIL
-**Notes**: ___________
+**Notes**: \***\*\_\_\_\*\***
 
 #### 5. Global Search (BUG-042)
+
 - [ ] Click search icon
 - [ ] Search for "OG Kush"
 - [ ] Results include products
 
 **Result**: PASS / FAIL
-**Notes**: ___________
+**Notes**: \***\*\_\_\_\*\***
 
 #### 6. Retry Buttons (BUG-045, BUG-048)
+
 - [ ] Trigger an error (disconnect network)
 - [ ] Click Retry
 - [ ] Form data preserved
 - [ ] Retry works
 
 **Result**: PASS / FAIL
-**Notes**: ___________
+**Notes**: \***\*\_\_\_\*\***
 
 #### 7. Auth Errors (BUG-046)
+
 - [ ] Access restricted page
 - [ ] Error message is specific
 - [ ] Not "Authentication required"
 
 **Result**: PASS / FAIL
-**Notes**: ___________
+**Notes**: \***\*\_\_\_\*\***
 
 ### Overall Status
 
 - Total Tests: 7
-- Passed: ___
-- Failed: ___
+- Passed: \_\_\_
+- Failed: \_\_\_
 
 **Ready for Thursday**: YES / NO
 ```
@@ -381,6 +394,7 @@ git push origin main
 **Subject**: Thursday Deployment Starting
 
 Starting deployment of Thursday fixes:
+
 - BUG-040: Order Creator
 - BUG-041: Batch Detail View
 - QA-049: Products Page
@@ -400,6 +414,7 @@ Rollback plan: Ready
 **Subject**: Thursday Deployment Complete ✅
 
 Deployment successful. All fixes verified:
+
 - ✅ Order Creator works
 - ✅ Batch Detail View works
 - ✅ Products Page shows data
@@ -459,12 +474,14 @@ git push origin main
 ## Thursday Readiness Checklist
 
 ### Technical
+
 - [ ] All fixes deployed
 - [ ] All tests pass
 - [ ] No console errors
 - [ ] Performance acceptable
 
 ### Verification
+
 - [ ] Order creation works
 - [ ] Batch details work
 - [ ] Products page works
@@ -473,15 +490,17 @@ git push origin main
 - [ ] All navigation works
 
 ### Documentation
+
 - [ ] Known issues documented
 - [ ] Workarounds documented
 - [ ] Support contacts listed
 
 ### Rollback
+
 - [ ] Rollback procedure documented
 - [ ] Rollback tested
 - [ ] Previous deployment ID saved
 
-**Sign-off**: ___________
-**Date**: ___________
+**Sign-off**: \***\*\_\_\_\*\***
+**Date**: \***\*\_\_\_\*\***
 ```

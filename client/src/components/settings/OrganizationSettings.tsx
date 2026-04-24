@@ -10,6 +10,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   Card,
   CardContent,
@@ -61,13 +62,16 @@ import {
 // General Organization Settings
 // ============================================================================
 export function GeneralOrgSettings() {
-  const { data: settings, refetch } = trpc.organizationSettings.settings.list.useQuery();
+  const { data: settings, refetch } =
+    trpc.organizationSettings.settings.list.useQuery();
+  const { isSuperAdmin, hasPermission } = usePermissions();
+  const canManageCogs = isSuperAdmin || hasPermission("settings:edit");
   const updateMutation = trpc.organizationSettings.settings.update.useMutation({
     onSuccess: () => {
       toast.success("Setting updated successfully");
       refetch();
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(`Failed to update: ${error.message}`);
     },
   });
@@ -77,6 +81,8 @@ export function GeneralOrgSettings() {
   };
 
   const settingsMap = settings?.settingsMap || {};
+  const resolvedCogsDisplayMode =
+    settingsMap.cogs_display_mode === "HIDDEN" ? "HIDDEN" : "ADMIN_ONLY";
 
   return (
     <Card>
@@ -106,7 +112,10 @@ export function GeneralOrgSettings() {
             <Switch
               checked={settingsMap.grade_field_enabled !== false}
               onCheckedChange={() =>
-                handleToggle("grade_field_enabled", settingsMap.grade_field_enabled !== false)
+                handleToggle(
+                  "grade_field_enabled",
+                  settingsMap.grade_field_enabled !== false
+                )
               }
               disabled={updateMutation.isPending}
             />
@@ -121,9 +130,15 @@ export function GeneralOrgSettings() {
             <Switch
               checked={settingsMap.grade_field_required === true}
               onCheckedChange={() =>
-                handleToggle("grade_field_required", settingsMap.grade_field_required === true)
+                handleToggle(
+                  "grade_field_required",
+                  settingsMap.grade_field_required === true
+                )
               }
-              disabled={updateMutation.isPending || settingsMap.grade_field_enabled === false}
+              disabled={
+                updateMutation.isPending ||
+                settingsMap.grade_field_enabled === false
+              }
             />
           </div>
         </div>
@@ -146,7 +161,10 @@ export function GeneralOrgSettings() {
             <Switch
               checked={settingsMap.expected_delivery_enabled !== false}
               onCheckedChange={() =>
-                handleToggle("expected_delivery_enabled", settingsMap.expected_delivery_enabled !== false)
+                handleToggle(
+                  "expected_delivery_enabled",
+                  settingsMap.expected_delivery_enabled !== false
+                )
               }
               disabled={updateMutation.isPending}
             />
@@ -171,7 +189,10 @@ export function GeneralOrgSettings() {
             <Switch
               checked={settingsMap.packaged_unit_enabled !== false}
               onCheckedChange={() =>
-                handleToggle("packaged_unit_enabled", settingsMap.packaged_unit_enabled !== false)
+                handleToggle(
+                  "packaged_unit_enabled",
+                  settingsMap.packaged_unit_enabled !== false
+                )
               }
               disabled={updateMutation.isPending}
             />
@@ -180,35 +201,37 @@ export function GeneralOrgSettings() {
 
         <Separator />
 
-        {/* FEAT-011: COGS Display Settings */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold flex items-center gap-2">
-            <Calculator className="h-4 w-4" />
-            COGS Display Settings
-          </h3>
-          <div className="space-y-2">
-            <Label>COGS Display Mode</Label>
-            <Select
-              value={String(settingsMap.cogs_display_mode || "VISIBLE")}
-              onValueChange={(value) =>
-                updateMutation.mutate({ key: "cogs_display_mode", value })
-              }
-              disabled={updateMutation.isPending}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="VISIBLE">Visible to All Users</SelectItem>
-                <SelectItem value="ADMIN_ONLY">Admin Only</SelectItem>
-                <SelectItem value="HIDDEN">Hidden</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-sm text-muted-foreground">
-              Control who can see COGS and margin information in orders
-            </p>
+        {/* FEAT-011: COGS Display Settings — admin/manager access only */}
+        {canManageCogs && (
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Calculator className="h-4 w-4" />
+              COGS Display Settings
+            </h3>
+            <div className="space-y-2">
+              <Label>COGS Display Mode</Label>
+              <Select
+                value={resolvedCogsDisplayMode}
+                onValueChange={value =>
+                  updateMutation.mutate({ key: "cogs_display_mode", value })
+                }
+                disabled={updateMutation.isPending}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ADMIN_ONLY">Admin Only</SelectItem>
+                  <SelectItem value="HIDDEN">Hidden</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Restrict COGS and margin information to authorized finance users
+                or hide it entirely.
+              </p>
+            </div>
           </div>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -218,20 +241,29 @@ export function GeneralOrgSettings() {
 // FEAT-010: User Preferences (Default Warehouse)
 // ============================================================================
 export function UserPreferencesSettings() {
-  const { data: preferences, refetch } = trpc.organizationSettings.userPreferences.get.useQuery();
+  const { data: preferences, refetch } =
+    trpc.organizationSettings.userPreferences.get.useQuery();
   const { data: locations } = trpc.settings.locations.list.useQuery();
+  const { isSuperAdmin, hasPermission } = usePermissions();
+  const canViewCogsPreferences =
+    isSuperAdmin ||
+    hasPermission("cogs:read") ||
+    hasPermission("cogs:update") ||
+    hasPermission("settings:manage");
 
-  const updateMutation = trpc.organizationSettings.userPreferences.update.useMutation({
-    onSuccess: () => {
-      toast.success("Preferences saved successfully");
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to save: ${error.message}`);
-    },
-  });
+  const updateMutation =
+    trpc.organizationSettings.userPreferences.update.useMutation({
+      onSuccess: () => {
+        toast.success("Preferences saved successfully");
+        refetch();
+      },
+      onError: error => {
+        toast.error(`Failed to save: ${error.message}`);
+      },
+    });
 
-  const warehouses = locations?.filter((loc: { site: string }) => loc.site) || [];
+  const warehouses =
+    locations?.filter((loc: { site: string }) => loc.site) || [];
 
   return (
     <Card>
@@ -250,7 +282,7 @@ export function UserPreferencesSettings() {
           <Label>Default Warehouse</Label>
           <Select
             value={preferences?.defaultWarehouseId?.toString() || "none"}
-            onValueChange={(value) =>
+            onValueChange={value =>
               updateMutation.mutate({
                 defaultWarehouseId: value === "none" ? null : parseInt(value),
               })
@@ -262,7 +294,7 @@ export function UserPreferencesSettings() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">No Default</SelectItem>
-              {warehouses?.map((warehouse) => (
+              {warehouses?.map(warehouse => (
                 <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
                   {warehouse.site}
                   {warehouse.zone && ` - ${warehouse.zone}`}
@@ -281,37 +313,46 @@ export function UserPreferencesSettings() {
         <div className="space-y-4">
           <h3 className="text-sm font-semibold">Display Preferences</h3>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Show COGS in Orders</Label>
-              <p className="text-sm text-muted-foreground">
-                Display cost information when creating orders
-              </p>
-            </div>
-            <Switch
-              checked={preferences?.showCogsInOrders ?? true}
-              onCheckedChange={(checked) =>
-                updateMutation.mutate({ showCogsInOrders: checked })
-              }
-              disabled={updateMutation.isPending}
-            />
-          </div>
+          {canViewCogsPreferences ? (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Show COGS in Orders</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Display cost information when creating orders
+                  </p>
+                </div>
+                <Switch
+                  checked={preferences?.showCogsInOrders ?? true}
+                  onCheckedChange={checked =>
+                    updateMutation.mutate({ showCogsInOrders: checked })
+                  }
+                  disabled={updateMutation.isPending}
+                />
+              </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label>Show Margin in Orders</Label>
-              <p className="text-sm text-muted-foreground">
-                Display margin calculations when creating orders
-              </p>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Show Margin in Orders</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Display margin calculations when creating orders
+                  </p>
+                </div>
+                <Switch
+                  checked={preferences?.showMarginInOrders ?? true}
+                  onCheckedChange={checked =>
+                    updateMutation.mutate({ showMarginInOrders: checked })
+                  }
+                  disabled={updateMutation.isPending}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+              COGS and margin preferences are hidden because your role does not
+              include COGS access.
             </div>
-            <Switch
-              checked={preferences?.showMarginInOrders ?? true}
-              onCheckedChange={(checked) =>
-                updateMutation.mutate({ showMarginInOrders: checked })
-              }
-              disabled={updateMutation.isPending}
-            />
-          </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -322,7 +363,7 @@ export function UserPreferencesSettings() {
             </div>
             <Switch
               checked={preferences?.showGradeField ?? true}
-              onCheckedChange={(checked) =>
+              onCheckedChange={checked =>
                 updateMutation.mutate({ showGradeField: checked })
               }
               disabled={updateMutation.isPending}
@@ -338,7 +379,7 @@ export function UserPreferencesSettings() {
             </div>
             <Switch
               checked={preferences?.hideExpectedDelivery ?? false}
-              onCheckedChange={(checked) =>
+              onCheckedChange={checked =>
                 updateMutation.mutate({ hideExpectedDelivery: checked })
               }
               disabled={updateMutation.isPending}
@@ -367,46 +408,53 @@ export function UnitTypesManager() {
     description: string;
   } | null>(null);
 
-  const { data: unitTypes, refetch } = trpc.organizationSettings.unitTypes.list.useQuery();
+  const { data: unitTypes, refetch } =
+    trpc.organizationSettings.unitTypes.list.useQuery();
 
-  const createMutation = trpc.organizationSettings.unitTypes.create.useMutation({
-    onSuccess: () => {
-      toast.success("Unit type created");
-      setNewUnit({ code: "", name: "", category: "COUNT", description: "" });
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to create: ${error.message}`);
-    },
-  });
+  const createMutation = trpc.organizationSettings.unitTypes.create.useMutation(
+    {
+      onSuccess: () => {
+        toast.success("Unit type created");
+        setNewUnit({ code: "", name: "", category: "COUNT", description: "" });
+        refetch();
+      },
+      onError: error => {
+        toast.error(`Failed to create: ${error.message}`);
+      },
+    }
+  );
 
-  const updateMutation = trpc.organizationSettings.unitTypes.update.useMutation({
-    onSuccess: () => {
-      toast.success("Unit type updated");
-      setEditingId(null);
-      setEditData(null);
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to update: ${error.message}`);
-    },
-  });
+  const updateMutation = trpc.organizationSettings.unitTypes.update.useMutation(
+    {
+      onSuccess: () => {
+        toast.success("Unit type updated");
+        setEditingId(null);
+        setEditData(null);
+        refetch();
+      },
+      onError: error => {
+        toast.error(`Failed to update: ${error.message}`);
+      },
+    }
+  );
 
-  const deleteMutation = trpc.organizationSettings.unitTypes.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Unit type removed");
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to remove: ${error.message}`);
-    },
-  });
+  const deleteMutation = trpc.organizationSettings.unitTypes.delete.useMutation(
+    {
+      onSuccess: () => {
+        toast.success("Unit type removed");
+        refetch();
+      },
+      onError: error => {
+        toast.error(`Failed to remove: ${error.message}`);
+      },
+    }
+  );
 
   const categoryColors: Record<string, string> = {
-    WEIGHT: "bg-blue-100 text-blue-800",
-    COUNT: "bg-green-100 text-green-800",
-    VOLUME: "bg-purple-100 text-purple-800",
-    PACKAGED: "bg-orange-100 text-orange-800",
+    WEIGHT: "bg-[var(--info-bg)] text-[var(--info)]",
+    COUNT: "bg-[var(--success-bg)] text-[var(--success)]",
+    VOLUME: "bg-muted text-primary",
+    PACKAGED: "bg-[var(--warning-bg)] text-[var(--warning)]",
   };
 
   return (
@@ -429,7 +477,9 @@ export function UnitTypesManager() {
               <Label>Code *</Label>
               <Input
                 value={newUnit.code}
-                onChange={(e) => setNewUnit({ ...newUnit, code: e.target.value.toUpperCase() })}
+                onChange={e =>
+                  setNewUnit({ ...newUnit, code: e.target.value.toUpperCase() })
+                }
                 placeholder="e.g., PKG"
                 maxLength={20}
               />
@@ -438,7 +488,7 @@ export function UnitTypesManager() {
               <Label>Name *</Label>
               <Input
                 value={newUnit.name}
-                onChange={(e) => setNewUnit({ ...newUnit, name: e.target.value })}
+                onChange={e => setNewUnit({ ...newUnit, name: e.target.value })}
                 placeholder="e.g., Package"
               />
             </div>
@@ -446,7 +496,12 @@ export function UnitTypesManager() {
               <Label>Category</Label>
               <Select
                 value={newUnit.category}
-                onValueChange={(v) => setNewUnit({ ...newUnit, category: v as typeof newUnit.category })}
+                onValueChange={v =>
+                  setNewUnit({
+                    ...newUnit,
+                    category: v as typeof newUnit.category,
+                  })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -463,14 +518,18 @@ export function UnitTypesManager() {
               <Label>Description</Label>
               <Input
                 value={newUnit.description}
-                onChange={(e) => setNewUnit({ ...newUnit, description: e.target.value })}
+                onChange={e =>
+                  setNewUnit({ ...newUnit, description: e.target.value })
+                }
                 placeholder="Optional description"
               />
             </div>
           </div>
           <Button
             onClick={() => createMutation.mutate(newUnit)}
-            disabled={createMutation.isPending || !newUnit.code || !newUnit.name}
+            disabled={
+              createMutation.isPending || !newUnit.code || !newUnit.name
+            }
           >
             {createMutation.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -483,18 +542,30 @@ export function UnitTypesManager() {
 
         {/* Unit Types List */}
         <div className="border rounded-lg divide-y">
-          {unitTypes?.map((unit) => (
-            <div key={unit.id} className="p-4 flex items-center justify-between">
+          {unitTypes?.map(unit => (
+            <div
+              key={unit.id}
+              className="p-4 flex items-center justify-between"
+            >
               {editingId === unit.id ? (
                 <div className="flex-1 grid grid-cols-3 gap-2 mr-4">
                   <Input
                     value={editData?.name || ""}
-                    onChange={(e) => editData && setEditData({ ...editData, name: e.target.value })}
+                    onChange={e =>
+                      editData &&
+                      setEditData({ ...editData, name: e.target.value })
+                    }
                     placeholder="Name"
                   />
                   <Select
                     value={editData?.category || "COUNT"}
-                    onValueChange={(v) => editData && setEditData({ ...editData, category: v as typeof editData.category })}
+                    onValueChange={v =>
+                      editData &&
+                      setEditData({
+                        ...editData,
+                        category: v as typeof editData.category,
+                      })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -508,7 +579,10 @@ export function UnitTypesManager() {
                   </Select>
                   <Input
                     value={editData?.description || ""}
-                    onChange={(e) => editData && setEditData({ ...editData, description: e.target.value })}
+                    onChange={e =>
+                      editData &&
+                      setEditData({ ...editData, description: e.target.value })
+                    }
                     placeholder="Description"
                   />
                 </div>
@@ -524,7 +598,9 @@ export function UnitTypesManager() {
                       </Badge>
                     </div>
                     {unit.description && (
-                      <p className="text-sm text-muted-foreground">{unit.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {unit.description}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -535,7 +611,10 @@ export function UnitTypesManager() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => editData && updateMutation.mutate({ id: unit.id, ...editData })}
+                      onClick={() =>
+                        editData &&
+                        updateMutation.mutate({ id: unit.id, ...editData })
+                      }
                       disabled={updateMutation.isPending}
                     >
                       <Save className="h-4 w-4" />
@@ -578,13 +657,16 @@ export function UnitTypesManager() {
                           <AlertDialogTitle>Remove Unit Type</AlertDialogTitle>
                           <AlertDialogDescription>
                             This will deactivate the unit type "{unit.name}".
-                            Existing products using this unit will not be affected.
+                            Existing products using this unit will not be
+                            affected.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => deleteMutation.mutate({ id: unit.id })}
+                            onClick={() =>
+                              deleteMutation.mutate({ id: unit.id })
+                            }
                           >
                             Remove
                           </AlertDialogAction>
@@ -611,7 +693,9 @@ export function UnitTypesManager() {
 // FEAT-015: Finance Status Customization
 // ============================================================================
 export function FinanceStatusManager() {
-  const [selectedEntity, setSelectedEntity] = useState<"INVOICE" | "ORDER" | "PAYMENT" | "BILL" | "CREDIT">("ORDER");
+  const [selectedEntity, setSelectedEntity] = useState<
+    "INVOICE" | "ORDER" | "PAYMENT" | "BILL" | "CREDIT"
+  >("ORDER");
   const [newStatus, setNewStatus] = useState({
     statusCode: "",
     statusLabel: "",
@@ -627,41 +711,51 @@ export function FinanceStatusManager() {
     isTerminal: boolean;
   } | null>(null);
 
-  const { data: statusesGrouped, refetch } = trpc.organizationSettings.financeStatuses.listGrouped.useQuery();
+  const { data: statusesGrouped, refetch } =
+    trpc.organizationSettings.financeStatuses.listGrouped.useQuery();
   const statuses = statusesGrouped?.[selectedEntity] || [];
 
-  const createMutation = trpc.organizationSettings.financeStatuses.create.useMutation({
-    onSuccess: () => {
-      toast.success("Status created");
-      setNewStatus({ statusCode: "", statusLabel: "", color: "#6B7280", description: "", isTerminal: false });
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to create: ${error.message}`);
-    },
-  });
+  const createMutation =
+    trpc.organizationSettings.financeStatuses.create.useMutation({
+      onSuccess: () => {
+        toast.success("Status created");
+        setNewStatus({
+          statusCode: "",
+          statusLabel: "",
+          color: "#6B7280",
+          description: "",
+          isTerminal: false,
+        });
+        refetch();
+      },
+      onError: error => {
+        toast.error(`Failed to create: ${error.message}`);
+      },
+    });
 
-  const updateMutation = trpc.organizationSettings.financeStatuses.update.useMutation({
-    onSuccess: () => {
-      toast.success("Status updated");
-      setEditingId(null);
-      setEditData(null);
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to update: ${error.message}`);
-    },
-  });
+  const updateMutation =
+    trpc.organizationSettings.financeStatuses.update.useMutation({
+      onSuccess: () => {
+        toast.success("Status updated");
+        setEditingId(null);
+        setEditData(null);
+        refetch();
+      },
+      onError: error => {
+        toast.error(`Failed to update: ${error.message}`);
+      },
+    });
 
-  const deleteMutation = trpc.organizationSettings.financeStatuses.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Status removed");
-      refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to remove: ${error.message}`);
-    },
-  });
+  const deleteMutation =
+    trpc.organizationSettings.financeStatuses.delete.useMutation({
+      onSuccess: () => {
+        toast.success("Status removed");
+        refetch();
+      },
+      onError: error => {
+        toast.error(`Failed to remove: ${error.message}`);
+      },
+    });
 
   return (
     <Card>
@@ -680,7 +774,7 @@ export function FinanceStatusManager() {
           <Label>Entity Type</Label>
           <Select
             value={selectedEntity}
-            onValueChange={(v) => setSelectedEntity(v as typeof selectedEntity)}
+            onValueChange={v => setSelectedEntity(v as typeof selectedEntity)}
           >
             <SelectTrigger className="w-48">
               <SelectValue />
@@ -703,7 +797,12 @@ export function FinanceStatusManager() {
               <Label>Code *</Label>
               <Input
                 value={newStatus.statusCode}
-                onChange={(e) => setNewStatus({ ...newStatus, statusCode: e.target.value.toUpperCase() })}
+                onChange={e =>
+                  setNewStatus({
+                    ...newStatus,
+                    statusCode: e.target.value.toUpperCase(),
+                  })
+                }
                 placeholder="e.g., PENDING"
                 maxLength={50}
               />
@@ -712,7 +811,9 @@ export function FinanceStatusManager() {
               <Label>Label *</Label>
               <Input
                 value={newStatus.statusLabel}
-                onChange={(e) => setNewStatus({ ...newStatus, statusLabel: e.target.value })}
+                onChange={e =>
+                  setNewStatus({ ...newStatus, statusLabel: e.target.value })
+                }
                 placeholder="e.g., Pending Review"
               />
             </div>
@@ -722,12 +823,16 @@ export function FinanceStatusManager() {
                 <Input
                   type="color"
                   value={newStatus.color}
-                  onChange={(e) => setNewStatus({ ...newStatus, color: e.target.value })}
+                  onChange={e =>
+                    setNewStatus({ ...newStatus, color: e.target.value })
+                  }
                   className="w-12 h-10 p-1"
                 />
                 <Input
                   value={newStatus.color}
-                  onChange={(e) => setNewStatus({ ...newStatus, color: e.target.value })}
+                  onChange={e =>
+                    setNewStatus({ ...newStatus, color: e.target.value })
+                  }
                   placeholder="#6B7280"
                   className="flex-1"
                 />
@@ -737,7 +842,9 @@ export function FinanceStatusManager() {
               <Label>Description</Label>
               <Input
                 value={newStatus.description}
-                onChange={(e) => setNewStatus({ ...newStatus, description: e.target.value })}
+                onChange={e =>
+                  setNewStatus({ ...newStatus, description: e.target.value })
+                }
                 placeholder="Optional"
               />
             </div>
@@ -746,15 +853,28 @@ export function FinanceStatusManager() {
               <div className="flex items-center h-10">
                 <Switch
                   checked={newStatus.isTerminal}
-                  onCheckedChange={(checked) => setNewStatus({ ...newStatus, isTerminal: checked })}
+                  onCheckedChange={checked =>
+                    setNewStatus({ ...newStatus, isTerminal: checked })
+                  }
                 />
-                <span className="ml-2 text-sm text-muted-foreground">Final status</span>
+                <span className="ml-2 text-sm text-muted-foreground">
+                  Final status
+                </span>
               </div>
             </div>
           </div>
           <Button
-            onClick={() => createMutation.mutate({ entityType: selectedEntity, ...newStatus })}
-            disabled={createMutation.isPending || !newStatus.statusCode || !newStatus.statusLabel}
+            onClick={() =>
+              createMutation.mutate({
+                entityType: selectedEntity,
+                ...newStatus,
+              })
+            }
+            disabled={
+              createMutation.isPending ||
+              !newStatus.statusCode ||
+              !newStatus.statusLabel
+            }
           >
             {createMutation.isPending ? (
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -767,38 +887,56 @@ export function FinanceStatusManager() {
 
         {/* Statuses List */}
         <div className="border rounded-lg divide-y">
-          {statuses.map((status) => (
-            <div key={status.id} className="p-4 flex items-center justify-between">
+          {statuses.map(status => (
+            <div
+              key={status.id}
+              className="p-4 flex items-center justify-between"
+            >
               {editingId === status.id ? (
                 <div className="flex-1 grid grid-cols-4 gap-2 mr-4">
                   <Input
                     value={editData?.statusLabel || ""}
-                    onChange={(e) => editData && setEditData({ ...editData, statusLabel: e.target.value })}
+                    onChange={e =>
+                      editData &&
+                      setEditData({ ...editData, statusLabel: e.target.value })
+                    }
                     placeholder="Label"
                   />
                   <div className="flex gap-2">
                     <Input
                       type="color"
                       value={editData?.color || "#6B7280"}
-                      onChange={(e) => editData && setEditData({ ...editData, color: e.target.value })}
+                      onChange={e =>
+                        editData &&
+                        setEditData({ ...editData, color: e.target.value })
+                      }
                       className="w-12 h-10 p-1"
                     />
                     <Input
                       value={editData?.color || ""}
-                      onChange={(e) => editData && setEditData({ ...editData, color: e.target.value })}
+                      onChange={e =>
+                        editData &&
+                        setEditData({ ...editData, color: e.target.value })
+                      }
                       placeholder="Color"
                       className="flex-1"
                     />
                   </div>
                   <Input
                     value={editData?.description || ""}
-                    onChange={(e) => editData && setEditData({ ...editData, description: e.target.value })}
+                    onChange={e =>
+                      editData &&
+                      setEditData({ ...editData, description: e.target.value })
+                    }
                     placeholder="Description"
                   />
                   <div className="flex items-center">
                     <Switch
                       checked={editData?.isTerminal || false}
-                      onCheckedChange={(checked) => editData && setEditData({ ...editData, isTerminal: checked })}
+                      onCheckedChange={checked =>
+                        editData &&
+                        setEditData({ ...editData, isTerminal: checked })
+                      }
                     />
                     <span className="ml-2 text-sm">Terminal</span>
                   </div>
@@ -811,7 +949,9 @@ export function FinanceStatusManager() {
                   />
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-sm">{status.statusCode}</span>
+                      <span className="font-mono text-sm">
+                        {status.statusCode}
+                      </span>
                       <span className="font-medium">{status.statusLabel}</span>
                       {status.isDefault && (
                         <Badge variant="secondary">Default</Badge>
@@ -821,7 +961,9 @@ export function FinanceStatusManager() {
                       )}
                     </div>
                     {status.description && (
-                      <p className="text-sm text-muted-foreground">{status.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {status.description}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -832,7 +974,10 @@ export function FinanceStatusManager() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => editData && updateMutation.mutate({ id: status.id, ...editData })}
+                      onClick={() =>
+                        editData &&
+                        updateMutation.mutate({ id: status.id, ...editData })
+                      }
                       disabled={updateMutation.isPending}
                     >
                       <Save className="h-4 w-4" />
@@ -875,14 +1020,17 @@ export function FinanceStatusManager() {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Remove Status</AlertDialogTitle>
                           <AlertDialogDescription>
-                            This will deactivate the status "{status.statusLabel}".
-                            Existing records using this status will not be affected.
+                            This will deactivate the status "
+                            {status.statusLabel}". Existing records using this
+                            status will not be affected.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
-                            onClick={() => deleteMutation.mutate({ id: status.id })}
+                            onClick={() =>
+                              deleteMutation.mutate({ id: status.id })
+                            }
                           >
                             Remove
                           </AlertDialogAction>

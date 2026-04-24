@@ -510,7 +510,7 @@ export const WRITE_PATH_SALES_CHAINS: TestChain[] = [
           {
             action: "click",
             target:
-              'button:has-text("Create"), button:has-text("Add"), button:has-text("New Client"), [data-testid*="create-client"], [data-testid*="add-client"]',
+              'button:has-text("Quick Add"), button:has-text("Create"), button:has-text("Add"), button:has-text("New Client"), [data-testid*="create-client"], [data-testid*="add-client"]',
             wait_for: "text=Name, text=Client, input, form",
           },
           { action: "wait", network_idle: true, timeout: 5000 },
@@ -519,34 +519,28 @@ export const WRITE_PATH_SALES_CHAINS: TestChain[] = [
       },
       {
         phase_id: "fill-client-all-fields",
-        description: "Fill name, email, phone, and address fields",
+        description:
+          "Fill name, email, and phone or messaging handle in the quick-add modal",
         steps: [
           {
             action: "type",
             target:
-              'input[name="name"], input[placeholder*="name" i], input[aria-label*="name" i], #name',
+              '#quick-name, input[name="name"], input[placeholder*="code name" i], input[placeholder*="name" i], input[aria-label*="name" i], #name',
             value: "QA Write-Path Client {{timestamp}}",
             clear_first: true,
           },
           {
             action: "type",
             target:
-              'input[name="email"], input[placeholder*="email" i], input[type="email"]',
+              '#quick-email, input[name="email"], input[placeholder*="email" i], input[type="email"]',
             value: "qa-write-path-{{timestamp}}@example.com",
             clear_first: true,
           },
           {
             action: "type",
             target:
-              'input[name="phone"], input[placeholder*="phone" i], input[aria-label*="phone" i]',
+              '#quick-phone, input[name="phone"], input[placeholder*="messaging" i], input[placeholder*="signalhandle" i], input[placeholder*="phone" i], input[aria-label*="messaging" i], input[aria-label*="phone" i]',
             value: "555-WP-TEST",
-            clear_first: true,
-          },
-          {
-            action: "type",
-            target:
-              'input[name="address"], input[name="street"], textarea[name="address"], input[placeholder*="address" i]',
-            value: "123 QA Write Path Ave",
             clear_first: true,
           },
           { action: "screenshot", name: "wp-client-crud-form-filled" },
@@ -559,7 +553,7 @@ export const WRITE_PATH_SALES_CHAINS: TestChain[] = [
           {
             action: "click",
             target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Create Client"), button:has-text("Submit")',
+              'button[type="submit"], button:has-text("Create Relationship"), button:has-text("Create Client"), button:has-text("Save"), button:has-text("Submit")',
             wait_for: "text=Success, text=Created, text=saved, text=Client",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
@@ -614,33 +608,41 @@ export const WRITE_PATH_SALES_CHAINS: TestChain[] = [
       },
       {
         phase_id: "edit-multiple-fields",
-        description: "Edit phone, email, and notes fields",
+        description:
+          "Open the full profile, edit phone, email, and notes fields, then save",
         steps: [
           {
             action: "click",
             target:
-              'button:has-text("Edit"), [data-testid*="edit-client"], button:has-text("Modify")',
+              'button:has-text("Open full profile"), button:has-text("Open Full Profile")',
+            wait_for: 'button:has-text("Edit Profile"), main',
+          },
+          { action: "wait", network_idle: true, timeout: 8000 },
+          {
+            action: "click",
+            target:
+              'button:has-text("Edit Profile"), button:has-text("Edit"), [data-testid*="edit-profile"]',
             wait_for: "input, form",
           },
           { action: "wait", network_idle: true, timeout: 5000 },
           {
             action: "type",
             target:
-              'input[name="phone"], input[placeholder*="phone" i], input[aria-label*="phone" i]',
+              '#profile-phone, #quick-phone, input[name="phone"], input[placeholder*="messaging" i], input[placeholder*="signalhandle" i], input[placeholder*="phone" i], input[aria-label*="messaging" i], input[aria-label*="phone" i]',
             value: "555-EDITED-WP",
             clear_first: true,
           },
           {
             action: "type",
             target:
-              'input[name="email"], input[placeholder*="email" i], input[type="email"]',
+              '#profile-email, #quick-email, input[name="email"], input[placeholder*="email" i], input[type="email"]',
             value: "qa-edited@example.com",
             clear_first: true,
           },
           {
             action: "type",
             target:
-              'textarea[name="notes"], input[name="notes"], textarea[placeholder*="note" i]',
+              '#profile-wishlist, textarea[name="notes"], input[name="notes"], textarea[placeholder*="note" i]',
             value: "QA write-path edit verified",
             clear_first: true,
           },
@@ -654,7 +656,7 @@ export const WRITE_PATH_SALES_CHAINS: TestChain[] = [
           {
             action: "click",
             target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Update")',
+              'button[type="submit"], button:has-text("Save"), button:has-text("Update"), button:has-text("Save Changes")',
             wait_for: "text=Success, text=Updated, text=saved",
           },
           { action: "wait", network_idle: true, timeout: 8000 },

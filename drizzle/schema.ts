@@ -1647,7 +1647,11 @@ export const creditLimitSourceEnum = mysqlEnum("creditLimitSource", [
 export const cogsAdjustmentTypeEnum = mysqlEnum("cogsAdjustmentType", [
   "NONE",
   "PERCENTAGE",
+  "PERCENTAGE_DECREASE",
+  "PERCENTAGE_INCREASE",
   "FIXED_AMOUNT",
+  "FIXED_DECREASE",
+  "FIXED_INCREASE",
 ]);
 
 /**
@@ -2786,6 +2790,10 @@ export const orders = mysqlTable(
     subtotal: decimal("subtotal", { precision: 15, scale: 2 }).notNull(),
     tax: decimal("tax", { precision: 15, scale: 2 }).default("0"),
     discount: decimal("discount", { precision: 15, scale: 2 }).default("0"),
+    shipping: decimal("shipping", { precision: 15, scale: 2 }).default("0"),
+    showAdjustmentOnDocument: boolean("show_adjustment_on_document")
+      .notNull()
+      .default(true),
     total: decimal("total", { precision: 15, scale: 2 }).notNull(),
     totalCogs: decimal("total_cogs", { precision: 15, scale: 4 }), // SCHEMA-012: standardized to decimal(15,4)
     totalMargin: decimal("total_margin", { precision: 15, scale: 2 }),
@@ -3558,16 +3566,24 @@ export const sampleRequestStatusEnum = mysqlEnum("sampleRequestStatus", [
 ]);
 
 /**
- * Sample Location Enum (SAMPLE-008)
- * Tracks where each sample is physically located
+ * Sample Location Enum Values (SAMPLE-008)
+ * Shared value list for the sample-location ENUM. The Drizzle `mysqlEnum`
+ * helper treats its first positional arg as the SQL column name, so we
+ * cannot reuse a single `sampleLocationEnum` binding across three columns
+ * (`location`, `fromLocation`, `toLocation`). Instead, each column
+ * declares its own `mysqlEnum("<colName>", SAMPLE_LOCATION_VALUES)`.
+ *
+ * TER-1194: fix column-name collision that caused Drizzle to issue
+ * queries against a non-existent `sampleLocation` column.
  */
-export const sampleLocationEnum = mysqlEnum("sampleLocation", [
+export const SAMPLE_LOCATION_VALUES = [
   "WAREHOUSE",
   "WITH_CLIENT",
   "WITH_SALES_REP",
   "RETURNED",
   "LOST",
-]);
+] as const;
+export type SampleLocationValue = (typeof SAMPLE_LOCATION_VALUES)[number];
 
 /**
  * Sample Requests Table
@@ -3615,7 +3631,7 @@ export const sampleRequests = mysqlTable(
     vendorShippedDate: timestamp("vendorShippedDate"),
     vendorConfirmedDate: timestamp("vendorConfirmedDate"),
     // Location tracking (SAMPLE-008)
-    location: sampleLocationEnum.default("WAREHOUSE"),
+    location: mysqlEnum("location", SAMPLE_LOCATION_VALUES).default("WAREHOUSE"),
     // Expiration tracking (SAMPLE-009)
     expirationDate: timestamp("expirationDate"),
     createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -3693,8 +3709,8 @@ export const sampleLocationHistory = mysqlTable(
     sampleRequestId: int("sampleRequestId")
       .notNull()
       .references(() => sampleRequests.id, { onDelete: "cascade" }),
-    fromLocation: sampleLocationEnum,
-    toLocation: sampleLocationEnum.notNull(),
+    fromLocation: mysqlEnum("fromLocation", SAMPLE_LOCATION_VALUES),
+    toLocation: mysqlEnum("toLocation", SAMPLE_LOCATION_VALUES).notNull(),
     changedBy: int("changedBy")
       .notNull()
       .references(() => users.id),

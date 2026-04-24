@@ -2,7 +2,7 @@
 
 **Platform**: DigitalOcean App Platform
 **URL**: https://terp-staging-yicld.ondigitalocean.app
-**Trigger**: Auto-deploy on push to `main`
+**Trigger**: Auto-deploy on push to `main` (`main` is the current staging branch as of March 28, 2026)
 
 ---
 
@@ -18,7 +18,7 @@
 ### Auto-Deploy (standard)
 
 1. Merge PR to `main`
-2. DigitalOcean detects push and auto-deploys to staging
+2. DigitalOcean detects the push to `main` and auto-deploys staging
 3. Monitor the build in the DigitalOcean App Platform console
 
 ### Manual Deploy
@@ -29,7 +29,7 @@
 
 ### Skip Deploy
 
-Add `[skip-staging-sync]` to the commit message to merge docs-only changes without triggering a deploy.
+There is no `[skip-staging-sync]` bypass in the direct-to-`main` staging model. Any push to `main` will deploy staging.
 
 ## Post-Deploy Verification
 
@@ -61,7 +61,7 @@ git revert HEAD
 git push origin main
 ```
 
-DigitalOcean will auto-deploy the reverted state.
+DigitalOcean will auto-deploy the reverted state to staging.
 
 ### Option B: DigitalOcean console rollback
 

@@ -8,6 +8,9 @@ interface Event {
   endDate: string;
   endTime?: string | null;
   eventType: string;
+  entityType?: string;
+  entityId?: number;
+  clientId?: number | null;
   status: string;
   priority: string;
 }
@@ -108,13 +111,13 @@ export default function MonthView({ currentDate, events, onEventClick, onDateCli
             onClick={() => onDateClick?.(day.date)}
             className={`min-h-[120px] border-b border-r border-gray-200 p-2 last:border-r-0 cursor-pointer hover:bg-gray-100 ${
               !day.isCurrentMonth ? "bg-gray-50" : ""
-            } ${day.isToday ? "bg-blue-50" : ""}`}
+            } ${day.isToday ? "bg-[var(--info-bg)]" : ""}`}
           >
             {/* Date Number */}
             <div
               className={`mb-1 text-sm font-medium ${
                 day.isToday
-                  ? "flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-white"
+                  ? "flex h-6 w-6 items-center justify-center rounded-full bg-[var(--info)] text-white"
                   : day.isCurrentMonth
                   ? "text-gray-900"
                   : "text-gray-400"
@@ -169,14 +172,15 @@ function getEventsForDate(date: Date, events: Event[]): Event[] {
 }
 
 function getEventColorClass(event: Event): string {
-  // Priority-based colors
-  if (event.priority === "URGENT") {
-    return "bg-red-100 text-red-800";
-  } else if (event.priority === "HIGH") {
-    return "bg-orange-100 text-orange-800";
-  } else if (event.priority === "MEDIUM") {
-    return "bg-blue-100 text-blue-800";
+  // Event-type-based colors
+  if (event.eventType === "INTAKE") {
+    return "bg-[var(--success-bg)] text-[var(--success)] border-l-4 border-green-500";
+  } else if (event.eventType === "DELIVERY") {
+    return "bg-[var(--info-bg)] text-[var(--info)] border-l-4 border-blue-500";
+  } else if (event.eventType === "PAYMENT_DUE") {
+    return "bg-[var(--warning-bg)] text-[var(--warning)] border-l-4 border-orange-500";
   } else {
+    // Fallback for other event types
     return "bg-gray-100 text-gray-800";
   }
 }

@@ -48,16 +48,14 @@ export function parsePaymentRouteContext(search: string): PaymentRouteContext {
     paymentId,
     invoiceId,
     orderId,
-    initialSearchQuery:
-      paymentId !== null
-        ? String(paymentId)
-        : orderId !== null
-          ? orderId
-          : "",
+    initialSearchQuery: paymentId !== null ? String(paymentId) : "",
   };
 }
 
-export function paymentMatchesSearch(payment: Payment, normalizedQuery: string) {
+export function paymentMatchesSearch(
+  payment: Payment,
+  normalizedQuery: string
+) {
   if (!normalizedQuery) return true;
 
   return [
@@ -103,7 +101,9 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const routeFiltered =
       routeContext.paymentId !== null
-        ? paymentList.filter((payment: Payment) => payment.id === routeContext.paymentId)
+        ? paymentList.filter(
+            (payment: Payment) => payment.id === routeContext.paymentId
+          )
         : paymentList;
 
     const searched = normalizedQuery
@@ -121,8 +121,7 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
             new Date(b.paymentDate).getTime();
           break;
         case "amount":
-          comparison =
-            parseFloat(a.amount) - parseFloat(b.amount);
+          comparison = parseFloat(a.amount) - parseFloat(b.amount);
           break;
         case "paymentType":
           comparison = String(a.paymentType || "").localeCompare(
@@ -138,13 +137,7 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
 
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [
-    payments,
-    routeContext.paymentId,
-    searchQuery,
-    sortDirection,
-    sortField,
-  ]);
+  }, [payments, routeContext.paymentId, searchQuery, sortDirection, sortField]);
 
   // Calculate totals
   const totalPayments = filteredPayments.length;
@@ -206,10 +199,10 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Received</CardTitle>
-            <ArrowDownCircle className="h-4 w-4 text-green-600" />
+            <ArrowDownCircle className="h-4 w-4 text-[var(--success)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[var(--success)]">
               {formatCurrency(totalReceived)}
             </div>
           </CardContent>
@@ -217,10 +210,10 @@ export default function Payments({ embedded }: { embedded?: boolean } = {}) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Sent</CardTitle>
-            <ArrowUpCircle className="h-4 w-4 text-red-600" />
+            <ArrowUpCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-destructive">
               {formatCurrency(totalSent)}
             </div>
           </CardContent>

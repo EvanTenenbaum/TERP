@@ -1,0 +1,479 @@
+<h2>Phase 2: Purchase Orders — Queue + Creation Split Surface</h2>
+<p class="subtitle">Queue mode for browsing POs. Creation mode with multi-source left browser + editable PO document right.</p>
+
+<div class="mockup">
+  <div class="mockup-header">PurchaseOrderSurface.tsx — Queue Mode (default)</div>
+  <div class="mockup-body" style="font-family: system-ui; font-size: 11px; background: #fafafa;">
+
+    <!-- Toolbar -->
+    <div style="display:flex; align-items:center; gap:6px; padding:4px 8px; background:#fff; border-bottom:1px solid #e5e7eb;">
+      <span style="font-weight:600; font-size:12px;">Purchase Orders</span>
+      <div style="display:flex; gap:4px; margin-left:8px;">
+        <span style="background:#f3f4f6; color:#374151; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:500;">12 draft</span>
+        <span style="background:#eff6ff; color:#1e40af; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:500;">5 confirmed</span>
+        <span style="background:#fefce8; color:#854d0e; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:500;">3 receiving</span>
+      </div>
+      <div style="flex:1;"></div>
+      <span style="padding:3px 10px; border:none; border-radius:4px; font-size:10px; background:#1e40af; color:white; cursor:pointer; font-weight:500;">+ New PO</span>
+      <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white;">Export CSV</span>
+    </div>
+
+    <!-- Action Bar -->
+    <div style="display:flex; align-items:center; gap:6px; padding:3px 8px; background:#f9fafb; border-bottom:1px solid #e5e7eb;">
+      <input placeholder="Search PO number or supplier..." style="font-size:10px; padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; width:200px; background:white;" />
+      <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white;">Status ▾</span>
+      <div style="flex:1;"></div>
+      <span style="font-size:9px; color:#9ca3af;">Select a PO to see details and take action</span>
+    </div>
+
+    <!-- PO Queue Grid -->
+    <div style="border:1px solid #e5e7eb; border-radius:6px; margin:6px; background:white; overflow:hidden;">
+      <div style="padding:4px 8px; background:#f8fafc; border-bottom:1px solid #e5e7eb; display:flex; align-items:center;">
+        <span style="font-size:10px; font-weight:500; color:#374151;">PO Queue</span>
+        <span style="font-size:9px; color:#9ca3af; margin-left:8px;">47 purchase orders</span>
+      </div>
+      <table style="width:100%; border-collapse:collapse; font-size:10px;">
+        <thead>
+          <tr style="background:#f8fafc; border-bottom:1px solid #e5e7eb;">
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:100px;">PO Number</th>
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280;">Supplier</th>
+            <th style="padding:3px 6px; text-align:center; font-weight:500; color:#6b7280; width:90px;">Status</th>
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:90px;">Order Date</th>
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:90px;">Est. Delivery</th>
+            <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:90px;">Total</th>
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:80px;">Terms</th>
+            <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:50px;">Lines</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #f3f4f6; background:#eff6ff;">
+            <td style="padding:3px 6px; font-weight:500;">PO-2026-089</td>
+            <td style="padding:3px 6px;">GreenLeaf Farms</td>
+            <td style="padding:3px 6px; text-align:center;"><span style="background:#f3f4f6; color:#374151; padding:1px 6px; border-radius:3px; font-size:9px;">Draft</span></td>
+            <td style="padding:3px 6px;">3/27/2026</td>
+            <td style="padding:3px 6px;">4/3/2026</td>
+            <td style="padding:3px 6px; text-align:right;">$14,400.00</td>
+            <td style="padding:3px 6px;">NET_30</td>
+            <td style="padding:3px 6px; text-align:right;">6</td>
+          </tr>
+          <tr style="border-bottom:1px solid #f3f4f6;">
+            <td style="padding:3px 6px; font-weight:500;">PO-2026-088</td>
+            <td style="padding:3px 6px;">SunFarm Co</td>
+            <td style="padding:3px 6px; text-align:center;"><span style="background:#dcfce7; color:#166534; padding:1px 6px; border-radius:3px; font-size:9px;">Confirmed</span></td>
+            <td style="padding:3px 6px;">3/25/2026</td>
+            <td style="padding:3px 6px;">4/1/2026</td>
+            <td style="padding:3px 6px; text-align:right;">$8,200.00</td>
+            <td style="padding:3px 6px;">NET_15</td>
+            <td style="padding:3px 6px; text-align:right;">4</td>
+          </tr>
+          <tr style="border-bottom:1px solid #f3f4f6;">
+            <td style="padding:3px 6px; font-weight:500;">PO-2026-087</td>
+            <td style="padding:3px 6px;">MountainCo Growers</td>
+            <td style="padding:3px 6px; text-align:center;"><span style="background:#fef9c3; color:#854d0e; padding:1px 6px; border-radius:3px; font-size:9px;">Receiving</span></td>
+            <td style="padding:3px 6px;">3/22/2026</td>
+            <td style="padding:3px 6px;">3/28/2026</td>
+            <td style="padding:3px 6px; text-align:right;">$22,100.00</td>
+            <td style="padding:3px 6px;">COD</td>
+            <td style="padding:3px 6px; text-align:right;">8</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="padding:3px 8px; background:#f8fafc; border-top:1px solid #e5e7eb; font-size:9px; color:#9ca3af;">
+        47 POs · 12 draft · 5 confirmed · 3 receiving
+      </div>
+    </div>
+
+    <!-- Selected PO: KPI Cards + Line Items + Workflow Actions -->
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; margin:0 6px 6px;">
+      <div style="border:1px solid #e5e7eb; border-radius:6px; background:white; padding:6px 8px;">
+        <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:#9ca3af;">Supplier</div>
+        <div style="font-size:11px; font-weight:500; margin-top:2px;">GreenLeaf Farms</div>
+      </div>
+      <div style="border:1px solid #e5e7eb; border-radius:6px; background:white; padding:6px 8px;">
+        <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:#9ca3af;">Status</div>
+        <div style="font-size:11px; font-weight:500; margin-top:2px;">Draft · created today</div>
+      </div>
+      <div style="border:1px solid #e5e7eb; border-radius:6px; background:white; padding:6px 8px;">
+        <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:#9ca3af;">Total</div>
+        <div style="font-size:11px; font-weight:500; margin-top:2px;">$14,400.00 · 6 lines</div>
+      </div>
+      <div style="border:1px solid #e5e7eb; border-radius:6px; background:white; padding:6px 8px;">
+        <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.1em; color:#9ca3af;">Actions</div>
+        <div style="display:flex; gap:4px; margin-top:2px;">
+          <span style="padding:2px 6px; border-radius:3px; font-size:9px; background:#1e40af; color:white; cursor:pointer;">Send</span>
+          <span style="padding:2px 6px; border-radius:3px; font-size:9px; background:white; border:1px solid #d1d5db; cursor:pointer;">Edit</span>
+          <span style="padding:2px 6px; border-radius:3px; font-size:9px; background:white; border:1px solid #fca5a5; color:#dc2626; cursor:pointer;">Delete</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Line Items Grid -->
+    <div style="border:1px solid #e5e7eb; border-radius:6px; margin:0 6px 6px; background:white; overflow:hidden;">
+      <div style="padding:4px 8px; background:#f8fafc; border-bottom:1px solid #e5e7eb;">
+        <span style="font-size:10px; font-weight:500; color:#374151;">Line Items — PO-2026-089</span>
+      </div>
+      <table style="width:100%; border-collapse:collapse; font-size:10px;">
+        <thead>
+          <tr style="background:#f8fafc; border-bottom:1px solid #e5e7eb;">
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280;">Product</th>
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:90px;">Category</th>
+            <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:70px;">Ordered</th>
+            <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:70px;">Received</th>
+            <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:70px;">COGS</th>
+            <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:80px;">Unit Cost</th>
+            <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:90px;">Line Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #f3f4f6;">
+            <td style="padding:3px 6px;">Wedding Cake · Tops/Colas</td>
+            <td style="padding:3px 6px;">Flower</td>
+            <td style="padding:3px 6px; text-align:right;">2,000</td>
+            <td style="padding:3px 6px; text-align:right; color:#9ca3af;">0</td>
+            <td style="padding:3px 6px;">FIXED</td>
+            <td style="padding:3px 6px; text-align:right;">$2.40</td>
+            <td style="padding:3px 6px; text-align:right; font-weight:500;">$4,800.00</td>
+          </tr>
+          <tr style="border-bottom:1px solid #f3f4f6;">
+            <td style="padding:3px 6px;">Gelato · Smalls</td>
+            <td style="padding:3px 6px;">Flower</td>
+            <td style="padding:3px 6px; text-align:right;">3,000</td>
+            <td style="padding:3px 6px; text-align:right; color:#9ca3af;">0</td>
+            <td style="padding:3px 6px;">RANGE</td>
+            <td style="padding:3px 6px; text-align:right;">$1.60–$2.00</td>
+            <td style="padding:3px 6px; text-align:right; font-weight:500;">$5,400.00</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Status Bar -->
+    <div style="display:flex; align-items:center; padding:3px 8px; background:#f8fafc; border-top:1px solid #e5e7eb; font-size:9px; color:#9ca3af;">
+      <span>47 POs · PO-2026-089 selected · Draft</span>
+      <div style="flex:1;"></div>
+      <span>Click select · ⌘K search</span>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:24px;"></div>
+
+<div class="mockup">
+  <div class="mockup-header">PurchaseOrderSurface.tsx — Creation Mode (split surface)</div>
+  <div class="mockup-body" style="font-family: system-ui; font-size: 11px; background: #fafafa;">
+
+    <!-- Toolbar -->
+    <div style="display:flex; align-items:center; gap:6px; padding:4px 8px; background:#fff; border-bottom:1px solid #e5e7eb;">
+      <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white; cursor:pointer;">← Back to Queue</span>
+      <span style="font-weight:600; font-size:12px;">New Purchase Order</span>
+      <div style="display:flex; align-items:center; gap:4px; margin-left:8px; padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; background:white;">
+        <span style="font-size:9px; color:#6b7280;">Supplier:</span>
+        <span style="font-size:10px; font-weight:500;">GreenLeaf Farms</span>
+        <span style="font-size:9px; color:#9ca3af;">▾</span>
+      </div>
+      <div style="flex:1;"></div>
+      <span style="background:#f0fdf4; color:#166534; padding:1px 6px; border-radius:4px; font-size:9px;">AUTO / saved</span>
+      <span style="padding:3px 10px; border:1px solid #d1d5db; border-radius:4px; font-size:10px; background:white; cursor:pointer;">Save Draft</span>
+      <span style="padding:3px 10px; border:none; border-radius:4px; font-size:10px; background:#1e40af; color:white; cursor:pointer; font-weight:500;">Submit PO</span>
+    </div>
+
+    <!-- Split Area -->
+    <div style="display:flex; gap:6px; padding:6px; flex:1;">
+
+      <!-- Left: Multi-source Product Browser -->
+      <div style="flex:2; border:1px solid #e5e7eb; border-radius:6px; background:white; overflow:hidden; display:flex; flex-direction:column;">
+        <div style="padding:4px 8px; background:#f8fafc; border-bottom:1px solid #e5e7eb; display:flex; align-items:center; gap:6px;">
+          <div style="display:inline-flex; border:1px solid #d1d5db; border-radius:4px; overflow:hidden;">
+            <span style="padding:2px 8px; background:#1e40af; color:white; font-size:9px; font-weight:500;">Supplier History</span>
+            <span style="padding:2px 8px; background:white; color:#6b7280; font-size:9px;">Low Stock</span>
+            <span style="padding:2px 8px; background:white; color:#6b7280; font-size:9px;">Catalog</span>
+          </div>
+          <input placeholder="Search products..." style="font-size:10px; padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; flex:1; background:white;" />
+        </div>
+        <table style="width:100%; border-collapse:collapse; font-size:10px;">
+          <thead>
+            <tr style="background:#f8fafc; border-bottom:1px solid #e5e7eb;">
+              <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280;">Product</th>
+              <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:70px;">Category</th>
+              <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:65px;">Last Cost</th>
+              <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:80px;">Last PO</th>
+              <th style="padding:3px 6px; text-align:center; font-weight:500; color:#6b7280; width:50px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:3px 6px;">Wedding Cake · Tops/Colas</td>
+              <td style="padding:3px 6px;">Flower</td>
+              <td style="padding:3px 6px; text-align:right;">$2.40</td>
+              <td style="padding:3px 6px; font-size:9px; color:#6b7280;">PO-085 · 3/10</td>
+              <td style="padding:3px 6px; text-align:center;"><span style="background:#dcfce7; color:#166534; padding:1px 6px; border-radius:3px; font-size:9px; cursor:pointer;">+ Add</span></td>
+            </tr>
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:3px 6px;">Gelato · Smalls</td>
+              <td style="padding:3px 6px;">Flower</td>
+              <td style="padding:3px 6px; text-align:right;">$1.80</td>
+              <td style="padding:3px 6px; font-size:9px; color:#6b7280;">PO-085 · 3/10</td>
+              <td style="padding:3px 6px; text-align:center;"><span style="background:#dcfce7; color:#166534; padding:1px 6px; border-radius:3px; font-size:9px; cursor:pointer;">+ Add</span></td>
+            </tr>
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:3px 6px;">OG Kush · Trim</td>
+              <td style="padding:3px 6px;">Flower</td>
+              <td style="padding:3px 6px; text-align:right;">$1.20</td>
+              <td style="padding:3px 6px; font-size:9px; color:#6b7280;">PO-079 · 2/18</td>
+              <td style="padding:3px 6px; text-align:center;"><span style="background:#dcfce7; color:#166534; padding:1px 6px; border-radius:3px; font-size:9px; cursor:pointer;">+ Add</span></td>
+            </tr>
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:3px 6px;">Blue Dream · Larf</td>
+              <td style="padding:3px 6px;">Flower</td>
+              <td style="padding:3px 6px; text-align:right;">$0.90</td>
+              <td style="padding:3px 6px; font-size:9px; color:#6b7280;">PO-072 · 1/22</td>
+              <td style="padding:3px 6px; text-align:center;"><span style="background:#e5e7eb; color:#6b7280; padding:1px 6px; border-radius:3px; font-size:9px;">Added</span></td>
+            </tr>
+            <tr style="opacity:0.4;"><td colspan="5" style="padding:3px 6px;">... more products</td></tr>
+          </tbody>
+        </table>
+        <div style="padding:3px 8px; background:#f8fafc; border-top:1px solid #e5e7eb; font-size:9px; color:#9ca3af; margin-top:auto;">
+          Supplier History · 8 recent products from GreenLeaf Farms
+        </div>
+      </div>
+
+      <!-- Right: PO Document Grid (editable) -->
+      <div style="flex:3; border:1px solid #e5e7eb; border-radius:6px; background:white; overflow:hidden; display:flex; flex-direction:column;">
+        <div style="padding:4px 8px; background:#f8fafc; border-bottom:1px solid #e5e7eb; display:flex; align-items:center;">
+          <span style="font-size:10px; font-weight:500; color:#374151;">PO Line Items</span>
+          <div style="flex:1;"></div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <span style="display:inline-flex; align-items:center; gap:3px; font-size:9px; color:#6b7280;">
+              <span style="display:inline-block; width:8px; height:8px; border-left:2px solid #2563eb; background:#eff6ff;"></span> editable
+            </span>
+            <span style="display:inline-flex; align-items:center; gap:3px; font-size:9px; color:#6b7280;">
+              <span style="display:inline-block; width:8px; height:8px; background:#f3f4f6; border:1px solid #e5e7eb;"></span> locked
+            </span>
+          </div>
+        </div>
+        <table style="width:100%; border-collapse:collapse; font-size:10px;">
+          <thead>
+            <tr style="background:#f8fafc; border-bottom:1px solid #e5e7eb;">
+              <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:30px;">#</th>
+              <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280;">Product</th>
+              <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:75px;">Category</th>
+              <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:65px;">Qty</th>
+              <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:60px;">COGS</th>
+              <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:75px;">Unit Cost</th>
+              <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:80px;">Line Total</th>
+              <th style="padding:3px 6px; text-align:center; font-weight:500; color:#6b7280; width:30px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:3px 6px; color:#9ca3af; background:#f9fafb;">1</td>
+              <td style="padding:3px 6px; background:#f9fafb;">Wedding Cake · Tops/Colas</td>
+              <td style="padding:3px 6px; background:#f9fafb;">Flower</td>
+              <td style="padding:3px 6px; text-align:right; border-left:2px solid #2563eb; background:#eff6ff;">2,000</td>
+              <td style="padding:3px 6px; border-left:2px solid #2563eb; background:#eff6ff;">FIXED</td>
+              <td style="padding:3px 6px; text-align:right; border-left:2px solid #2563eb; background:#eff6ff;">$2.40</td>
+              <td style="padding:3px 6px; text-align:right; font-weight:500; background:#f9fafb;">$4,800.00</td>
+              <td style="padding:3px 6px; text-align:center;"><span style="color:#dc2626; cursor:pointer; font-size:12px;">×</span></td>
+            </tr>
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:3px 6px; color:#9ca3af; background:#f9fafb;">2</td>
+              <td style="padding:3px 6px; background:#f9fafb;">Gelato · Smalls</td>
+              <td style="padding:3px 6px; background:#f9fafb;">Flower</td>
+              <td style="padding:3px 6px; text-align:right; border-left:2px solid #2563eb; background:#eff6ff;">3,000</td>
+              <td style="padding:3px 6px; border-left:2px solid #2563eb; background:#eff6ff;">RANGE</td>
+              <td style="padding:3px 6px; text-align:right; border-left:2px solid #2563eb; background:#eff6ff;">$1.60–$2.00</td>
+              <td style="padding:3px 6px; text-align:right; font-weight:500; background:#f9fafb;">$5,400.00</td>
+              <td style="padding:3px 6px; text-align:center;"><span style="color:#dc2626; cursor:pointer; font-size:12px;">×</span></td>
+            </tr>
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:3px 6px; color:#9ca3af; background:#f9fafb;">3</td>
+              <td style="padding:3px 6px; background:#f9fafb;">Blue Dream · Larf</td>
+              <td style="padding:3px 6px; background:#f9fafb;">Flower</td>
+              <td style="padding:3px 6px; text-align:right; border-left:2px solid #2563eb; background:#eff6ff;">1,500</td>
+              <td style="padding:3px 6px; border-left:2px solid #2563eb; background:#eff6ff;">FIXED</td>
+              <td style="padding:3px 6px; text-align:right; border-left:2px solid #2563eb; background:#eff6ff;">$0.90</td>
+              <td style="padding:3px 6px; text-align:right; font-weight:500; background:#f9fafb;">$1,350.00</td>
+              <td style="padding:3px 6px; text-align:center;"><span style="color:#dc2626; cursor:pointer; font-size:12px;">×</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- PO Bottom: Totals + Terms -->
+        <div style="margin-top:auto; border-top:1px solid #e5e7eb; background:#f8fafc;">
+          <!-- Totals -->
+          <div style="padding:6px 8px; display:flex; justify-content:flex-end;">
+            <div style="width:240px;">
+              <div style="display:flex; justify-content:space-between; padding:2px 0; font-size:10px;">
+                <span style="color:#6b7280;">Subtotal (3 lines)</span>
+                <span style="font-weight:500;">$11,550.00</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding:4px 0; font-size:12px; border-top:1px solid #e5e7eb; margin-top:2px;">
+                <span style="font-weight:600;">Total</span>
+                <span style="font-weight:700; color:#1e40af;">$11,550.00</span>
+              </div>
+            </div>
+          </div>
+          <!-- Terms row -->
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap:8px; padding:6px 8px; border-top:1px solid #e5e7eb;">
+            <div>
+              <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.08em; color:#9ca3af; margin-bottom:2px;">Order Date</div>
+              <div style="padding:2px 6px; border:1px solid #2563eb; border-radius:4px; font-size:10px; background:#eff6ff;">3/27/2026</div>
+            </div>
+            <div>
+              <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.08em; color:#9ca3af; margin-bottom:2px;">Expected Delivery</div>
+              <div style="padding:2px 6px; border:1px solid #2563eb; border-radius:4px; font-size:10px; background:#eff6ff;">4/3/2026</div>
+            </div>
+            <div>
+              <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.08em; color:#9ca3af; margin-bottom:2px;">Payment Terms</div>
+              <div style="padding:2px 6px; border:1px solid #2563eb; border-radius:4px; font-size:10px; background:#eff6ff;">NET_30 ▾</div>
+            </div>
+            <div>
+              <div style="font-size:9px; text-transform:uppercase; letter-spacing:0.08em; color:#9ca3af; margin-bottom:2px;">Notes</div>
+              <div style="display:flex; gap:4px;">
+                <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white; cursor:pointer;">Internal</span>
+                <span style="padding:2px 6px; border:1px solid #d1d5db; border-radius:4px; font-size:9px; background:white; cursor:pointer;">Supplier</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:3px 8px; background:#f8fafc; border-top:1px solid #e5e7eb; font-size:9px; color:#9ca3af;">
+          3 line items · $11,550.00 · Dbl-click to edit qty, cost, COGS mode
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:24px;"></div>
+
+<div class="mockup">
+  <div class="mockup-header">PurchaseOrderSurface.tsx — Receiving Mode (on Inventory workspace receiving tab)</div>
+  <div class="mockup-body" style="font-family: system-ui; font-size: 11px; background: #fafafa;">
+
+    <!-- Toolbar -->
+    <div style="display:flex; align-items:center; gap:6px; padding:4px 8px; background:#fff; border-bottom:1px solid #e5e7eb;">
+      <span style="font-weight:600; font-size:12px;">Receiving</span>
+      <span style="font-size:9px; color:#6b7280;">Select a PO, check items to receive, set quantities, then hand off to Intake</span>
+      <div style="flex:1;"></div>
+    </div>
+
+    <!-- Split: PO Queue (left) + Receive Items (right) -->
+    <div style="display:flex; gap:6px; padding:6px; flex:1;">
+
+      <!-- Left: Receivable PO Queue -->
+      <div style="flex:2; border:1px solid #e5e7eb; border-radius:6px; background:white; overflow:hidden; display:flex; flex-direction:column;">
+        <div style="padding:4px 8px; background:#f8fafc; border-bottom:1px solid #e5e7eb;">
+          <span style="font-size:10px; font-weight:500; color:#374151;">Receivable POs</span>
+          <span style="font-size:9px; color:#9ca3af; margin-left:8px;">Confirmed + Receiving only</span>
+        </div>
+        <table style="width:100%; border-collapse:collapse; font-size:10px;">
+          <thead>
+            <tr style="background:#f8fafc; border-bottom:1px solid #e5e7eb;">
+              <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280; width:100px;">PO Number</th>
+              <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280;">Supplier</th>
+              <th style="padding:3px 6px; text-align:center; font-weight:500; color:#6b7280; width:80px;">Status</th>
+              <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:70px;">Total</th>
+              <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:50px;">Lines</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f3f4f6; background:#eff6ff;">
+              <td style="padding:3px 6px; font-weight:500;">PO-2026-088</td>
+              <td style="padding:3px 6px;">SunFarm Co</td>
+              <td style="padding:3px 6px; text-align:center;"><span style="background:#dcfce7; color:#166534; padding:1px 6px; border-radius:3px; font-size:9px;">Confirmed</span></td>
+              <td style="padding:3px 6px; text-align:right;">$8,200</td>
+              <td style="padding:3px 6px; text-align:right;">4</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:3px 6px; font-weight:500;">PO-2026-087</td>
+              <td style="padding:3px 6px;">MountainCo Growers</td>
+              <td style="padding:3px 6px; text-align:center;"><span style="background:#fef9c3; color:#854d0e; padding:1px 6px; border-radius:3px; font-size:9px;">Receiving</span></td>
+              <td style="padding:3px 6px; text-align:right;">$22,100</td>
+              <td style="padding:3px 6px; text-align:right;">8</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="padding:3px 8px; background:#f8fafc; border-top:1px solid #e5e7eb; font-size:9px; color:#9ca3af; margin-top:auto;">
+          8 receivable POs
+        </div>
+      </div>
+
+      <!-- Right: Selected PO Items with Receive Qty -->
+      <div style="flex:3; border:1px solid #e5e7eb; border-radius:6px; background:white; overflow:hidden; display:flex; flex-direction:column;">
+        <div style="padding:4px 8px; background:#f8fafc; border-bottom:1px solid #e5e7eb; display:flex; align-items:center;">
+          <span style="font-size:10px; font-weight:500; color:#374151;">PO-2026-088 · SunFarm Co</span>
+          <div style="flex:1;"></div>
+          <span style="font-size:9px; color:#6b7280;">Check items and set receive quantities</span>
+        </div>
+        <table style="width:100%; border-collapse:collapse; font-size:10px;">
+          <thead>
+            <tr style="background:#f8fafc; border-bottom:1px solid #e5e7eb;">
+              <th style="padding:3px 6px; width:25px;"><input type="checkbox" checked /></th>
+              <th style="padding:3px 6px; text-align:left; font-weight:500; color:#6b7280;">Product</th>
+              <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:70px;">Ordered</th>
+              <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:70px;">Already Rcvd</th>
+              <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:70px;">Remaining</th>
+              <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:80px;">Receive Qty</th>
+              <th style="padding:3px 6px; text-align:right; font-weight:500; color:#6b7280; width:75px;">Unit Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid #f3f4f6; background:#f0fdf4;">
+              <td style="padding:3px 6px;"><input type="checkbox" checked /></td>
+              <td style="padding:3px 6px;">Wedding Cake · Tops/Colas</td>
+              <td style="padding:3px 6px; text-align:right;">2,000</td>
+              <td style="padding:3px 6px; text-align:right; color:#9ca3af;">0</td>
+              <td style="padding:3px 6px; text-align:right;">2,000</td>
+              <td style="padding:3px 6px; text-align:right; border-left:2px solid #16a34a; background:#f0fdf4;">
+                <div style="border:2px solid #16a34a; border-radius:3px; padding:1px 4px; background:white; display:inline-block; min-width:50px; text-align:right;">2,000</div>
+              </td>
+              <td style="padding:3px 6px; text-align:right;">$2.40</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f3f4f6; background:#f0fdf4;">
+              <td style="padding:3px 6px;"><input type="checkbox" checked /></td>
+              <td style="padding:3px 6px;">Gelato · Smalls</td>
+              <td style="padding:3px 6px; text-align:right;">3,000</td>
+              <td style="padding:3px 6px; text-align:right; color:#9ca3af;">0</td>
+              <td style="padding:3px 6px; text-align:right;">3,000</td>
+              <td style="padding:3px 6px; text-align:right; border-left:2px solid #16a34a; background:#f0fdf4;">
+                <div style="border:2px solid #16a34a; border-radius:3px; padding:1px 4px; background:white; display:inline-block; min-width:50px; text-align:right;">1,500</div>
+              </td>
+              <td style="padding:3px 6px; text-align:right;">$1.80</td>
+            </tr>
+            <tr style="border-bottom:1px solid #f3f4f6; opacity:0.5;">
+              <td style="padding:3px 6px;"><input type="checkbox" /></td>
+              <td style="padding:3px 6px;">OG Kush · Trim</td>
+              <td style="padding:3px 6px; text-align:right;">1,500</td>
+              <td style="padding:3px 6px; text-align:right;">1,500</td>
+              <td style="padding:3px 6px; text-align:right; color:#16a34a;">0</td>
+              <td style="padding:3px 6px; text-align:right; color:#9ca3af;">—</td>
+              <td style="padding:3px 6px; text-align:right;">$1.20</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="margin-top:auto; border-top:1px solid #e5e7eb; padding:8px; display:flex; align-items:center; justify-content:space-between; background:#f0fdf4;">
+          <span style="font-size:10px; color:#374151;">2 items · 3,500 units to receive</span>
+          <span style="padding:4px 14px; border:none; border-radius:4px; font-size:11px; background:#16a34a; color:white; cursor:pointer; font-weight:500;">Submit to Intake →</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div style="display:flex; align-items:center; padding:3px 8px; background:#f8fafc; border-top:1px solid #e5e7eb; font-size:9px; color:#9ca3af;">
+      <span>Receiving · PO-2026-088 · 2 of 4 items checked · 3,500 units</span>
+      <div style="flex:1;"></div>
+      <span>Submit creates intake draft → opens Intake page</span>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top:20px;">
+  <h3>Three Modes, One Component</h3>
+  <div style="font-size:13px; line-height:1.6; color:#374151; max-width:700px;">
+    <p><strong>Queue mode</strong> (default on Procurement workspace): Full PO queue grid + selected PO details below. "New PO" button transitions to creation mode.</p>
+    <p><strong>Creation mode</strong> (triggered by "New PO" or "Edit" on a draft): Split surface — left is the multi-source product browser (Supplier History | Low Stock | Catalog), right is the editable PO document grid with invoice-bottom totals and terms.</p>
+    <p><strong>Receiving mode</strong> (on Inventory workspace receiving tab): Split surface — left is filtered PO queue (CONFIRMED + RECEIVING only), right is selected PO's line items with receive-qty inputs and "Submit to Intake" handoff. Different users from PO creation — this is warehouse staff.</p>
+    <p>The <code>mode</code> prop gates which layout renders. Queue → Creation transition is URL-param driven (<code>?poView=create</code> or <code>?poId=X&poView=edit</code>).</p>
+  </div>
+</div>

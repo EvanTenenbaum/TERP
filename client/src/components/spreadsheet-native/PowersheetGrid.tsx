@@ -1,11 +1,6 @@
-import { useMemo, useState } from "react";
-import type { ReactNode } from "react";
+import { useMemo } from "react";
 import { SpreadsheetPilotGrid } from "./SpreadsheetPilotGrid";
 import type { SpreadsheetPilotGridProps } from "./SpreadsheetPilotGrid";
-import type {
-  PowersheetSelectionSet,
-  PowersheetSelectionSummary,
-} from "@/lib/powersheet/contracts";
 
 export interface PowersheetAffordance {
   label: string;
@@ -17,8 +12,11 @@ interface PowersheetGridProps<
 > extends SpreadsheetPilotGridProps<Row> {
   surfaceId: string;
   requirementIds: string[];
+  /** @deprecated Internal engineering annotation — accepted but not rendered. */
   releaseGateIds?: string[];
-  antiDriftSummary?: ReactNode;
+  /** @deprecated Internal engineering annotation — accepted but not rendered. */
+  antiDriftSummary?: string;
+  /** @deprecated Internal engineering annotation — accepted but not rendered. */
   affordances?: PowersheetAffordance[];
 }
 
@@ -26,85 +24,21 @@ export function PowersheetGrid<Row extends object>({
   surfaceId,
   requirementIds,
   releaseGateIds = [],
-  antiDriftSummary,
-  affordances,
+  antiDriftSummary: _antiDriftSummary,
+  affordances: _affordances,
   summary,
   selectionSurface,
   onSelectionSetChange,
   onSelectionSummaryChange,
   ...gridProps
 }: PowersheetGridProps<Row>) {
-  const [selectionSet, setSelectionSet] =
-    useState<PowersheetSelectionSet | null>(null);
-  const [selectionSummary, setSelectionSummary] =
-    useState<PowersheetSelectionSummary | null>(null);
-
   const effectiveSelectionSurface = selectionSurface ?? surfaceId;
 
-  const stableDecorations = useMemo(() => {
-    const renderedAffordances =
-      affordances && affordances.length > 0 ? (
-        <span data-testid={`${surfaceId}-affordances`}>
-          {affordances.map((a, i) => (
-            <span key={a.label}>
-              {i > 0 && " · "}
-              <span className={a.available ? "" : "line-through opacity-50"}>
-                {a.label}
-              </span>
-            </span>
-          ))}
-        </span>
-      ) : null;
-    const renderedReleaseGates =
-      releaseGateIds.length > 0 ? (
-        <span data-testid={`${surfaceId}-release-gates`}>
-          Release gates: {releaseGateIds.join(", ")}
-        </span>
-      ) : null;
-    const renderedAntiDrift = antiDriftSummary ? (
-      <span data-testid={`${surfaceId}-anti-drift-summary`}>
-        {antiDriftSummary}
-      </span>
-    ) : null;
-    return { renderedAffordances, renderedReleaseGates, renderedAntiDrift };
-  }, [affordances, antiDriftSummary, releaseGateIds, surfaceId]);
-
-  const summaryStack = useMemo(() => {
-    const renderedSummary = summary ? <>{summary}</> : null;
-    const renderedSelectionSummary = selectionSummary ? (
-      <span data-testid={`${surfaceId}-selection-summary`}>
-        {selectionSummary.selectedCellCount} selected cells ·{" "}
-        {selectionSummary.selectedRowCount} rows in scope
-        {selectionSummary.hasDiscontiguousSelection
-          ? " · discontiguous selection"
-          : ""}
-      </span>
-    ) : (
-      <span data-testid={`${surfaceId}-selection-summary`}>
-        Spreadsheet runtime armed for shared selection-state surfacing.
-      </span>
-    );
-    const renderedSelectionState = selectionSet ? (
-      <span data-testid={`${surfaceId}-selection-state`}>
-        Focused cell:{" "}
-        {selectionSet.focusedCell
-          ? `${selectionSet.focusedCell.rowIndex}:${selectionSet.focusedCell.columnKey}`
-          : "none"}
-        {" · "}Ranges: {selectionSet.ranges.length}
-      </span>
-    ) : null;
-
-    return (
-      <div className="flex flex-col gap-1">
-        {renderedSummary}
-        {import.meta.env.DEV && renderedSelectionSummary}
-        {import.meta.env.DEV && renderedSelectionState}
-        {import.meta.env.DEV && stableDecorations.renderedAffordances}
-        {import.meta.env.DEV && stableDecorations.renderedReleaseGates}
-        {import.meta.env.DEV && stableDecorations.renderedAntiDrift}
-      </div>
-    );
-  }, [selectionSet, selectionSummary, stableDecorations, summary, surfaceId]);
+  const summaryStack = useMemo(
+    () =>
+      summary ? <div className="flex flex-col gap-1">{summary}</div> : null,
+    [summary]
+  );
 
   return (
     <div
@@ -116,14 +50,8 @@ export function PowersheetGrid<Row extends object>({
       <SpreadsheetPilotGrid
         {...gridProps}
         selectionSurface={effectiveSelectionSurface}
-        onSelectionSetChange={nextSelectionSet => {
-          setSelectionSet(nextSelectionSet);
-          onSelectionSetChange?.(nextSelectionSet);
-        }}
-        onSelectionSummaryChange={nextSelectionSummary => {
-          setSelectionSummary(nextSelectionSummary);
-          onSelectionSummaryChange?.(nextSelectionSummary);
-        }}
+        onSelectionSetChange={onSelectionSetChange}
+        onSelectionSummaryChange={onSelectionSummaryChange}
         summary={summaryStack}
       />
     </div>

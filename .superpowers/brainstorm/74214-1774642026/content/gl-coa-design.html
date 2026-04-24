@@ -1,0 +1,303 @@
+<h2>Phase 2: General Ledger + Chart of Accounts</h2>
+<p class="subtitle">GL is account-scoped with a Trial Balance support module. CoA is a grouped reference grid.</p>
+
+<!-- ================================================================ -->
+<!-- GENERAL LEDGER -->
+<!-- ================================================================ -->
+<div class="section">
+  <h3>GeneralLedgerSurface.tsx — replaces GeneralLedger.tsx classic page</h3>
+  <div class="mockup">
+    <div class="mockup-header">GeneralLedgerSurface — Account-scoped entry browser with Trial Balance</div>
+    <div class="mockup-body" style="font-size:11px;line-height:1.4;padding:0">
+
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#f8f9fa;border-bottom:1px solid #e2e4e7">
+        <span style="font-weight:700;font-size:12px;letter-spacing:-0.3px">General Ledger</span>
+        <!-- Scoping selectors inline in toolbar -->
+        <div style="display:flex;align-items:center;gap:3px;padding:2px 6px;background:white;border:1px solid #ddd;border-radius:4px">
+          <span style="font-size:8px;color:#888">Account:</span>
+          <span style="font-size:9px;font-weight:500;color:#1565c0">1000 — Cash</span>
+          <span style="font-size:8px;color:#999">▾</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:3px;padding:2px 6px;background:white;border:1px solid #ddd;border-radius:4px">
+          <span style="font-size:8px;color:#888">Period:</span>
+          <span style="font-size:9px;font-weight:500">Q1 2026</span>
+          <span style="font-size:8px;color:#999">▾</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:3px;padding:2px 6px;background:white;border:1px solid #ddd;border-radius:4px">
+          <span style="font-size:8px;color:#888">Dates:</span>
+          <span style="font-size:9px">Jan 1 – Mar 27</span>
+          <span style="font-size:8px;color:#999">▾</span>
+        </div>
+        <span style="flex:1"></span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;cursor:pointer;color:#555">Trial Balance ▾</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#999">🔍 Search entries...</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;cursor:pointer;color:#555">↻</span>
+      </div>
+
+      <!-- Action bar -->
+      <div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:#fafbfc;border-bottom:1px solid #eee">
+        <span style="font-size:9px;padding:2px 8px;background:#1565c0;color:white;border-radius:3px;font-weight:500">All</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Posted</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Draft</span>
+        <div style="flex:1"></div>
+        <!-- Account balance summary -->
+        <span style="font-size:9px;color:#888">Balance:</span>
+        <span style="font-size:9px;font-family:monospace;font-weight:600;color:#2e7d32">$42,850.00 DR</span>
+        <span style="font-size:9px;color:#888;margin-left:8px">|</span>
+        <span style="font-size:9px;padding:2px 7px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:4px;color:#2e7d32;font-weight:500;cursor:pointer">+ Post Journal Entry</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">↩ Reverse Entry</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">↓ Export CSV</span>
+      </div>
+
+      <!-- Grid + Inspector -->
+      <div style="display:flex;gap:0">
+        <!-- GL Entries Grid -->
+        <div style="flex:3;background:white;border-right:1px solid #eee">
+          <div style="display:grid;grid-template-columns:85px 70px 65px 80px 80px 1fr 55px;gap:0;font-size:9px">
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Entry #</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Date</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Account</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee;text-align:right">Debit</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee;text-align:right">Credit</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Description</div>
+            <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8">Status</div>
+            <!-- Selected -->
+            <div style="padding:4px 6px;background:#e3f2fd;font-family:monospace;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">GL-0421</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">Mar 20</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;font-family:monospace">1000</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;text-align:right;font-family:monospace;font-weight:600">$1,850.00</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;text-align:right;color:#ccc">—</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">Payment received — INV-002</div>
+            <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border-radius:3px">POST</span></div>
+            <!-- Row 2 -->
+            <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">GL-0418</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 18</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;font-family:monospace">1000</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;color:#ccc">—</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace;color:#d32f2f">$5,600.00</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Vendor payment — BILL-017</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border-radius:3px">POST</span></div>
+            <!-- Row 3 -->
+            <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">GL-0415</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 15</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;font-family:monospace">1000</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace;font-weight:600">$4,200.00</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;color:#ccc">—</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Invoice posted — INV-001</div>
+            <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border-radius:3px">POST</span></div>
+            <!-- Row 4 (draft) -->
+            <div style="padding:4px 6px;font-family:monospace;border-right:1px solid #eee">GL-0422</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee">Mar 25</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee;font-family:monospace">1000</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee;text-align:right;font-family:monospace">$750.00</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee;text-align:right;color:#ccc">—</div>
+            <div style="padding:4px 6px;border-right:1px solid #eee;color:#888;font-style:italic">Manual adjustment</div>
+            <div style="padding:4px 6px"><span style="font-size:8px;padding:1px 4px;background:#f5f5f5;color:#666;border:1px solid #e0e0e0;border-radius:3px">DRAFT</span></div>
+          </div>
+        </div>
+
+        <!-- Inspector -->
+        <div style="flex:1;background:#fafbfc;padding:10px;font-size:9px;min-width:200px;border-left:1px solid #e8e8e8">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #e8e8e8">
+            <span style="font-weight:700;font-size:11px">GL-0421</span>
+            <span style="cursor:pointer;color:#999;font-size:12px;padding:2px 4px;border-radius:3px;background:#f0f0f0">✕</span>
+          </div>
+          <div style="display:grid;grid-template-columns:60px 1fr;gap:2px 8px;font-size:9px;margin-bottom:8px">
+            <span style="color:#888">Date</span><span>Mar 20, 2026</span>
+            <span style="color:#888">Account</span><span style="font-family:monospace">1000 — Cash</span>
+            <span style="color:#888">Debit</span><span style="font-family:monospace;font-weight:600">$1,850.00</span>
+            <span style="color:#888">Credit</span><span style="color:#ccc">—</span>
+            <span style="color:#888">Period</span><span>Q1 2026</span>
+            <span style="color:#888">Status</span><span><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border-radius:3px">POSTED</span></span>
+            <span style="color:#888">Desc</span><span>Payment received — INV-002</span>
+          </div>
+          <!-- Reference navigation -->
+          <div style="margin-bottom:8px">
+            <div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;font-weight:600">Source Reference</div>
+            <div style="padding:4px 6px;background:white;border:1px solid #eee;border-radius:4px;display:flex;align-items:center;gap:4px">
+              <span style="font-size:8px;padding:1px 4px;background:#e3f2fd;color:#1565c0;border-radius:2px">PAYMENT</span>
+              <span style="color:#1565c0;text-decoration:underline;cursor:pointer;font-size:9px">PMT-RCV-042 ↗</span>
+            </div>
+            <div style="padding:4px 6px;background:white;border:1px solid #eee;border-radius:4px;display:flex;align-items:center;gap:4px;margin-top:3px">
+              <span style="font-size:8px;padding:1px 4px;background:#e3f2fd;color:#1565c0;border-radius:2px">INVOICE</span>
+              <span style="color:#1565c0;text-decoration:underline;cursor:pointer;font-size:9px">INV-002 ↗</span>
+            </div>
+          </div>
+          <div style="border-top:1px solid #e8e8e8;padding-top:6px;display:flex;gap:4px">
+            <span style="font-size:8px;padding:3px 8px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">↩ Reverse</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TRIAL BALANCE (collapsible support module) -->
+      <div style="margin:6px 8px;padding:8px;background:#f0f4ff;border:1px solid #bbdefb;border-radius:6px;font-size:9px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-weight:600;font-size:10px;color:#1565c0">Trial Balance — Q1 2026</span>
+          <span style="flex:1"></span>
+          <span style="font-size:8px;padding:2px 6px;border:1px solid #ddd;border-radius:3px;cursor:pointer;color:#555">↓ Export</span>
+          <span style="color:#888;cursor:pointer">▲</span>
+        </div>
+        <div style="display:grid;grid-template-columns:70px 1fr 85px 85px;gap:0;font-size:8px;border:1px solid #d0d3d8;border-radius:4px;overflow:hidden">
+          <div style="padding:3px 5px;background:#e8eaf6;font-weight:600;border-bottom:1px solid #d0d0d0;border-right:1px solid #e0e0e0">Acct #</div>
+          <div style="padding:3px 5px;background:#e8eaf6;font-weight:600;border-bottom:1px solid #d0d0d0;border-right:1px solid #e0e0e0">Account Name</div>
+          <div style="padding:3px 5px;background:#e8eaf6;font-weight:600;border-bottom:1px solid #d0d0d0;border-right:1px solid #e0e0e0;text-align:right">Total Debit</div>
+          <div style="padding:3px 5px;background:#e8eaf6;font-weight:600;border-bottom:1px solid #d0d0d0;text-align:right">Total Credit</div>
+
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;font-family:monospace;font-weight:600;background:#e3f2fd">1000</div>
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;background:#e3f2fd">Cash</div>
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace;background:#e3f2fd">$48,450.00</div>
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;text-align:right;font-family:monospace;background:#e3f2fd">$5,600.00</div>
+
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;font-family:monospace">1100</div>
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Accounts Receivable</div>
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$24,500.00</div>
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;text-align:right;font-family:monospace">$1,850.00</div>
+
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;font-family:monospace">2000</div>
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Accounts Payable</div>
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$5,600.00</div>
+          <div style="padding:3px 5px;border-bottom:1px solid #f0f0f0;text-align:right;font-family:monospace">$18,200.00</div>
+
+          <!-- Totals row -->
+          <div style="padding:3px 5px;border-right:1px solid #eee;font-weight:700;background:#f5f6f8" colspan="2"></div>
+          <div style="padding:3px 5px;border-right:1px solid #eee;font-weight:700;background:#f5f6f8">Totals</div>
+          <div style="padding:3px 5px;border-right:1px solid #eee;text-align:right;font-family:monospace;font-weight:700;background:#f5f6f8">$78,550.00</div>
+          <div style="padding:3px 5px;text-align:right;font-family:monospace;font-weight:700;background:#f5f6f8">$78,550.00</div>
+        </div>
+        <div style="margin-top:4px;display:flex;justify-content:space-between;font-size:8px;color:#888">
+          <span>5 accounts with activity</span>
+          <span style="color:#2e7d32;font-weight:600">✓ Balanced — Debits = Credits</span>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div style="display:flex;align-items:center;padding:3px 8px;background:#f8f9fa;border-top:1px solid #e2e4e7;border-radius:0 0 6px 6px;font-size:9px;color:#888">
+        <span>1 selected · Account: 1000 Cash · Q1 2026 · 24 entries · Balance: $42,850 DR</span>
+        <span style="flex:1"></span>
+        <span>Click select · ⌘C copy · Esc close</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- CHART OF ACCOUNTS -->
+<!-- ================================================================ -->
+<div class="section" style="margin-top:28px">
+  <h3>ChartOfAccountsSurface.tsx — replaces ChartOfAccounts.tsx classic page</h3>
+  <div class="mockup">
+    <div class="mockup-header">ChartOfAccountsSurface — Grouped reference grid</div>
+    <div class="mockup-body" style="font-size:11px;line-height:1.4;padding:0">
+
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#f8f9fa;border-bottom:1px solid #e2e4e7">
+        <span style="font-weight:700;font-size:12px;letter-spacing:-0.3px">Chart of Accounts</span>
+        <span style="font-size:9px;padding:2px 7px;background:#e3f2fd;border:1px solid #bbdefb;border-radius:4px;color:#1565c0;font-weight:500">42 accounts</span>
+        <span style="font-size:9px;padding:2px 7px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:4px;color:#2e7d32;font-weight:500">38 active</span>
+        <span style="flex:1"></span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#999">🔍 Search accounts...</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;cursor:pointer;color:#555">↻</span>
+      </div>
+
+      <!-- Action bar -->
+      <div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:#fafbfc;border-bottom:1px solid #eee">
+        <span style="font-size:9px;padding:2px 8px;background:#1565c0;color:white;border-radius:3px;font-weight:500">All Types</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Asset</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Liability</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Equity</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Revenue</span>
+        <span style="font-size:9px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#555">Expense</span>
+        <div style="flex:1"></div>
+        <span style="font-size:9px;padding:2px 7px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:4px;color:#2e7d32;font-weight:500;cursor:pointer">+ Create Account</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">✎ Edit</span>
+      </div>
+
+      <!-- Grouped Grid -->
+      <div style="background:white">
+        <div style="display:grid;grid-template-columns:80px 1fr 90px 80px 55px;gap:0;font-size:9px">
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Acct #</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Account Name</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Type</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Normal Bal</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8">Active</div>
+
+          <!-- Group: ASSET -->
+          <div style="padding:4px 8px;background:#e8f5e9;font-weight:600;border-bottom:1px solid #c8e6c9;grid-column:1/-1;color:#2e7d32;font-size:10px">▼ Assets (12 accounts)</div>
+
+          <div style="padding:4px 6px;background:#e3f2fd;font-family:monospace;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">1000</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee;font-weight:500">Cash</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">ASSET</span></div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;border-right:1px solid #eee">DEBIT</div>
+          <div style="padding:4px 6px;background:#e3f2fd;border-bottom:1px solid #edf0f3;text-align:center">✓</div>
+
+          <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">1100</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Accounts Receivable</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">ASSET</span></div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">DEBIT</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;text-align:center">✓</div>
+
+          <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">1200</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Inventory</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;border-radius:3px">ASSET</span></div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">DEBIT</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;text-align:center">✓</div>
+
+          <!-- Group: LIABILITY -->
+          <div style="padding:4px 8px;background:#fff3e0;font-weight:600;border-bottom:1px solid #ffe0b2;grid-column:1/-1;color:#e65100;font-size:10px">▼ Liabilities (8 accounts)</div>
+
+          <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">2000</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Accounts Payable</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#fff3e0;color:#e65100;border:1px solid #ffe0b2;border-radius:3px">LIABILITY</span></div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">CREDIT</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;text-align:center">✓</div>
+
+          <div style="padding:4px 6px;font-family:monospace;border-right:1px solid #eee">2100</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee">Sales Tax Payable</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#fff3e0;color:#e65100;border:1px solid #ffe0b2;border-radius:3px">LIABILITY</span></div>
+          <div style="padding:4px 6px;border-right:1px solid #eee">CREDIT</div>
+          <div style="padding:4px 6px;text-align:center">✓</div>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div style="display:flex;align-items:center;padding:3px 8px;background:#f8f9fa;border-top:1px solid #e2e4e7;border-radius:0 0 6px 6px;font-size:9px;color:#888">
+        <span>1 selected · All Types · 42 accounts (38 active)</span>
+        <span style="flex:1"></span>
+        <span>Click select · ⌘C copy · Esc close</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px">
+  <h3>Phase 2 Key Notes</h3>
+  <table style="width:100%;font-size:12px;border-collapse:collapse">
+    <tr style="background:#f8f9fa"><th style="padding:6px;text-align:left;width:20%">Surface</th><th style="padding:6px;text-align:left">Notable Design Choices</th></tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:6px;font-weight:600">General Ledger</td>
+      <td style="padding:6px">
+        <ul style="margin:0;padding-left:16px;line-height:1.6">
+          <li><strong>Account + Period + Date scoping</strong> in toolbar (not sidebar). These are the primary filters — they narrow what's in the grid.</li>
+          <li><strong>Account balance</strong> shown inline in action bar (right-aligned).</li>
+          <li><strong>Reference navigation</strong> in inspector — GL entries link back to their source (invoice, payment, PO). Clickable deep-links.</li>
+          <li><strong>Trial Balance</strong> as collapsible support module. Shows all accounts with debit/credit totals for the selected period. Balanced indicator at bottom. Export button.</li>
+          <li><strong>Post Journal Entry</strong> opens JournalEntryForm dialog (existing component).</li>
+          <li><strong>Reverse Entry</strong> available for posted entries only.</li>
+        </ul>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:6px;font-weight:600">Chart of Accounts</td>
+      <td style="padding:6px">
+        <ul style="margin:0;padding-left:16px;line-height:1.6">
+          <li><strong>Group rows</strong> by account type (Asset/Liability/Equity/Revenue/Expense). AG Grid's row grouping, collapsible. Color-coded group headers.</li>
+          <li><strong>Type filter tabs</strong> in action bar — clicking one collapses all other groups (or filters the grid).</li>
+          <li><strong>No support modules</strong> — this is a flat reference grid. Inspector shows account detail + edit form.</li>
+          <li><strong>Create/Edit via dialog</strong> — existing CreateAccountDialog pattern.</li>
+          <li><strong>No KPI band or aging</strong> — not applicable to a reference list.</li>
+        </ul>
+      </td>
+    </tr>
+  </table>
+</div>

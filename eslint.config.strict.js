@@ -15,6 +15,7 @@ import typescript from '@typescript-eslint/eslint-plugin';
 import typescriptParser from '@typescript-eslint/parser';
 import react from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
+import terp from './eslint-rules/index.js';
 
 export default [
   js.configs.recommended,
@@ -24,6 +25,7 @@ export default [
       '@typescript-eslint': typescript,
       'react': react,
       'react-hooks': reactHooks,
+      'terp': terp,
     },
     languageOptions: {
       parser: typescriptParser,
@@ -141,6 +143,29 @@ export default [
       'no-new-func': 'error',
       'no-return-await': 'error',
       'require-await': 'off', // Use TypeScript version
+
+      // ============================================================
+      // TERP Sprint 1 primitives — regression-prevention lint rules
+      // (TER-1289 / TER-1290 / TER-1291, Epic TER-1283)
+      // ============================================================
+
+      // TER-1289 — flag bare <Loader2 /> or <Skeleton /> directly inside
+      // <Card> / <CardContent>. Will flip to `error` after the codemod lands.
+      'terp/no-bare-card-loading': 'warn',
+
+      // TER-1290 — forbid inline `text-right font-mono` on ColDef.cellClass.
+      // Numeric alignment must come from PowerSheet cell classes.
+      'terp/no-inline-text-right-on-coldef': 'error',
+
+      // TER-1291 — prefer SpreadsheetPilotGrid / AgGridReactCompat over direct
+      // `ag-grid-react` imports. Will flip to `error` after sunset grids migrate.
+      'terp/prefer-powersheet-grid': 'warn',
+
+      // TER-1315 — forbid non-canonical terminology (Customer/Buyer/Sales Order/
+      // Vendor Invoice/Item/Inventory Line) in JSX text. Warn initially so the
+      // codemod can clean up existing occurrences; flip to `error` once the
+      // tree is clean.
+      'terp/no-restricted-glossary': 'warn',
     },
     settings: {
       react: {

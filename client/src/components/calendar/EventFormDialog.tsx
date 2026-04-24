@@ -5,6 +5,7 @@ import { trpc } from "../../lib/trpc";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -39,14 +40,15 @@ export default function EventFormDialog({
   initialClientId,
   onSaved,
 }: EventFormDialogProps) {
-  // Form state
+  // Form state — date/time seeded with today so the form is never visually empty on open
+  const todayStr = new Date().toISOString().split("T")[0];
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
+  const [startDate, setStartDate] = useState(todayStr);
+  const [endDate, setEndDate] = useState(todayStr);
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("10:00");
   const [isAllDay, setIsAllDay] = useState(false);
   const [module, setModule] = useState("GENERAL");
   const [eventType, setEventType] = useState("MEETING");
@@ -173,6 +175,23 @@ export default function EventFormDialog({
       // Reset form for new event when dialog opens
       resetForm();
     }
+    // BUG-108: When calendarsData loads after form open, patch calendarId without resetting the
+    // whole form. Only apply if calendarId is still unset (user hasn't picked one yet).
+    if (
+      isOpen &&
+      !eventId &&
+      !eventData &&
+      calendarId === null &&
+      calendarsData?.length
+    ) {
+      const defaultCalendar = calendarsData.find(
+        (c: { id: number; isDefault: boolean }) => c.isDefault
+      );
+      const fallbackId = defaultCalendar?.id ?? calendarsData[0]?.id ?? null;
+      if (fallbackId !== null) {
+        setCalendarId(fallbackId);
+      }
+    }
   }, [
     eventData,
     initialDate,
@@ -181,10 +200,23 @@ export default function EventFormDialog({
     isOpen,
     eventId,
     resetForm,
+    calendarId,
   ]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    // Explicit required-field validation before submission.
+    // Calendar is optional — server does not require it, and blocking submission
+    // here left users with no calendar access unable to create events at all (TER-1154).
+    const missing: string[] = [];
+    if (!title.trim()) missing.push("Title");
+    if (!startDate) missing.push("Start Date");
+    if (!endDate) missing.push("End Date");
+    if (missing.length > 0) {
+      toast.error(`Required fields missing: ${missing.join(", ")}`);
+      return;
+    }
 
     const eventPayload: Record<string, unknown> = {
       title,
@@ -245,6 +277,12 @@ export default function EventFormDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{eventId ? "Edit Event" : "Create Event"}</DialogTitle>
+          {/* BUG-092: aria-describedby requires a DialogDescription for screen-reader context */}
+          <DialogDescription className="sr-only">
+            {eventId
+              ? "Edit the details of this calendar event."
+              : "Fill in the details to create a new calendar event."}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Form */}
@@ -364,7 +402,7 @@ export default function EventFormDialog({
             <div className="space-y-2">
               <Label className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                Calendar *
+                Calendar
               </Label>
               <Select
                 value={calendarId?.toString() || ""}

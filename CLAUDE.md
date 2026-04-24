@@ -8,9 +8,14 @@ TERP is a specialized ERP for THCA wholesale cannabis operations. React 19 + Tai
 
 **Verification over persuasion.** Prove it works through commands and evidence. Never convince yourself something works.
 
+## Startup Contract
+
+Before scanning old docs or commit history for broad orientation, read `docs/agent-context/START_HERE.md`. Confirm freshness in `docs/agent-context/manifest.json`, then use `docs/agent-context/state.json` and `docs/agent-context/work.json` for machine-readable startup truth and remaining-work ordering. Treat `docs/ACTIVE_SESSIONS.md`, `docs/PROJECT_CONTEXT.md`, `docs/TERP_AGENT_INSTRUCTIONS.md`, `docs/ROADMAP_AGENT_GUIDE.md`, and `product-management/START_HERE.md` as legacy/background unless the agent-context bundle tells you otherwise.
+
 ## Commands (Run Before Every Commit)
 
 ```bash
+pnpm agent:prepare   # In local worktrees, link shared TERP node_modules and verify local bins
 pnpm check          # TypeScript (zero errors policy)
 pnpm lint           # ESLint
 pnpm test           # Unit tests (Vitest)
@@ -36,6 +41,7 @@ All E2E tests use Playwright. The canonical reference is `docs/TESTING.md`.
 pnpm test:e2e:deep           # @deep tagged tests — full admin access
 pnpm test:e2e:deep:rbac      # @rbac tagged tests — role permission boundaries
 pnpm test:e2e:deep:all       # Both: business logic first, then RBAC
+pnpm qa:human:flows -- --count 40 --seed "$(date +%Y%m%d)"
 
 # Other E2E suites
 pnpm test:e2e                # All E2E tests
@@ -105,12 +111,13 @@ All mutations MUST use `getAuthenticatedUserId(ctx)` — never `input.createdBy`
 
 ## Deployment
 
-`PR` → `main` → `staging` (auto-deploy) → verify → `production` (manual promote by Evan)
+`PR` → `main` (auto-deploy to staging) → verify → `production` (manual promote by Evan)
 
+- As of March 28, 2026, staging tracks `main` directly
 - Staging URL: `https://terp-staging-yicld.ondigitalocean.app`
-- Staging deploy is automatic on push to `main`
+- Staging tracks `main` directly, and deploy is automatic on push to `main`
 - Production is a manual promotion — agents never deploy to production
-- Add `[skip-staging-sync]` to commit message to merge docs without triggering deploy
+- There is no staging-only sync branch or `[skip-staging-sync]` escape hatch in this mode
 
 ## Autonomy Modes
 
@@ -145,6 +152,26 @@ server/*Db.ts             # Legacy data access (don't extend)
 - Treat `docs/ACTIVE_SESSIONS.md` as a legacy global view, not the live Orders runtime gate snapshot
 - Never edit files another agent is working on
 
+## Completion Gate — Mandatory Before Any Ticket Is Marked Done
+
+**Every ticket requires adversarial QA and self-healing before being marked Done or opening a merge PR.**
+
+The sequence is non-negotiable:
+
+1. **Implement** the feature/fix on a branch
+2. **Adversarial QA** — treat your own implementation as an adversary would:
+   - Does it actually satisfy all acceptance criteria? Check each one explicitly.
+   - Are there edge cases not handled? (empty state, error state, loading state, mobile)
+   - Does it break any existing functionality in adjacent files?
+   - Are there TypeScript errors, missing null checks, or unsafe casts?
+   - Does it follow existing patterns in the codebase (not invent new ones)?
+   - Would a senior engineer approve this, or flag it immediately?
+3. **Self-healing** — fix every issue found in step 2. Do not open a PR until self-healing is complete.
+4. **CI gate** — push, confirm , , , all pass on GHA.
+5. **Only then**: open PR and comment on the Linear ticket with evidence of completion.
+
+**If you skip adversarial QA, the ticket is not done. Period.**
+
 ## Skills & Deep Protocols
 
 Domain knowledge is loaded on demand via `.claude/skills/`. Key skills:
@@ -153,6 +180,16 @@ Domain knowledge is loaded on demand via `.claude/skills/`. Key skills:
 - **architecture** — Full tech stack, auth flow, query patterns, key files
 - **roadmap-management** — Linear integration, task IDs, estimation, session lifecycle
 - **deprecated-systems** — Migration status, replacement patterns, pre-work checklist
+- **terp-domscribe** — Local implementation-time UI inspection using the live TERP browser runtime
+
+Auto-use these TERP skills when the lane is clear:
+
+- Use `architecture` for "where does this live?", auth flow questions, schema/query shape questions, and codebase orientation.
+- Use `deprecated-systems` before touching legacy patterns, data-model migrations, `vendors` replacements, actor attribution, or risky old service/db code.
+- Use `roadmap-management` for Linear state, issue structure, session lifecycle, estimation, or roadmap/task-status questions.
+- Use `verification-protocol` when deciding the right QA gate, proving a done claim, or packaging evidence for completion.
+- Use `terp-domscribe` for local UI bugs where rendered browser truth matters more than source inspection.
+- Use `terp-long-run-autonomy` when the ask implies unattended execution, a multi-ticket remediation train, supervisor/worker coordination, or duplicate-sensitive parallel work.
 
 ## Audit System
 

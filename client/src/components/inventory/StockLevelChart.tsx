@@ -46,7 +46,9 @@ export function StockLevelChart({ title, data, maxItems = 5 }: StockLevelChartPr
     return (
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4">{title}</h3>
-        <p className="text-sm text-muted-foreground">No data available</p>
+        <p className="text-sm text-muted-foreground">
+          No inventory levels match this view yet.
+        </p>
       </Card>
     );
   }
@@ -69,7 +71,7 @@ export function StockLevelChart({ title, data, maxItems = 5 }: StockLevelChartPr
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-blue-600 rounded-full transition-all duration-300"
+                    className="h-full bg-[var(--info)] rounded-full transition-all duration-300"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
@@ -89,4 +91,3 @@ export function StockLevelChart({ title, data, maxItems = 5 }: StockLevelChartPr
     </Card>
   );
 }
-

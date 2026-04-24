@@ -47,37 +47,18 @@ import {
 import { PowersheetGrid } from "./PowersheetGrid";
 import type { PowersheetAffordance } from "./PowersheetGrid";
 import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
+import {
+  STATUS_OPTIONS,
+  STATUS_LABELS,
+  type InventoryBatchStatus,
+  mod,
+} from "./inventoryConstants";
+import { getStockStatusLabel } from "@/components/inventory/StockStatusBadge";
 
 // ============================================================================
 // Constants
 // ============================================================================
-
-const STATUS_OPTIONS = [
-  "AWAITING_INTAKE",
-  "LIVE",
-  "ON_HOLD",
-  "QUARANTINED",
-  "SOLD_OUT",
-  "CLOSED",
-] as const;
-
-type InventoryBatchStatus = (typeof STATUS_OPTIONS)[number];
-
-const STATUS_LABELS: Record<InventoryBatchStatus, string> = {
-  AWAITING_INTAKE: "Awaiting Intake",
-  LIVE: "Live",
-  ON_HOLD: "On Hold",
-  QUARANTINED: "Quarantined",
-  SOLD_OUT: "Sold Out",
-  CLOSED: "Closed",
-};
-
 const PAGE_SIZE = 100;
-
-const isMac =
-  typeof navigator !== "undefined" &&
-  /mac/i.test(navigator.platform || navigator.userAgent);
-const mod = isMac ? "\u2318" : "Ctrl";
 
 const queueKeyboardHints: KeyboardHint[] = [
   { key: "Click", label: "select row" },
@@ -140,7 +121,7 @@ const EXPORT_COLUMNS: ExportColumn<InventoryPilotRow>[] = [
   {
     key: "stockStatus",
     label: "Stock Status",
-    formatter: v => String(v ?? ""),
+    formatter: v => getStockStatusLabel(v as string | null | undefined),
   },
 ];
 
@@ -189,7 +170,7 @@ export function InventorySheetPilotSurface({
     useSpreadsheetSelectionParam("batchId");
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("LIVE");
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [loadedWindowCount, setLoadedWindowCount] = useState(1);
   const [queueSelectionSummary, setQueueSelectionSummary] =
@@ -410,6 +391,24 @@ export function InventorySheetPilotSurface({
         headerName: "Product",
         flex: 1.3,
         minWidth: 280,
+        cellRenderer: (params: { data?: InventoryPilotRow }) => {
+          if (!params.data) return "-";
+          return (
+            <div className="flex flex-col gap-0.5 py-1">
+              <div className="font-medium text-sm leading-tight">
+                {params.data.productName}
+              </div>
+              {(params.data.vendorName !== "-" ||
+                params.data.brandName !== "-") && (
+                <div className="text-xs text-muted-foreground leading-tight">
+                  {[params.data.vendorName, params.data.brandName]
+                    .filter(v => v && v !== "-")
+                    .join(" / ")}
+                </div>
+              )}
+            </div>
+          );
+        },
         cellClass: "powersheet-cell--locked",
       },
       {
@@ -739,12 +738,6 @@ export function InventorySheetPilotSurface({
           "OPS-INV-006",
           "OPS-INV-011",
         ]}
-        releaseGateIds={[
-          "INV-WF-001",
-          "INV-WF-004",
-          "INV-WF-006",
-          "INV-WF-011",
-        ]}
         affordances={inventoryAffordances}
         title="Inventory Sheet"
         description="One dominant inventory table keeps SKU, product context, status, quantity, and age visible. Status is editable inline; quantity adjustments require a reason dialog."
@@ -769,7 +762,6 @@ export function InventorySheetPilotSurface({
             {canUpdateInventory ? "status editing enabled" : "read-only mode"}
           </span>
         }
-        antiDriftSummary="Inventory queue release gates: spreadsheet selection parity, status edit, bulk operations, and export."
         headerActions={
           hasMoreRows ? (
             <Button
@@ -826,7 +818,6 @@ export function InventorySheetPilotSurface({
       <PowersheetGrid
         surfaceId="inventory-locations-grid"
         requirementIds={["OPS-INV-002"]}
-        releaseGateIds={["INV-WF-002"]}
         affordances={locationAffordances}
         title="Selected Batch Locations"
         description="This supporting table keeps storage context inline so the sheet can answer the next question without pushing routine work into the inspector."
@@ -847,7 +838,6 @@ export function InventorySheetPilotSurface({
             </span>
           ) : undefined
         }
-        antiDriftSummary="Locations support-grid: must stay selection-driven and linked to the focused batch."
         minHeight={220}
       />
 
@@ -878,7 +868,9 @@ export function InventorySheetPilotSurface({
                 selectedRow.status === "QUARANTINED" && "border-amber-300"
               )}
             >
-              {selectedRow.status}
+              {STATUS_LABELS[
+                selectedRow.status as InventoryBatchStatus
+              ] ?? selectedRow.status}
             </Badge>
           ) : null
         }
@@ -898,7 +890,7 @@ export function InventorySheetPilotSurface({
         {selectedBatchId !== null ? (
           <div className="space-y-4">
             {isDeepLinkedOutsideLoadedGrid ? (
-              <div className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm text-blue-900">
+              <div className="rounded-md border border-blue-200 bg-[var(--info-bg)] px-3 py-2 text-sm text-[var(--info)]">
                 This inspector was loaded from the workbook URL. The selected
                 batch is not in the current loaded grid rows yet.
               </div>
@@ -929,7 +921,11 @@ export function InventorySheetPilotSurface({
                 <p>{String(detailSummary?.auditLogCount ?? 0)}</p>
               </InspectorField>
               <InspectorField label="Stock Status">
-                <p>{selectedRow?.stockStatus ?? "Unknown"}</p>
+                <p>
+                  {selectedRow?.stockStatus
+                    ? getStockStatusLabel(selectedRow.stockStatus)
+                    : "Unknown"}
+                </p>
               </InspectorField>
               <InspectorField label="Age">
                 <p>{selectedRow?.ageLabel ?? "-"}</p>

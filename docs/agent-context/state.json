@@ -1,0 +1,420 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-04-17T21:34:42.792Z",
+  "generator": {
+    "script": "scripts/agent-context/generate-agent-context.mjs",
+    "maxAgeHours": 72,
+    "linearLookbackDays": 21
+  },
+  "startupContract": {
+    "readFirst": ["AGENTS.md", "CLAUDE.md", "docs/agent-context/START_HERE.md"],
+    "entrypoint": "docs/agent-context/START_HERE.md",
+    "machineState": "docs/agent-context/state.json",
+    "refreshCommand": "pnpm context:refresh",
+    "checkCommand": "pnpm context:check",
+    "doNotTreatAsCurrentTruth": [
+      "docs/ACTIVE_SESSIONS.md",
+      "docs/PROJECT_CONTEXT.md",
+      "docs/TERP_AGENT_INSTRUCTIONS.md",
+      "docs/ROADMAP_AGENT_GUIDE.md",
+      "product-management/START_HERE.md"
+    ]
+  },
+  "freshness": {
+    "status": "partial",
+    "maxAgeHours": 72,
+    "snapshotAgeHours": 0,
+    "notes": [
+      "Linear could not be refreshed live, so the tracker section fell back to the last known snapshot (2026-04-08T03:11:06.962Z)."
+    ]
+  },
+  "git": {
+    "branch": "claude/terp-status-review-Av2Wq",
+    "head": "4f23376443890f71caa0e2b74ff6452a810da8da",
+    "shortHead": "4f23376",
+    "workingTreeDirty": false,
+    "recentCommits": [
+      {
+        "date": "2026-04-17",
+        "sha": "4f23376",
+        "subject": "docs(context): refresh agent-context after 420-fork merge"
+      },
+      {
+        "date": "2026-04-17",
+        "sha": "6744922",
+        "subject": "chore(hooks): make closeout-guard path portable"
+      },
+      {
+        "date": "2026-04-15",
+        "sha": "328edd7",
+        "subject": "feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)"
+      },
+      {
+        "date": "2026-04-10",
+        "sha": "d970ebe",
+        "subject": "feat(ui): advance april 9 ticket train remediation (#578)"
+      },
+      {
+        "date": "2026-04-09",
+        "sha": "46d9738",
+        "subject": "fix(notifications): improve inline triage and empty states (#577)"
+      },
+      {
+        "date": "2026-04-08",
+        "sha": "f1a1abb",
+        "subject": "feat: payment follow-up + pick list + dashboard ops (#576)"
+      },
+      {
+        "date": "2026-04-08",
+        "sha": "8e73fc6",
+        "subject": "docs(context): refresh startup truth after P2 closeout (#575)"
+      },
+      {
+        "date": "2026-04-08",
+        "sha": "e760614",
+        "subject": "docs(p2): close TER-1071 deferred pass (#574)"
+      },
+      {
+        "date": "2026-04-08",
+        "sha": "1b7e493",
+        "subject": "feat(po): close TER-1070 tranche 3 continuity (#573)"
+      },
+      {
+        "date": "2026-04-08",
+        "sha": "db28993",
+        "subject": "feat(sales): close TER-1069 retrieval continuity (#572)"
+      },
+      {
+        "date": "2026-04-08",
+        "sha": "8e019eb",
+        "subject": "feat(ux): close TER-1068 tranche 1 (#571)"
+      },
+      {
+        "date": "2026-04-08",
+        "sha": "7586564",
+        "subject": "fix(ux): land TER-1067 recovery and canonical P2 packet (#570)"
+      },
+      {
+        "date": "2026-04-07",
+        "sha": "994bbee",
+        "subject": "test(surfaces): deepen behavioral coverage and polish inventory/po UX (#568)"
+      },
+      {
+        "date": "2026-04-07",
+        "sha": "3d68f93",
+        "subject": "feat: land spreadsheet-native continuity and QA hardening (#567)"
+      },
+      {
+        "date": "2026-04-06",
+        "sha": "730d122",
+        "subject": "fix(ux): Waves 0-5 — 46 UX improvements across all surfaces (#566)"
+      },
+      {
+        "date": "2026-04-02",
+        "sha": "d92fc16",
+        "subject": "chore(ci): remove temporary runner key recovery workflow (#565)"
+      },
+      {
+        "date": "2026-04-02",
+        "sha": "72868ea",
+        "subject": "chore(ci): add temporary runner key recovery workflow (#564)"
+      },
+      {
+        "date": "2026-04-02",
+        "sha": "e844551",
+        "subject": "[codex] Harden sales catalogue adversarial follow-ups (#563)"
+      },
+      {
+        "date": "2026-04-02",
+        "sha": "5019156",
+        "subject": "build(ci): harden ops ssh and nightly e2e output (#562)"
+      },
+      {
+        "date": "2026-04-01",
+        "sha": "19011c0",
+        "subject": "build(ci): upgrade active actions to node 24 (#559)"
+      },
+      {
+        "date": "2026-04-01",
+        "sha": "2e7bbab",
+        "subject": "fix(sales-catalogue): keep shared links working without clipboard (#561)"
+      },
+      {
+        "date": "2026-04-01",
+        "sha": "0bc2475",
+        "subject": "fix(sales-catalogue): preserve shared view popup gesture (#558)"
+      },
+      {
+        "date": "2026-04-01",
+        "sha": "79bff4a",
+        "subject": "fix(sales-catalogue): harden catalogue handoff flows (#557)"
+      },
+      {
+        "date": "2026-04-01",
+        "sha": "871ca70",
+        "subject": "fix(health): reduce noisy disk degradation warnings (#556)"
+      },
+      {
+        "date": "2026-04-01",
+        "sha": "b90edd4",
+        "subject": "fix: persist create-order client selection in the URL (#555)"
+      }
+    ]
+  },
+  "linear": {
+    "mode": "last-known",
+    "fetchedAt": "2026-04-08T03:11:06.962Z",
+    "latestIssueUpdatedAt": "2026-04-08T03:10:07.816Z",
+    "activeProjects": [
+      {
+        "name": "Spreadsheet-Native Full Rollout",
+        "state": "started",
+        "updatedAt": "2026-03-20T22:03:52.118Z",
+        "url": "https://linear.app/terpcorp/project/spreadsheet-native-full-rollout-fbd82fc3571e",
+        "description": "Roll out PowersheetGrid to all TERP modules. 4 waves: Core Business → Operations → Sales Extensions → Classic Sunset."
+      },
+      {
+        "name": "TERP - Orders Spreadsheet Runtime Rollout",
+        "state": "backlog",
+        "updatedAt": "2026-03-17T20:55:16.524Z",
+        "url": "https://linear.app/terpcorp/project/terp-orders-spreadsheet-runtime-rollout-0f792b7787cc",
+        "description": "Make Orders the first rollout-ready sheet-native surface by adding full spreadsheet interaction parity on top of the existing anti-drift contract and Orders workflow."
+      },
+      {
+        "name": "March 10 Recording Backlog Closure",
+        "state": "planned",
+        "updatedAt": "2026-03-11T16:10:58.285Z",
+        "url": "https://linear.app/terpcorp/project/march-10-recording-backlog-closure-e375ae6ec54a",
+        "description": "Close the unresolved March 10 staging screen-recording backlog with proof-based coverage control and final replay signoff."
+      },
+      {
+        "name": "TERP - Sprint 2026-03-09 Open Bugs + Mobile UX Hardening",
+        "state": "backlog",
+        "updatedAt": "2026-03-09T21:54:07.816Z",
+        "url": "https://linear.app/terpcorp/project/terp-sprint-2026-03-09-open-bugs-mobile-ux-hardening-0a5bca1df82d",
+        "description": "Clear the full open bug backlog while shipping the next mobile usability, page orientation, and accessibility remediations."
+      },
+      {
+        "name": "TERP - Sales Sheet UX + Artifact Quality (User Testing Ready)",
+        "state": "backlog",
+        "updatedAt": "2026-02-24T23:21:30.981Z",
+        "url": "https://linear.app/terpcorp/project/terp-sales-sheet-ux-artifact-quality-user-testing-ready-ffbf645b28e0",
+        "description": "Atomic roadmap to make Sales Sheet feature-complete, redesign-consistent, and user-testing ready."
+      },
+      {
+        "name": "TERP - Immediate Phase: Broken Buttons & Interaction Reliability",
+        "state": "backlog",
+        "updatedAt": "2026-02-11T22:42:09.258Z",
+        "url": "https://linear.app/terpcorp/project/terp-immediate-phase-broken-buttons-and-interaction-reliability-ba50b992584c",
+        "description": "Stabilize broken controls first, then harden tests/CI so regressions are blocked before merge."
+      }
+    ],
+    "recentIssues": [
+      {
+        "identifier": "TER-1065",
+        "title": "[P2-19] Contact activity/communication log for payments follow-up tracking",
+        "priority": "normal",
+        "updatedAt": "2026-04-08T03:10:07.816Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1065/p2-19-contact-activitycommunication-log-for-payments-follow-up",
+        "state": "In Review",
+        "project": null
+      },
+      {
+        "identifier": "TER-1063",
+        "title": "[P2-17] Shipping/fulfillment: generate pick list from confirmed orders with batch locations",
+        "priority": "normal",
+        "updatedAt": "2026-04-08T03:10:07.814Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1063/p2-17-shippingfulfillment-generate-pick-list-from-confirmed-orders",
+        "state": "In Review",
+        "project": null
+      },
+      {
+        "identifier": "TER-1056",
+        "title": "[P2-10] Dashboard: activity feed showing recent orders, payments, intake since last session",
+        "priority": "normal",
+        "updatedAt": "2026-04-08T03:10:07.812Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1056/p2-10-dashboard-activity-feed-showing-recent-orders-payments-intake",
+        "state": "In Review",
+        "project": null
+      },
+      {
+        "identifier": "TER-1055",
+        "title": "[P2-09] Dashboard: add operational KPIs - expected deliveries, pending fulfillment, appointments today",
+        "priority": "normal",
+        "updatedAt": "2026-04-08T03:10:07.810Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1055/p2-09-dashboard-add-operational-kpis-expected-deliveries-pending",
+        "state": "In Review",
+        "project": null
+      },
+      {
+        "identifier": "TER-1066",
+        "title": "[P2-20] Remaining initiative: spec-driven seam execution framework",
+        "priority": "high",
+        "updatedAt": "2026-04-08T03:10:07.796Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1066/p2-20-remaining-initiative-spec-driven-seam-execution-framework",
+        "state": "In Review",
+        "project": "Spreadsheet-Native Full Rollout"
+      },
+      {
+        "identifier": "TER-1048",
+        "title": "[P2-02] Inventory: default filter to LIVE status, human-readable status labels across all grids",
+        "priority": "high",
+        "updatedAt": "2026-04-08T00:07:55.035Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1048/p2-02-inventory-default-filter-to-live-status-human-readable-status",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1053",
+        "title": "[P2-07] Inventory row action: Add to Order button to start order from inventory context",
+        "priority": "normal",
+        "updatedAt": "2026-04-06T18:45:57.391Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1053/p2-07-inventory-row-action-add-to-order-button-to-start-order-from",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1052",
+        "title": "[P2-06] Order creator: show client credit, balance, and recent order history before adding items",
+        "priority": "high",
+        "updatedAt": "2026-04-06T18:45:56.069Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1052/p2-06-order-creator-show-client-credit-balance-and-recent-order",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1051",
+        "title": "[P2-05] Product name display: show strain/product name prominently, supplier as secondary text",
+        "priority": "normal",
+        "updatedAt": "2026-04-06T18:45:54.986Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1051/p2-05-product-name-display-show-strainproduct-name-prominently",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1050",
+        "title": "[P2-04] Sales Catalogue: fast access + shareable link generation for chat-based client communication",
+        "priority": "high",
+        "updatedAt": "2026-04-06T18:45:54.044Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1050/p2-04-sales-catalogue-fast-access-shareable-link-generation-for-chat",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1049",
+        "title": "[P2-03] Cmd+K search: include products and inventory batches in global search",
+        "priority": "high",
+        "updatedAt": "2026-04-06T18:45:52.818Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1049/p2-03-cmdk-search-include-products-and-inventory-batches-in-global",
+        "state": "Todo",
+        "project": null
+      },
+      {
+        "identifier": "TER-1047",
+        "title": "[P2-01] Inventory grid: add Price, COGS, Margin columns to default view",
+        "priority": "high",
+        "updatedAt": "2026-04-06T18:45:50.284Z",
+        "url": "https://linear.app/terpcorp/issue/TER-1047/p2-01-inventory-grid-add-price-cogs-margin-columns-to-default-view",
+        "state": "Todo",
+        "project": null
+      }
+    ],
+    "error": "LINEAR_API_KEY is not configured."
+  },
+  "direction": {
+    "focusAreas": [
+      "inventory, intake, and purchase operations",
+      "orders and order workflow",
+      "operator workflow polish",
+      "accounting, payments, and ledger work"
+    ],
+    "summary": "Current TERP direction centers on inventory, intake, and purchase operations and orders and order workflow; recent git activity is anchored at 4f23376 and is dominated by `docs(context): refresh agent-context after 420-fork merge`, `chore(hooks): make closeout-guard path portable`, `feat(420-fork): Waves 1-5 + P2 Tranche 1 — UI overhaul, enum humanization, product identity, portable cuts, consignment payout (#579)`, `feat(ui): advance april 9 ticket train remediation (#578)`; Linear currently emphasizes `Spreadsheet-Native Full Rollout`, `TERP - Orders Spreadsheet Runtime Rollout`, `March 10 Recording Backlog Closure`.",
+    "themeEvidence": [
+      {
+        "label": "inventory, intake, and purchase operations",
+        "count": 9
+      },
+      {
+        "label": "orders and order workflow",
+        "count": 6
+      },
+      {
+        "label": "operator workflow polish",
+        "count": 5
+      },
+      {
+        "label": "accounting, payments, and ledger work",
+        "count": 3
+      },
+      {
+        "label": "QA, parity proof, and rollout hardening",
+        "count": 3
+      },
+      {
+        "label": "spreadsheet-native rollout",
+        "count": 2
+      }
+    ]
+  },
+  "repoTruthHierarchy": [
+    "`docs/agent-context/state.json` for startup truth, freshness, and where to drill deeper next.",
+    "Program-specific machine state like `docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json` when working that exact lane.",
+    "Current code, tests, and runtime evidence when docs and tracker narratives disagree.",
+    "Linear project and issue state for live execution direction.",
+    "Legacy docs only as historical background, never as silent current truth."
+  ],
+  "activeLaneSignals": [
+    {
+      "path": "docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json",
+      "gate": "G2",
+      "gateVerdict": "closed with evidence",
+      "updatedAt": "2026-03-20",
+      "nextMove": "TER-795 is closed with evidence. Keep G2 sealed and follow the reopened G6 rollout verdict for the remaining retirement remediation work."
+    }
+  ],
+  "deepDiveDocs": [
+    {
+      "path": "docs/specs/spreadsheet-native-foundation/orders-runtime/ter-795-state.json",
+      "reason": "machine-readable Orders runtime verdicts and next move"
+    },
+    {
+      "path": "docs/roadmaps/orders-spreadsheet-runtime/README.md",
+      "reason": "Orders runtime gate roadmap and tranche layout"
+    },
+    {
+      "path": "docs/design/spreadsheet-native-golden-flows-2026-03-18/build-source-of-truth-2026-03-19/spreadsheet-native-build-source-of-truth.md",
+      "reason": "broader spreadsheet-native preservation packet and source precedence rules"
+    },
+    {
+      "path": "docs/TESTING.md",
+      "reason": "canonical verification commands and E2E guidance"
+    }
+  ],
+  "legacyWarnings": [
+    {
+      "path": "docs/ACTIVE_SESSIONS.md",
+      "reason": "stale session registry that still looks live",
+      "lastUpdated": "2026-02-04"
+    },
+    {
+      "path": "docs/PROJECT_CONTEXT.md",
+      "reason": "historical orientation snapshot, not current runtime truth",
+      "lastUpdated": "October 27, 2025"
+    },
+    {
+      "path": "docs/TERP_AGENT_INSTRUCTIONS.md",
+      "reason": "older prompt-pack instructions that still point at legacy roadmap flow",
+      "lastUpdated": "2026-02-01"
+    },
+    {
+      "path": "docs/ROADMAP_AGENT_GUIDE.md",
+      "reason": "older roadmap guide that still says MASTER_ROADMAP is current",
+      "lastUpdated": null
+    },
+    {
+      "path": "product-management/START_HERE.md",
+      "reason": "separate PM system entrypoint, not the live TERP repo startup contract",
+      "lastUpdated": null
+    }
+  ]
+}

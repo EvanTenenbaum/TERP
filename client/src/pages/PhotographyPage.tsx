@@ -46,6 +46,8 @@ import {
   PhotographyModule,
   ProductPhoto,
 } from "@/components/inventory/PhotographyModule";
+import { getStatusBadgeVariant } from "@/lib/statusBadge";
+import { STATUS_INFO, STATUS_SUCCESS } from "@/lib/statusTokens";
 
 interface SelectedBatch {
   batchId: number;
@@ -157,14 +159,20 @@ export default function PhotographyPage({
     switch (status) {
       case "COMPLETED":
         return (
-          <Badge variant="default" className="bg-green-500">
+          <Badge
+            variant={getStatusBadgeVariant(status)}
+            className={STATUS_SUCCESS}
+          >
             <CheckCircle className="h-3 w-3 mr-1" />
             Done
           </Badge>
         );
       case "IN_PROGRESS":
         return (
-          <Badge variant="secondary">
+          <Badge
+            variant={getStatusBadgeVariant(status)}
+            className={STATUS_INFO}
+          >
             <Clock className="h-3 w-3 mr-1" />
             In Progress
           </Badge>
@@ -312,7 +320,7 @@ export default function PhotographyPage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[var(--success)]">
               {queue?.stats?.completedToday || 0}
             </div>
           </CardContent>

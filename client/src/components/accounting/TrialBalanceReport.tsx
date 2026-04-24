@@ -146,7 +146,7 @@ export function TrialBalanceReport({
             {/* Balance Status */}
             <div className="mb-4 flex items-center gap-2">
               {isBalanced ? (
-                <Badge variant="outline" className="text-green-600">
+                <Badge variant="outline" className="text-[var(--success)]">
                   <CheckCircle className="h-3 w-3 mr-1" />
                   Balanced
                 </Badge>

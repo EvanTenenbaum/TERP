@@ -37,6 +37,7 @@ import { toast } from "sonner";
 import { useLocation } from "wouter";
 // UX-012: Import centralized date formatting utility
 import { formatDate } from "@/lib/utils";
+import { getEnumLabel, VENDOR_SUPPLY_STATUS_LABELS } from "@/lib/enumLabels";
 
 // FE-QA-009: Form state type
 interface SupplyFormState {
@@ -325,7 +326,7 @@ export default function VendorSupplyPage({
     };
     return (
       <Badge variant={variants[normalizedStatus] || "outline"}>
-        {normalizedStatus}
+        {getEnumLabel(normalizedStatus, VENDOR_SUPPLY_STATUS_LABELS)}
       </Badge>
     );
   };

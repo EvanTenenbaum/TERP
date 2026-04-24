@@ -9,13 +9,14 @@
 
 import { TRPCError } from "@trpc/server";
 import { eq, and, inArray } from "drizzle-orm";
-import { getDb } from "./db";
+import { getDb, getUserById } from "./db";
 import {
   calendarEvents,
   calendarEventPermissions,
   type CalendarEvent,
 } from "../../drizzle/schema";
 import cache, { CacheKeys, CacheTTL } from "./cache";
+import { isSuperAdmin } from "../services/permissionService";
 
 export type PermissionLevel = "VIEW" | "EDIT" | "DELETE" | "MANAGE";
 export type GrantType = "USER" | "ROLE" | "TEAM";
@@ -25,6 +26,17 @@ export type GrantType = "USER" | "ROLE" | "TEAM";
  * Enforces row-level security for calendar events
  */
 export class PermissionService {
+  private static async resolveSuperAdminUserKey(
+    userId: number
+  ): Promise<string> {
+    try {
+      const user = await getUserById(userId);
+      return user?.openId ?? String(userId);
+    } catch {
+      return String(userId);
+    }
+  }
+
   /**
    * Check if a user has a specific permission on an event
    *
@@ -38,10 +50,22 @@ export class PermissionService {
     requiredPermission: PermissionLevel
   ): Promise<boolean> {
     // Check cache first
-    const cacheKey = CacheKeys.calendarEventPermission(userId, eventId, requiredPermission);
+    const cacheKey = CacheKeys.calendarEventPermission(
+      userId,
+      eventId,
+      requiredPermission
+    );
     const cached = cache.get<boolean>(cacheKey);
     if (cached !== null) {
       return cached;
+    }
+
+    // BUG-094: use the canonical super-admin truth path instead of a local
+    // users.role shortcut so RBAC-only Super Admins get the same bypass.
+    const superAdminUserKey = await this.resolveSuperAdminUserKey(userId);
+    if (await isSuperAdmin(superAdminUserKey)) {
+      cache.set(cacheKey, true, CacheTTL.MEDIUM);
+      return true;
     }
 
     const db = await getDb();
@@ -67,7 +91,10 @@ export class PermissionService {
     }
 
     // Assigned user has EDIT permission
-    if (event.assignedTo === userId && this.isPermissionSufficient("EDIT", requiredPermission)) {
+    if (
+      event.assignedTo === userId &&
+      this.isPermissionSufficient("EDIT", requiredPermission)
+    ) {
       cache.set(cacheKey, true, CacheTTL.MEDIUM);
       return true;
     }
@@ -135,7 +162,11 @@ export class PermissionService {
     eventId: number,
     requiredPermission: PermissionLevel
   ): Promise<void> {
-    const hasPermission = await this.hasPermission(userId, eventId, requiredPermission);
+    const hasPermission = await this.hasPermission(
+      userId,
+      eventId,
+      requiredPermission
+    );
 
     if (!hasPermission) {
       throw new TRPCError({
@@ -252,7 +283,7 @@ export class PermissionService {
    * Batch check permissions for multiple events
    * Returns a map of eventId -> hasPermission
    * This is a performance optimization to avoid N+1 queries
-   * 
+   *
    * @param userId - The user ID to check permissions for
    * @param eventIds - Array of event IDs to check
    * @param requiredPermission - The permission level required
@@ -267,9 +298,19 @@ export class PermissionService {
       return {};
     }
 
+    const permissionMap: Record<number, boolean> = {};
+
+    // BUG-094: keep batch checks aligned with the canonical super-admin path.
+    const superAdminUserKey = await this.resolveSuperAdminUserKey(userId);
+    if (await isSuperAdmin(superAdminUserKey)) {
+      for (const id of eventIds) {
+        permissionMap[id] = true;
+      }
+      return permissionMap;
+    }
+
     const db = await getDb();
     if (!db) throw new Error("Database not available");
-    const permissionMap: Record<number, boolean> = {};
 
     // Fetch all events in a single query using inArray for efficiency
     const events = await db
@@ -307,7 +348,10 @@ export class PermissionService {
       }
 
       // Assigned user has EDIT permission
-      if (event.assignedTo === userId && this.isPermissionSufficient("EDIT", requiredPermission)) {
+      if (
+        event.assignedTo === userId &&
+        this.isPermissionSufficient("EDIT", requiredPermission)
+      ) {
         permissionMap[event.id] = true;
         continue;
       }
@@ -349,7 +393,7 @@ export class PermissionService {
   /**
    * Filter events by user permissions
    * Returns only events the user has permission to view
-   * 
+   *
    * @deprecated Use batchCheckPermissions for better performance
    */
   static async filterEventsByPermission(
@@ -489,9 +533,18 @@ export class PermissionService {
    */
   static invalidatePermissionCache(userId: number, eventId: number): void {
     // Invalidate all permission levels for this user-event combination
-    const permissionLevels: PermissionLevel[] = ["VIEW", "EDIT", "DELETE", "MANAGE"];
+    const permissionLevels: PermissionLevel[] = [
+      "VIEW",
+      "EDIT",
+      "DELETE",
+      "MANAGE",
+    ];
     for (const permission of permissionLevels) {
-      const cacheKey = CacheKeys.calendarEventPermission(userId, eventId, permission);
+      const cacheKey = CacheKeys.calendarEventPermission(
+        userId,
+        eventId,
+        permission
+      );
       cache.delete(cacheKey);
     }
   }

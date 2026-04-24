@@ -4,15 +4,18 @@ import { Button } from "../ui/button";
 import { Card, CardContent, CardHeader } from "../ui/card";
 import { Edit, Eye } from "lucide-react";
 import { getBrandLabel } from "@/lib/nomenclature";
+import { buildProductIdentityLines } from "@/lib/productIdentity";
+import { getBatchStatusLabel } from "@/lib/statusTokens";
 
 interface InventoryCardProps {
   batch: {
     id: number;
     sku: string;
     productName: string;
-    brandName: string;
-    vendorName: string;
+    brandName?: string;
+    vendorName?: string;
     category?: string; // ENH-007: Added for dynamic Brand/Farmer terminology
+    subcategory?: string;
     grade: string;
     status: string;
     onHandQty: string;
@@ -28,16 +31,22 @@ export const InventoryCard = memo(function InventoryCard({
   onView,
   onEdit,
 }: InventoryCardProps) {
+  const identityLines = buildProductIdentityLines({
+    brand: batch.brandName,
+    vendor: batch.vendorName,
+    category: batch.category,
+    subcategory: batch.subcategory,
+  });
   const getStatusColor = (status: string) => {
     switch (status.toUpperCase()) {
       case "AWAITING_INTAKE":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+        return "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200";
       case "LIVE":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-[var(--success-bg)] text-[var(--success)] border-green-200";
       case "ON_HOLD":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200";
       case "QUARANTINED":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-destructive/10 text-destructive border-red-200";
       case "SOLD_OUT":
         return "bg-gray-100 text-gray-800 border-gray-200";
       case "CLOSED":
@@ -45,13 +54,6 @@ export const InventoryCard = memo(function InventoryCard({
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
-  };
-
-  const formatStatus = (status: string) => {
-    return status
-      .split("_")
-      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
-      .join(" ");
   };
 
   const isAwaitingIntake = batch.status.toUpperCase() === "AWAITING_INTAKE";
@@ -65,9 +67,19 @@ export const InventoryCard = memo(function InventoryCard({
               {batch.sku}
             </p>
             <h3 className="text-lg font-semibold">{batch.productName}</h3>
+            {identityLines.secondary ? (
+              <p className="text-sm text-muted-foreground">
+                {identityLines.secondary}
+              </p>
+            ) : null}
+            {identityLines.tertiary ? (
+              <p className="text-xs text-muted-foreground/80">
+                {identityLines.tertiary}
+              </p>
+            ) : null}
           </div>
           <Badge className={getStatusColor(batch.status)} variant="outline">
-            {formatStatus(batch.status)}
+            {getBatchStatusLabel(batch.status)}
           </Badge>
         </div>
       </CardHeader>
@@ -79,12 +91,12 @@ export const InventoryCard = memo(function InventoryCard({
             <p className="text-muted-foreground">
               {getBrandLabel(batch.category)}
             </p>
-            <p className="font-medium">{batch.brandName}</p>
+            <p className="font-medium">{batch.brandName || "-"}</p>
           </div>
           <div>
             {/* MEET-027: Vendor is the business entity */}
             <p className="text-muted-foreground">Supplier</p>
-            <p className="font-medium">{batch.vendorName}</p>
+            <p className="font-medium">{batch.vendorName || "-"}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Grade</p>
@@ -109,7 +121,7 @@ export const InventoryCard = memo(function InventoryCard({
             </div>
             <div>
               <p className="text-muted-foreground text-xs">Available</p>
-              <p className="font-semibold text-green-600">
+              <p className="font-semibold text-[var(--success)]">
                 {parseFloat(batch.availableQty).toFixed(2)}
               </p>
             </div>

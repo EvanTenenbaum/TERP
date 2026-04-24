@@ -448,6 +448,9 @@ async function calculateAccountingMetrics(
   }
 
   // Calculate AR
+  // TER-1255: Use the same outstanding-invoice predicate as the dashboard's
+  // arApDashboard.getARSummary endpoint so the data card and the headline KPI
+  // never diverge. Filter out soft-deleted rows and zero-amount invoices.
   if (metricIds.includes("accounting_ar")) {
     const [arResult] = await db
       .select({
@@ -455,8 +458,12 @@ async function calculateAccountingMetrics(
       })
       .from(invoices)
       .where(
-        sql`${invoices.status} IN ('SENT', 'VIEWED', 'PARTIAL', 'OVERDUE')`
-      ); // All unpaid statuses
+        and(
+          sql`${invoices.status} IN ('SENT', 'VIEWED', 'PARTIAL', 'OVERDUE')`,
+          sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
+          sql`${invoices.deletedAt} IS NULL`
+        )
+      );
 
     results["accounting_ar"] = {
       value: Number(arResult?.total) || 0,
@@ -466,13 +473,23 @@ async function calculateAccountingMetrics(
   }
 
   // Calculate AP
+  // TER-1255: Bills do NOT use the SENT/VIEWED enum (those are invoice-only).
+  // The bills enum is DRAFT, PENDING, APPROVED, PARTIAL, PAID, OVERDUE, VOID,
+  // so the previous filter matched zero rows and forced AP to $0. Use the
+  // canonical unpaid-bill statuses including APPROVED (ready-to-pay bills).
   if (metricIds.includes("accounting_ap")) {
     const [apResult] = await db
       .select({
         total: sum(bills.amountDue),
       })
       .from(bills)
-      .where(sql`${bills.status} IN ('SENT', 'VIEWED', 'PARTIAL', 'OVERDUE')`); // All unpaid statuses
+      .where(
+        and(
+          sql`${bills.status} IN ('PENDING', 'APPROVED', 'PARTIAL', 'OVERDUE')`,
+          sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
+          sql`${bills.deletedAt} IS NULL`
+        )
+      );
 
     results["accounting_ap"] = {
       value: Number(apResult?.total) || 0,
@@ -494,6 +511,8 @@ async function calculateAccountingMetrics(
   }
 
   // AR Overdue
+  // TER-1255: Mirror the AR predicate above (skip soft-deleted, require
+  // amountDue > 0) so the overdue card stays consistent with the dashboard.
   if (metricIds.includes("accounting_ar_overdue")) {
     const now = new Date();
 
@@ -505,6 +524,8 @@ async function calculateAccountingMetrics(
       .where(
         and(
           sql`${invoices.status} IN ('SENT', 'VIEWED', 'PARTIAL', 'OVERDUE')`,
+          sql`CAST(${invoices.amountDue} AS DECIMAL(15,2)) > 0`,
+          sql`${invoices.deletedAt} IS NULL`,
           lte(invoices.dueDate, now)
         )
       );
@@ -517,6 +538,9 @@ async function calculateAccountingMetrics(
   }
 
   // AP Overdue
+  // TER-1255: Bills do NOT use SENT/VIEWED. Use the canonical unpaid-bill
+  // statuses (PENDING, APPROVED, PARTIAL, OVERDUE) with the same soft-delete
+  // and amount-due > 0 guards as the AP card above.
   if (metricIds.includes("accounting_ap_overdue")) {
     const now = new Date();
 
@@ -527,7 +551,9 @@ async function calculateAccountingMetrics(
       .from(bills)
       .where(
         and(
-          sql`${bills.status} IN ('SENT', 'VIEWED', 'PARTIAL', 'OVERDUE')`,
+          sql`${bills.status} IN ('PENDING', 'APPROVED', 'PARTIAL', 'OVERDUE')`,
+          sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
+          sql`${bills.deletedAt} IS NULL`,
           lte(bills.dueDate, now)
         )
       );

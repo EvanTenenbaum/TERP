@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getStatusBadgeVariant } from "@/lib/statusBadge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import StaffSessionConsole from "@/components/live-shopping/StaffSessionConsole";
@@ -70,15 +71,14 @@ const statusConfig: Record<
   SessionStatus,
   {
     label: string;
-    variant: "default" | "secondary" | "destructive" | "outline";
   }
 > = {
-  SCHEDULED: { label: "Scheduled", variant: "secondary" },
-  ACTIVE: { label: "Active", variant: "default" },
-  PAUSED: { label: "Paused", variant: "outline" },
-  ENDED: { label: "Ended", variant: "secondary" },
-  CONVERTED: { label: "Converted", variant: "default" },
-  CANCELLED: { label: "Cancelled", variant: "destructive" },
+  SCHEDULED: { label: "Scheduled" },
+  ACTIVE: { label: "Active" },
+  PAUSED: { label: "Paused" },
+  ENDED: { label: "Ended" },
+  CONVERTED: { label: "Converted" },
+  CANCELLED: { label: "Cancelled" },
 };
 
 export default function LiveShoppingPage() {
@@ -305,7 +305,7 @@ export default function LiveShoppingPage() {
             <CardTitle className="text-sm font-medium">
               Active Sessions
             </CardTitle>
-            <Play className="h-4 w-4 text-green-500" />
+            <Play className="h-4 w-4 text-[var(--success)]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -316,7 +316,7 @@ export default function LiveShoppingPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Scheduled</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-500" />
+            <Calendar className="h-4 w-4 text-[var(--info)]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -338,7 +338,7 @@ export default function LiveShoppingPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Converted</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-purple-500" />
+            <ShoppingCart className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
@@ -425,7 +425,9 @@ export default function LiveShoppingPage() {
                   return (
                     <TableRow key={session.id}>
                       <TableCell>
-                        <Badge variant={config.variant}>{config.label}</Badge>
+                        <Badge variant={getStatusBadgeVariant(status)}>
+                          {config.label}
+                        </Badge>
                       </TableCell>
                       <TableCell className="font-medium">
                         {session.title}

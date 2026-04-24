@@ -160,7 +160,7 @@ export default function FiscalPeriods({
         badge = (
           <Badge
             variant="outline"
-            className="bg-green-100 text-green-700 border-green-200"
+            className="bg-[var(--success-bg)] text-[var(--success)] border-green-200"
           >
             Open
           </Badge>
@@ -180,7 +180,7 @@ export default function FiscalPeriods({
         badge = (
           <Badge
             variant="outline"
-            className="bg-red-100 text-red-700 border-red-200"
+            className="bg-destructive/10 text-destructive border-red-200"
           >
             Locked
           </Badge>
@@ -196,7 +196,7 @@ export default function FiscalPeriods({
         {isCurrent && (
           <Badge
             variant="outline"
-            className="bg-blue-100 text-blue-700 border-blue-200"
+            className="bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
           >
             Current
           </Badge>
@@ -314,7 +314,7 @@ export default function FiscalPeriods({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Open</CardTitle>
-            <CalendarIcon className="h-4 w-4 text-green-600" />
+            <CalendarIcon className="h-4 w-4 text-[var(--success)]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{openPeriods}</div>
@@ -332,7 +332,7 @@ export default function FiscalPeriods({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Locked</CardTitle>
-            <CalendarIcon className="h-4 w-4 text-red-600" />
+            <CalendarIcon className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{lockedPeriods}</div>
@@ -401,7 +401,7 @@ export default function FiscalPeriods({
                     return (
                       <TableRow
                         key={period.id}
-                        className={cn(isCurrent && "bg-blue-50")}
+                        className={cn(isCurrent && "bg-[var(--info-bg)]")}
                       >
                         <TableCell className="font-medium">
                           {period.periodName}
@@ -446,13 +446,13 @@ export default function FiscalPeriods({
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               {confirmAction?.type === "lock" && (
-                <Lock className="h-5 w-5 text-red-500" />
+                <Lock className="h-5 w-5 text-destructive" />
               )}
               {confirmAction?.type === "close" && (
                 <XCircle className="h-5 w-5 text-amber-500" />
               )}
               {confirmAction?.type === "reopen" && (
-                <Unlock className="h-5 w-5 text-green-500" />
+                <Unlock className="h-5 w-5 text-[var(--success)]" />
               )}
               {confirmAction?.type === "close" && "Close Fiscal Period?"}
               {confirmAction?.type === "lock" && "Lock Fiscal Period?"}
@@ -478,7 +478,7 @@ export default function FiscalPeriods({
                     You are about to lock{" "}
                     <strong>{confirmAction.period.periodName}</strong>.
                   </p>
-                  <p className="text-red-600 flex items-center gap-2">
+                  <p className="text-destructive flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4" />
                     Locking a period permanently prevents any modifications.
                     This action should only be taken after reconciliation is
@@ -506,11 +506,11 @@ export default function FiscalPeriods({
             <AlertDialogAction
               onClick={handleConfirmAction}
               className={cn(
-                confirmAction?.type === "lock" && "bg-red-600 hover:bg-red-700",
+                confirmAction?.type === "lock" && "bg-destructive hover:bg-destructive",
                 confirmAction?.type === "close" &&
                   "bg-amber-600 hover:bg-amber-700",
                 confirmAction?.type === "reopen" &&
-                  "bg-green-600 hover:bg-green-700"
+                  "bg-[var(--success)] hover:bg-[var(--success)]"
               )}
             >
               {confirmAction?.type === "close" && "Close Period"}

@@ -3,6 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -22,6 +23,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -35,12 +37,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { Search, Plus, Package, Users, Target, Loader2 } from "lucide-react";
 import { ListSkeleton } from "@/components/ui/skeleton-loaders";
 import { BackButton } from "@/components/common/BackButton";
 import { useLocation } from "wouter";
 import { getProductDisplayName } from "@/lib/displayHelpers";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { toast } from "sonner";
 
 /**
@@ -106,6 +115,21 @@ interface MatchmakingServicePageProps {
   embedded?: boolean;
 }
 
+export function buildQuoteMatchComposerPath(
+  match: SuggestedMatch & { supplyId?: number; clientId?: number }
+) {
+  if (!match.needId && !match.clientId) {
+    return null;
+  }
+
+  const params: Record<string, string | number> = { mode: "quote" };
+  if (match.needId) params.needId = match.needId;
+  if (match.supplyId) params.supplyId = match.supplyId;
+  if (match.clientId) params.clientId = match.clientId;
+
+  return buildSalesWorkspacePath("create-order", params);
+}
+
 export default function MatchmakingServicePage({
   embedded = false,
 }: MatchmakingServicePageProps) {
@@ -128,6 +152,25 @@ export default function MatchmakingServicePage({
   const [matchToDismiss, setMatchToDismiss] = useState<SuggestedMatch | null>(
     null
   );
+
+  // TER-888: Add Need modal state
+  const [addNeedOpen, setAddNeedOpen] = useState(false);
+  const [needClientId, setNeedClientId] = useState<string>("");
+  const [needProductName, setNeedProductName] = useState("");
+  const [needQuantityMin, setNeedQuantityMin] = useState("");
+  const [needQuantityMax, setNeedQuantityMax] = useState("");
+  const [needPriority, setNeedPriority] = useState<
+    "LOW" | "MEDIUM" | "HIGH" | "URGENT"
+  >("MEDIUM");
+  const [needNotes, setNeedNotes] = useState("");
+
+  // TER-888: Add Supply modal state
+  const [addSupplyOpen, setAddSupplyOpen] = useState(false);
+  const [supplyClientId, setSupplyClientId] = useState<string>("");
+  const [supplyProductName, setSupplyProductName] = useState("");
+  const [supplyQuantity, setSupplyQuantity] = useState("");
+  const [supplyUnitPrice, setSupplyUnitPrice] = useState("");
+  const [supplyNotes, setSupplyNotes] = useState("");
 
   // ERR-001: Get tRPC utils for proper cache invalidation
   const utils = trpc.useUtils();
@@ -155,6 +198,18 @@ export default function MatchmakingServicePage({
       { enabled: selectedSupplyId !== null }
     );
 
+  // TER-888: Client buyer list for Add Need modal
+  const { data: buyerClientsData } = trpc.clients.list.useQuery(
+    { clientTypes: ["buyer"], limit: 200 },
+    { enabled: addNeedOpen }
+  );
+
+  // TER-888: Client seller list for Add Supply modal
+  const { data: sellerClientsData } = trpc.clients.list.useQuery(
+    { clientTypes: ["seller"], limit: 200 },
+    { enabled: addSupplyOpen }
+  );
+
   // FE-QA-010: Mutation to reserve a supply item
   // FE-QA-FIX: Use dedicated reserve endpoint instead of generic update
   // ERR-001: Add query invalidation on success using tRPC utils
@@ -175,6 +230,96 @@ export default function MatchmakingServicePage({
       setReservingItemId(null);
     },
   });
+
+  // TER-888: Add Need mutation
+  const addNeedMutation = trpc.clientNeeds.create.useMutation({
+    onSuccess: () => {
+      toast.success("Client need added successfully");
+      utils.clientNeeds.getAllWithMatches.invalidate();
+      utils.matching.getAllActiveNeedsWithMatches.invalidate();
+      setAddNeedOpen(false);
+      setNeedClientId("");
+      setNeedProductName("");
+      setNeedQuantityMin("");
+      setNeedQuantityMax("");
+      setNeedPriority("MEDIUM");
+      setNeedNotes("");
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to add client need");
+    },
+  });
+
+  // TER-888: Add Supply mutation
+  const addSupplyMutation = trpc.vendorSupply.create.useMutation({
+    onSuccess: () => {
+      toast.success("Supply item added successfully");
+      utils.vendorSupply.getAll.invalidate();
+      utils.vendorSupply.getAllWithMatches.invalidate();
+      utils.matching.getAllActiveNeedsWithMatches.invalidate();
+      setAddSupplyOpen(false);
+      setSupplyClientId("");
+      setSupplyProductName("");
+      setSupplyQuantity("");
+      setSupplyUnitPrice("");
+      setSupplyNotes("");
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to add supply item");
+    },
+  });
+
+  // TER-888: Handle Add Need form submit
+  const handleAddNeedSubmit = useCallback(() => {
+    const clientId = parseInt(needClientId, 10);
+    if (!clientId || isNaN(clientId)) {
+      toast.error("Please select a client");
+      return;
+    }
+    addNeedMutation.mutate({
+      clientId,
+      productName: needProductName || undefined,
+      quantityMin: needQuantityMin || undefined,
+      quantityMax: needQuantityMax || undefined,
+      priority: needPriority,
+      notes: needNotes || undefined,
+    });
+  }, [
+    needClientId,
+    needProductName,
+    needQuantityMin,
+    needQuantityMax,
+    needPriority,
+    needNotes,
+    addNeedMutation,
+  ]);
+
+  // TER-888: Handle Add Supply form submit
+  const handleAddSupplySubmit = useCallback(() => {
+    const vendorId = parseInt(supplyClientId, 10);
+    if (!vendorId || isNaN(vendorId)) {
+      toast.error("Please select a supplier");
+      return;
+    }
+    if (!supplyQuantity) {
+      toast.error("Quantity available is required");
+      return;
+    }
+    addSupplyMutation.mutate({
+      vendorId,
+      productName: supplyProductName || undefined,
+      quantityAvailable: supplyQuantity,
+      unitPrice: supplyUnitPrice || undefined,
+      notes: supplyNotes || undefined,
+    });
+  }, [
+    supplyClientId,
+    supplyProductName,
+    supplyQuantity,
+    supplyUnitPrice,
+    supplyNotes,
+    addSupplyMutation,
+  ]);
 
   const needs = needsData?.data || [];
   const supply = supplyData?.data || [];
@@ -263,16 +408,12 @@ export default function MatchmakingServicePage({
   // UX-005: Validate match has required IDs before navigation
   const handleCreateQuote = useCallback(
     (match: SuggestedMatch & { supplyId?: number; clientId?: number }) => {
-      // UX-005: Validate that we have at least a needId or clientId
-      if (!match.needId && !match.clientId) {
+      const targetPath = buildQuoteMatchComposerPath(match);
+      if (!targetPath) {
         toast.error("Cannot create quote: missing client or need information");
         return;
       }
-      const params = new URLSearchParams();
-      if (match.needId) params.set("needId", match.needId.toString());
-      if (match.supplyId) params.set("supplyId", match.supplyId.toString());
-      if (match.clientId) params.set("clientId", match.clientId.toString());
-      setLocation(`/quotes?action=create&${params.toString()}`);
+      setLocation(targetPath);
     },
     [setLocation]
   );
@@ -338,14 +479,11 @@ export default function MatchmakingServicePage({
             </p>
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => setLocation("/clients")}>
+            <Button onClick={() => setAddNeedOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Need
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setLocation("/vendor-supply")}
-            >
+            <Button variant="outline" onClick={() => setAddSupplyOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Add Supply
             </Button>
@@ -564,58 +702,91 @@ export default function MatchmakingServicePage({
                     key={item.id}
                     className="border rounded-lg p-3 hover:bg-accent cursor-pointer transition-colors"
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <Badge variant="secondary">✅ Available</Badge>
-                      {(item.buyerCount ?? 0) > 0 && (
-                        <Badge variant="default">
-                          {item.buyerCount} potential buyers
-                        </Badge>
-                      )}
-                    </div>
-                    <h4 className="font-medium">
-                      {getProductDisplayName(item)}
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      {item.category && `${item.category}`}
-                      {item.grade && ` • ${item.grade}`}
-                      {item.quantityAvailable &&
-                        ` • ${item.quantityAvailable} lbs`}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Supplier: {item.vendorName}
-                    </p>
-                    {item.unitPrice && (
-                      <p className="text-xs font-medium text-green-600">
-                        ${parseFloat(String(item.unitPrice)).toFixed(2)}/lb
-                      </p>
-                    )}
-                    <div className="flex gap-2 mt-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-xs"
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleViewBuyers(item.id);
-                        }}
-                      >
-                        View Buyers
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="text-xs"
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleReserve(item.id);
-                        }}
-                        disabled={reservingItemId !== null}
-                      >
-                        {reservingItemId === item.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                        ) : null}
-                        Reserve
-                      </Button>
-                    </div>
+                    {(() => {
+                      const supplierName =
+                        item.vendorName?.trim() || "Unknown supplier";
+                      const quantityLabel =
+                        item.quantityAvailable ?? item.quantity;
+                      const reserveDisabled =
+                        (item.buyerCount ?? 0) === 0 ||
+                        reservingItemId !== null;
+
+                      return (
+                        <>
+                          <div className="flex items-start justify-between mb-2">
+                            <Badge variant="secondary">✅ Available</Badge>
+                            {(item.buyerCount ?? 0) > 0 && (
+                              <Badge variant="default">
+                                {item.buyerCount} potential buyers
+                              </Badge>
+                            )}
+                          </div>
+                          <h4 className="font-medium">
+                            {getProductDisplayName(item)}
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            {item.category && `${item.category}`}
+                            {item.grade && ` • ${item.grade}`}
+                            {quantityLabel &&
+                              ` • ${quantityLabel} lbs available`}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Supplier: {supplierName}
+                          </p>
+                          {item.unitPrice && (
+                            <p className="text-xs font-medium text-[var(--success)]">
+                              ${parseFloat(String(item.unitPrice)).toFixed(2)}
+                              /lb
+                              {quantityLabel
+                                ? ` • ${quantityLabel} lbs available`
+                                : ""}
+                            </p>
+                          )}
+                          <div className="flex gap-2 mt-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs"
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleViewBuyers(item.id);
+                              }}
+                            >
+                              View Buyers
+                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span>
+                                    <Button
+                                      size="sm"
+                                      className="text-xs"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        handleReserve(item.id);
+                                      }}
+                                      disabled={reserveDisabled}
+                                    >
+                                      {reservingItemId === item.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                                      ) : null}
+                                      Reserve
+                                    </Button>
+                                  </span>
+                                </TooltipTrigger>
+                                {reserveDisabled ? (
+                                  <TooltipContent>
+                                    {(item.buyerCount ?? 0) === 0
+                                      ? "Reserve is unavailable until this supply has at least one active buyer need."
+                                      : "A reserve action is already in progress."}
+                                  </TooltipContent>
+                                ) : null}
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 ))
               )}
@@ -676,7 +847,7 @@ export default function MatchmakingServicePage({
                               key={`reason-${i}`}
                               className="flex items-start gap-1"
                             >
-                              <span className="text-green-600">✓</span>
+                              <span className="text-[var(--success)]">✓</span>
                               <span>{reason}</span>
                             </li>
                           ))}
@@ -708,6 +879,226 @@ export default function MatchmakingServicePage({
           </CardContent>
         </Card>
       </div>
+
+      {/* TER-888: Add Need Modal */}
+      <Dialog
+        open={addNeedOpen}
+        onOpenChange={open => {
+          setAddNeedOpen(open);
+          if (!open) {
+            setNeedClientId("");
+            setNeedProductName("");
+            setNeedQuantityMin("");
+            setNeedQuantityMax("");
+            setNeedPriority("MEDIUM");
+            setNeedNotes("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Client Need</DialogTitle>
+            <DialogDescription>
+              Record a new purchase need for a client
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label htmlFor="need-client">Client *</Label>
+              <Select value={needClientId} onValueChange={setNeedClientId}>
+                <SelectTrigger id="need-client">
+                  <SelectValue placeholder="Select a client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(
+                    (
+                      buyerClientsData as {
+                        items?: Array<{ id: number; name: string }>;
+                      } | null
+                    )?.items ?? []
+                  ).map(c => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="need-product">Product / Strain</Label>
+              <Input
+                id="need-product"
+                placeholder="e.g. Wedding Cake, Indica Flower"
+                value={needProductName}
+                onChange={e => setNeedProductName(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="need-qty-min">Min Qty (lbs)</Label>
+                <Input
+                  id="need-qty-min"
+                  type="number"
+                  placeholder="0"
+                  value={needQuantityMin}
+                  onChange={e => setNeedQuantityMin(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="need-qty-max">Max Qty (lbs)</Label>
+                <Input
+                  id="need-qty-max"
+                  type="number"
+                  placeholder="0"
+                  value={needQuantityMax}
+                  onChange={e => setNeedQuantityMax(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="need-priority">Priority</Label>
+              <Select
+                value={needPriority}
+                onValueChange={v =>
+                  setNeedPriority(v as "LOW" | "MEDIUM" | "HIGH" | "URGENT")
+                }
+              >
+                <SelectTrigger id="need-priority">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LOW">Low</SelectItem>
+                  <SelectItem value="MEDIUM">Medium</SelectItem>
+                  <SelectItem value="HIGH">High</SelectItem>
+                  <SelectItem value="URGENT">Urgent</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="need-notes">Notes</Label>
+              <Input
+                id="need-notes"
+                placeholder="Optional notes..."
+                value={needNotes}
+                onChange={e => setNeedNotes(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddNeedOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddNeedSubmit}
+              disabled={addNeedMutation.isPending || !needClientId}
+            >
+              {addNeedMutation.isPending ? "Adding..." : "Add Need"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* TER-888: Add Supply Modal */}
+      <Dialog
+        open={addSupplyOpen}
+        onOpenChange={open => {
+          setAddSupplyOpen(open);
+          if (!open) {
+            setSupplyClientId("");
+            setSupplyProductName("");
+            setSupplyQuantity("");
+            setSupplyUnitPrice("");
+            setSupplyNotes("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Supply Item</DialogTitle>
+            <DialogDescription>
+              Record available supply from a supplier
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label htmlFor="supply-vendor">Supplier *</Label>
+              <Select value={supplyClientId} onValueChange={setSupplyClientId}>
+                <SelectTrigger id="supply-vendor">
+                  <SelectValue placeholder="Select a supplier" />
+                </SelectTrigger>
+                <SelectContent>
+                  {(
+                    (
+                      sellerClientsData as {
+                        items?: Array<{ id: number; name: string }>;
+                      } | null
+                    )?.items ?? []
+                  ).map(c => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="supply-product">Product / Strain</Label>
+              <Input
+                id="supply-product"
+                placeholder="e.g. Wedding Cake, Indica Flower"
+                value={supplyProductName}
+                onChange={e => setSupplyProductName(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="supply-qty">Qty Available (lbs) *</Label>
+                <Input
+                  id="supply-qty"
+                  type="number"
+                  placeholder="0"
+                  value={supplyQuantity}
+                  onChange={e => setSupplyQuantity(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="supply-price">Unit Price ($/lb)</Label>
+                <Input
+                  id="supply-price"
+                  type="number"
+                  placeholder="0.00"
+                  value={supplyUnitPrice}
+                  onChange={e => setSupplyUnitPrice(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="supply-notes">Notes</Label>
+              <Input
+                id="supply-notes"
+                placeholder="Optional notes..."
+                value={supplyNotes}
+                onChange={e => setSupplyNotes(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddSupplyOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddSupplySubmit}
+              disabled={
+                addSupplyMutation.isPending ||
+                !supplyClientId ||
+                !supplyQuantity
+              }
+            >
+              {addSupplyMutation.isPending ? "Adding..." : "Add Supply"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* FE-QA-010: Buyers Modal */}
       {/* FE-BUG-003: Use handleBuyersModalChange to clear selectedSupplyId on close */}

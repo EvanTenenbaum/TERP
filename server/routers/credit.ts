@@ -3,6 +3,19 @@ import { router, protectedProcedure } from "../_core/trpc";
 import * as creditEngine from "../creditEngine";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { getAuthenticatedUserId } from "../_core/trpc";
+import { isSchemaDriftError } from "../_core/dbErrors";
+import { logger } from "../_core/logger";
+
+const CREDIT_VISIBILITY_DEFAULTS = {
+  showCreditInClientList: true,
+  showCreditBannerInOrders: true,
+  showCreditWidgetInProfile: true,
+  showSignalBreakdown: true,
+  showAuditLog: true,
+  creditEnforcementMode: "WARNING" as const,
+  warningThresholdPercent: 75,
+  alertThresholdPercent: 90,
+};
 
 export const creditRouter = router({
     // Calculate credit limit for a client
@@ -186,6 +199,9 @@ export const creditRouter = router({
       }),
 
     // Get visibility settings
+    // TER-1147: /orders/new must never 500 from this endpoint. When the
+    // credit_visibility_settings table is missing (legacy or partially
+    // migrated DBs) we log and fall back to defaults so the order UI renders.
     getVisibilitySettings: protectedProcedure.use(requirePermission("credits:read"))
       .input(z.object({ locationId: z.number().optional() }))
       .query(async ({ input }) => {
@@ -193,36 +209,37 @@ export const creditRouter = router({
         if (!db) throw new Error("Database not available");
         const { creditVisibilitySettings } = await import("../../drizzle/schema");
         const { eq, isNull, or } = await import("drizzle-orm");
-        
-        // Get location-specific settings, fall back to global
-        const settings = await db
-          .select()
-          .from(creditVisibilitySettings)
-          .where(
-            input.locationId
-              ? or(
-                  eq(creditVisibilitySettings.locationId, input.locationId),
-                  isNull(creditVisibilitySettings.locationId)
-                )
-              : isNull(creditVisibilitySettings.locationId)
-          )
-          .limit(2);
-        
-        // Prefer location-specific, fall back to global
-        const locationSettings = settings.find(s => s.locationId === input.locationId);
-        const globalSettings = settings.find(s => s.locationId === null);
-        
-        return locationSettings || globalSettings || {
-          // Default settings if none exist
-          showCreditInClientList: true,
-          showCreditBannerInOrders: true,
-          showCreditWidgetInProfile: true,
-          showSignalBreakdown: true,
-          showAuditLog: true,
-          creditEnforcementMode: "WARNING" as const,
-          warningThresholdPercent: 75,
-          alertThresholdPercent: 90,
-        };
+
+        try {
+          // Get location-specific settings, fall back to global
+          const settings = await db
+            .select()
+            .from(creditVisibilitySettings)
+            .where(
+              input.locationId
+                ? or(
+                    eq(creditVisibilitySettings.locationId, input.locationId),
+                    isNull(creditVisibilitySettings.locationId)
+                  )
+                : isNull(creditVisibilitySettings.locationId)
+            )
+            .limit(2);
+
+          // Prefer location-specific, fall back to global
+          const locationSettings = settings.find(s => s.locationId === input.locationId);
+          const globalSettings = settings.find(s => s.locationId === null);
+
+          return locationSettings || globalSettings || CREDIT_VISIBILITY_DEFAULTS;
+        } catch (error) {
+          if (isSchemaDriftError(error, ["credit_visibility_settings"])) {
+            logger.warn(
+              { error, context: "credit.getVisibilitySettings" },
+              "credit_visibility_settings table/columns missing — returning defaults"
+            );
+            return CREDIT_VISIBILITY_DEFAULTS;
+          }
+          throw error;
+        }
       }),
 
     // Update visibility settings

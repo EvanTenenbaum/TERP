@@ -101,8 +101,24 @@ const RETURN_REASONS: ReturnReason[] = [
   "OTHER",
 ];
 
+const RETURN_WORKFLOW_STATUSES = [
+  "PENDING",
+  "APPROVED",
+  "REJECTED",
+  "RECEIVED",
+  "PROCESSED",
+  "CANCELLED",
+] as const;
+
 const isReturnReason = (value: string): value is ReturnReason =>
   RETURN_REASONS.includes(value as ReturnReason);
+
+const isReturnWorkflowStatus = (
+  value: string | null | undefined
+): value is ReturnQueueRow["derivedStatus"] =>
+  value !== null &&
+  value !== undefined &&
+  RETURN_WORKFLOW_STATUSES.includes(value as ReturnQueueRow["derivedStatus"]);
 
 interface OrderLineItemOption {
   id: number;
@@ -120,6 +136,7 @@ interface ReturnQueueRow {
   returnNumber: string;
   returnReason: string;
   processedBy: number;
+  processedByName?: string | null;
   processedAt: string;
   notes: string | null;
   derivedStatus:
@@ -162,19 +179,9 @@ function deriveGLStatus(
   statusOrNotes: string | null,
   notes?: string | null
 ): "PENDING" | "APPROVED" | "PROCESSED" | "CANCELLED" {
-  // DISC-RET-002: If first arg is a known status value, use it directly; otherwise parse notes
-  const knownStatuses = [
-    "PENDING",
-    "APPROVED",
-    "REJECTED",
-    "RECEIVED",
-    "PROCESSED",
-    "CANCELLED",
-  ];
-  const status =
-    statusOrNotes && knownStatuses.includes(statusOrNotes)
-      ? (statusOrNotes as ReturnQueueRow["derivedStatus"])
-      : extractWorkflowStatus(notes ?? statusOrNotes);
+  const status = isReturnWorkflowStatus(statusOrNotes)
+    ? statusOrNotes
+    : extractWorkflowStatus(notes ?? statusOrNotes);
   if (status === "CANCELLED" || status === "REJECTED") return "CANCELLED";
   if (status === "PROCESSED") return "PROCESSED";
   if (status === "RECEIVED" || status === "APPROVED") return "APPROVED";
@@ -232,6 +239,7 @@ interface ReturnListItem {
   returnReason: string;
   status: string; // DISC-RET-002: dedicated column
   processedBy: number;
+  processedByName?: string | null;
   processedAt: string | Date;
   notes: string | null;
 }
@@ -244,14 +252,15 @@ function mapReturnsToQueueRows(items: ReturnListItem[]): ReturnQueueRow[] {
     returnNumber: `RET-${item.id}`,
     returnReason: item.returnReason,
     processedBy: item.processedBy,
+    processedByName: item.processedByName,
     processedAt:
       item.processedAt instanceof Date
         ? item.processedAt.toISOString()
         : item.processedAt,
     notes: item.notes,
-    derivedStatus:
-      (item.status as ReturnQueueRow["derivedStatus"]) ??
-      extractWorkflowStatus(item.notes),
+    derivedStatus: isReturnWorkflowStatus(item.status)
+      ? item.status
+      : extractWorkflowStatus(item.notes),
   }));
 }
 
@@ -299,7 +308,7 @@ function ApproveCard({
   return (
     <div className="rounded-lg border border-border/70 bg-card p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <CheckCircle className="h-4 w-4 text-green-600" />
+        <CheckCircle className="h-4 w-4 text-[var(--success)]" />
         <span className="text-sm font-semibold">Approve Return</span>
         <Badge variant="outline" className="ml-auto text-xs">
           RET-017
@@ -380,7 +389,7 @@ function RejectCard({
     <>
       <div className="rounded-lg border border-border/70 bg-card p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <XCircle className="h-4 w-4 text-red-600" />
+          <XCircle className="h-4 w-4 text-destructive" />
           <span className="text-sm font-semibold">Reject Return</span>
           <Badge variant="outline" className="ml-auto text-xs">
             RET-018
@@ -398,7 +407,7 @@ function RejectCard({
         {canReject && (
           <div className="space-y-2">
             <Label htmlFor="rejectionReason" className="text-xs">
-              Rejection reason <span className="text-red-500">*</span>
+              Rejection reason <span className="text-destructive">*</span>
             </Label>
             <Textarea
               id="rejectionReason"
@@ -530,7 +539,7 @@ function ReceiveCard({
   return (
     <div className="rounded-lg border border-border/70 bg-card p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <PackageX className="h-4 w-4 text-blue-600" />
+        <PackageX className="h-4 w-4 text-[var(--info)]" />
         <span className="text-sm font-semibold">Receive Items</span>
         <Badge variant="outline" className="ml-auto text-xs">
           RET-019
@@ -783,10 +792,13 @@ export function ReturnsPilotSurface({
       {
         field: "processedBy",
         headerName: "By",
-        minWidth: 80,
-        maxWidth: 100,
+        minWidth: 120,
+        maxWidth: 180,
         cellClass: "powersheet-cell--locked",
-        valueFormatter: params => `#${String(params.value ?? "")}`,
+        valueGetter: params => {
+          const row = params.data as ReturnQueueRow;
+          return row.processedByName || `User #${row.processedBy}`;
+        },
       },
     ],
     []
@@ -920,7 +932,7 @@ export function ReturnsPilotSurface({
           </div>
           <div className="rounded-lg border border-border/70 bg-card px-4 py-3">
             <div className="flex items-center gap-2 mb-1">
-              <TrendingDown className="h-4 w-4 text-red-500" />
+              <TrendingDown className="h-4 w-4 text-destructive" />
               <span className="text-xs uppercase tracking-[0.14em] text-muted-foreground font-medium">
                 Defective
               </span>
@@ -978,14 +990,6 @@ export function ReturnsPilotSurface({
       <PowersheetGrid
         surfaceId="returns-queue"
         requirementIds={["RET-001", "RET-003"]}
-        releaseGateIds={[
-          "RET-001",
-          "RET-005",
-          "RET-016",
-          "RET-017",
-          "RET-018",
-          "RET-019",
-        ]}
         affordances={queueAffordances}
         title="Returns Queue"
         description="Read-only queue. Select a row to load workflow cards and inspector detail. Composition dialog opens via Process Return."
@@ -1007,7 +1011,6 @@ export function ReturnsPilotSurface({
             {queueRows.length} visible · {totalCount} total
           </span>
         }
-        antiDriftSummary="Returns queue: status parsing via bracket markers, workflow actions scoped to focused row."
         minHeight={320}
       />
 
@@ -1211,8 +1214,8 @@ export function ReturnsPilotSurface({
                 </div>
               )}
               {selectedOrderId && !orderDetailsQuery.data && (
-                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="text-sm text-yellow-800">
+                <div className="mt-2 p-3 bg-[var(--warning-bg)] border border-yellow-200 rounded-lg">
+                  <div className="text-sm text-[var(--warning)]">
                     Loading order details...
                   </div>
                 </div>

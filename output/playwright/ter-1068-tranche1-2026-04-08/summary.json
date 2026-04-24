@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-04-07T23:53:21Z",
+  "baseUrl": "http://127.0.0.1:3210",
+  "savedViewName": "TER-1068 Incoming Proof 2026-04-07-23-23",
+  "harnessMutations": [
+    "Rebuilt the local light test DB with pnpm test:db:fresh after the unrelated pnpm test reset/seed failure left terp-test.users missing.",
+    "Restarted the proof server directly against the rebuilt local test DB on port 3210."
+  ],
+  "checks": [
+    {
+      "id": "order-default-live-first",
+      "status": "pass",
+      "detail": "Direct order entry for Emerald Valley Collective LLC opened with sellable-only default (Available now) and zero visible rows because all seeded inventory was Incoming.",
+      "artifact": "/Users/evan/spec-erp-docker/TERP/TERP-TER-1068-20260408/output/playwright/ter-1068-tranche1-2026-04-08/order-default-available-now.png"
+    },
+    {
+      "id": "catalogue-filters-entry-point",
+      "status": "pass",
+      "detail": "The catalogue Filters button now opens the advanced filtering panel and exposes the tranche controls instead of leaving them as unreachable component state.",
+      "artifact": "/Users/evan/spec-erp-docker/TERP/TERP-TER-1068-20260408/output/playwright/ter-1068-tranche1-2026-04-08/catalogue-filters-open.png"
+    },
+    {
+      "id": "catalogue-include-unavailable",
+      "status": "pass",
+      "detail": "The catalogue stayed empty by default, then revealed 8 Incoming rows after explicitly broadening scope with Include unavailable and labeled them with plain-language Incoming / Still incoming and not ready to sell copy.",
+      "artifact": "/Users/evan/spec-erp-docker/TERP/TERP-TER-1068-20260408/output/playwright/ter-1068-tranche1-2026-04-08/catalogue-include-unavailable.png"
+    },
+    {
+      "id": "order-imported-cut",
+      "status": "pass",
+      "detail": "Converting the broadened catalogue into a sales order carried the portable cut into the real order surface, showed Including unavailable, and rendered Incoming batches with the plain-language note Still incoming and not ready to sell.",
+      "artifact": "/Users/evan/spec-erp-docker/TERP/TERP-TER-1068-20260408/output/playwright/ter-1068-tranche1-2026-04-08/order-imported-cut.png"
+    },
+    {
+      "id": "order-cut-summary-stable",
+      "status": "pass",
+      "detail": "After importing the broadened cut, toggling the live filter back to Available now preserved the imported-cut badge Include unavailable, proving the banner summary stays anchored to the original cut instead of drifting with the current filter state.",
+      "artifact": "/Users/evan/spec-erp-docker/TERP/TERP-TER-1068-20260408/output/playwright/ter-1068-tranche1-2026-04-08/order-cut-summary-stable.png"
+    },
+    {
+      "id": "order-saved-view-reload",
+      "status": "pass",
+      "detail": "A client-specific saved view (TER-1068 Incoming Proof 2026-04-07-23-23) restored the unavailable-inclusive filter state after returning the surface to sellable-only defaults.",
+      "artifact": "/Users/evan/spec-erp-docker/TERP/TERP-TER-1068-20260408/output/playwright/ter-1068-tranche1-2026-04-08/order-saved-view-loaded.png",
+      "captureNote": "Retained from the initial same-day tranche pass because the follow-up TER-1068 fixes did not change saved-view persistence behavior."
+    }
+  ]
+}

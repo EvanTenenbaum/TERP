@@ -46,7 +46,14 @@ export interface ClientPricingContext {
       adjustmentValue: number;
       conditions: Record<string, unknown>;
     }>;
-    cogsAdjustmentType: "NONE" | "PERCENTAGE" | "FIXED_AMOUNT";
+    cogsAdjustmentType:
+      | "NONE"
+      | "PERCENTAGE"
+      | "PERCENTAGE_DECREASE"
+      | "PERCENTAGE_INCREASE"
+      | "FIXED_AMOUNT"
+      | "FIXED_DECREASE"
+      | "FIXED_INCREASE";
     cogsAdjustmentValue: number | null;
     creditLimit: number;
     totalOwed: number;
@@ -269,9 +276,7 @@ export async function getClientPricingContext(
       pricingProfileId: client.pricingProfileId,
       pricingProfileName,
       pricingRules: pricingRulesArray,
-      cogsAdjustmentType:
-        (client.cogsAdjustmentType as "NONE" | "PERCENTAGE" | "FIXED_AMOUNT") ||
-        "NONE",
+      cogsAdjustmentType: client.cogsAdjustmentType || "NONE",
       cogsAdjustmentValue: client.cogsAdjustmentValue
         ? parseFloat(client.cogsAdjustmentValue.toString())
         : null,

@@ -1,0 +1,3582 @@
+diff --git a/client/src/components/inventory/OfficeSupplyManager.tsx b/client/src/components/inventory/OfficeSupplyManager.tsx
+index 32a43a69..a4011e6f 100644
+--- a/client/src/components/inventory/OfficeSupplyManager.tsx
++++ b/client/src/components/inventory/OfficeSupplyManager.tsx
+@@ -563,7 +563,7 @@ export function OfficeSupplyManager() {
+                           </div>
+                         ) : (
+                           <p className="text-sm text-muted-foreground">
+-                            No data
++                            No reorder activity has been recorded yet.
+                           </p>
+                         )}
+                       </CardContent>
+diff --git a/client/src/components/inventory/ShrinkageReport.tsx b/client/src/components/inventory/ShrinkageReport.tsx
+index bfeb9c73..487708b4 100644
+--- a/client/src/components/inventory/ShrinkageReport.tsx
++++ b/client/src/components/inventory/ShrinkageReport.tsx
+@@ -405,7 +405,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
+               <CardContent>
+                 {chartDataByReason.length === 0 ? (
+                   <p className="text-center py-8 text-muted-foreground">
+-                    No data
++                    No shrinkage events match the current date range.
+                   </p>
+                 ) : (
+                   <div className="h-64">
+@@ -449,7 +449,7 @@ export const ShrinkageReport = memo(function ShrinkageReport({
+               <CardContent>
+                 {chartDataByCategory.length === 0 ? (
+                   <p className="text-center py-8 text-muted-foreground">
+-                    No data
++                    No category-level shrinkage is available for this date range.
+                   </p>
+                 ) : (
+                   <div className="h-64">
+diff --git a/client/src/components/inventory/StockLevelChart.tsx b/client/src/components/inventory/StockLevelChart.tsx
+index e392d3d0..6cfede07 100644
+--- a/client/src/components/inventory/StockLevelChart.tsx
++++ b/client/src/components/inventory/StockLevelChart.tsx
+@@ -46,7 +46,9 @@ export function StockLevelChart({ title, data, maxItems = 5 }: StockLevelChartPr
+     return (
+       <Card className="p-6">
+         <h3 className="text-lg font-semibold mb-4">{title}</h3>
+-        <p className="text-sm text-muted-foreground">No data available</p>
++        <p className="text-sm text-muted-foreground">
++          No inventory levels match this view yet.
++        </p>
+       </Card>
+     );
+   }
+@@ -89,4 +91,3 @@ export function StockLevelChart({ title, data, maxItems = 5 }: StockLevelChartPr
+     </Card>
+   );
+ }
+-
+diff --git a/client/src/components/layout/AppHeader.tsx b/client/src/components/layout/AppHeader.tsx
+index 0337f2aa..1a9db2e1 100644
+--- a/client/src/components/layout/AppHeader.tsx
++++ b/client/src/components/layout/AppHeader.tsx
+@@ -88,8 +88,8 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
+   };
+ 
+   return (
+-    <header className="border-b border-border/80 bg-background/95 backdrop-blur-sm">
+-      <div className="flex min-h-[52px] items-center gap-2 px-2.5 py-2 md:px-4">
++    <header className="bg-background/95 backdrop-blur-sm">
++      <div className="flex min-h-[56px] items-center gap-2 border-b border-border/50 px-2.5 py-2 md:px-4">
+         <Button
+           variant="ghost"
+           size="icon"
+@@ -101,11 +101,14 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
+         </Button>
+ 
+         {location !== "/" ? (
+-          <div className="hidden xl:block max-w-[18rem] shrink-0 overflow-hidden">
++          <div className="hidden max-w-[18rem] shrink-0 overflow-hidden border-r border-border/60 pr-3 xl:block">
+             <AppBreadcrumb className="max-w-full overflow-hidden" />
+           </div>
+         ) : (
+-          <div className="hidden xl:block w-3 shrink-0" aria-hidden />
++          <div
++            className="hidden w-3 shrink-0 border-r border-border/60 pr-3 xl:block"
++            aria-hidden
++          />
+         )}
+ 
+         <form
+@@ -134,7 +137,7 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
+           </div>
+         </form>
+ 
+-        <div className="ml-auto flex shrink-0 items-center gap-1">
++        <div className="ml-auto flex shrink-0 items-center gap-2 border-l border-border/60 pl-2.5">
+           <NotificationBell className="relative hidden sm:flex" />
+           <DropdownMenu>
+             <DropdownMenuTrigger asChild>
+diff --git a/client/src/components/layout/LinearWorkspaceShell.test.tsx b/client/src/components/layout/LinearWorkspaceShell.test.tsx
+index a3dd2a45..7e765c29 100644
+--- a/client/src/components/layout/LinearWorkspaceShell.test.tsx
++++ b/client/src/components/layout/LinearWorkspaceShell.test.tsx
+@@ -59,4 +59,27 @@ describe("LinearWorkspaceShell", () => {
+ 
+     vi.useRealTimers();
+   });
++
++  it("renders the workspace title as the dominant heading and keeps the section cue separate", () => {
++    render(
++      <LinearWorkspaceShell
++        title="Accounting"
++        description="Manage invoices and payments."
++        section="Finance"
++        activeTab="dashboard"
++        tabs={[{ value: "dashboard", label: "Dashboard" }]}
++        onTabChange={() => {}}
++      >
++        <LinearWorkspacePanel value="dashboard">
++          <div>Dashboard content</div>
++        </LinearWorkspacePanel>
++      </LinearWorkspaceShell>
++    );
++
++    expect(
++      screen.getByRole("heading", { level: 1, name: "Accounting" })
++    ).toBeInTheDocument();
++    expect(screen.getByText("Finance")).toBeInTheDocument();
++    expect(screen.getByText("Workspace")).toBeInTheDocument();
++  });
+ });
+diff --git a/client/src/components/layout/LinearWorkspaceShell.tsx b/client/src/components/layout/LinearWorkspaceShell.tsx
+index db784261..799b5ab3 100644
+--- a/client/src/components/layout/LinearWorkspaceShell.tsx
++++ b/client/src/components/layout/LinearWorkspaceShell.tsx
+@@ -7,6 +7,7 @@ import {
+   type ReactNode,
+ } from "react";
+ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
++import { WorkspacePanelSkeleton } from "@/components/ui/operational-states";
+ import { cn } from "@/lib/utils";
+ 
+ export interface LinearWorkspaceTab<T extends string = string> {
+@@ -41,20 +42,11 @@ const LinearWorkspaceTransitionContext = createContext<{
+ 
+ function LinearWorkspaceTransitionSkeleton() {
+   return (
+-    <div
++    <WorkspacePanelSkeleton
+       data-testid="workspace-transition-skeleton"
+-      className="space-y-3 rounded-xl border border-border/60 bg-card/80 p-4"
+-      aria-live="polite"
+-      aria-label="Loading workspace content"
+-    >
+-      <div className="h-4 w-32 animate-pulse rounded bg-muted" />
+-      <div className="grid gap-3 md:grid-cols-3">
+-        <div className="h-20 animate-pulse rounded-lg bg-muted/80" />
+-        <div className="h-20 animate-pulse rounded-lg bg-muted/80" />
+-        <div className="h-20 animate-pulse rounded-lg bg-muted/80" />
+-      </div>
+-      <div className="h-72 animate-pulse rounded-lg bg-muted/70" />
+-    </div>
++      eyebrow="Loading workspace content"
++      title="Refreshing the active workspace surface"
++    />
+   );
+ }
+ 
+@@ -128,40 +120,40 @@ export function LinearWorkspaceShell<T extends string>({
+       data-density={density}
+     >
+       {showHeader && (
+-        <header className="linear-workspace-header">
+-          <div className="linear-workspace-title-wrap">
+-            <p className="linear-workspace-eyebrow">
++        <div className="linear-workspace-strip">
++          <header className="linear-workspace-header linear-workspace-strip-main">
++            <div className="linear-workspace-heading">
+               {section ? (
+-                <>
+-                  <span className="linear-workspace-eyebrow-section">
+-                    {section}
+-                  </span>
+-                  <span className="linear-workspace-eyebrow-sep" aria-hidden>
+-                    {" "}
+-                    /{" "}
+-                  </span>
+-                </>
+-              ) : null}
+-              Workspace
+-            </p>
+-            <div>
+-              <h1 className="linear-workspace-title">{title}</h1>
+-              {description ? (
+-                <p className="linear-workspace-description">{description}</p>
++                <span className="linear-workspace-section-pill">{section}</span>
+               ) : null}
++              <div className="linear-workspace-heading-copy">
++                <div className="linear-workspace-title-line">
++                  <p className="linear-workspace-eyebrow">Workspace</p>
++                  <h1 className="linear-workspace-title">{title}</h1>
++                </div>
++                {description ? (
++                  <p className="linear-workspace-description">{description}</p>
++                ) : null}
++              </div>
+             </div>
+-          </div>
+-        </header>
+-      )}
+-
+-      {showMeta && (
+-        <div className="linear-workspace-meta" aria-label="Workspace metadata">
+-          {meta.map(item => (
+-            <div key={item.label} className="linear-workspace-meta-item">
+-              <span className="linear-workspace-meta-label">{item.label}</span>
+-              <span className="linear-workspace-meta-value">{item.value}</span>
+-            </div>
+-          ))}
++            {showMeta ? (
++              <div
++                className="linear-workspace-meta linear-workspace-meta-cluster"
++                aria-label="Workspace metadata"
++              >
++                {meta.map(item => (
++                  <div key={item.label} className="linear-workspace-meta-item">
++                    <span className="linear-workspace-meta-label">
++                      {item.label}
++                    </span>
++                    <span className="linear-workspace-meta-value">
++                      {item.value}
++                    </span>
++                  </div>
++                ))}
++              </div>
++            ) : null}
++          </header>
+         </div>
+       )}
+ 
+@@ -174,7 +166,10 @@ export function LinearWorkspaceShell<T extends string>({
+           className="linear-workspace-tabs"
+         >
+           {showTabRow ? (
+-            <div className="linear-workspace-tab-row">
++            <div
++              className="linear-workspace-tab-row"
++              data-has-context={showHeader || showMeta ? "true" : "false"}
++            >
+               {showTabs ? (
+                 <div className="linear-workspace-tabs-stack">
+                   <div
+diff --git a/client/src/components/spreadsheet-native/BankTransactionsSurface.tsx b/client/src/components/spreadsheet-native/BankTransactionsSurface.tsx
+index 2730cfbd..6cfbc9bd 100644
+--- a/client/src/components/spreadsheet-native/BankTransactionsSurface.tsx
++++ b/client/src/components/spreadsheet-native/BankTransactionsSurface.tsx
+@@ -35,6 +35,7 @@ import {
+   EDITABLE_AFFORDANCES,
+   EDITABLE_KEYBOARD_HINTS,
+ } from "@/lib/powersheet/surface-helpers";
++import { formatDate } from "@/lib/utils";
+ 
+ // ============================================================================
+ // TYPES
+@@ -90,6 +91,8 @@ function buildColumnDefs(): ColDef<BankTransactionGridRow>[] {
+       field: "transactionDate",
+       width: 120,
+       editable: true,
++      valueFormatter: params =>
++        formatDate(params.value as string | Date | null | undefined),
+       cellClass: "powersheet-cell--editable",
+       singleClickEdit: true,
+     },
+diff --git a/client/src/components/spreadsheet-native/BillsSurface.test.tsx b/client/src/components/spreadsheet-native/BillsSurface.test.tsx
+index 9a2c4e1d..98615ed4 100644
+--- a/client/src/components/spreadsheet-native/BillsSurface.test.tsx
++++ b/client/src/components/spreadsheet-native/BillsSurface.test.tsx
+@@ -1,12 +1,31 @@
++import type { ReactNode } from "react";
+ import { describe, it, expect, vi } from "vitest";
+-import { render, screen } from "@testing-library/react";
++import { fireEvent, render, screen } from "@testing-library/react";
+ import { BillsSurface } from "./BillsSurface";
+ 
++const { billSelectionState, mockNavigate } = vi.hoisted(() => ({
++  billSelectionState: { selectedId: null as number | null },
++  mockNavigate: vi.fn(),
++}));
++
+ /* ── Mock PowersheetGrid ── */
+ vi.mock("./PowersheetGrid", () => ({
+-  PowersheetGrid: ({ rows, title }: { rows: unknown[]; title: string }) => (
++  PowersheetGrid: ({
++    rows,
++    title,
++    onSelectedRowChange,
++  }: {
++    rows: Array<{ billId: number }>;
++    title: string;
++    onSelectedRowChange?: (row: { billId: number } | null) => void;
++  }) => (
+     <div data-testid={`grid-${title}`}>
+       {title} — {rows.length} rows
++      {rows.length > 0 && onSelectedRowChange ? (
++        <button onClick={() => onSelectedRowChange(rows[0])}>
++          Select first bill
++        </button>
++      ) : null}
+     </div>
+   ),
+ }));
+@@ -127,14 +146,14 @@ vi.mock("@/lib/trpc", () => ({
+ 
+ /* ── Mock external components ── */
+ vi.mock("@/components/work-surface/InspectorPanel", () => ({
+-  InspectorPanel: ({ children }: { children: unknown }) => (
+-    <div data-testid="inspector-panel">{children as string}</div>
++  InspectorPanel: ({ children }: { children: ReactNode }) => (
++    <div data-testid="inspector-panel">{children}</div>
+   ),
+-  InspectorSection: ({ children }: { children: unknown }) => (
+-    <div>{children as string}</div>
++  InspectorSection: ({ children }: { children: ReactNode }) => (
++    <div>{children}</div>
+   ),
+-  InspectorField: ({ children }: { children: unknown }) => (
+-    <div>{children as string}</div>
++  InspectorField: ({ children }: { children: ReactNode }) => (
++    <div>{children}</div>
+   ),
+ }));
+ 
+@@ -163,14 +182,14 @@ vi.mock("@/components/accounting/PayVendorModal", () => ({
+ 
+ vi.mock("@/lib/spreadsheet-native", () => ({
+   useSpreadsheetSelectionParam: () => ({
+-    selectedId: null,
++    selectedId: billSelectionState.selectedId,
+     setSelectedId: vi.fn(),
+   }),
+ }));
+ 
+ vi.mock("wouter", () => ({
+   useSearch: vi.fn(() => ""),
+-  useLocation: vi.fn(() => ["/accounting/bills", vi.fn()]),
++  useLocation: vi.fn(() => ["/accounting/bills", mockNavigate]),
+ }));
+ 
+ // ─────────────────────────────────────────────────────────────────────────────
+@@ -178,6 +197,11 @@ vi.mock("wouter", () => ({
+ // ─────────────────────────────────────────────────────────────────────────────
+ 
+ describe("BillsSurface", () => {
++  beforeEach(() => {
++    billSelectionState.selectedId = null;
++    mockNavigate.mockReset();
++  });
++
+   it("renders AP KPI badges ($18,200 AP, 2 overdue, 31 total)", () => {
+     render(<BillsSurface />);
+     expect(screen.getByText(/\$18,200/)).toBeInTheDocument();
+@@ -231,4 +255,14 @@ describe("BillsSurface", () => {
+     expect(screen.getByTestId("action-pay-vendor")).toBeDisabled();
+     expect(screen.getByTestId("action-mark-received")).toBeDisabled();
+   });
++
++  it("opens the linked vendor profile from the bill inspector", () => {
++    billSelectionState.selectedId = 1;
++
++    render(<BillsSurface />);
++
++    fireEvent.click(screen.getByRole("button", { name: /open vendor profile/i }));
++
++    expect(mockNavigate).toHaveBeenCalledWith("/clients/10?section=overview");
++  });
+ });
+diff --git a/client/src/components/spreadsheet-native/BillsSurface.tsx b/client/src/components/spreadsheet-native/BillsSurface.tsx
+index 70550804..6d8eec61 100644
+--- a/client/src/components/spreadsheet-native/BillsSurface.tsx
++++ b/client/src/components/spreadsheet-native/BillsSurface.tsx
+@@ -17,7 +17,7 @@
+ 
+ import { useMemo, useState, useCallback } from "react";
+ import type { ColDef } from "ag-grid-community";
+-import { useSearch } from "wouter";
++import { useLocation, useSearch } from "wouter";
+ import { toast } from "sonner";
+ import { format, differenceInDays } from "date-fns";
+ import {
+@@ -60,6 +60,7 @@ import type { PowersheetAffordance } from "./PowersheetGrid";
+ import type { PowersheetSelectionSummary } from "@/lib/powersheet/contracts";
+ import { cn } from "@/lib/utils";
+ import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
++import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
+ 
+ // ============================================================================
+ // TYPES
+@@ -358,6 +359,7 @@ const billColumnDefs: ColDef<BillGridRow>[] = [
+ 
+ export function BillsSurface() {
+   const _routeSearch = useSearch();
++  const [, navigate] = useLocation();
+ 
+   // Selection tracked in URL param
+   const { selectedId: selectedBillId, setSelectedId: setSelectedBillId } =
+@@ -784,9 +786,23 @@ export function BillsSurface() {
+             {/* Overview */}
+             <InspectorSection title="Overview" defaultOpen>
+               <InspectorField label="Vendor">
+-                <p className="text-sm font-medium text-blue-600">
+-                  {selectedRow.vendorName}
+-                </p>
++                <div className="space-y-2">
++                  <p className="text-sm font-medium text-blue-600">
++                    {selectedRow.vendorName}
++                  </p>
++                  <Button
++                    type="button"
++                    size="sm"
++                    variant="outline"
++                    onClick={() =>
++                      navigate(
++                        buildRelationshipProfilePath(selectedRow.vendorId)
++                      )
++                    }
++                  >
++                    Open vendor profile
++                  </Button>
++                </div>
+               </InspectorField>
+               <InspectorField label="Bill Date">
+                 <p className="text-sm">{selectedRow.billDate}</p>
+diff --git a/client/src/components/spreadsheet-native/FiscalPeriodsSurface.tsx b/client/src/components/spreadsheet-native/FiscalPeriodsSurface.tsx
+index 1182d52f..c77f93bf 100644
+--- a/client/src/components/spreadsheet-native/FiscalPeriodsSurface.tsx
++++ b/client/src/components/spreadsheet-native/FiscalPeriodsSurface.tsx
+@@ -34,6 +34,7 @@ import {
+   EDITABLE_AFFORDANCES,
+   EDITABLE_KEYBOARD_HINTS,
+ } from "@/lib/powersheet/surface-helpers";
++import { formatDate as formatDisplayDate } from "@/lib/utils";
+ 
+ // ============================================================================
+ // TYPES
+@@ -72,13 +73,7 @@ const STATUS_TABS: Array<{ value: StatusTab; label: string }> = [
+ // ============================================================================
+ 
+ function formatDate(value: string | Date | null | undefined): string {
+-  if (!value) return "";
+-  const d = typeof value === "string" ? new Date(value) : value;
+-  return d.toLocaleDateString("en-US", {
+-    year: "numeric",
+-    month: "short",
+-    day: "numeric",
+-  });
++  return value ? formatDisplayDate(value) : "";
+ }
+ 
+ // ============================================================================
+diff --git a/client/src/components/spreadsheet-native/InventoryManagementSurface.test.tsx b/client/src/components/spreadsheet-native/InventoryManagementSurface.test.tsx
+index b4198ef9..b3287f01 100644
+--- a/client/src/components/spreadsheet-native/InventoryManagementSurface.test.tsx
++++ b/client/src/components/spreadsheet-native/InventoryManagementSurface.test.tsx
+@@ -249,6 +249,14 @@ describe("InventoryManagementSurface", () => {
+     expect(screen.getByText("Inventory")).toBeInTheDocument();
+   });
+ 
++  it("labels only LOW rows as low stock exceptions", () => {
++    render(<InventoryManagementSurface />);
++
++    expect(
++      screen.getByRole("button", { name: "Low stock (1)" })
++    ).toBeInTheDocument();
++  });
++
+   it("toggles the advanced filters panel from the action bar", () => {
+     render(<InventoryManagementSurface />);
+ 
+@@ -296,6 +304,14 @@ describe("InventoryManagementSurface", () => {
+     expect(screen.getByRole("button", { name: /delete/i })).toBeInTheDocument();
+   });
+ 
++  it("shows reactive exception indicators in the toolbar", () => {
++    render(<InventoryManagementSurface />);
++
++    expect(
++      screen.getByRole("button", { name: /low stock \(1\)/i })
++    ).toBeInTheDocument();
++  });
++
+   it("opens the adjustment drawer from the inspector review flow", async () => {
+     selectionState.selectedId = 42;
+     render(<InventoryManagementSurface />);
+diff --git a/client/src/components/spreadsheet-native/InventoryManagementSurface.tsx b/client/src/components/spreadsheet-native/InventoryManagementSurface.tsx
+index c5bf8a03..2c1f30d8 100644
+--- a/client/src/components/spreadsheet-native/InventoryManagementSurface.tsx
++++ b/client/src/components/spreadsheet-native/InventoryManagementSurface.tsx
+@@ -877,17 +877,23 @@ export function InventoryManagementSurface() {
+ 
+   const dashStats = dashboardQuery.data;
+   const filtersActive = hasActiveFilters(filters);
++  const visibleBatchCount = rows.length;
++  const visibleUnits = rows.reduce((sum, row) => sum + row.onHandQty, 0);
++  const visibleInventoryValue = rows.reduce(
++    (sum, row) => sum + (row.unitCogs ?? 0) * row.onHandQty,
++    0
++  );
++  const lowStockCount = rows.filter(
++    row => String(row.stockStatus ?? "") === "LOW"
++  ).length;
++  const quarantinedCount = rows.filter(
++    row => String(row.status ?? "") === "QUARANTINED"
++  ).length;
+ 
+   const statusBarLeft = (
+     <span>
+-      {dashStats?.totalUnits ?? 0} units across{" "}
+-      {dashStats?.statusCounts
+-        ? Object.values(dashStats.statusCounts).reduce(
+-            (sum, value) => sum + value,
+-            0
+-          )
+-        : rows.length}{" "}
+-      batches
++      {formatQuantity(visibleUnits)} units across {visibleBatchCount} visible
++      {" "}batches
+       {queueSelectionSummary
+         ? ` · ${queueSelectionSummary.selectedCellCount} cells / ${queueSelectionSummary.selectedRowCount} rows selected`
+         : ""}
+@@ -900,7 +906,7 @@ export function InventoryManagementSurface() {
+         ? isDeepLinkedOutsideLoadedGrid
+           ? "Loaded via batchId outside the current loaded rows"
+           : `Selected ${selectedRow.sku}`
+-        : `${rows.length} loaded rows of ${totalItems} · ${views.length} saved view${views.length === 1 ? "" : "s"}`}
++        : `${viewMode === "grid" ? "Grid" : "Gallery"} view · ${visibleBatchCount} visible rows of ${totalItems} filtered rows · ${views.length} saved view${views.length === 1 ? "" : "s"}`}
+       {queueSelectionSummary?.hasDiscontiguousSelection
+         ? " · discontiguous selection"
+         : ""}
+@@ -921,22 +927,56 @@ export function InventoryManagementSurface() {
+           {dashStats && (
+             <>
+               <Badge variant="outline" className="text-xs">
+-                {dashStats.statusCounts
+-                  ? Object.values(dashStats.statusCounts).reduce(
+-                      (sum, v) => sum + v,
+-                      0
+-                    )
+-                  : 0}{" "}
+-                batches
++                {visibleBatchCount} visible batch
++                {visibleBatchCount === 1 ? "" : "es"}
+               </Badge>
+               <Badge variant="outline" className="text-xs">
+-                {formatQuantity(dashStats.totalUnits ?? 0)} units
++                {formatQuantity(visibleUnits)} visible units
+               </Badge>
+               <Badge variant="outline" className="text-xs">
+-                {formatCurrency(dashStats.totalInventoryValue ?? null)} value
++                {formatCurrency(visibleInventoryValue)} visible value
+               </Badge>
+             </>
+           )}
++          {lowStockCount > 0 ? (
++            <Button
++              size="sm"
++              variant={filters.stockStatus === "LOW" ? "default" : "outline"}
++              className="h-7 text-xs"
++              onClick={() =>
++                setFilters(prev => ({
++                  ...prev,
++                  stockStatus: prev.stockStatus === "LOW" ? "ALL" : "LOW",
++                }))
++              }
++            >
++              Low stock ({lowStockCount})
++            </Button>
++          ) : null}
++          {quarantinedCount > 0 ? (
++            <Button
++              size="sm"
++              variant={
++                filters.statuses.length === 1 &&
++                filters.statuses[0] === "QUARANTINED"
++                  ? "default"
++                  : "outline"
++              }
++              className="h-7 text-xs"
++              onClick={() =>
++                setFilters(prev => ({
++                  ...prev,
++                  statuses:
++                    prev.statuses.length === 1 &&
++                    prev.statuses[0] === "QUARANTINED"
++                      ? []
++                      : ["QUARANTINED"],
++                }))
++              }
++            >
++              Quarantine ({quarantinedCount})
++            </Button>
++          ) : null}
+           <div className="ml-auto flex items-center gap-1.5">
+             <Button
+               size="sm"
+diff --git a/client/src/components/spreadsheet-native/InvoicesSurface.test.tsx b/client/src/components/spreadsheet-native/InvoicesSurface.test.tsx
+index 4c2668b8..e164221a 100644
+--- a/client/src/components/spreadsheet-native/InvoicesSurface.test.tsx
++++ b/client/src/components/spreadsheet-native/InvoicesSurface.test.tsx
+@@ -1,10 +1,16 @@
++import type { ReactNode } from "react";
+ import { beforeEach, describe, it, expect, vi } from "vitest";
+ import { fireEvent, render, screen, within } from "@testing-library/react";
+ import { InvoicesSurface } from "./InvoicesSurface";
+ 
+ const gridPropsByTitle = new Map<string, Record<string, unknown>>();
+ 
+-const { mockParseInvoiceDeepLink, mockSetSelectedId, invoiceSelectionState } =
++const {
++  mockParseInvoiceDeepLink,
++  mockSetSelectedId,
++  mockNavigate,
++  invoiceSelectionState,
++} =
+   vi.hoisted(() => ({
+     mockParseInvoiceDeepLink: vi.fn(() => ({
+       invoiceId: null,
+@@ -14,6 +20,7 @@ const { mockParseInvoiceDeepLink, mockSetSelectedId, invoiceSelectionState } =
+       from: null,
+     })),
+     mockSetSelectedId: vi.fn(),
++    mockNavigate: vi.fn(),
+     invoiceSelectionState: { selectedId: null as number | null },
+   }));
+ 
+@@ -52,11 +59,20 @@ const mockInvoicesList = vi.hoisted(() => ({
+ 
+ /* ── Mock PowersheetGrid ── */
+ vi.mock("./PowersheetGrid", () => ({
+-  PowersheetGrid: (props: { rows: unknown[]; title: string }) => {
++  PowersheetGrid: (props: {
++    rows: Array<{ invoiceId: number }>;
++    title: string;
++    onSelectedRowChange?: (row: { invoiceId: number } | null) => void;
++  }) => {
+     gridPropsByTitle.set(props.title, props as Record<string, unknown>);
+     return (
+       <div data-testid={`grid-${props.title}`}>
+         {props.title} — {props.rows.length} rows
++        {props.rows.length > 0 && props.onSelectedRowChange ? (
++          <button onClick={() => props.onSelectedRowChange?.(props.rows[0])}>
++            Select first invoice
++          </button>
++        ) : null}
+       </div>
+     );
+   },
+@@ -221,14 +237,14 @@ vi.mock("@/lib/trpc", () => ({
+ 
+ /* ── Mock external components ── */
+ vi.mock("@/components/work-surface/InspectorPanel", () => ({
+-  InspectorPanel: ({ children }: { children: unknown }) => (
+-    <div data-testid="inspector-panel">{children as string}</div>
++  InspectorPanel: ({ children }: { children: ReactNode }) => (
++    <div data-testid="inspector-panel">{children}</div>
+   ),
+-  InspectorSection: ({ children }: { children: unknown }) => (
+-    <div>{children as string}</div>
++  InspectorSection: ({ children }: { children: ReactNode }) => (
++    <div>{children}</div>
+   ),
+-  InspectorField: ({ children }: { children: unknown }) => (
+-    <div>{children as string}</div>
++  InspectorField: ({ children }: { children: ReactNode }) => (
++    <div>{children}</div>
+   ),
+ }));
+ 
+@@ -273,7 +289,7 @@ vi.mock("@/lib/spreadsheet-native", () => ({
+ 
+ vi.mock("wouter", () => ({
+   useSearch: vi.fn(() => ""),
+-  useLocation: vi.fn(() => ["/accounting/invoices", vi.fn()]),
++  useLocation: vi.fn(() => ["/accounting/invoices", mockNavigate]),
+ }));
+ 
+ vi.mock("@/lib/statusTokens", () => ({
+@@ -310,6 +326,7 @@ describe("InvoicesSurface", () => {
+   beforeEach(() => {
+     invoiceSelectionState.selectedId = null;
+     mockSetSelectedId.mockReset();
++    mockNavigate.mockReset();
+     gridPropsByTitle.clear();
+     mockParseInvoiceDeepLink.mockReturnValue({
+       invoiceId: null,
+@@ -472,4 +489,14 @@ describe("InvoicesSurface", () => {
+ 
+     expect(screen.getByTestId("record-payment-dialog")).toBeInTheDocument();
+   });
++
++  it("opens the linked client profile from the invoice inspector", () => {
++    invoiceSelectionState.selectedId = 1;
++
++    render(<InvoicesSurface />);
++
++    fireEvent.click(screen.getByRole("button", { name: /open client profile/i }));
++
++    expect(mockNavigate).toHaveBeenCalledWith("/clients/10?section=overview");
++  });
+ });
+diff --git a/client/src/components/spreadsheet-native/InvoicesSurface.tsx b/client/src/components/spreadsheet-native/InvoicesSurface.tsx
+index 3796e744..2051caa1 100644
+--- a/client/src/components/spreadsheet-native/InvoicesSurface.tsx
++++ b/client/src/components/spreadsheet-native/InvoicesSurface.tsx
+@@ -94,6 +94,7 @@ import { cn } from "@/lib/utils";
+ import { parseInvoiceDeepLink } from "@/components/work-surface/invoiceDeepLink";
+ import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
+ import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
++import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
+ 
+ // ============================================================================
+ // TYPES
+@@ -1401,7 +1402,21 @@ export function InvoicesSurface() {
+             {/* Overview */}
+             <InspectorSection title="Overview" defaultOpen>
+               <InspectorField label="Client">
+-                <p className="text-sm font-medium">{selectedRow.clientName}</p>
++                <div className="space-y-2">
++                  <p className="text-sm font-medium">{selectedRow.clientName}</p>
++                  <Button
++                    type="button"
++                    size="sm"
++                    variant="outline"
++                    onClick={() =>
++                      navigate(
++                        buildRelationshipProfilePath(selectedRow.customerId)
++                      )
++                    }
++                  >
++                    Open client profile
++                  </Button>
++                </div>
+               </InspectorField>
+               <InspectorField label="Invoice Date">
+                 <p className="text-sm">{selectedRow.invoiceDate}</p>
+@@ -2042,7 +2057,7 @@ export function InvoicesSurface() {
+                     <span className="text-muted-foreground">
+                       Effective Date
+                     </span>
+-                    <span>{adjustmentForm.effectiveDate}</span>
++                    <span>{formatDate(adjustmentForm.effectiveDate)}</span>
+                   </div>
+                 )}
+               </div>
+diff --git a/client/src/components/spreadsheet-native/PaymentsSurface.test.tsx b/client/src/components/spreadsheet-native/PaymentsSurface.test.tsx
+index 3a62bf66..b320e0a6 100644
+--- a/client/src/components/spreadsheet-native/PaymentsSurface.test.tsx
++++ b/client/src/components/spreadsheet-native/PaymentsSurface.test.tsx
+@@ -1,5 +1,6 @@
++import type { ReactNode } from "react";
+ import { beforeEach, describe, it, expect, vi } from "vitest";
+-import { render, screen } from "@testing-library/react";
++import { fireEvent, render, screen } from "@testing-library/react";
+ import { PaymentsSurface } from "./PaymentsSurface";
+ 
+ const PAYMENT_ITEMS = [
+@@ -84,9 +85,22 @@ const {
+ 
+ /* ── Mock PowersheetGrid ── */
+ vi.mock("./PowersheetGrid", () => ({
+-  PowersheetGrid: ({ rows, title }: { rows: unknown[]; title: string }) => (
++  PowersheetGrid: ({
++    rows,
++    title,
++    onSelectedRowChange,
++  }: {
++    rows: Array<{ rowKey: string }>;
++    title: string;
++    onSelectedRowChange?: (row: { rowKey: string } | null) => void;
++  }) => (
+     <div data-testid={`grid-${title}`}>
+       {title} — {rows.length} rows
++      {rows.length > 0 && onSelectedRowChange ? (
++        <button onClick={() => onSelectedRowChange(rows[0])}>
++          Select first payment
++        </button>
++      ) : null}
+     </div>
+   ),
+ }));
+@@ -122,14 +136,14 @@ vi.mock("@/lib/trpc", () => ({
+ 
+ /* ── Mock external components ── */
+ vi.mock("@/components/work-surface/InspectorPanel", () => ({
+-  InspectorPanel: ({ children }: { children: unknown }) => (
+-    <div data-testid="inspector-panel">{children as string}</div>
++  InspectorPanel: ({ children }: { children: ReactNode }) => (
++    <div data-testid="inspector-panel">{children}</div>
+   ),
+-  InspectorSection: ({ children }: { children: unknown }) => (
+-    <div>{children as string}</div>
++  InspectorSection: ({ children }: { children: ReactNode }) => (
++    <div>{children}</div>
+   ),
+-  InspectorField: ({ children }: { children: unknown }) => (
+-    <div>{children as string}</div>
++  InspectorField: ({ children }: { children: ReactNode }) => (
++    <div>{children}</div>
+   ),
+ }));
+ 
+@@ -304,4 +318,12 @@ describe("PaymentsSurface", () => {
+     ).toHaveTextContent("does not have a linked invoice yet");
+     expect(screen.getByText(/0 rows/)).toBeInTheDocument();
+   });
++
++  it("shows the formatted payment date in the inspector after a row is selected", () => {
++    render(<PaymentsSurface />);
++
++    fireEvent.click(screen.getByRole("button", { name: /select first payment/i }));
++
++    expect(screen.getByText("Jan 15, 2026")).toBeInTheDocument();
++  });
+ });
+diff --git a/client/src/components/spreadsheet-native/PurchaseOrderSurface.test.tsx b/client/src/components/spreadsheet-native/PurchaseOrderSurface.test.tsx
+index 1f0c5032..8296cbea 100644
+--- a/client/src/components/spreadsheet-native/PurchaseOrderSurface.test.tsx
++++ b/client/src/components/spreadsheet-native/PurchaseOrderSurface.test.tsx
+@@ -2,7 +2,7 @@
+  * @vitest-environment jsdom
+  */
+ 
+-import type { ReactNode } from "react";
++import { isValidElement, type ReactNode } from "react";
+ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+ import { PurchaseOrderSurface } from "./PurchaseOrderSurface";
+@@ -71,6 +71,7 @@ vi.mock("./PowersheetGrid", () => ({
+     title,
+     rows = [],
+     columnDefs = [],
++    getRowClass,
+     onSelectedRowChange,
+     onRowClicked,
+     headerActions,
+@@ -79,6 +80,7 @@ vi.mock("./PowersheetGrid", () => ({
+     title: string;
+     rows?: Array<{ identity?: { rowKey: string }; poNumber?: string }>;
+     columnDefs?: Array<{ field?: string }>;
++    getRowClass?: (params: { data?: unknown }) => string | string[] | undefined;
+     onSelectedRowChange?: (
+       row: { identity?: { rowKey: string }; poNumber?: string } | null
+     ) => void;
+@@ -91,7 +93,13 @@ vi.mock("./PowersheetGrid", () => ({
+     selectionMode?: string;
+   }) =>
+     (() => {
+-      mockPowersheetGrid({ title, rows, selectionMode, columnDefs });
++      mockPowersheetGrid({
++        title,
++        rows,
++        selectionMode,
++        columnDefs,
++        getRowClass,
++      });
+       return (
+         <div data-testid={`grid-${title}`}>
+           <div>{title}</div>
+@@ -736,7 +744,7 @@ describe("PurchaseOrderSurface", () => {
+     ).toBeInTheDocument();
+   });
+ 
+-  it("hides the expected delivery column when every visible row is unset", () => {
++  it("always shows the expected delivery column, even when every visible row is unset", () => {
+     queueData = [
+       {
+         id: 71,
+@@ -766,12 +774,12 @@ describe("PurchaseOrderSurface", () => {
+       ([props]) => props.title === "Purchase Orders Queue"
+     )?.[0] as { columnDefs: Array<{ field?: string }> };
+ 
+-    expect(queueGridCall.columnDefs.map(col => col.field)).not.toContain(
++    expect(queueGridCall.columnDefs.map(col => col.field)).toContain(
+       "expectedDeliveryDate"
+     );
+   });
+ 
+-  it("shows the expected delivery column when at least one purchase order has a date", () => {
++  it("adds receiving and ETA columns to the queue table", () => {
+     queueData = [
+       {
+         id: 81,
+@@ -804,6 +812,112 @@ describe("PurchaseOrderSurface", () => {
+     expect(queueGridCall.columnDefs.map(col => col.field)).toContain(
+       "expectedDeliveryDate"
+     );
++    expect(queueGridCall.columnDefs.map(col => col.field)).toContain(
++      "receivingStatusLabel"
++    );
++  });
++
++  it("renders the receiving-status cell as a React badge instead of raw HTML", () => {
++    queueData = [
++      {
++        id: 83,
++        poNumber: "PO-083",
++        supplierClientId: 12,
++        purchaseOrderStatus: "CONFIRMED",
++        orderDate: "2026-03-28",
++        expectedDeliveryDate: "2026-04-10",
++        total: "180.00",
++        paymentTerms: "NET_30",
++      },
++    ];
++
++    render(<PurchaseOrderSurface />);
++
++    const queueGridCall = mockPowersheetGrid.mock.calls.find(
++      ([props]) => props.title === "Purchase Orders Queue"
++    )?.[0] as {
++      columnDefs: Array<{
++        field?: string;
++        cellRenderer?: (params: {
++          data?: {
++            receivingStatusClassName: string;
++            receivingStatusLabel: string;
++          };
++        }) => unknown;
++      }>;
++    };
++
++    const receivingColumn = queueGridCall.columnDefs.find(
++      col => col.field === "receivingStatusLabel"
++    );
++    const rendered = receivingColumn?.cellRenderer?.({
++      data: {
++        receivingStatusClassName:
++          "bg-emerald-50 text-emerald-700 border-emerald-200",
++        receivingStatusLabel: "In Progress",
++      },
++    });
++
++    expect(isValidElement(rendered)).toBe(true);
++  });
++
++  it("marks overdue purchase-order rows with a warning class", () => {
++    queueData = [
++      {
++        id: 91,
++        poNumber: "PO-091",
++        supplierClientId: 12,
++        purchaseOrderStatus: "CONFIRMED",
++        orderDate: "2026-03-27",
++        expectedDeliveryDate: "2026-03-28",
++        total: "180.00",
++        paymentTerms: "NET_30",
++      },
++    ];
++
++    render(<PurchaseOrderSurface />);
++
++    const queueGridCall = mockPowersheetGrid.mock.calls.find(
++      ([props]) => props.title === "Purchase Orders Queue"
++    )?.[0] as {
++      rows: Array<unknown>;
++      getRowClass?: (params: { data?: unknown }) => string | string[] | undefined;
++    };
++
++    expect(queueGridCall.getRowClass?.({ data: queueGridCall.rows[0] })).toContain(
++      "bg-red-50/60"
++    );
++  });
++
++  it("opens the linked supplier profile from the PO inspector", () => {
++    queueData = [
++      {
++        id: 92,
++        poNumber: "PO-092",
++        supplierClientId: 12,
++        purchaseOrderStatus: "CONFIRMED",
++        orderDate: "2026-03-27",
++        expectedDeliveryDate: "2026-04-03",
++        total: "180.00",
++        paymentTerms: "NET_30",
++      },
++    ];
++    poDetailData = {
++      poNumber: "PO-092",
++      supplier: { email: "ops@northfarm.test", phone: "555-0100" },
++      items: [],
++    };
++    mockSelectedPoId = 92;
++
++    render(<PurchaseOrderSurface />);
++
++    fireEvent.click(
++      screen.getByRole("button", { name: /open supplier profile/i })
++    );
++
++    expect(mockSetLocation).toHaveBeenCalledWith(
++      "/clients/12?section=overview"
++    );
+   });
+ });
+ 
+diff --git a/client/src/components/spreadsheet-native/PurchaseOrderSurface.tsx b/client/src/components/spreadsheet-native/PurchaseOrderSurface.tsx
+index 877407c3..5ca6825c 100644
+--- a/client/src/components/spreadsheet-native/PurchaseOrderSurface.tsx
++++ b/client/src/components/spreadsheet-native/PurchaseOrderSurface.tsx
+@@ -21,7 +21,11 @@
+ import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+ import { useExport } from "@/hooks/work-surface/useExport";
+ import type { ExportColumn } from "@/hooks/work-surface/useExport";
+-import type { CellValueChangedEvent, ColDef } from "ag-grid-community";
++import type {
++  CellValueChangedEvent,
++  ColDef,
++  ICellRendererParams,
++} from "ag-grid-community";
+ import {
+   ArrowLeft,
+   Building,
+@@ -42,6 +46,7 @@ import {
+   isCalendarDateToday,
+   normalizeCalendarDate,
+ } from "@/lib/calendarDates";
++import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
+ import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
+ import { useSpreadsheetSelectionParam } from "@/lib/spreadsheet-native";
+ import { useAuth } from "@/hooks/useAuth";
+@@ -140,9 +145,13 @@ interface POQueueRow {
+   identity: { rowKey: string; entityId: number | string; entityType: string };
+   poId: number;
+   poNumber: string;
++  supplierClientId: number | null;
+   supplierName: string;
+   status: string;
+   statusLabel: string;
++  receivingStatus: "NOT_STARTED" | "IN_PROGRESS" | "COMPLETE";
++  receivingStatusLabel: string;
++  receivingStatusClassName: string;
+   orderDate: Date | string;
+   expectedDeliveryDate: Date | string;
+   total: number;
+@@ -318,6 +327,37 @@ function hasExpectedDeliveryDate(
+   return normalizeCalendarDate(value) !== null;
+ }
+ 
++function getReceivingStatusMeta(status: string): {
++  value: POQueueRow["receivingStatus"];
++  label: string;
++  className: string;
++} {
++  switch (status) {
++    case "RECEIVED":
++      return {
++        value: "COMPLETE",
++        label: "Complete",
++        className: "bg-emerald-50 text-emerald-700 border-emerald-200",
++      };
++    case "RECEIVING":
++      return {
++        value: "IN_PROGRESS",
++        label: "In Progress",
++        className: "bg-amber-50 text-amber-700 border-amber-200",
++      };
++    default:
++      return {
++        value: "NOT_STARTED",
++        label: "Not Started",
++        className: "bg-slate-100 text-slate-700 border-slate-200",
++      };
++  }
++}
++
++function isQueueRowOverdue(row: Pick<POQueueRow, "expectedDeliveryDate" | "status">) {
++  return isPastExpectedDate(row.expectedDeliveryDate, row.status);
++}
++
+ function mapPOsToQueueRows(
+   pos: POQueueRecord[],
+   supplierNamesById: Map<number, string>
+@@ -330,6 +370,7 @@ function mapPOsToQueueRows(
+         : "Unknown Supplier";
+     const status = po.purchaseOrderStatus;
+     const total = toNumber(po.total);
++    const receivingStatus = getReceivingStatusMeta(status);
+     return {
+       identity: {
+         rowKey: buildRowKey("po", po.id),
+@@ -338,9 +379,13 @@ function mapPOsToQueueRows(
+       },
+       poId: po.id,
+       poNumber: po.poNumber,
++      supplierClientId: supplierId,
+       supplierName,
+       status,
+       statusLabel: PO_STATUS_LABELS[status] ?? status,
++      receivingStatus: receivingStatus.value,
++      receivingStatusLabel: receivingStatus.label,
++      receivingStatusClassName: receivingStatus.className,
+       orderDate: po.orderDate ?? "",
+       expectedDeliveryDate: po.expectedDeliveryDate ?? "",
+       total,
+@@ -1491,12 +1536,6 @@ function PurchaseOrderQueueMode({
+     searchLower,
+   ]);
+ 
+-  const showExpectedDeliveryColumn = useMemo(
+-    () =>
+-      queueRows.some(row => hasExpectedDeliveryDate(row.expectedDeliveryDate)),
+-    [queueRows]
+-  );
+-
+   const selectedRow = queueRows.find(row => row.poId === selectedPoId) ?? null;
+ 
+   const lineItemRows = useMemo(() => {
+@@ -1767,7 +1806,7 @@ function PurchaseOrderQueueMode({
+   // ---------------------------------------------------------------------------
+ 
+   const queueColumnDefs = useMemo<ColDef<POQueueRow>[]>(() => {
+-    const cols: ColDef<POQueueRow>[] = [
++    return [
+       {
+         field: "poNumber",
+         headerName: "PO Number",
+@@ -1789,6 +1828,24 @@ function PurchaseOrderQueueMode({
+         maxWidth: 140,
+         cellClass: "powersheet-cell--locked",
+       },
++      {
++        field: "receivingStatusLabel",
++        headerName: "Receiving",
++        minWidth: 130,
++        maxWidth: 150,
++        cellClass: "powersheet-cell--locked",
++        cellRenderer: (params: ICellRendererParams<POQueueRow>) => {
++          const row = params.data;
++          if (!row) return "Not Started";
++          return (
++            <span
++              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${row.receivingStatusClassName}`}
++            >
++              {row.receivingStatusLabel}
++            </span>
++          );
++        },
++      },
+       {
+         field: "orderDate",
+         headerName: "Order Date",
+@@ -1798,6 +1855,17 @@ function PurchaseOrderQueueMode({
+         valueFormatter: params =>
+           formatDate(params.value as Date | string | null | undefined),
+       },
++      {
++        field: "expectedDeliveryDate",
++        headerName: "Est. Delivery",
++        minWidth: 132,
++        maxWidth: 156,
++        cellClass: "powersheet-cell--locked",
++        valueFormatter: params => {
++          const value = params.value as Date | string | null | undefined;
++          return hasExpectedDeliveryDate(value) ? formatDate(value) : "Not set";
++        },
++      },
+       {
+         field: "total",
+         headerName: "Total ($)",
+@@ -1814,29 +1882,7 @@ function PurchaseOrderQueueMode({
+         cellClass: "powersheet-cell--locked",
+       },
+     ];
+-
+-    if (showExpectedDeliveryColumn) {
+-      const orderDateColumnIndex = cols.findIndex(
+-        column => column.field === "orderDate"
+-      );
+-      const insertIndex =
+-        orderDateColumnIndex >= 0 ? orderDateColumnIndex + 1 : cols.length;
+-
+-      cols.splice(insertIndex, 0, {
+-        field: "expectedDeliveryDate",
+-        headerName: "Est. Delivery",
+-        minWidth: 120,
+-        maxWidth: 140,
+-        cellClass: "powersheet-cell--locked",
+-        valueFormatter: params => {
+-          const value = params.value as Date | string | null | undefined;
+-          return hasExpectedDeliveryDate(value) ? formatDate(value) : "Not set";
+-        },
+-      });
+-    }
+-
+-    return cols;
+-  }, [showExpectedDeliveryColumn]);
++  }, []);
+ 
+   const lineItemColumnDefs = useMemo<ColDef<POLineRow>[]>(
+     () => [
+@@ -2035,6 +2081,11 @@ function PurchaseOrderQueueMode({
+         onSelectionSummaryChange={setQueueSelectionSummary}
+         isLoading={posQuery.isLoading}
+         errorMessage={posQuery.error?.message ?? null}
++        getRowClass={params =>
++          params.data && isQueueRowOverdue(params.data)
++            ? "bg-red-50/60 border-l-2 border-red-300"
++            : undefined
++        }
+         emptyTitle="No purchase orders match"
+         emptyDescription="Adjust the search or status filter, or create a new PO."
+         summary={
+@@ -2259,7 +2310,25 @@ function PurchaseOrderQueueMode({
+                 <p className="font-semibold">{selectedRow.poNumber}</p>
+               </InspectorField>
+               <InspectorField label="Supplier">
+-                <p>{selectedRow.supplierName}</p>
++                <div className="space-y-2">
++                  <p>{selectedRow.supplierName}</p>
++                  {selectedRow.supplierClientId !== null ? (
++                    <Button
++                      type="button"
++                      size="sm"
++                      variant="outline"
++                      onClick={() =>
++                        setLocation(
++                          buildRelationshipProfilePath(
++                            selectedRow.supplierClientId!
++                          )
++                        )
++                      }
++                    >
++                      Open supplier profile
++                    </Button>
++                  ) : null}
++                </div>
+                 {detailQuery.data?.supplier?.email ? (
+                   <p className="text-xs text-muted-foreground">
+                     {(detailQuery.data.supplier as { email?: string }).email}
+diff --git a/client/src/components/spreadsheet-native/SamplesPilotSurface.test.tsx b/client/src/components/spreadsheet-native/SamplesPilotSurface.test.tsx
+index 8c88b3cd..4c82f204 100644
+--- a/client/src/components/spreadsheet-native/SamplesPilotSurface.test.tsx
++++ b/client/src/components/spreadsheet-native/SamplesPilotSurface.test.tsx
+@@ -55,7 +55,7 @@ vi.mock("@/lib/trpc", () => ({
+                 id: 1,
+                 clientId: 10,
+                 sampleRequestStatus: "REQUESTED",
+-                notes: "Due: 2026-04-01",
++                notes: "Due Date: 2026-04-01",
+                 requestDate: "2026-03-01",
+                 createdAt: "2026-03-01T00:00:00.000Z",
+                 products: [
+@@ -256,7 +256,18 @@ vi.mock("@/components/work-surface/InspectorPanel", () => ({
+       {children}
+     </div>
+   ),
+-  InspectorField: () => null,
++  InspectorField: ({
++    label,
++    children,
++  }: {
++    label: string;
++    children: React.ReactNode;
++  }) => (
++    <div>
++      <span>{label}</span>
++      {children}
++    </div>
++  ),
+ }));
+ 
+ vi.mock("@/components/work-surface/WorkSurfaceStatusBar", () => ({
+@@ -370,4 +381,12 @@ describe("SamplesPilotSurface", () => {
+     expect(screen.getByText("Sample #1")).toBeInTheDocument();
+     expect(screen.getByText("Request Details")).toBeInTheDocument();
+   });
++
++  it("formats requested and due dates in the inspector", () => {
++    render(<SamplesPilotSurface onOpenClassic={vi.fn()} />);
++    fireEvent.click(screen.getByRole("button", { name: /open sample 1/i }));
++
++    expect(screen.getByText("Mar 1, 2026")).toBeInTheDocument();
++    expect(screen.getByText("Apr 1, 2026")).toBeInTheDocument();
++  });
+ });
+diff --git a/client/src/components/spreadsheet-native/SamplesPilotSurface.tsx b/client/src/components/spreadsheet-native/SamplesPilotSurface.tsx
+index 1f2e5b2d..45cd1607 100644
+--- a/client/src/components/spreadsheet-native/SamplesPilotSurface.tsx
++++ b/client/src/components/spreadsheet-native/SamplesPilotSurface.tsx
+@@ -116,6 +116,16 @@ const samplesAffordances: PowersheetAffordance[] = [
+ 
+ type TabFilter = "ALL" | "OUT" | "RETURN";
+ 
++function formatOperationalDate(value: Date | string | null | undefined): string {
++  if (!value) return "—";
++  try {
++    const date = typeof value === "string" ? new Date(value) : value;
++    return format(date, "MMM d, yyyy");
++  } catch {
++    return "—";
++  }
++}
++
+ // ============================================================================
+ // Row type
+ // ============================================================================
+@@ -746,6 +756,8 @@ export function SamplesPilotSurface({
+         minWidth: 110,
+         maxWidth: 130,
+         cellClass: "powersheet-cell--locked",
++        valueFormatter: params =>
++          formatOperationalDate(params.value as string | null | undefined),
+       },
+       {
+         // DISC-SAM-003: dedicated column parsed from notes text
+@@ -756,7 +768,8 @@ export function SamplesPilotSurface({
+         cellClass: "powersheet-cell--locked",
+         headerTooltip:
+           "Due date parsed from notes field (Due Date: YYYY-MM-DD)",
+-        valueFormatter: params => (params.value as string | null) ?? "-",
++        valueFormatter: params =>
++          formatOperationalDate(params.value as string | null | undefined),
+       },
+       {
+         field: "location",
+@@ -1134,11 +1147,11 @@ export function SamplesPilotSurface({
+ 
+             <InspectorSection title="Dates">
+               <InspectorField label="Requested">
+-                <p>{selectedRow.requestedDate}</p>
++                <p>{formatOperationalDate(selectedRow.requestedDate)}</p>
+               </InspectorField>
+               <InspectorField label="Due Date">
+                 {/* DISC-SAM-003 */}
+-                <p>{selectedRow.dueDate ?? "—"}</p>
++                <p>{formatOperationalDate(selectedRow.dueDate)}</p>
+               </InspectorField>
+               {/* DISC-SAM-002: Editable expiration date */}
+               <InspectorField label="Expires">
+@@ -1188,7 +1201,7 @@ export function SamplesPilotSurface({
+                     </PopoverContent>
+                   </Popover>
+                 ) : (
+-                  <p>{selectedRow.expirationDate ?? "—"}</p>
++                  <p>{formatOperationalDate(selectedRow.expirationDate)}</p>
+                 )}
+               </InspectorField>
+             </InspectorSection>
+diff --git a/client/src/components/spreadsheet-native/SpreadsheetPilotGrid.tsx b/client/src/components/spreadsheet-native/SpreadsheetPilotGrid.tsx
+index 0631de36..f40c8713 100644
+--- a/client/src/components/spreadsheet-native/SpreadsheetPilotGrid.tsx
++++ b/client/src/components/spreadsheet-native/SpreadsheetPilotGrid.tsx
+@@ -8,6 +8,8 @@ import type {
+   CellFocusedEvent,
+   ProcessCellForExportParams,
+   ProcessDataFromClipboardParams,
++  RowClassParams,
++  RowClassRules,
+   CellSelectionChangedEvent,
+   CellValueChangedEvent,
+   CellRange,
+@@ -315,6 +317,8 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
+   ) => void;
+   onRowClicked?: (event: RowClickedEvent<Row>) => void;
+   onCellClicked?: (event: CellClickedEvent<Row>) => void;
++  rowClassRules?: RowClassRules<Row>;
++  getRowClass?: (params: RowClassParams<Row>) => string | string[] | undefined;
+   rowHeight?: number;
+   cardClassName?: string;
+   headerClassName?: string;
+@@ -364,6 +368,8 @@ export function SpreadsheetPilotGrid<Row extends object>({
+   onSelectionSummaryChange,
+   onRowClicked,
+   onCellClicked,
++  rowClassRules,
++  getRowClass,
+   rowHeight: rowHeightProp,
+   cardClassName,
+   headerClassName,
+@@ -627,6 +633,8 @@ export function SpreadsheetPilotGrid<Row extends object>({
+               onCellSelectionDeleteEnd={onCellSelectionDeleteEnd}
+               onRowClicked={onRowClicked}
+               onCellClicked={onCellClicked}
++              rowClassRules={rowClassRules}
++              getRowClass={getRowClass}
+               getRowId={params => getRowId(params.data)}
+             />
+           </div>
+diff --git a/client/src/components/spreadsheet/PickPackGrid.tsx b/client/src/components/spreadsheet/PickPackGrid.tsx
+index b6a012cd..86812d8f 100644
+--- a/client/src/components/spreadsheet/PickPackGrid.tsx
++++ b/client/src/components/spreadsheet/PickPackGrid.tsx
+@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
+ import { trpc, staleTimePresets } from "@/lib/trpc";
++import { formatDate } from "@/lib/utils";
+ import { useUiDensity } from "@/hooks/useUiDensity";
+ import { toast } from "sonner";
+ import type { PickPackGridRow, PickPackStats } from "@/types/spreadsheet";
+@@ -170,6 +171,8 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
+         headerName: "Date",
+         field: "orderDate",
+         width: 120,
++        valueFormatter: params =>
++          formatDate(params.value as string | Date | null | undefined),
+       },
+       {
+         headerName: "Items",
+diff --git a/client/src/components/ui/DataTable.tsx b/client/src/components/ui/DataTable.tsx
+index 751ecbd0..372efdd3 100644
+--- a/client/src/components/ui/DataTable.tsx
++++ b/client/src/components/ui/DataTable.tsx
+@@ -566,8 +566,8 @@ function DataTableComponent<T>({
+                   ) : (
+                     <EmptyState
+                       variant="generic"
+-                      title="No data"
+-                      description="No data available to display."
++                      title="Nothing to show yet"
++                      description="Adjust the filters or add a record to populate this table."
+                       size="sm"
+                     />
+                   )}
+diff --git a/client/src/components/ui/empty-state.tsx b/client/src/components/ui/empty-state.tsx
+index 4ba06bdc..5c0b619f 100644
+--- a/client/src/components/ui/empty-state.tsx
++++ b/client/src/components/ui/empty-state.tsx
+@@ -292,8 +292,8 @@ export const EmptyStatePresets = {
+   NoData: () => (
+     <EmptyState
+       variant="analytics"
+-      title="No data available"
+-      description="Data will appear here once you start using the system"
++      title="Nothing to show yet"
++      description="This view will populate once activity starts or the current filters broaden."
+     />
+   ),
+ 
+diff --git a/client/src/components/ui/responsive-table.tsx b/client/src/components/ui/responsive-table.tsx
+index 822f179f..a73eaa9e 100644
+--- a/client/src/components/ui/responsive-table.tsx
++++ b/client/src/components/ui/responsive-table.tsx
+@@ -32,6 +32,7 @@ import {
+   TableRow,
+ } from "@/components/ui/table";
+ import { Card, CardContent } from "@/components/ui/card";
++import { OperationalEmptyState } from "@/components/ui/operational-states";
+ import { ChevronRight } from "lucide-react";
+ 
+ export interface ResponsiveTableColumn<T> {
+@@ -85,7 +86,7 @@ export function ResponsiveTable<T extends Record<string, unknown>>({
+   columns,
+   data,
+   onRowClick,
+-  emptyMessage = "No data found",
++  emptyMessage = "No records match this view yet.",
+   keyExtractor = (_, index) => index,
+   className,
+   isLoading = false,
+@@ -100,9 +101,13 @@ export function ResponsiveTable<T extends Record<string, unknown>>({
+ 
+   if (!data || data.length === 0) {
+     return (
+-      <div className="flex flex-col items-center justify-center py-12 text-center">
+-        <p className="text-muted-foreground">{emptyMessage}</p>
+-      </div>
++      <OperationalEmptyState
++        variant="generic"
++        title={emptyMessage}
++        description="Adjust this view or add new records to populate the table."
++        className={cn("min-h-[14rem]", className)}
++        data-testid="responsive-table-empty-state"
++      />
+     );
+   }
+ 
+diff --git a/client/src/components/vip-portal/LiveCatalog.tsx b/client/src/components/vip-portal/LiveCatalog.tsx
+index 2f1b1de1..759ab0a9 100644
+--- a/client/src/components/vip-portal/LiveCatalog.tsx
++++ b/client/src/components/vip-portal/LiveCatalog.tsx
+@@ -52,6 +52,7 @@ import {
+ import { useToast } from "@/hooks/use-toast";
+ import { cn } from "@/lib/utils";
+ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
++import { getStatusBadgeVariant } from "@/lib/statusBadge";
+ 
+ interface CatalogItem {
+   id: number;
+@@ -854,7 +855,10 @@ export function LiveCatalog({ clientId }: LiveCatalogProps) {
+                         {item.name}
+                       </CardTitle>
+                       {isInDraft(item.id) && (
+-                        <Badge variant="default" className="shrink-0">
++                        <Badge
++                          variant={getStatusBadgeVariant("active")}
++                          className="shrink-0"
++                        >
+                           <Check className="h-3 w-3" />
+                         </Badge>
+                       )}
+@@ -1409,7 +1413,10 @@ function MyPriceAlerts() {
+               <div className="flex items-center gap-2">
+                 <p className="font-medium">{alert.productName}</p>
+                 {priceDropped && (
+-                  <Badge variant="default" className="bg-green-600">
++                  <Badge
++                    variant={getStatusBadgeVariant("triggered")}
++                    className="bg-green-600"
++                  >
+                     <Check className="h-3 w-3 mr-1" />
+                     Price Dropped!
+                   </Badge>
+diff --git a/client/src/components/vip-portal/LiveCatalogConfig.tsx b/client/src/components/vip-portal/LiveCatalogConfig.tsx
+index 40316571..1912c8db 100644
+--- a/client/src/components/vip-portal/LiveCatalogConfig.tsx
++++ b/client/src/components/vip-portal/LiveCatalogConfig.tsx
+@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+ import { CheckCircle, Eye, EyeOff, Loader2 } from "lucide-react";
+ import { useToast } from "@/hooks/use-toast";
+ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
++import { getStatusBadgeVariant } from "@/lib/statusBadge";
+ 
+ interface CatalogInterestItem {
+   id: number;
+@@ -781,7 +782,9 @@ function InterestListDetailModal({
+                       ) : item.priceChanged || item.quantityChanged ? (
+                         <Badge variant="secondary">Changed</Badge>
+                       ) : (
+-                        <Badge variant="default">Available</Badge>
++                        <Badge variant={getStatusBadgeVariant("available")}>
++                          Available
++                        </Badge>
+                       )}
+                     </TableCell>
+                   </TableRow>
+@@ -992,12 +995,15 @@ function PriceAlertsTable({ clientId }: { clientId: number }) {
+                 <TableCell>
+                   {alert.isActive ? (
+                     priceDropped ? (
+-                      <Badge variant="default" className="bg-green-600">
++                      <Badge
++                        variant={getStatusBadgeVariant("triggered")}
++                        className="bg-green-600"
++                      >
+                         <CheckCircle className="h-3 w-3 mr-1" />
+                         Triggered
+                       </Badge>
+                     ) : (
+-                      <Badge variant="default">
++                      <Badge variant={getStatusBadgeVariant("active")}>
+                         <Eye className="h-3 w-3 mr-1" />
+                         Active
+                       </Badge>
+diff --git a/client/src/components/work-surface/ClientsWorkSurface.tsx b/client/src/components/work-surface/ClientsWorkSurface.tsx
+index f73ce8f6..5bad8a67 100644
+--- a/client/src/components/work-surface/ClientsWorkSurface.tsx
++++ b/client/src/components/work-surface/ClientsWorkSurface.tsx
+@@ -85,6 +85,12 @@ import {
+ import { PageHeader } from "@/components/layout/PageHeader";
+ import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
+ import { getRelationshipSummary } from "@/lib/relationshipSummary";
++import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
++import { OperationalEmptyState } from "@/components/ui/operational-states";
++import {
++  RELATIONSHIP_ROLE_TOKENS,
++  RELATIONSHIP_STATUS_TOKENS,
++} from "@/lib/statusTokens";
+ 
+ // ============================================================================
+ // TYPES & SCHEMAS
+@@ -151,6 +157,7 @@ const CLIENT_TYPE_FILTERS: {
+ 
+ // TER-508: localStorage key for persisting view state across page reloads
+ const CLIENTS_VIEW_STATE_KEY = "terp-clients-view-v2";
++const CLIENTS_SCROLL_STATE_KEY = `${CLIENTS_VIEW_STATE_KEY}:scroll-top`;
+ 
+ // ============================================================================
+ // HELPER FUNCTIONS
+@@ -165,7 +172,7 @@ const formatCurrency = (value: string | number | null | undefined): string => {
+   }).format(num || 0);
+ };
+ 
+-const formatDate = (dateString: string | null | undefined): string => {
++const formatDate = (dateString: string | Date | null | undefined): string => {
+   if (!dateString) return "-";
+   try {
+     return new Date(dateString).toLocaleDateString();
+@@ -174,6 +181,34 @@ const formatDate = (dateString: string | null | undefined): string => {
+   }
+ };
+ 
++const getRelationshipStatus = (
++  client: Pick<Client, "currentDebt" | "lastOrderDate" | "updatedAt">
++) => {
++  const debt = parseFloat(String(client.currentDebt || 0));
++  const lastTouch = client.lastOrderDate ?? client.updatedAt ?? null;
++  const lastTouchDays = lastTouch
++    ? Math.floor(
++        (Date.now() - new Date(lastTouch).getTime()) / (1000 * 60 * 60 * 24)
++      )
++    : null;
++
++  if (debt > 0) {
++    return { label: "Needs Attention", toneKey: "NEEDS-ATTENTION" as const };
++  }
++  if (lastTouchDays !== null && lastTouchDays <= 30) {
++    return { label: "Active", toneKey: "ACTIVE" as const };
++  }
++  if (lastTouchDays !== null && lastTouchDays <= 90) {
++    return { label: "Watch", toneKey: "WATCH" as const };
++  }
++
++  return { label: "Dormant", toneKey: "DORMANT" as const };
++};
++
++const getLastActivityDate = (
++  client: Pick<Client, "lastOrderDate" | "updatedAt">
++) => client.lastOrderDate ?? client.updatedAt ?? null;
++
+ // ============================================================================
+ // CLIENT TYPE BADGES
+ // ============================================================================
+@@ -181,23 +216,29 @@ const formatDate = (dateString: string | null | undefined): string => {
+ function ClientTypeBadges({ client }: { client: Client }) {
+   const badges: { label: string; className: string }[] = [];
+   if (client.isBuyer)
+-    badges.push({ label: "Customer", className: "bg-blue-100 text-blue-800" });
++    badges.push({
++      label: "Customer",
++      className: RELATIONSHIP_ROLE_TOKENS.Customer,
++    });
+   if (client.isSeller)
+     badges.push({
+       label: "Supplier",
+-      className: "bg-green-100 text-green-800",
++      className: RELATIONSHIP_ROLE_TOKENS.Supplier,
+     });
+   if (client.isBrand)
+-    badges.push({ label: "Brand", className: "bg-purple-100 text-purple-800" });
++    badges.push({
++      label: "Brand",
++      className: RELATIONSHIP_ROLE_TOKENS.Brand,
++    });
+   if (client.isReferee)
+     badges.push({
+       label: "Referee",
+-      className: "bg-yellow-100 text-yellow-800",
++      className: RELATIONSHIP_ROLE_TOKENS.Referee,
+     });
+   if (client.isContractor)
+     badges.push({
+       label: "Contractor",
+-      className: "bg-gray-100 text-gray-800",
++      className: RELATIONSHIP_ROLE_TOKENS.Contractor,
+     });
+ 
+   return (
+@@ -524,6 +565,8 @@ function ClientInspectorContent({
+ export function ClientsWorkSurface() {
+   const [, setLocation] = useLocation();
+   const searchInputRef = useRef<HTMLInputElement>(null);
++  const tableScrollRef = useRef<HTMLDivElement>(null);
++  const hasRestoredScrollRef = useRef(false);
+ 
+   // State — TER-508: Initialize from localStorage for filter persistence
+   // Parse localStorage once and distribute to avoid redundant JSON.parse calls
+@@ -629,6 +672,30 @@ export function ClientsWorkSurface() {
+     [clientsData]
+   );
+ 
++  useEffect(() => {
++    if (
++      typeof window === "undefined" ||
++      hasRestoredScrollRef.current ||
++      isLoading ||
++      clients.length === 0
++    ) {
++      return;
++    }
++
++    const rawScrollTop = window.sessionStorage.getItem(CLIENTS_SCROLL_STATE_KEY);
++    const scrollTop = Number(rawScrollTop);
++    if (!rawScrollTop || !Number.isFinite(scrollTop)) {
++      return;
++    }
++
++    requestAnimationFrame(() => {
++      if (tableScrollRef.current) {
++        tableScrollRef.current.scrollTop = scrollTop;
++        hasRestoredScrollRef.current = true;
++      }
++    });
++  }, [clients.length, isLoading]);
++
+   const { data: totalCount } = trpc.clients.count.useQuery({
+     search: search || undefined,
+     clientTypes: typeFilter !== "all" ? [typeFilter] : undefined,
+@@ -869,6 +936,20 @@ export function ClientsWorkSurface() {
+     );
+   };
+ 
++  const navigateToProfile = (clientId: number) => {
++    if (typeof window !== "undefined") {
++      window.sessionStorage.setItem(
++        CLIENTS_SCROLL_STATE_KEY,
++        String(tableScrollRef.current?.scrollTop ?? 0)
++      );
++    }
++    setLocation(buildRelationshipProfilePath(clientId));
++  };
++
++  const navigateToClientOrders = (clientId: number) => {
++    setLocation(buildSalesWorkspacePath("orders", { clientId }));
++  };
++
+   // Render
+   return (
+     <div {...keyboardProps} className="h-full flex flex-col">
+@@ -951,6 +1032,7 @@ export function ClientsWorkSurface() {
+       <div className="flex-1 flex overflow-hidden">
+         {/* Table Area */}
+         <div
++          ref={tableScrollRef}
+           className={cn(
+             "flex-1 overflow-auto transition-all duration-200",
+             inspector.isOpen && "mr-96"
+@@ -976,17 +1058,31 @@ export function ClientsWorkSurface() {
+               </div>
+             </div>
+           ) : displayClients.length === 0 ? (
+-            <div className="flex items-center justify-center h-64">
+-              <div className="text-center">
+-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+-                <p className="font-medium">No clients found</p>
+-                <p className="text-sm text-muted-foreground mt-1">
+-                  {search || typeFilter !== "all"
+-                    ? "Try adjusting your filters"
+-                    : "Add your first client"}
+-                </p>
+-              </div>
+-            </div>
++            <OperationalEmptyState
++              variant="clients"
++              title="No clients found"
++              description={
++                search || typeFilter !== "all"
++                  ? "Clear the filters or broaden the search to bring more relationship records into view."
++                  : "Add your first client so conversations, orders, and collections all start from one shared record."
++              }
++              searchActive={Boolean(search)}
++              filterActive={typeFilter !== "all"}
++              action={
++                search || typeFilter !== "all"
++                  ? {
++                      label: "Clear Filters",
++                      onClick: () => {
++                        setSearch("");
++                        setTypeFilter("all");
++                      },
++                    }
++                  : {
++                      label: "Quick Add Client",
++                      onClick: () => setIsAddClientOpen(true),
++                    }
++              }
++            />
+           ) : (
+             <>
+               <Table data-testid="clients-table">
+@@ -1001,6 +1097,8 @@ export function ClientsWorkSurface() {
+                       </span>
+                     </TableHead>
+                     <TableHead>Relationship</TableHead>
++                    <TableHead>Status</TableHead>
++                    <TableHead>Last Activity</TableHead>
+                     <TableHead>Reachable Handles</TableHead>
+                     <TableHead
+                       className="cursor-pointer text-right"
+@@ -1045,9 +1143,7 @@ export function ClientsWorkSurface() {
+                         setSelectedIndex(index);
+                         inspector.open();
+                       }}
+-                      onDoubleClick={() =>
+-                        setLocation(buildRelationshipProfilePath(client.id))
+-                      }
++                      onDoubleClick={() => navigateToProfile(client.id)}
+                     >
+                       <TableCell className="font-medium">
+                         <div className="space-y-1">
+@@ -1062,6 +1158,21 @@ export function ClientsWorkSurface() {
+                       <TableCell>
+                         <ClientTypeBadges client={client} />
+                       </TableCell>
++                      <TableCell>
++                        <Badge
++                          variant="outline"
++                          className={
++                            RELATIONSHIP_STATUS_TOKENS[
++                              getRelationshipStatus(client).toneKey
++                            ]
++                          }
++                        >
++                          {getRelationshipStatus(client).label}
++                        </Badge>
++                      </TableCell>
++                      <TableCell className="text-sm text-muted-foreground">
++                        {formatDate(getLastActivityDate(client))}
++                      </TableCell>
+                       <TableCell className="text-sm text-muted-foreground">
+                         {[client.email, client.phone]
+                           .filter(Boolean)
+@@ -1080,7 +1191,16 @@ export function ClientsWorkSurface() {
+                         {formatCurrency(client.currentDebt)}
+                       </TableCell>
+                       <TableCell className="text-right">
+-                        {client.orderCount || 0}
++                        <button
++                          type="button"
++                          className="font-medium text-primary underline-offset-2 hover:underline"
++                          onClick={event => {
++                            event.stopPropagation();
++                            navigateToClientOrders(client.id);
++                          }}
++                        >
++                          {client.orderCount || 0}
++                        </button>
+                       </TableCell>
+                       <TableCell>
+                         <Button
+@@ -1090,9 +1210,7 @@ export function ClientsWorkSurface() {
+                           onClick={e => {
+                             e.preventDefault();
+                             e.stopPropagation();
+-                            setLocation(
+-                              buildRelationshipProfilePath(client.id)
+-                            );
++                            navigateToProfile(client.id);
+                           }}
+                           aria-label={`Open ${client.name}`}
+                         >
+@@ -1159,7 +1277,7 @@ export function ClientsWorkSurface() {
+             <ClientInspectorContent
+               client={selectedClient}
+               onUpdate={handleUpdateClient}
+-              onNavigate={id => setLocation(buildRelationshipProfilePath(id))}
++              onNavigate={navigateToProfile}
+               onArchive={handleArchive}
+             />
+           )}
+@@ -1205,7 +1323,7 @@ export function ClientsWorkSurface() {
+         onSuccess={client => {
+           refetch();
+           toast.success(`Relationship created: ${client.teriCode}`);
+-          setLocation(buildRelationshipProfilePath(client.id));
++          navigateToProfile(client.id);
+         }}
+       />
+ 
+diff --git a/client/src/components/work-surface/OrdersWorkSurface.tsx b/client/src/components/work-surface/OrdersWorkSurface.tsx
+index abe932c8..e435ea42 100644
+--- a/client/src/components/work-surface/OrdersWorkSurface.tsx
++++ b/client/src/components/work-surface/OrdersWorkSurface.tsx
+@@ -22,7 +22,14 @@ import {
+ import { useLocation, useSearch as useRouteSearch } from "wouter";
+ import { trpc } from "@/lib/trpc";
+ import { cn } from "@/lib/utils";
++import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
+ import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
++import {
++  ORDER_FULFILLMENT_STATUS_TOKENS,
++  ORDER_PAYMENT_STATUS_TOKENS,
++  STATUS_DANGER_SUBTLE,
++  STATUS_WARNING_SUBTLE,
++} from "@/lib/statusTokens";
+ import {
+   getFulfillmentDisplayLabel,
+   mapToFulfillmentDisplayStatus,
+@@ -64,6 +71,12 @@ import {
+   DialogFooter,
+ } from "@/components/ui/dialog";
+ import { EmptyState } from "@/components/ui/empty-state";
++import {
++  DropdownMenu,
++  DropdownMenuContent,
++  DropdownMenuItem,
++  DropdownMenuTrigger,
++} from "@/components/ui/dropdown-menu";
+ 
+ // Work Surface Hooks
+ import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
+@@ -102,6 +115,7 @@ import {
+   Send,
+   Download,
+   ArrowUpDown,
++  MoreHorizontal,
+ } from "lucide-react";
+ import { PageHeader } from "@/components/layout/PageHeader";
+ 
+@@ -132,6 +146,7 @@ interface Order {
+   total: string;
+   createdAt?: string;
+   confirmedAt?: string;
++  dueDate?: string | null;
+   version?: number;
+   lineItems?: Array<{
+     id: number;
+@@ -252,6 +267,7 @@ const FULFILLMENT_STATUSES = [
+ const ORDERS_VIEW_STATE_KEY = "terp-sales-orders-view-v2";
+ 
+ type OrdersSortKey =
++  | "actionable"
+   | "newest"
+   | "oldest"
+   | "client_asc"
+@@ -260,6 +276,7 @@ type OrdersSortKey =
+   | "total_asc";
+ 
+ const ORDER_SORT_OPTIONS: Array<{ value: OrdersSortKey; label: string }> = [
++  { value: "actionable", label: "Most actionable" },
+   { value: "newest", label: "Newest" },
+   { value: "oldest", label: "Oldest" },
+   { value: "client_asc", label: "Client A-Z" },
+@@ -366,6 +383,50 @@ const formatPaymentStatus = (status?: string | null): string => {
+   return normalized ? (PAYMENT_STATUS_LABELS[normalized] ?? normalized) : "-";
+ };
+ 
++const isPaymentComplete = (status?: string | null) =>
++  normalizeStatus(status) === "PAID";
++
++const isPaymentOverdue = (order: Pick<Order, "saleStatus" | "dueDate">) => {
++  if (normalizeStatus(order.saleStatus) === "OVERDUE") {
++    return true;
++  }
++  if (!order.dueDate || isPaymentComplete(order.saleStatus)) {
++    return false;
++  }
++
++  return new Date(order.dueDate).getTime() < Date.now();
++};
++
++const getActionableOrderPriority = (
++  order: Pick<Order, "isDraft" | "fulfillmentStatus" | "saleStatus" | "dueDate">
++) => {
++  if (order.isDraft) {
++    return 6;
++  }
++  if (isPaymentOverdue(order)) {
++    return 0;
++  }
++
++  const fulfillment = normalizeFulfillmentStatus(order.fulfillmentStatus);
++  if (fulfillment === "READY_FOR_PACKING") {
++    return 1;
++  }
++  if (fulfillment === "PACKED") {
++    return 2;
++  }
++  if (normalizeStatus(order.saleStatus) === "PARTIAL") {
++    return 3;
++  }
++  if (normalizeStatus(order.saleStatus) === "PENDING") {
++    return 4;
++  }
++  if (fulfillment === "SHIPPED") {
++    return 5;
++  }
++
++  return 7;
++};
++
+ export const getDisplayOrderNumber = (
+   order: Pick<Order, "orderNumber" | "isDraft" | "orderType">
+ ): string => {
+@@ -474,7 +535,11 @@ function OrderStatusBadge({
+   return (
+     <Badge
+       variant="outline"
+-      className={cn("gap-1", STATUS_COLORS[displayStatus])}
++      className={cn(
++        "gap-1",
++        ORDER_FULFILLMENT_STATUS_TOKENS[displayStatus] ??
++          STATUS_COLORS[displayStatus]
++      )}
+     >
+       {STATUS_ICONS[displayStatus]}
+       {getFulfillmentDisplayLabel(displayStatus)}
+@@ -482,6 +547,38 @@ function OrderStatusBadge({
+   );
+ }
+ 
++function OrderPaymentBadge({
++  status,
++  dueDate,
++}: {
++  status?: string | null;
++  dueDate?: string | null;
++}) {
++  const normalizedStatus = normalizeStatus(status);
++  const displayStatus = isPaymentOverdue({
++    saleStatus: status ?? undefined,
++    dueDate,
++  })
++    ? "OVERDUE"
++    : normalizedStatus;
++
++  if (!displayStatus) {
++    return <span className="text-sm text-muted-foreground">-</span>;
++  }
++
++  return (
++    <Badge
++      variant="outline"
++      className={
++        ORDER_PAYMENT_STATUS_TOKENS[displayStatus] ??
++        ORDER_PAYMENT_STATUS_TOKENS.PENDING
++      }
++    >
++      {formatPaymentStatus(displayStatus)}
++    </Badge>
++  );
++}
++
+ // ============================================================================
+ // ORDER INSPECTOR
+ // ============================================================================
+@@ -509,6 +606,7 @@ interface OrderInspectorProps {
+   generatingInvoice?: boolean;
+   onDownloadInvoice?: (invoiceId: number) => void;
+   downloadingInvoice?: boolean;
++  onOpenClientProfile?: (clientId: number) => void;
+   onProcessReturn?: (orderId: number) => void;
+   onProcessRestock?: (orderId: number) => void;
+   onReturnToVendor?: (orderId: number) => void;
+@@ -552,6 +650,7 @@ function OrderInspectorContent({
+   generatingInvoice = false,
+   onDownloadInvoice,
+   downloadingInvoice = false,
++  onOpenClientProfile,
+   onProcessReturn,
+   onProcessRestock,
+   onReturnToVendor,
+@@ -577,6 +676,188 @@ function OrderInspectorContent({
+     order.invoiceId ?? null,
+     resolvedInvoiceId
+   );
++  type QuickAction = {
++    key: string;
++    label: string;
++    icon: ReactNode;
++    priority: number;
++    onClick: () => void;
++    variant?: "default" | "outline";
++    disabled?: boolean;
++    testId?: string;
++    destructive?: boolean;
++  };
++
++  const quickActions: QuickAction[] = [];
++
++  if (order.isDraft) {
++    quickActions.push(
++      {
++        key: "confirm-order",
++        label: "Confirm Order",
++        icon: <Send className="h-4 w-4 mr-2" />,
++        priority: 1,
++        variant: "default",
++        onClick: () => onConfirm(order.id),
++        testId: "confirm-order-btn",
++      },
++      {
++        key: "edit-draft",
++        label: "Edit Draft",
++        icon: <Edit className="h-4 w-4 mr-2" />,
++        priority: 2,
++        variant: "outline",
++        onClick: () => onEdit(order.id),
++        testId: "edit-draft-btn",
++      },
++      {
++        key: "delete-draft",
++        label: "Delete Draft",
++        icon: <Trash2 className="h-4 w-4 mr-2" />,
++        priority: 4,
++        variant: "outline",
++        onClick: () => onDelete(order.id),
++        testId: "delete-draft-btn",
++        destructive: true,
++      }
++    );
++  } else {
++    if (
++      !shippingEnabled &&
++      order.orderType === "SALE" &&
++      canAccessAccounting &&
++      getMakePaymentRoute({ id: order.id, invoiceId })
++    ) {
++      quickActions.push({
++        key: "make-payment",
++        label: "Make Payment",
++        icon: <FileText className="h-4 w-4 mr-2" />,
++        priority: 1,
++        variant: "default",
++        onClick: () => onMakePayment(order.id),
++        testId: "make-payment-btn",
++      });
++    }
++
++    if (
++      fulfillmentStatus === "READY_FOR_PACKING" &&
++      onConfirmFulfillment &&
++      !order.confirmedAt &&
++      canManageShipping
++    ) {
++      quickActions.push({
++        key: "confirm-fulfillment",
++        label: "Confirm for Fulfillment",
++        icon: <CheckCircle2 className="h-4 w-4 mr-2" />,
++        priority: 2,
++        variant: "outline",
++        onClick: () => onConfirmFulfillment(order.id),
++        testId: "confirm-fulfillment-btn",
++      });
++    }
++
++    if (
++      (fulfillmentStatus === "READY_FOR_PACKING" ||
++        fulfillmentStatus === "PACKED") &&
++      shippingEnabled &&
++      canManageShipping
++    ) {
++      quickActions.push({
++        key: "ship-order",
++        label: "Ship Order",
++        icon: <Truck className="h-4 w-4 mr-2" />,
++        priority: 1,
++        variant: "default",
++        onClick: () => onShip(order.id),
++        testId: "ship-order-btn",
++      });
++    }
++
++    if (
++      canGenerateInvoice(
++        {
++          orderType: order.orderType,
++          invoiceId,
++          fulfillmentStatus,
++        },
++        canCreateAccounting
++      ) &&
++      onGenerateInvoice
++    ) {
++      quickActions.push({
++        key: "generate-invoice",
++        label: generatingInvoice ? "Generating..." : "Generate Invoice",
++        icon: <FileText className="h-4 w-4 mr-2" />,
++        priority: 1,
++        variant: "default",
++        onClick: () => onGenerateInvoice(order.id),
++        disabled: generatingInvoice,
++        testId: "generate-invoice-btn",
++      });
++    }
++
++    if (
++      (order.fulfillmentStatus === "SHIPPED" ||
++        order.fulfillmentStatus === "DELIVERED") &&
++      onProcessReturn &&
++      canProcessReturns
++    ) {
++      quickActions.push({
++        key: "process-return",
++        label: "Process Return",
++        icon: <RefreshCw className="h-4 w-4 mr-2" />,
++        priority: 2,
++        variant: "outline",
++        onClick: () => onProcessReturn(order.id),
++      });
++    }
++
++    if (order.fulfillmentStatus === "RETURNED" && canManageShipping) {
++      if (onProcessRestock) {
++        quickActions.push({
++          key: "restock",
++          label: "Restock Inventory",
++          icon: <Package className="h-4 w-4 mr-2" />,
++          priority: 1,
++          variant: "default",
++          onClick: () => onProcessRestock(order.id),
++        });
++      }
++
++      if (onReturnToVendor) {
++        quickActions.push({
++          key: "return-to-supplier",
++          label: "Return to Supplier",
++          icon: <Truck className="h-4 w-4 mr-2" />,
++          priority: 2,
++          variant: "outline",
++          onClick: () => onReturnToVendor(order.id),
++        });
++      }
++    }
++
++    if (
++      invoiceId !== null &&
++      canDownloadInvoice(invoiceId, canAccessAccounting) &&
++      onDownloadInvoice
++    ) {
++      quickActions.push({
++        key: "download-invoice",
++        label: downloadingInvoice ? "Preparing invoice..." : "Download Invoice",
++        icon: <Download className="h-4 w-4 mr-2" />,
++        priority: 3,
++        variant: "outline",
++        onClick: () => onDownloadInvoice(invoiceId),
++        disabled: downloadingInvoice,
++      });
++    }
++  }
++
++  const sortedQuickActions = [...quickActions].sort(
++    (actionA, actionB) => actionA.priority - actionB.priority
++  );
++  const primaryQuickActions = sortedQuickActions.slice(0, 2);
++  const overflowQuickActions = sortedQuickActions.slice(2);
+ 
+   return (
+     <div className="space-y-6">
+@@ -596,7 +877,20 @@ function OrderInspectorContent({
+         </div>
+ 
+         <InspectorField label="Client">
+-          <p className="font-medium">{clientName}</p>
++          <div className="space-y-2">
++            <p className="font-medium">{clientName}</p>
++            {order.clientId ? (
++              <Button
++                type="button"
++                size="sm"
++                variant="outline"
++                onClick={() => onOpenClientProfile?.(order.clientId)}
++              >
++                Open client profile
++                <ChevronRight className="ml-2 h-4 w-4" />
++              </Button>
++            ) : null}
++          </div>
+         </InspectorField>
+ 
+         <div className="grid grid-cols-2 gap-4">
+@@ -736,167 +1030,69 @@ function OrderInspectorContent({
+ 
+       <InspectorSection title="Quick Actions">
+         <div className="space-y-2">
+-          {order.isDraft ? (
+-            <>
+-              <Button
+-                variant="outline"
+-                className="w-full justify-start"
+-                data-testid="edit-draft-btn"
+-                onClick={() => onEdit(order.id)}
+-              >
+-                <Edit className="h-4 w-4 mr-2" />
+-                Edit Draft
+-              </Button>
+-              <Button
+-                variant="default"
+-                className="w-full justify-start"
+-                data-testid="confirm-order-btn"
+-                onClick={() => onConfirm(order.id)}
+-              >
+-                <Send className="h-4 w-4 mr-2" />
+-                Confirm Order
+-              </Button>
+-              <Button
+-                variant="outline"
+-                className="w-full justify-start text-red-600 hover:text-red-700"
+-                data-testid="delete-draft-btn"
+-                onClick={() => onDelete(order.id)}
+-              >
+-                <Trash2 className="h-4 w-4 mr-2" />
+-                Delete Draft
+-              </Button>
+-            </>
+-          ) : (
+-            <>
+-              <div className="pb-1">
+-                <Badge variant="outline" className="text-xs">
+-                  {shippingEnabled
+-                    ? "Fulfillment-enabled mode"
+-                    : "Non-fulfillment mode"}
+-                </Badge>
+-              </div>
+-
+-              {!shippingEnabled &&
+-                order.orderType === "SALE" &&
+-                canAccessAccounting &&
+-                getMakePaymentRoute({ id: order.id, invoiceId }) && (
+-                  <Button
+-                    variant="default"
+-                    className="w-full justify-start"
+-                    data-testid="make-payment-btn"
+-                    onClick={() => onMakePayment(order.id)}
+-                    title="Open accounting payments context"
+-                  >
+-                    <FileText className="h-4 w-4 mr-2" />
+-                    Make Payment
+-                  </Button>
+-                )}
++          {!order.isDraft ? (
++            <div className="pb-1">
++              <Badge variant="outline" className="text-xs">
++                {shippingEnabled
++                  ? "Fulfillment-enabled mode"
++                  : "Non-fulfillment mode"}
++              </Badge>
++            </div>
++          ) : null}
+ 
+-              {/* WSQA-003: Status-based actions */}
+-              {fulfillmentStatus === "READY_FOR_PACKING" &&
+-                onConfirmFulfillment &&
+-                !order.confirmedAt &&
+-                canManageShipping && (
+-                  <Button
+-                    variant="outline"
+-                    className="w-full justify-start"
+-                    data-testid="confirm-fulfillment-btn"
+-                    onClick={() => onConfirmFulfillment(order.id)}
+-                  >
+-                    <CheckCircle2 className="h-4 w-4 mr-2" />
+-                    Confirm for Fulfillment
+-                  </Button>
+-                )}
+-              {(fulfillmentStatus === "READY_FOR_PACKING" ||
+-                fulfillmentStatus === "PACKED") &&
+-                shippingEnabled &&
+-                canManageShipping && (
+-                  <Button
+-                    variant="default"
+-                    className="w-full justify-start"
+-                    data-testid="ship-order-btn"
+-                    onClick={() => onShip(order.id)}
+-                  >
+-                    <Truck className="h-4 w-4 mr-2" />
+-                    Ship Order
+-                  </Button>
+-                )}
+-              {canGenerateInvoice(
+-                {
+-                  orderType: order.orderType,
+-                  invoiceId,
+-                  fulfillmentStatus,
+-                },
+-                canCreateAccounting
+-              ) &&
+-                onGenerateInvoice && (
+-                  <Button
+-                    variant="default"
+-                    className="w-full justify-start"
+-                    data-testid="generate-invoice-btn"
+-                    onClick={() => onGenerateInvoice(order.id)}
+-                    disabled={generatingInvoice}
+-                  >
+-                    <FileText className="h-4 w-4 mr-2" />
+-                    {generatingInvoice ? "Generating..." : "Generate Invoice"}
+-                  </Button>
+-                )}
+-              {/* WSQA-003: Mark as Returned for SHIPPED or DELIVERED orders */}
+-              {(order.fulfillmentStatus === "SHIPPED" ||
+-                order.fulfillmentStatus === "DELIVERED") &&
+-                onProcessReturn &&
+-                canProcessReturns && (
+-                  <Button
+-                    variant="outline"
+-                    className="w-full justify-start text-orange-600 hover:text-orange-700"
+-                    onClick={() => onProcessReturn(order.id)}
+-                  >
+-                    <RefreshCw className="h-4 w-4 mr-2" />
+-                    Process Return
+-                  </Button>
+-                )}
+-              {/* WSQA-003: Processing paths for RETURNED orders */}
+-              {order.fulfillmentStatus === "RETURNED" && canManageShipping && (
+-                <>
+-                  {onProcessRestock && (
+-                    <Button
+-                      variant="default"
+-                      className="w-full justify-start"
+-                      onClick={() => onProcessRestock(order.id)}
+-                    >
+-                      <Package className="h-4 w-4 mr-2" />
+-                      Restock Inventory
+-                    </Button>
+-                  )}
+-                  {onReturnToVendor && (
+-                    <Button
+-                      variant="outline"
+-                      className="w-full justify-start"
+-                      onClick={() => onReturnToVendor(order.id)}
+-                    >
+-                      <Truck className="h-4 w-4 mr-2" />
+-                      Return to Supplier
+-                    </Button>
+-                  )}
+-                </>
++          {primaryQuickActions.map(action => (
++            <Button
++              key={action.key}
++              variant={action.variant ?? "outline"}
++              className={cn(
++                "w-full justify-start",
++                action.destructive && "text-red-600 hover:text-red-700"
+               )}
+-              {invoiceId !== null &&
+-                canDownloadInvoice(invoiceId, canAccessAccounting) &&
+-                onDownloadInvoice && (
+-                  <Button
+-                    variant="outline"
+-                    className="w-full justify-start"
+-                    onClick={() => onDownloadInvoice(invoiceId)}
+-                    disabled={downloadingInvoice}
++              data-testid={action.testId}
++              onClick={action.onClick}
++              disabled={action.disabled}
++            >
++              {action.icon}
++              {action.label}
++            </Button>
++          ))}
++
++          {overflowQuickActions.length > 0 ? (
++            <DropdownMenu>
++              <DropdownMenuTrigger asChild>
++                <Button
++                  variant="outline"
++                  className="w-full justify-between"
++                  data-testid="order-more-actions-btn"
++                >
++                  <span className="inline-flex items-center">
++                    <MoreHorizontal className="h-4 w-4 mr-2" />
++                    More Actions
++                  </span>
++                </Button>
++              </DropdownMenuTrigger>
++              <DropdownMenuContent align="start" className="w-64">
++                {overflowQuickActions.map(action => (
++                  <DropdownMenuItem
++                    key={action.key}
++                    onClick={action.onClick}
++                    disabled={action.disabled}
++                    data-testid={action.testId}
++                    variant={action.destructive ? "destructive" : "default"}
+                   >
+-                    <Download className="h-4 w-4 mr-2" />
+-                    {downloadingInvoice
+-                      ? "Preparing invoice..."
+-                      : "Download Invoice"}
+-                  </Button>
+-                )}
+-            </>
+-          )}
++                    {action.icon}
++                    {action.label}
++                  </DropdownMenuItem>
++                ))}
++              </DropdownMenuContent>
++            </DropdownMenu>
++          ) : null}
++
++          {sortedQuickActions.length === 0 ? (
++            <p className="text-sm text-muted-foreground">
++              No quick actions available for this order state.
++            </p>
++          ) : null}
+         </div>
+       </InspectorSection>
+     </div>
+@@ -967,7 +1163,7 @@ export function OrdersWorkSurface() {
+     () => savedViewState?.statusFilter ?? "ALL"
+   );
+   const [sortKey, setSortKey] = useState<OrdersSortKey>(
+-    () => savedViewState?.sortKey ?? "newest"
++    () => savedViewState?.sortKey ?? "actionable"
+   );
+   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+   const [selectedIndex, setSelectedIndex] = useState(0);
+@@ -1184,8 +1380,25 @@ export function OrdersWorkSurface() {
+       const clientB = getClientName(b.clientId).toLowerCase();
+       const totalA = Number.parseFloat(String(a.total ?? 0)) || 0;
+       const totalB = Number.parseFloat(String(b.total ?? 0)) || 0;
++      const dueA = a.dueDate
++        ? new Date(a.dueDate).getTime()
++        : Number.POSITIVE_INFINITY;
++      const dueB = b.dueDate
++        ? new Date(b.dueDate).getTime()
++        : Number.POSITIVE_INFINITY;
+ 
+       switch (sortKey) {
++        case "actionable": {
++          const priorityA = getActionableOrderPriority(a);
++          const priorityB = getActionableOrderPriority(b);
++          if (priorityA !== priorityB) {
++            return priorityA - priorityB;
++          }
++          if (dueA !== dueB) {
++            return dueA - dueB;
++          }
++          return createdB - createdA;
++        }
+         case "oldest":
+           return createdA - createdB;
+         case "client_asc":
+@@ -1281,6 +1494,10 @@ export function OrdersWorkSurface() {
+           ? detailOrder.confirmedAt
+           : (detailOrder.confirmedAt?.toISOString() ??
+             selectedOrderSummary.confirmedAt),
++      dueDate:
++        typeof detailOrder.dueDate === "string"
++          ? detailOrder.dueDate
++          : (detailOrder.dueDate?.toISOString() ?? selectedOrderSummary.dueDate),
+       saleStatus: detailOrder.saleStatus ?? selectedOrderSummary.saleStatus,
+       fulfillmentStatus: (detailOrder.fulfillmentStatus ??
+         selectedOrderSummary.fulfillmentStatus) as Order["fulfillmentStatus"],
+@@ -1847,6 +2064,7 @@ export function OrdersWorkSurface() {
+                 <TableHead>Order #</TableHead>
+                 <TableHead>Client</TableHead>
+                 <TableHead>Date</TableHead>
++                <TableHead>Due Date</TableHead>
+                 <TableHead>Payment</TableHead>
+                 <TableHead>Status</TableHead>
+                 <TableHead className="text-right">Total</TableHead>
+@@ -1856,7 +2074,7 @@ export function OrdersWorkSurface() {
+             <TableBody>
+               {isLoading ? (
+                 <TableRow>
+-                  <TableCell colSpan={7} className="h-64 text-center">
++                  <TableCell colSpan={8} className="h-64 text-center">
+                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                       <Loader2 className="h-5 w-5 animate-spin" />
+                       <span>Loading orders…</span>
+@@ -1865,7 +2083,7 @@ export function OrdersWorkSurface() {
+                 </TableRow>
+               ) : displayOrders.length === 0 ? (
+                 <TableRow data-testid="orders-empty-state">
+-                  <TableCell colSpan={7} className="h-64 text-center">
++                  <TableCell colSpan={8} className="h-64 text-center">
+                     <EmptyState
+                       variant="orders"
+                       title="No orders found"
+@@ -1892,7 +2110,18 @@ export function OrdersWorkSurface() {
+                       "cursor-pointer hover:bg-muted/50",
+                       selectedOrderId === order.id && "bg-muted",
+                       selectedIndex === index &&
+-                        "ring-1 ring-inset ring-primary"
++                        "ring-1 ring-inset ring-primary",
++                      isPaymentOverdue(order) &&
++                        cn(
++                          "border-l-2 border-l-destructive",
++                          STATUS_DANGER_SUBTLE
++                        ),
++                      !isPaymentOverdue(order) &&
++                        normalizeStatus(order.saleStatus) === "PARTIAL" &&
++                        cn(
++                          "border-l-2 border-l-amber-500",
++                          STATUS_WARNING_SUBTLE
++                        )
+                     )}
+                     onClick={() => {
+                       setSelectedOrderId(order.id);
+@@ -1906,7 +2135,13 @@ export function OrdersWorkSurface() {
+                     <TableCell>{getClientName(order.clientId)}</TableCell>
+                     <TableCell>{formatDate(order.createdAt)}</TableCell>
+                     <TableCell>
+-                      {formatPaymentStatus(order.saleStatus)}
++                      {formatDate(order.dueDate)}
++                    </TableCell>
++                    <TableCell>
++                      <OrderPaymentBadge
++                        status={order.saleStatus}
++                        dueDate={order.dueDate}
++                      />
+                     </TableCell>
+                     <TableCell>
+                       <OrderStatusBadge
+@@ -1966,6 +2201,9 @@ export function OrdersWorkSurface() {
+             generatingInvoice={generateInvoiceMutation.isPending}
+             onDownloadInvoice={handleDownloadInvoice}
+             downloadingInvoice={downloadInvoiceMutation.isPending}
++            onOpenClientProfile={clientId =>
++              setLocation(buildRelationshipProfilePath(clientId))
++            }
+             onProcessReturn={handleProcessReturn}
+             onProcessRestock={handleProcessRestock}
+             onReturnToVendor={handleReturnToVendor}
+diff --git a/client/src/components/work-surface/OrdersWorkSurface.visibility.test.tsx b/client/src/components/work-surface/OrdersWorkSurface.visibility.test.tsx
+index 6697dd2c..1a67dc2a 100644
+--- a/client/src/components/work-surface/OrdersWorkSurface.visibility.test.tsx
++++ b/client/src/components/work-surface/OrdersWorkSurface.visibility.test.tsx
+@@ -10,6 +10,7 @@ const mockCanViewCogs = vi.hoisted(() => ({ value: false }));
+ const mockOpenInspector = vi.hoisted(() => vi.fn());
+ const mockCloseInspector = vi.hoisted(() => vi.fn());
+ const mockHasAnyPermission = vi.hoisted(() => vi.fn(() => false));
++const mockSetLocation = vi.hoisted(() => vi.fn());
+ const mockOrdersResponse = vi.hoisted(() => ({
+   confirmed: { items: [] as unknown[], pagination: { total: 0 } },
+   draft: { items: [] as unknown[], pagination: { total: 0 } },
+@@ -22,10 +23,11 @@ const confirmedOrder = {
+   isDraft: false,
+   orderType: "SALE",
+   fulfillmentStatus: "READY_FOR_PACKING" as const,
+-  saleStatus: "UNPAID",
++  saleStatus: "OVERDUE",
+   total: "125.00",
+   createdAt: "2026-03-01T00:00:00.000Z",
+   confirmedAt: "2026-03-01T00:00:00.000Z",
++  dueDate: "2026-02-15T00:00:00.000Z",
+   invoiceId: null,
+ };
+ 
+@@ -52,7 +54,7 @@ const orderDetailPayload = {
+ const emptyListResponse = { items: [], pagination: { total: 0 } };
+ 
+ vi.mock("wouter", () => ({
+-  useLocation: () => ["/sales?tab=orders", vi.fn()],
++  useLocation: () => ["/sales?tab=orders", mockSetLocation],
+   useSearch: () => "?tab=orders",
+ }));
+ 
+@@ -135,14 +137,14 @@ vi.mock("./InspectorPanel", () => ({
+   ),
+   InspectorField: ({
+     label,
+-    value,
++    children,
+   }: {
+     label: string;
+-    value: React.ReactNode;
++    children: React.ReactNode;
+   }) => (
+     <div>
+       <span>{label}</span>
+-      <span>{value}</span>
++      <span>{children}</span>
+     </div>
+   ),
+   useInspectorPanel: () => ({
+@@ -253,6 +255,7 @@ describe("OrdersWorkSurface wave 5 visibility wiring", () => {
+     mockCanViewCogs.value = false;
+     mockOpenInspector.mockClear();
+     mockCloseInspector.mockClear();
++    mockSetLocation.mockReset();
+     mockHasAnyPermission.mockReset();
+     mockHasAnyPermission.mockReturnValue(false);
+     mockOrdersResponse.confirmed = {
+@@ -294,4 +297,23 @@ describe("OrdersWorkSurface wave 5 visibility wiring", () => {
+       screen.getByRole("button", { name: "View Draft Orders" })
+     ).toBeInTheDocument();
+   });
++
++  it("shows due date and semantic payment badge for confirmed orders", () => {
++    render(<OrdersWorkSurface />);
++
++    expect(screen.getByText("Due Date")).toBeInTheDocument();
++    expect(screen.getAllByText("Overdue").length).toBeGreaterThan(0);
++    expect(screen.getByText("Feb 15, 2026")).toBeInTheDocument();
++  });
++
++  it("opens the linked client profile from the order inspector", () => {
++    render(<OrdersWorkSurface />);
++
++    fireEvent.click(screen.getByTestId("order-row-101"));
++    fireEvent.click(screen.getByRole("button", { name: /open client profile/i }));
++
++    expect(mockSetLocation).toHaveBeenCalledWith(
++      "/clients/1?section=overview"
++    );
++  });
+ });
+diff --git a/client/src/lib/statusTokens.ts b/client/src/lib/statusTokens.ts
+index c76d9b6f..71800ca2 100644
+--- a/client/src/lib/statusTokens.ts
++++ b/client/src/lib/statusTokens.ts
+@@ -8,6 +8,15 @@
+  * Each token is a string of Tailwind classes for bg, text, and border.
+  */
+ 
++export type OperationalStatusTone =
++  | "neutral"
++  | "info"
++  | "success"
++  | "warning"
++  | "caution"
++  | "danger"
++  | "complete";
++
+ // ─── Semantic Status Tokens ────────────────────────────────────────
+ 
+ /** Positive/success states: paid, complete, live, approved */
+@@ -46,6 +55,29 @@ export const STATUS_NEUTRAL = "bg-slate-100 text-slate-800 border-slate-200";
+ export const STATUS_COMPLETE =
+   "bg-emerald-100 text-emerald-700 border-emerald-200";
+ 
++export const OPERATIONAL_STATUS_TOKENS: Record<OperationalStatusTone, string> = {
++  neutral: STATUS_NEUTRAL,
++  info: STATUS_INFO,
++  success: STATUS_SUCCESS,
++  warning: STATUS_WARNING,
++  caution: STATUS_CAUTION,
++  danger: STATUS_DANGER,
++  complete: STATUS_COMPLETE,
++};
++
++const buildStatusTokenMap = <
++  TStatus extends string,
++  TTone extends Record<TStatus, OperationalStatusTone>,
++>(
++  toneMap: TTone
++) =>
++  Object.fromEntries(
++    Object.entries(toneMap).map(([status, tone]) => [
++      status,
++      OPERATIONAL_STATUS_TOKENS[tone as OperationalStatusTone],
++    ])
++  ) as Record<TStatus, string>;
++
+ // ─── Domain-Specific Status Maps ───────────────────────────────────
+ 
+ /** Inventory batch status → token */
+@@ -91,3 +123,48 @@ export const LEDGER_TYPE_TOKENS: Record<string, string> = {
+   CREDIT: STATUS_COMPLETE,
+   REFUND: STATUS_DANGER,
+ };
++
++export const ORDER_FULFILLMENT_STATUS_TOKENS = buildStatusTokenMap({
++  DRAFT: "neutral",
++  CONFIRMED: "info",
++  PENDING: "warning",
++  READY: "success",
++  SHIPPED: "info",
++  DELIVERED: "success",
++  RETURNED: "caution",
++  RESTOCKED: "complete",
++  RETURNED_TO_VENDOR: "caution",
++  CANCELLED: "danger",
++});
++
++export const ORDER_PAYMENT_STATUS_TOKENS = buildStatusTokenMap({
++  PENDING: "warning",
++  PARTIAL: "caution",
++  PAID: "success",
++  OVERDUE: "danger",
++  CANCELLED: "neutral",
++});
++
++export const PURCHASE_ORDER_STATUS_TOKENS = buildStatusTokenMap({
++  DRAFT: "neutral",
++  SENT: "info",
++  CONFIRMED: "success",
++  RECEIVING: "warning",
++  RECEIVED: "complete",
++  CANCELLED: "danger",
++});
++
++export const RELATIONSHIP_ROLE_TOKENS = buildStatusTokenMap({
++  Customer: "info",
++  Supplier: "success",
++  Brand: "complete",
++  Referee: "warning",
++  Contractor: "neutral",
++});
++
++export const RELATIONSHIP_STATUS_TOKENS = buildStatusTokenMap({
++  ACTIVE: "success",
++  WATCH: "warning",
++  DORMANT: "neutral",
++  "NEEDS-ATTENTION": "danger",
++});
+diff --git a/client/src/pages/AccountingWorkspacePage.tsx b/client/src/pages/AccountingWorkspacePage.tsx
+index 0d6dc34e..8cf2c183 100644
+--- a/client/src/pages/AccountingWorkspacePage.tsx
++++ b/client/src/pages/AccountingWorkspacePage.tsx
+@@ -8,6 +8,10 @@ import { ACCOUNTING_WORKSPACE } from "@/config/workspaces";
+ import AccountingDashboard from "@/pages/accounting/AccountingDashboard";
+ import { lazy } from "react";
+ import { PilotSurfaceBoundary } from "@/components/spreadsheet-native/PilotSurfaceBoundary";
++import {
++  WorkspaceCommandStripLink,
++  WorkspacePanelSkeleton,
++} from "@/components/ui/operational-states";
+ 
+ // All unified surfaces
+ const InvoicesSurface = lazy(
+@@ -61,105 +65,112 @@ export default function AccountingWorkspacePage() {
+       onTabChange={setActiveTab}
+       meta={[
+         {
+-          label: "Record a payment",
+-          value: "Select an invoice, then use Record Payment",
++          label: "Financial period",
++          value: activeTab === "fiscal-periods" ? "Period controls" : "Current fiscal year",
++        },
++        {
++          label: "Active lane",
++          value:
++            activeTab === "dashboard"
++              ? "Receivables and payables summary"
++              : activeTab === "payments"
++                ? "Cash application"
++                : activeTab === "general-ledger"
++                  ? "Ledger review"
++                  : "Accounting operations",
+         },
+         {
+-          label: "Billing cycle",
++          label: "Flow",
+           value: "Invoice -> Payment -> General Ledger",
+         },
+       ]}
++      commandStrip={
++        <div className="flex flex-wrap items-center gap-2">
++          <WorkspaceCommandStripLink
++            label="Dashboard"
++            onClick={() => setActiveTab("dashboard")}
++            active={activeTab === "dashboard"}
++          />
++          <WorkspaceCommandStripLink
++            label="Invoices"
++            onClick={() => setActiveTab("invoices")}
++            active={activeTab === "invoices"}
++          />
++          <WorkspaceCommandStripLink
++            label="Payments"
++            onClick={() => setActiveTab("payments")}
++            active={activeTab === "payments"}
++          />
++          <WorkspaceCommandStripLink
++            label="Periods"
++            onClick={() => setActiveTab("fiscal-periods")}
++            active={activeTab === "fiscal-periods"}
++          />
++        </div>
++      }
+     >
+       <LinearWorkspacePanel value="dashboard">
+         <AccountingDashboard embedded />
+       </LinearWorkspacePanel>
+       <LinearWorkspacePanel value="invoices">
+         <PilotSurfaceBoundary
+-          fallback={
+-            <div className="p-4 text-muted-foreground">Loading invoices...</div>
+-          }
++          fallback={<WorkspacePanelSkeleton title="Loading invoices" />}
+         >
+           <InvoicesSurface />
+         </PilotSurfaceBoundary>
+       </LinearWorkspacePanel>
+       <LinearWorkspacePanel value="bills">
+         <PilotSurfaceBoundary
+-          fallback={
+-            <div className="p-4 text-muted-foreground">Loading bills...</div>
+-          }
++          fallback={<WorkspacePanelSkeleton title="Loading bills" />}
+         >
+           <BillsSurface />
+         </PilotSurfaceBoundary>
+       </LinearWorkspacePanel>
+       <LinearWorkspacePanel value="payments">
+         <PilotSurfaceBoundary
+-          fallback={
+-            <div className="p-4 text-muted-foreground">Loading payments...</div>
+-          }
++          fallback={<WorkspacePanelSkeleton title="Loading payments" />}
+         >
+           <PaymentsSurface />
+         </PilotSurfaceBoundary>
+       </LinearWorkspacePanel>
+       <LinearWorkspacePanel value="general-ledger">
+         <PilotSurfaceBoundary
+-          fallback={
+-            <div className="p-4 text-muted-foreground">
+-              Loading general ledger...
+-            </div>
+-          }
++          fallback={<WorkspacePanelSkeleton title="Loading general ledger" />}
+         >
+           <GeneralLedgerSurface />
+         </PilotSurfaceBoundary>
+       </LinearWorkspacePanel>
+       <LinearWorkspacePanel value="chart-of-accounts">
+         <PilotSurfaceBoundary
+-          fallback={
+-            <div className="p-4 text-muted-foreground">
+-              Loading chart of accounts...
+-            </div>
+-          }
++          fallback={<WorkspacePanelSkeleton title="Loading chart of accounts" />}
+         >
+           <ChartOfAccountsSurface />
+         </PilotSurfaceBoundary>
+       </LinearWorkspacePanel>
+       <LinearWorkspacePanel value="expenses">
+         <PilotSurfaceBoundary
+-          fallback={
+-            <div className="p-4 text-muted-foreground">Loading expenses...</div>
+-          }
++          fallback={<WorkspacePanelSkeleton title="Loading expenses" />}
+         >
+           <ExpensesSurface />
+         </PilotSurfaceBoundary>
+       </LinearWorkspacePanel>
+       <LinearWorkspacePanel value="bank-accounts">
+         <PilotSurfaceBoundary
+-          fallback={
+-            <div className="p-4 text-muted-foreground">
+-              Loading bank accounts...
+-            </div>
+-          }
++          fallback={<WorkspacePanelSkeleton title="Loading bank accounts" />}
+         >
+           <BankAccountsSurface />
+         </PilotSurfaceBoundary>
+       </LinearWorkspacePanel>
+       <LinearWorkspacePanel value="bank-transactions">
+         <PilotSurfaceBoundary
+-          fallback={
+-            <div className="p-4 text-muted-foreground">
+-              Loading bank transactions...
+-            </div>
+-          }
++          fallback={<WorkspacePanelSkeleton title="Loading bank transactions" />}
+         >
+           <BankTransactionsSurface />
+         </PilotSurfaceBoundary>
+       </LinearWorkspacePanel>
+       <LinearWorkspacePanel value="fiscal-periods">
+         <PilotSurfaceBoundary
+-          fallback={
+-            <div className="p-4 text-muted-foreground">
+-              Loading fiscal periods...
+-            </div>
+-          }
++          fallback={<WorkspacePanelSkeleton title="Loading fiscal periods" />}
+         >
+           <FiscalPeriodsSurface />
+         </PilotSurfaceBoundary>
+diff --git a/client/src/pages/ClientProfilePage.tsx b/client/src/pages/ClientProfilePage.tsx
+index 068f3a69..cd4ae7bc 100644
+--- a/client/src/pages/ClientProfilePage.tsx
++++ b/client/src/pages/ClientProfilePage.tsx
+@@ -61,6 +61,7 @@ import {
+   resolveRelationshipProfileSection,
+   type RelationshipProfileSection,
+ } from "@/lib/relationshipProfile";
++import { RELATIONSHIP_ROLE_TOKENS } from "@/lib/statusTokens";
+ import { trpc } from "@/lib/trpc";
+ import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
+ import type { RelationshipProfileMoneyData } from "@/types/relationshipProfile";
+@@ -537,7 +538,15 @@ export default function ClientProfilePage() {
+                       </div>
+                       <div className="mt-2 flex flex-wrap gap-2">
+                         {shell.roles.map(role => (
+-                          <Badge key={role} variant="secondary">
++                          <Badge
++                            key={role}
++                            variant="outline"
++                            className={
++                              RELATIONSHIP_ROLE_TOKENS[
++                                role as keyof typeof RELATIONSHIP_ROLE_TOKENS
++                              ] ?? RELATIONSHIP_ROLE_TOKENS.Contractor
++                            }
++                          >
+                             {role}
+                           </Badge>
+                         ))}
+diff --git a/client/src/pages/ConsolidatedWorkspaces.test.tsx b/client/src/pages/ConsolidatedWorkspaces.test.tsx
+index c9cd519e..d74decb8 100644
+--- a/client/src/pages/ConsolidatedWorkspaces.test.tsx
++++ b/client/src/pages/ConsolidatedWorkspaces.test.tsx
+@@ -104,6 +104,9 @@ vi.mock("@/components/work-surface/InventoryWorkSurface", () => ({
+ vi.mock("@/components/work-surface/PickPackWorkSurface", () => ({
+   default: () => <div>Pick Pack Surface</div>,
+ }));
++vi.mock("@/components/work-surface/DirectIntakeWorkSurface", () => ({
++  default: () => <div>Direct Intake Surface</div>,
++}));
+ vi.mock("@/components/work-surface/PurchaseOrdersWorkSurface", () => ({
+   default: () => <div>Purchase Orders Surface</div>,
+ }));
+@@ -128,6 +131,12 @@ vi.mock("@/components/spreadsheet-native/InventorySheetPilotSurface", () => ({
+ vi.mock("@/components/spreadsheet-native/InventoryManagementSurface", () => ({
+   InventoryManagementSurface: () => <div>Inventory Management Surface</div>,
+ }));
++vi.mock("@/components/spreadsheet-native/IntakePilotSurface", () => ({
++  default: () => <div>Intake Pilot Surface</div>,
++}));
++vi.mock("@/components/spreadsheet-native/FulfillmentPilotSurface", () => ({
++  default: () => <div>Fulfillment Pilot Surface</div>,
++}));
+ vi.mock("@/components/spreadsheet-native/OrdersSheetPilotSurface", () => ({
+   default: () => <div>Orders Sheet Pilot Surface</div>,
+ }));
+@@ -236,6 +245,35 @@ describe("Consolidated workspace pages", () => {
+     ).toBeInTheDocument();
+   });
+ 
++  it("renders only the direct intake classic surface when intake mode is classic", () => {
++    mockActiveTab = "intake";
++    mockPilotMode = "classic";
++    render(<InventoryWorkspacePage />);
++
++    expect(screen.getByText("Direct Intake Surface")).toBeInTheDocument();
++    expect(screen.queryByText("Intake Pilot Surface")).not.toBeInTheDocument();
++  });
++
++  it("renders only the direct intake pilot surface when intake mode is sheet-native", async () => {
++    mockActiveTab = "intake";
++    mockPilotMode = "sheet-native";
++    render(<InventoryWorkspacePage />);
++
++    expect(await screen.findByText("Intake Pilot Surface")).toBeInTheDocument();
++    expect(screen.queryByText("Direct Intake Surface")).not.toBeInTheDocument();
++  });
++
++  it("renders only the fulfillment pilot surface when shipping mode is sheet-native", async () => {
++    mockActiveTab = "shipping";
++    mockPilotMode = "sheet-native";
++    render(<InventoryWorkspacePage />);
++
++    expect(
++      await screen.findByText("Fulfillment Pilot Surface")
++    ).toBeInTheDocument();
++    expect(screen.queryByText("Pick Pack Surface")).not.toBeInTheDocument();
++  });
++
+   it("renders Inventory workspace photography tab with embedded content", async () => {
+     mockActiveTab = "photography";
+     render(<InventoryWorkspacePage />);
+@@ -328,4 +366,19 @@ describe("Consolidated workspace pages", () => {
+     ).toBeInTheDocument();
+     expect(screen.getByText("Purchase Order Surface")).toBeInTheDocument();
+   });
++
++  it("shows a visible redirect handoff for procurement tabs that moved to Operations", () => {
++    mockActiveTab = "receiving";
++    render(<ProcurementWorkspacePage />);
++
++    expect(
++      screen.getByRole("heading", { name: "Procurement" })
++    ).toBeInTheDocument();
++    expect(
++      screen.getByText("This workflow moved to Operations")
++    ).toBeInTheDocument();
++    expect(
++      screen.getByRole("button", { name: "Open Operations" })
++    ).toBeInTheDocument();
++  });
+ });
+diff --git a/client/src/pages/InventoryWorkspacePage.tsx b/client/src/pages/InventoryWorkspacePage.tsx
+index a7f6defb..f7087e6e 100644
+--- a/client/src/pages/InventoryWorkspacePage.tsx
++++ b/client/src/pages/InventoryWorkspacePage.tsx
+@@ -124,6 +124,38 @@ export default function InventoryWorkspacePage() {
+       activeTab={activeTab}
+       tabs={INVENTORY_TABS_CONFIG}
+       onTabChange={tab => setActiveTab(tab)}
++      meta={[
++        {
++          label: "Active lane",
++          value:
++            activeTab === "inventory"
++              ? "Sellable inventory"
++              : activeTab === "intake"
++                ? "Direct intake"
++                : activeTab === "receiving"
++                  ? "PO-linked receiving"
++                  : activeTab === "shipping"
++                    ? "Fulfillment queue"
++                    : activeTab === "samples"
++                      ? "Sample requests"
++                      : "Support operations",
++        },
++        {
++          label: "Mode",
++          value:
++            activeTab === "intake"
++              ? intakeSurfaceMode
++              : activeTab === "shipping"
++                ? fulfillmentSurfaceMode
++                : activeTab === "samples"
++                  ? samplesSurfaceMode
++                  : "workspace",
++        },
++        {
++          label: "Receiving split",
++          value: "Direct intake vs PO-linked queue",
++        },
++      ]}
+       data-testid="inventory-header"
+       commandStrip={
+         activeTab === "intake" ? (
+diff --git a/client/src/pages/LiveShoppingPage.tsx b/client/src/pages/LiveShoppingPage.tsx
+index a31f4184..1605134b 100644
+--- a/client/src/pages/LiveShoppingPage.tsx
++++ b/client/src/pages/LiveShoppingPage.tsx
+@@ -43,6 +43,7 @@ import {
+   SelectTrigger,
+   SelectValue,
+ } from "@/components/ui/select";
++import { getStatusBadgeVariant } from "@/lib/statusBadge";
+ import { Textarea } from "@/components/ui/textarea";
+ import { useToast } from "@/hooks/use-toast";
+ import StaffSessionConsole from "@/components/live-shopping/StaffSessionConsole";
+@@ -70,15 +71,14 @@ const statusConfig: Record<
+   SessionStatus,
+   {
+     label: string;
+-    variant: "default" | "secondary" | "destructive" | "outline";
+   }
+ > = {
+-  SCHEDULED: { label: "Scheduled", variant: "secondary" },
+-  ACTIVE: { label: "Active", variant: "default" },
+-  PAUSED: { label: "Paused", variant: "outline" },
+-  ENDED: { label: "Ended", variant: "secondary" },
+-  CONVERTED: { label: "Converted", variant: "default" },
+-  CANCELLED: { label: "Cancelled", variant: "destructive" },
++  SCHEDULED: { label: "Scheduled" },
++  ACTIVE: { label: "Active" },
++  PAUSED: { label: "Paused" },
++  ENDED: { label: "Ended" },
++  CONVERTED: { label: "Converted" },
++  CANCELLED: { label: "Cancelled" },
+ };
+ 
+ export default function LiveShoppingPage() {
+@@ -425,7 +425,9 @@ export default function LiveShoppingPage() {
+                   return (
+                     <TableRow key={session.id}>
+                       <TableCell>
+-                        <Badge variant={config.variant}>{config.label}</Badge>
++                        <Badge variant={getStatusBadgeVariant(status)}>
++                          {config.label}
++                        </Badge>
+                       </TableCell>
+                       <TableCell className="font-medium">
+                         {session.title}
+diff --git a/client/src/pages/PhotographyPage.tsx b/client/src/pages/PhotographyPage.tsx
+index 0cb0b96c..4bbd79e8 100644
+--- a/client/src/pages/PhotographyPage.tsx
++++ b/client/src/pages/PhotographyPage.tsx
+@@ -46,6 +46,8 @@ import {
+   PhotographyModule,
+   ProductPhoto,
+ } from "@/components/inventory/PhotographyModule";
++import { getStatusBadgeVariant } from "@/lib/statusBadge";
++import { STATUS_INFO, STATUS_SUCCESS } from "@/lib/statusTokens";
+ 
+ interface SelectedBatch {
+   batchId: number;
+@@ -157,14 +159,20 @@ export default function PhotographyPage({
+     switch (status) {
+       case "COMPLETED":
+         return (
+-          <Badge variant="default" className="bg-green-500">
++          <Badge
++            variant={getStatusBadgeVariant(status)}
++            className={STATUS_SUCCESS}
++          >
+             <CheckCircle className="h-3 w-3 mr-1" />
+             Done
+           </Badge>
+         );
+       case "IN_PROGRESS":
+         return (
+-          <Badge variant="secondary">
++          <Badge
++            variant={getStatusBadgeVariant(status)}
++            className={STATUS_INFO}
++          >
+             <Clock className="h-3 w-3 mr-1" />
+             In Progress
+           </Badge>
+diff --git a/client/src/pages/ProcurementWorkspacePage.tsx b/client/src/pages/ProcurementWorkspacePage.tsx
+index 96141d7f..331d9b1e 100644
+--- a/client/src/pages/ProcurementWorkspacePage.tsx
++++ b/client/src/pages/ProcurementWorkspacePage.tsx
+@@ -3,11 +3,16 @@ import {
+   LinearWorkspaceShell,
+   type LinearWorkspaceTab,
+ } from "@/components/layout/LinearWorkspaceShell";
++import { Button } from "@/components/ui/button";
++import {
++  OperationalEmptyState,
++  WorkspaceCommandStripLink,
++} from "@/components/ui/operational-states";
+ import { useQueryTabState } from "@/hooks/useQueryTabState";
+ import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
+ import { PurchaseOrderSurface } from "@/components/spreadsheet-native/PurchaseOrderSurface";
+ import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
+-import { Redirect, useSearch } from "wouter";
++import { useLocation, useSearch } from "wouter";
+ 
+ type ProcurementTab = "purchase-orders";
+ type ProcurementQueryTab =
+@@ -22,6 +27,7 @@ const PROCUREMENT_TABS = [
+ 
+ export default function ProcurementWorkspacePage() {
+   const search = useSearch();
++  const [, setLocation] = useLocation();
+   const { activeTab, setActiveTab } = useQueryTabState<ProcurementQueryTab>({
+     defaultTab: "purchase-orders",
+     validTabs: [
+@@ -39,33 +45,79 @@ export default function ProcurementWorkspacePage() {
+ 
+   useWorkspaceHomeTelemetry("procurement", activeTab);
+ 
+-  if (activeTab === "receiving" || activeTab === "product-intake") {
+-    return (
+-      <Redirect
+-        to={buildOperationsWorkspacePath("receiving", redirectParams)}
+-      />
+-    );
+-  }
+-
+-  if (activeTab === "inventory-browse") {
+-    return (
+-      <Redirect
+-        to={buildOperationsWorkspacePath("inventory", redirectParams)}
+-      />
+-    );
+-  }
++  const redirectTarget =
++    activeTab === "receiving" || activeTab === "product-intake"
++      ? buildOperationsWorkspacePath("receiving", redirectParams)
++      : activeTab === "inventory-browse"
++        ? buildOperationsWorkspacePath("inventory", redirectParams)
++        : null;
++  const isRedirectContext = redirectTarget !== null;
+ 
+   return (
+     <LinearWorkspaceShell
+       title="Procurement"
+       description="Create purchase orders here, then continue product intake and inventory work from Operations."
+       section="Operations"
+-      activeTab={activeTab}
++      activeTab={isRedirectContext ? "purchase-orders" : activeTab}
+       tabs={PROCUREMENT_TABS}
+       onTabChange={setActiveTab}
++      meta={[
++        {
++          label: "Primary queue",
++          value: "Purchase order authoring",
++        },
++        {
++          label: "Next move",
++          value: isRedirectContext
++            ? "Continue in Operations"
++            : "Receive, inspect, and stock",
++        },
++        {
++          label: "Receiving path",
++          value: "Operations -> Product Intake",
++        },
++      ]}
++      commandStrip={
++        <div className="flex flex-wrap items-center gap-2">
++          <WorkspaceCommandStripLink
++            label="Purchase Orders"
++            onClick={() => setActiveTab("purchase-orders")}
++            active={!isRedirectContext}
++          />
++          <WorkspaceCommandStripLink
++            label="Product Intake"
++            onClick={() => setLocation(buildOperationsWorkspacePath("receiving"))}
++          />
++          <WorkspaceCommandStripLink
++            label="Inventory"
++            onClick={() => setLocation(buildOperationsWorkspacePath("inventory"))}
++          />
++        </div>
++      }
+     >
+       <LinearWorkspacePanel value="purchase-orders">
+-        <PurchaseOrderSurface />
++        {isRedirectContext ? (
++          <OperationalEmptyState
++            variant="inventory"
++            title="This workflow moved to Operations"
++            description={
++              activeTab === "inventory-browse"
++                ? "Inventory browse now lives in the Operations workspace so purchasing and stock review stay in one place."
++                : "Receiving and product intake now live in the Operations workspace so operators can move from PO to intake without losing context."
++            }
++            action={{
++              label: "Open Operations",
++              onClick: () => setLocation(redirectTarget),
++            }}
++            secondaryAction={{
++              label: "Stay on Purchase Orders",
++              onClick: () => setActiveTab("purchase-orders"),
++            }}
++            filterActive
++          />
++        ) : (
++          <PurchaseOrderSurface />
++        )}
+       </LinearWorkspacePanel>
+     </LinearWorkspaceShell>
+   );
+diff --git a/client/src/pages/RelationshipsWorkspacePage.tsx b/client/src/pages/RelationshipsWorkspacePage.tsx
+index c6d7282b..379aa1af 100644
+--- a/client/src/pages/RelationshipsWorkspacePage.tsx
++++ b/client/src/pages/RelationshipsWorkspacePage.tsx
+@@ -1,5 +1,6 @@
+ import ClientsWorkSurface from "@/components/work-surface/ClientsWorkSurface";
+ import VendorsWorkSurface from "@/components/work-surface/VendorsWorkSurface";
++import { WorkspaceCommandStripLink } from "@/components/ui/operational-states";
+ import { useQueryTabState } from "@/hooks/useQueryTabState";
+ import { useWorkspaceHomeTelemetry } from "@/hooks/useWorkspaceHomeTelemetry";
+ import { RELATIONSHIPS_WORKSPACE } from "@/config/workspaces";
+@@ -7,6 +8,7 @@ import {
+   LinearWorkspacePanel,
+   LinearWorkspaceShell,
+ } from "@/components/layout/LinearWorkspaceShell";
++import { useLocation } from "wouter";
+ 
+ type RelationshipTab = (typeof RELATIONSHIPS_WORKSPACE.tabs)[number]["value"];
+ const RELATIONSHIP_TABS = RELATIONSHIPS_WORKSPACE.tabs.map(
+@@ -14,6 +16,7 @@ const RELATIONSHIP_TABS = RELATIONSHIPS_WORKSPACE.tabs.map(
+ ) as readonly RelationshipTab[];
+ 
+ export default function RelationshipsWorkspacePage() {
++  const [, setLocation] = useLocation();
+   const { activeTab, setActiveTab } = useQueryTabState<RelationshipTab>({
+     defaultTab: "clients",
+     validTabs: RELATIONSHIP_TABS,
+@@ -31,7 +34,32 @@ export default function RelationshipsWorkspacePage() {
+       meta={[
+         { label: "Buyer records", value: "Clients" },
+         { label: "Supplier records", value: "Suppliers" },
++        {
++          label: "Operator lens",
++          value:
++            activeTab === "clients"
++              ? "Conversation and money readiness"
++              : "Supplier continuity and intake context",
++        },
+       ]}
++      commandStrip={
++        <div className="flex flex-wrap items-center gap-2">
++          <WorkspaceCommandStripLink
++            label="Clients"
++            onClick={() => setActiveTab("clients")}
++            active={activeTab === "clients"}
++          />
++          <WorkspaceCommandStripLink
++            label="Suppliers"
++            onClick={() => setActiveTab("suppliers")}
++            active={activeTab === "suppliers"}
++          />
++          <WorkspaceCommandStripLink
++            label="Notifications"
++            onClick={() => setLocation("/notifications")}
++          />
++        </div>
++      }
+     >
+       <LinearWorkspacePanel value="clients">
+         <ClientsWorkSurface />
+diff --git a/client/src/pages/SalesWorkspacePage.tsx b/client/src/pages/SalesWorkspacePage.tsx
+index a0e5e232..3d8129b0 100644
+--- a/client/src/pages/SalesWorkspacePage.tsx
++++ b/client/src/pages/SalesWorkspacePage.tsx
+@@ -40,6 +40,7 @@ import {
+   LinearWorkspaceShell,
+   type LinearWorkspaceTab,
+ } from "@/components/layout/LinearWorkspaceShell";
++import { WorkspaceCommandStripLink } from "@/components/ui/operational-states";
+ import { Redirect, useLocation, useSearch } from "wouter";
+ import { Layers } from "lucide-react";
+ 
+@@ -320,26 +321,53 @@ export default function SalesWorkspacePage() {
+   return (
+     <LinearWorkspaceShell
+       title={SALES_WORKSPACE.title}
+-      description=""
++      description={SALES_WORKSPACE.description}
+       section="Sell"
+       density="compact"
+       activeTab={activeTab}
+       tabs={SALES_TABS_CONFIG}
+       onTabChange={tab => setActiveTab(tab)}
++      meta={[
++        {
++          label: "Action lane",
++          value:
++            activeTab === "orders"
++              ? "Quotes -> confirm -> collect"
++              : activeTab === "returns"
++                ? "Returns and resolution"
++                : "Outbound sales coordination",
++        },
++        {
++          label: "Primary queue",
++          value:
++            activeTab === "orders"
++              ? "Confirmed orders"
++              : activeTab === "quotes"
++                ? "Quote follow-up"
++                : activeTab === "sales-sheets"
++                  ? "Shareable catalogue"
++                  : "Operator workspace",
++        },
++      ]}
+       commandStrip={
+         shouldShowCommandStrip ? (
+           <div className="flex flex-wrap items-center gap-2">
+             {commandStripToggle}
++            <WorkspaceCommandStripLink
++              label="Sales Catalogue"
++              onClick={() => setActiveTab("sales-sheets")}
++              active={activeTab === "sales-sheets"}
++            />
+             <Button
+               size="sm"
+               variant="outline"
+-              className="h-7 px-2 text-xs"
+-              onClick={() => setActiveTab("sales-sheets")}
+-              disabled={activeTab === "sales-sheets"}
+-              aria-label="Open sales catalogue"
++              className="h-8 px-2.5 text-xs"
++              onClick={() => setActiveTab("create-order")}
++              disabled={activeTab === "create-order"}
++              aria-label="Open order composer"
+             >
+               <Layers className="mr-1 h-3 w-3" />
+-              Sales Catalogue
++              Order Composer
+             </Button>
+           </div>
+         ) : null
+diff --git a/client/src/pages/SearchResultsPage.tsx b/client/src/pages/SearchResultsPage.tsx
+index 76f71886..cef0f068 100644
+--- a/client/src/pages/SearchResultsPage.tsx
++++ b/client/src/pages/SearchResultsPage.tsx
+@@ -11,6 +11,7 @@ import {
+ import { Input } from "@/components/ui/input";
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
++import { OperationalEmptyState } from "@/components/ui/operational-states";
+ import {
+   Search,
+   FileText,
+@@ -397,17 +398,13 @@ export default function SearchResultsPage() {
+                 (results.orders?.length ?? 0) === 0 &&
+                 results.customers.length === 0 &&
+                 results.products.length === 0 && (
+-                  <div
+-                    className="text-center py-12 text-muted-foreground"
++                  <OperationalEmptyState
+                     data-testid="search-empty-state"
+-                  >
+-                    <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
+-                    <p className="text-lg font-medium">No results found</p>
+-                    <p className="text-sm mt-2">
+-                      No results found for &quot;{searchQuery}&quot;. Try a
+-                      different search term.
+-                    </p>
+-                  </div>
++                    variant="search"
++                    title="No matching records"
++                    description={`No results matched "${searchQuery}". Try a different client, order, or product term.`}
++                    searchActive={searchQuery.trim().length > 0}
++                  />
+                 )}
+             </div>
+           )}
+diff --git a/client/src/pages/TimeClockPage.tsx b/client/src/pages/TimeClockPage.tsx
+index f7b98a38..409bde26 100644
+--- a/client/src/pages/TimeClockPage.tsx
++++ b/client/src/pages/TimeClockPage.tsx
+@@ -47,6 +47,8 @@ import {
+ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+ import { BackButton } from "@/components/common/BackButton";
+ import { format, startOfWeek, endOfWeek, addWeeks, subWeeks } from "date-fns";
++import { getStatusBadgeVariant } from "@/lib/statusBadge";
++import { STATUS_SUCCESS, STATUS_WARNING } from "@/lib/statusTokens";
+ 
+ export default function TimeClockPage() {
+   const [selectedWeek, setSelectedWeek] = useState(new Date());
+@@ -171,14 +173,20 @@ export default function TimeClockPage() {
+ 
+     if (status.isOnBreak) {
+       return (
+-        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
++        <Badge
++          variant={getStatusBadgeVariant("on_break")}
++          className={STATUS_WARNING}
++        >
+           On Break
+         </Badge>
+       );
+     }
+ 
+     return (
+-      <Badge variant="default" className="bg-green-500">
++      <Badge
++        variant={getStatusBadgeVariant("working")}
++        className={STATUS_SUCCESS}
++      >
+         Working
+       </Badge>
+     );
+diff --git a/client/src/pages/accounting/AccountingDashboard.tsx b/client/src/pages/accounting/AccountingDashboard.tsx
+index d7564e00..d781660f 100644
+--- a/client/src/pages/accounting/AccountingDashboard.tsx
++++ b/client/src/pages/accounting/AccountingDashboard.tsx
+@@ -1,6 +1,7 @@
+-import { useState } from "react";
++import { useMemo, useState } from "react";
+ import { trpc } from "@/lib/trpc";
+ import { toast } from "sonner";
++import { useSearch } from "wouter";
+ import { Button } from "@/components/ui/button";
+ import {
+   Card,
+@@ -98,6 +99,7 @@ interface RecentPayment {
+ export default function AccountingDashboard({
+   embedded,
+ }: { embedded?: boolean } = {}) {
++  const routeSearch = useSearch();
+   // WS-001 & WS-002: Quick Action Modal State
+   const [receivePaymentOpen, setReceivePaymentOpen] = useState(false);
+   const [payVendorOpen, setPayVendorOpen] = useState(false);
+@@ -186,6 +188,20 @@ export default function AccountingDashboard({
+   const recentPaymentsList = (recentPayments?.items ?? []).slice(0, 5);
+   const overdueInvoiceCount = overdueInvoices?.pagination?.total || 0;
+   const overdueBillCount = overdueBills?.pagination?.total || 0;
++  const activeDashboardFilters = useMemo(() => {
++    const params = new URLSearchParams(routeSearch);
++    return [
++      "status",
++      "clientId",
++      "vendorId",
++      "orderId",
++      "invoiceId",
++      "billId",
++      "from",
++      "to",
++      "periodId",
++    ].filter(key => params.has(key));
++  }, [routeSearch]);
+ 
+   const navigateTo = (path: string) => {
+     window.location.href = path;
+@@ -204,6 +220,9 @@ export default function AccountingDashboard({
+     <div className="flex flex-col gap-3 p-3" data-testid="accounting-dashboard">
+       {!embedded && <BackButton label="Back to Accounting" to="/accounting" />}
+       <div className="space-y-1">
++        <Badge variant="outline" className="w-fit text-[10px] uppercase tracking-[0.16em]">
++          All accounting activity
++        </Badge>
+         <h1 className="text-xl font-bold tracking-tight">
+           Accounting Dashboard
+         </h1>
+@@ -211,6 +230,17 @@ export default function AccountingDashboard({
+           Start with the two finance actions that move cash today, then work
+           through invoices, bills, and ledger detail.
+         </p>
++        {activeDashboardFilters.length > 0 ? (
++          <p className="text-xs text-muted-foreground">
++            Detail views may be filtered by {activeDashboardFilters.join(", ")},
++            but dashboard totals stay global for orientation.
++          </p>
++        ) : (
++          <p className="text-xs text-muted-foreground">
++            Summary cards stay global by design so finance can keep an
++            all-activity baseline while queue tabs narrow the working set.
++          </p>
++        )}
+       </div>
+ 
+       {overdueInvoiceCount > OVERDUE_ALERT_THRESHOLD && (

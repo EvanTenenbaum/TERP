@@ -19,7 +19,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { addDays, format } from "date-fns";
 
 // UI Components
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { EmptyState } from "@/components/ui/empty-state";
 
 // Work Surface Hooks
 import { useWorkSurfaceKeyboard } from "@/hooks/work-surface/useWorkSurfaceKeyboard";
@@ -79,6 +80,15 @@ import {
   Copy,
   Trash2,
 } from "lucide-react";
+
+export function buildQuoteComposerPath(
+  params?: Record<string, string | number | boolean | null | undefined>
+) {
+  return buildSalesWorkspacePath("create-order", {
+    mode: "quote",
+    ...params,
+  });
+}
 import { PageHeader } from "@/components/layout/PageHeader";
 
 // ============================================================================
@@ -141,23 +151,23 @@ const STATUS_CONFIG: Record<string, { icon: ReactNode; color: string }> = {
   },
   SENT: {
     icon: <Clock className="h-4 w-4" />,
-    color: "bg-blue-100 text-blue-800",
+    color: "bg-[var(--info-bg)] text-[var(--info)]",
   },
   VIEWED: {
     icon: <CheckCircle2 className="h-4 w-4" />,
-    color: "bg-purple-100 text-purple-800",
+    color: "bg-muted text-primary",
   },
   CONVERTED: {
     icon: <CheckCircle2 className="h-4 w-4" />,
-    color: "bg-green-100 text-green-800",
+    color: "bg-[var(--success-bg)] text-[var(--success)]",
   },
   REJECTED: {
     icon: <XCircle className="h-4 w-4" />,
-    color: "bg-red-100 text-red-800",
+    color: "bg-destructive/10 text-destructive",
   },
   EXPIRED: {
     icon: <AlertTriangle className="h-4 w-4" />,
-    color: "bg-orange-100 text-orange-800",
+    color: "bg-[var(--warning-bg)] text-[var(--warning)]",
   },
 };
 
@@ -181,6 +191,25 @@ const formatDate = (dateString: string | undefined): string => {
   } catch {
     return "-";
   }
+};
+
+const getQuoteValidUntilDisplay = (
+  validUntil: string | undefined,
+  createdAt: string | undefined
+): string => {
+  if (validUntil) {
+    return formatDate(validUntil);
+  }
+
+  if (createdAt) {
+    try {
+      return format(addDays(new Date(createdAt), 30), "MMM d, yyyy");
+    } catch {
+      return "30 days from creation";
+    }
+  }
+
+  return "30 days from creation";
 };
 
 const getEffectiveQuoteStatus = (quote: Pick<Quote, "quoteStatus">) =>
@@ -286,11 +315,11 @@ function QuoteInspectorContent({
           <InspectorField label="Created">
             <p>{formatDate(quote.createdAt)}</p>
           </InspectorField>
-          {quote.validUntil && (
-            <InspectorField label="Valid Until">
-              <p>{formatDate(quote.validUntil)}</p>
-            </InspectorField>
-          )}
+          <InspectorField label="Valid Until">
+            <p>
+              {getQuoteValidUntilDisplay(quote.validUntil, quote.createdAt)}
+            </p>
+          </InspectorField>
         </div>
       </InspectorSection>
 
@@ -346,7 +375,7 @@ function QuoteInspectorContent({
             </div>
           )}
           {parseFloat(quote.discount) > 0 && (
-            <div className="flex justify-between text-sm text-green-600">
+            <div className="flex justify-between text-sm text-[var(--success)]">
               <span>Discount</span>
               <span className="font-mono">
                 -{formatCurrency(quote.discount)}
@@ -414,7 +443,7 @@ function QuoteInspectorContent({
           {effectiveStatus === "UNSENT" && (
             <Button
               variant="outline"
-              className="w-full justify-start text-red-600 hover:text-red-700"
+              className="w-full justify-start text-destructive hover:text-destructive"
               onClick={() => onDelete(quote.id)}
             >
               <Trash2 className="h-4 w-4 mr-2" />
@@ -498,6 +527,22 @@ export function QuotesWorkSurface() {
     () => displayQuotes.find(q => q.id === selectedQuoteId) || null,
     [displayQuotes, selectedQuoteId]
   );
+  const quoteEmptyStateAction = useMemo(() => {
+    if (search || statusFilter !== "ALL") {
+      return {
+        label: "Clear Filters",
+        onClick: () => {
+          setSearch("");
+          setStatusFilter("ALL");
+        },
+      };
+    }
+
+    return {
+      label: "Create Quote",
+      onClick: () => setLocation(buildQuoteComposerPath()),
+    };
+  }, [search, setLocation, statusFilter]);
 
   // Statistics
   const stats = useMemo(
@@ -582,7 +627,7 @@ export function QuotesWorkSurface() {
       },
       "cmd+n": e => {
         e.preventDefault();
-        setLocation(buildSalesWorkspacePath("create-order"));
+        setLocation(buildQuoteComposerPath());
       },
       arrowdown: e => {
         e.preventDefault();
@@ -615,7 +660,7 @@ export function QuotesWorkSurface() {
 
   // Handlers
   const handleEdit = (quoteId: number) =>
-    setLocation(buildSalesWorkspacePath("create-order", { quoteId }));
+    setLocation(buildQuoteComposerPath({ quoteId }));
   // API-016: Open send dialog
   const handleSend = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
@@ -627,12 +672,7 @@ export function QuotesWorkSurface() {
     setShowConvertDialog(true);
   };
   const handleDuplicate = (quoteId: number) =>
-    setLocation(
-      buildSalesWorkspacePath("create-order", {
-        quoteId,
-        mode: "duplicate",
-      })
-    );
+    setLocation(buildQuoteComposerPath({ quoteId, mode: "duplicate" }));
   const handleDelete = (quoteId: number) => {
     setSelectedQuoteId(quoteId);
     setShowDeleteDialog(true);
@@ -700,9 +740,7 @@ export function QuotesWorkSurface() {
               </SelectContent>
             </Select>
           </div>
-          <Button
-            onClick={() => setLocation(buildSalesWorkspacePath("create-order"))}
-          >
+          <Button onClick={() => setLocation(buildQuoteComposerPath())}>
             <Plus className="h-4 w-4 mr-2" />
             New Quote
           </Button>
@@ -723,15 +761,16 @@ export function QuotesWorkSurface() {
             </div>
           ) : displayQuotes.length === 0 ? (
             <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="font-medium">No quotes found</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {search
-                    ? "Try adjusting your search"
-                    : "Create your first quote"}
-                </p>
-              </div>
+              <EmptyState
+                variant="reports"
+                title="No quotes found"
+                description={
+                  search || statusFilter !== "ALL"
+                    ? "No quotes match the current filters. Clear them to see the full registry again."
+                    : "Create the first quote here so sales can send pricing without leaving the workspace."
+                }
+                action={quoteEmptyStateAction}
+              />
             </div>
           ) : (
             <Table>
@@ -767,7 +806,12 @@ export function QuotesWorkSurface() {
                     </TableCell>
                     <TableCell>{getClientName(quote.clientId)}</TableCell>
                     <TableCell>{formatDate(quote.createdAt)}</TableCell>
-                    <TableCell>{formatDate(quote.validUntil)}</TableCell>
+                    <TableCell>
+                      {getQuoteValidUntilDisplay(
+                        quote.validUntil,
+                        quote.createdAt
+                      )}
+                    </TableCell>
                     <TableCell>
                       <QuoteStatusBadge status={quote.quoteStatus} />
                     </TableCell>

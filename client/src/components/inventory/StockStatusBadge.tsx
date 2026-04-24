@@ -30,17 +30,17 @@ const statusConfig: Record<
 > = {
   CRITICAL: {
     label: "Critical",
-    className: "bg-red-100 text-red-900 border-red-400",
+    className: "bg-destructive/10 text-destructive border-red-400",
     icon: AlertCircle,
   },
   LOW: {
     label: "Low Stock",
-    className: "bg-orange-100 text-orange-900 border-orange-400",
+    className: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-400",
     icon: AlertTriangle,
   },
   OPTIMAL: {
     label: "Optimal",
-    className: "bg-green-100 text-green-900 border-green-400",
+    className: "bg-[var(--success-bg)] text-[var(--success)] border-green-400",
     icon: CheckCircle,
   },
   OUT_OF_STOCK: {
@@ -64,4 +64,33 @@ export function StockStatusBadge({
       {config.label}
     </Badge>
   );
+}
+
+/**
+ * TER-1251: Human-readable labels for stock status enum values.
+ * Use this in grid column formatters, inspector fields, and CSV exports
+ * instead of rendering the raw enum string.
+ */
+export const STOCK_STATUS_LABELS: Record<StockStatus, string> = {
+  CRITICAL: statusConfig.CRITICAL.label,
+  LOW: statusConfig.LOW.label,
+  OPTIMAL: statusConfig.OPTIMAL.label,
+  OUT_OF_STOCK: statusConfig.OUT_OF_STOCK.label,
+};
+
+/**
+ * Resolve a human-readable label for a raw stock status enum value.
+ * Falls back to a title-cased form of the raw value when the enum is
+ * unrecognized, to avoid ever surfacing SCREAMING_SNAKE_CASE to users.
+ */
+export function getStockStatusLabel(
+  status: string | null | undefined
+): string {
+  if (!status) return "";
+  const known = STOCK_STATUS_LABELS[status as StockStatus];
+  if (known) return known;
+  return status
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, c => c.toUpperCase());
 }

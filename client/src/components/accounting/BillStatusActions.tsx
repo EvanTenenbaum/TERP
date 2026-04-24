@@ -143,8 +143,8 @@ export function BillStatusActions({
               onClick={() => handleStatusSelect(status)}
               className={cn(
                 "gap-2 cursor-pointer",
-                status === "VOID" && "text-red-600",
-                status === "PAID" && "text-green-600"
+                status === "VOID" && "text-destructive",
+                status === "PAID" && "text-[var(--success)]"
               )}
             >
               {STATUS_ICONS[status]}
@@ -172,7 +172,7 @@ export function BillStatusActions({
                   <p>
                     You are about to void bill <strong>{billNumber}</strong>.
                   </p>
-                  <p className="text-red-600 mt-2 flex items-center gap-2">
+                  <p className="text-destructive mt-2 flex items-center gap-2">
                     <AlertTriangle className="h-4 w-4" />
                     This action cannot be undone. The bill will be marked as
                     void and no further payments can be recorded.
@@ -198,8 +198,8 @@ export function BillStatusActions({
             <AlertDialogAction
               onClick={handleConfirm}
               className={cn(
-                confirmStatus === "VOID" && "bg-red-600 hover:bg-red-700",
-                confirmStatus === "PAID" && "bg-green-600 hover:bg-green-700"
+                confirmStatus === "VOID" && "bg-destructive hover:bg-destructive",
+                confirmStatus === "PAID" && "bg-[var(--success)] hover:bg-[var(--success)]"
               )}
             >
               {confirmStatus === "VOID" ? "Void Bill" : "Mark as Paid"}
@@ -245,7 +245,7 @@ export function BillStatusTimeline({
   if (currentStatus === "OVERDUE") {
     return (
       <div className={cn("flex items-center gap-2", className)}>
-        <Badge variant="outline" className="bg-red-100 text-red-700">
+        <Badge variant="outline" className="bg-destructive/10 text-destructive">
           Overdue
         </Badge>
         <span className="text-xs text-muted-foreground">- Payment pending</span>
@@ -267,8 +267,8 @@ export function BillStatusTimeline({
             <div
               className={cn(
                 "w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium",
-                isPast && "bg-green-500 text-white",
-                isCurrent && "bg-blue-500 text-white",
+                isPast && "bg-[var(--success)] text-white",
+                isCurrent && "bg-[var(--info)] text-white",
                 isFuture && "bg-gray-200 text-gray-500"
               )}
             >
@@ -278,7 +278,7 @@ export function BillStatusTimeline({
               <div
                 className={cn(
                   "w-8 h-0.5",
-                  isPast ? "bg-green-500" : "bg-gray-200"
+                  isPast ? "bg-[var(--success)]" : "bg-gray-200"
                 )}
               />
             )}

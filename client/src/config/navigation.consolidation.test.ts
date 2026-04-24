@@ -44,15 +44,16 @@ describe("consolidated navigation IA", () => {
   });
 
   it("has exactly 11 sidebar-visible items", () => {
-    expect(sidebarItems).toHaveLength(11);
+    expect(sidebarItems).toHaveLength(12); // Updated for TER-1234: Leaderboard added to sidebar
   });
 
   it("has correct sidebar-visible items per group", () => {
     const sidebarPaths = sidebarItems.map(item => item.path);
 
-    // Sell group: Sales, Demand & Supply
+    // Sell group: Sales, Demand & Supply, Leaderboard (TER-1234)
     expect(sidebarPaths).toContain("/sales");
     expect(sidebarPaths).toContain("/demand-supply");
+    expect(sidebarPaths).toContain("/leaderboard");
 
     // Buy, Operations, and Relationships groups
     expect(sidebarPaths).toContain("/purchase-orders");
@@ -84,8 +85,11 @@ describe("consolidated navigation IA", () => {
 
     // Admin absorbed items
     expect(paths).toContain("/settings?tab=users");
+    expect(paths).toContain("/settings?tab=roles");
     expect(paths).toContain("/settings?tab=locations");
     expect(paths).toContain("/settings?tab=feature-flags");
+    expect(paths).toContain("/calendar?tab=invitations");
+    expect(paths).toContain("/admin/metrics");
     expect(paths).toContain("/scheduling");
     expect(paths).toContain("/time-clock");
     expect(paths).toContain("/todos");
@@ -103,8 +107,11 @@ describe("consolidated navigation IA", () => {
     expect(sidebarHiddenPaths).toContain("/inventory?tab=photography");
     expect(sidebarHiddenPaths).toContain("/inventory?tab=samples");
     expect(sidebarHiddenPaths).toContain("/settings?tab=users");
+    expect(sidebarHiddenPaths).toContain("/settings?tab=roles");
     expect(sidebarHiddenPaths).toContain("/settings?tab=locations");
     expect(sidebarHiddenPaths).toContain("/settings?tab=feature-flags");
+    expect(sidebarHiddenPaths).toContain("/calendar?tab=invitations");
+    expect(sidebarHiddenPaths).toContain("/admin/metrics");
     expect(sidebarHiddenPaths).toContain("/scheduling");
     expect(sidebarHiddenPaths).toContain("/time-clock");
     expect(sidebarHiddenPaths).toContain("/todos");
@@ -117,6 +124,9 @@ describe("consolidated navigation IA", () => {
     );
 
     expect(commandPaths).toContain("/inventory?tab=receiving");
+    expect(commandPaths).toContain("/calendar?tab=invitations");
+    expect(commandPaths).toContain("/settings?tab=roles");
+    expect(commandPaths).toContain("/admin/metrics");
     expect(commandPaths).not.toContain("/direct-intake");
   });
 
@@ -147,7 +157,7 @@ describe("consolidated navigation IA", () => {
     const financeItems = sidebarItems.filter(i => i.group === "finance");
     const adminItems = sidebarItems.filter(i => i.group === "admin");
 
-    expect(sellItems).toHaveLength(2);
+    expect(sellItems).toHaveLength(3); // Updated for TER-1234: Leaderboard added to sales group
     expect(buyItems).toHaveLength(1);
     expect(operationsItems).toHaveLength(1);
     expect(relationshipItems).toHaveLength(1);

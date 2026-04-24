@@ -69,7 +69,7 @@ export function WorkflowColumn({
         <div
           ref={setNodeRef}
           className={`flex-1 overflow-y-auto p-4 space-y-3 ${
-            isOver ? "bg-blue-50" : ""
+            isOver ? "bg-[var(--info-bg)]" : ""
           }`}
         >
           <SortableContext

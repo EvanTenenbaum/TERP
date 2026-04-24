@@ -569,13 +569,14 @@ git push origin main
 > ⚠️ **IMPORTANT**: TERP is deployed on **DigitalOcean App Platform**. NOT Railway.
 
 **Production URL**: https://terp-app-b9s35.ondigitalocean.app
-**Deployment**: Automatic on push to `main`
+**Staging URL**: https://terp-staging-yicld.ondigitalocean.app
+**Deployment**: As of March 28, 2026, `main` is the staging deployment branch. Production is a manual promotion path.
 **Configuration**: `.do/app.yaml`
 
 ## Deployment Process
 
 ```bash
-# 1. Push triggers deployment
+# 1. Push triggers staging deployment
 git push origin main
 
 # 2. Monitor deployment
@@ -584,10 +585,10 @@ bash scripts/watch-deploy.sh
 # 3. Check status
 bash scripts/check-deployment-status.sh $(git rev-parse HEAD | cut -c1-7)
 
-# 4. Verify health
-curl https://terp-app-b9s35.ondigitalocean.app/health
+# 4. Verify staging health
+curl https://terp-staging-yicld.ondigitalocean.app/health
 
-# 5. Check for errors
+# 5. Check for errors before any production promotion
 ./scripts/terp-logs.sh run 100 | grep -i "error"
 ```
 

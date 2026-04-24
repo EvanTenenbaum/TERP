@@ -122,7 +122,7 @@ export function ReceiptPreview({
         <DialogContent className="w-full sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Check className="h-5 w-5 text-green-500" />
+              <Check className="h-5 w-5 text-[var(--success)]" />
               Payment Recorded Successfully
             </DialogTitle>
           </DialogHeader>
@@ -184,7 +184,7 @@ export function ReceiptPreview({
               onClick={handleCopyLink}
             >
               {linkCopied ? (
-                <Check className="h-5 w-5 text-green-500" />
+                <Check className="h-5 w-5 text-[var(--success)]" />
               ) : (
                 <Link className="h-5 w-5" />
               )}

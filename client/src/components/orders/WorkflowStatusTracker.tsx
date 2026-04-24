@@ -144,11 +144,11 @@ function WorkflowStep({
       <div
         className={cn(
           "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors",
-          state === "completed" && "bg-green-100 text-green-700",
+          state === "completed" && "bg-[var(--success-bg)] text-[var(--success)]",
           state === "current" &&
             "bg-primary/15 text-primary ring-1 ring-primary/30",
           state === "upcoming" && "bg-muted text-muted-foreground",
-          state === "terminal" && "bg-red-100 text-red-700"
+          state === "terminal" && "bg-destructive/10 text-destructive"
         )}
       >
         {step.icon}

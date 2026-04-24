@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, DatabaseErrorState } from "@/components/ui/empty-state";
 import { ArrowRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
@@ -35,11 +35,15 @@ export const SalesByClientWidget = memo(function SalesByClientWidget() {
   const [, setLocation] = useLocation();
   const [timePeriod, setTimePeriod] = useState<TimePeriod>("LIFETIME");
 
-  const { data: response, isLoading } =
-    trpc.dashboard.getSalesByClient.useQuery(
-      { timePeriod },
-      { refetchInterval: 60000 }
-    );
+  const {
+    data: response,
+    isLoading,
+    error,
+    refetch,
+  } = trpc.dashboard.getSalesByClient.useQuery(
+    { timePeriod },
+    { refetchInterval: 60000 }
+  );
 
   const data = response?.data || [];
 
@@ -81,6 +85,12 @@ export const SalesByClientWidget = memo(function SalesByClientWidget() {
             <Skeleton className="h-8 w-full" />
             <Skeleton className="h-8 w-full" />
           </div>
+        ) : error ? (
+          <DatabaseErrorState
+            entity="sales by client"
+            errorMessage={error.message}
+            onRetry={() => void refetch()}
+          />
         ) : data.length > 0 ? (
           <Table>
             <TableHeader>

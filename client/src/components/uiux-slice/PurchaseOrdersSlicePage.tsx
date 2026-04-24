@@ -73,11 +73,11 @@ import { recordFrictionEvent } from "@/lib/navigation/frictionTelemetry";
 
 const statusColor: Record<string, string> = {
   DRAFT: "bg-slate-100 text-slate-800",
-  SENT: "bg-blue-100 text-blue-800",
+  SENT: "bg-[var(--info-bg)] text-[var(--info)]",
   CONFIRMED: "bg-emerald-100 text-emerald-800",
   RECEIVING: "bg-amber-100 text-amber-800",
-  RECEIVED: "bg-green-100 text-green-800",
-  CANCELLED: "bg-red-100 text-red-800",
+  RECEIVED: "bg-[var(--success-bg)] text-[var(--success)]",
+  CANCELLED: "bg-destructive/10 text-destructive",
 };
 
 const defaultColumns: GridColumnOption[] = [
@@ -89,15 +89,16 @@ const defaultColumns: GridColumnOption[] = [
   { id: "total", label: "Total", visible: true },
 ];
 
-const RECEIVING_QUEUE_STATUSES = ["CONFIRMED", "RECEIVING"] as const;
+const ACTIVE_RECEIVING_QUEUE_STATUSES = ["CONFIRMED"] as const;
+const RECEIVABLE_STATUSES = ["CONFIRMED", "RECEIVING"] as const;
 type PurchaseOrdersSliceMode = "procurement" | "receiving";
 type PurchaseOrdersSlicePageProps = {
   mode?: PurchaseOrdersSliceMode;
 } & Partial<WouterRouteComponentProps<Record<string, string | undefined>>>;
 
 function canReceivePurchaseOrder(status?: string | null): boolean {
-  return RECEIVING_QUEUE_STATUSES.includes(
-    status as (typeof RECEIVING_QUEUE_STATUSES)[number]
+  return RECEIVABLE_STATUSES.includes(
+    status as (typeof RECEIVABLE_STATUSES)[number]
   );
 }
 
@@ -110,7 +111,10 @@ type IntakePickerLine = {
   quantityOrdered: number;
   quantityReceived: number;
   remainingQty: number;
+  cogsMode?: "FIXED" | "RANGE";
   unitCost: number;
+  unitCostMin?: number;
+  unitCostMax?: number;
   selected: boolean;
   intakeQty: number;
 };
@@ -123,7 +127,10 @@ type PoLineLike = {
   subcategory?: string | null;
   quantityOrdered?: string | number | null;
   quantityReceived?: string | number | null;
+  cogsMode?: "FIXED" | "RANGE" | null;
   unitCost?: string | number | null;
+  unitCostMin?: string | number | null;
+  unitCostMax?: string | number | null;
 };
 
 type SupplierLike = {
@@ -153,6 +160,18 @@ function formatDateCell(value: unknown): string {
   const parsed = new Date(String(value));
   if (Number.isNaN(parsed.getTime())) return String(value);
   return parsed.toLocaleDateString();
+}
+
+function formatReceivingCost(line: {
+  cogsMode?: "FIXED" | "RANGE" | null;
+  unitCost: number;
+  unitCostMin?: number;
+  unitCostMax?: number;
+}): string {
+  if (line.cogsMode === "RANGE") {
+    return `$${Number(line.unitCostMin ?? 0).toFixed(2)} - $${Number(line.unitCostMax ?? 0).toFixed(2)}`;
+  }
+  return `$${Number(line.unitCost ?? 0).toFixed(2)}`;
 }
 
 export function PurchaseOrdersSlicePage({
@@ -213,6 +232,16 @@ export function PurchaseOrdersSlicePage({
     notes: "",
     items: [createPoItemForm()],
   });
+
+  const resetReceivingPickerState = useCallback(() => {
+    setPickerOpen(false);
+    setPickerLines([]);
+    setSelectedPoId(null);
+    setSelectedPoIds(new Set());
+    if (mode === "receiving") {
+      setStatusFilter("ACTIVE_QUEUE");
+    }
+  }, [mode]);
 
   useEffect(() => {
     const poId = deepLink.poId;
@@ -383,8 +412,8 @@ export function PurchaseOrdersSlicePage({
         statusFilter === "ALL"
           ? true
           : statusFilter === "ACTIVE_QUEUE"
-            ? RECEIVING_QUEUE_STATUSES.includes(
-                po.purchaseOrderStatus as (typeof RECEIVING_QUEUE_STATUSES)[number]
+            ? ACTIVE_RECEIVING_QUEUE_STATUSES.includes(
+                po.purchaseOrderStatus as (typeof ACTIVE_RECEIVING_QUEUE_STATUSES)[number]
               )
             : po.purchaseOrderStatus === statusFilter;
       return matchesSearch && matchesStatus;
@@ -520,7 +549,10 @@ export function PurchaseOrdersSlicePage({
         quantityOrdered: ordered,
         quantityReceived: received,
         remainingQty: remaining,
+        cogsMode: item.cogsMode ?? "FIXED",
         unitCost: Number(item.unitCost ?? 0),
+        unitCostMin: Number(item.unitCostMin ?? 0),
+        unitCostMax: Number(item.unitCostMax ?? 0),
         selected: remaining > 0,
         intakeQty: remaining,
       } satisfies IntakePickerLine;
@@ -597,7 +629,10 @@ export function PurchaseOrdersSlicePage({
         quantityOrdered: line.quantityOrdered,
         quantityReceived: line.quantityReceived,
         intakeQty: line.intakeQty,
+        cogsMode: line.cogsMode ?? "FIXED",
         unitCost: line.unitCost,
+        unitCostMin: line.unitCostMin,
+        unitCostMax: line.unitCostMax,
         locationId: defaultWarehouse?.id,
         locationName: defaultWarehouse?.site ?? "Main Warehouse",
         grade: "",
@@ -609,6 +644,7 @@ export function PurchaseOrdersSlicePage({
       : buildOperationsWorkspacePath("receiving", { draftId: draft.id });
 
     upsertProductIntakeDraft(draft, preferenceUserId);
+    setPickerLines([]);
     setPickerOpen(false);
     recordFrictionEvent({
       event: "flow_complete",
@@ -917,7 +953,17 @@ export function PurchaseOrdersSlicePage({
         </table>
       </div>
 
-      <Drawer open={pickerOpen} onOpenChange={setPickerOpen} direction="right">
+      <Drawer
+        open={pickerOpen}
+        onOpenChange={open => {
+          if (open) {
+            setPickerOpen(true);
+            return;
+          }
+          resetReceivingPickerState();
+        }}
+        direction="right"
+      >
         <DrawerContent className="w-[760px] sm:max-w-none">
           <DrawerHeader>
             <DrawerTitle>
@@ -961,7 +1007,7 @@ export function PurchaseOrdersSlicePage({
                       {line.remainingQty.toFixed(2)}
                     </td>
                     <td className="p-2 text-right">
-                      ${line.unitCost.toFixed(2)}
+                      {formatReceivingCost(line)}
                     </td>
                     <td className="p-2">
                       <Input
@@ -994,7 +1040,7 @@ export function PurchaseOrdersSlicePage({
           </div>
           <DrawerFooter>
             <div className="flex justify-end gap-2 w-full">
-              <Button variant="outline" onClick={() => setPickerOpen(false)}>
+              <Button variant="outline" onClick={resetReceivingPickerState}>
                 Cancel
               </Button>
               <Button onClick={createIntakeDraft}>Open Receiving Draft</Button>

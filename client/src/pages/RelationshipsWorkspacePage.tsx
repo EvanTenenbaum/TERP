@@ -23,15 +23,9 @@ export default function RelationshipsWorkspacePage() {
   return (
     <LinearWorkspaceShell
       title={RELATIONSHIPS_WORKSPACE.title}
-      description={RELATIONSHIPS_WORKSPACE.description}
-      section="Relationships"
       activeTab={activeTab}
       tabs={RELATIONSHIPS_WORKSPACE.tabs}
       onTabChange={tab => setActiveTab(tab)}
-      meta={[
-        { label: "Buyer records", value: "Clients" },
-        { label: "Supplier records", value: "Suppliers" },
-      ]}
     >
       <LinearWorkspacePanel value="clients">
         <ClientsWorkSurface />

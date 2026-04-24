@@ -19,7 +19,7 @@ import { requirePermission } from "../_core/permissionMiddleware";
 import { storagePut, storageDelete, isStorageConfigured } from "../storage";
 import { createSafeUnifiedResponse } from "../_core/pagination";
 import { getDb } from "../db";
-import { batches, inventoryMovements } from "../../drizzle/schema";
+import { batches, inventoryMovements, pricingDefaults } from "../../drizzle/schema";
 import { eq, sql, desc, inArray, and, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { env } from "../_core/env";
@@ -28,6 +28,7 @@ import {
   formatInventoryAdjustmentReason,
   type InventoryAdjustmentReason,
 } from "@shared/inventoryAdjustmentReasons";
+import { marginCalculationService } from "../services/marginCalculationService";
 import {
   buildDemoMediaUrl,
   createDemoMediaBlob,
@@ -377,7 +378,9 @@ export const inventoryRouter = router({
           holdQty: number;
           availableQty: number;
           totalQty: string;
+          unitPrice: number | null;
           unitCogs: number | null;
+          marginPercent: number | null;
           totalValue: number | null;
           receivedDate: Date | null;
           ageDays: number;
@@ -456,7 +459,9 @@ export const inventoryRouter = router({
                 holdQty: hold,
                 availableQty: available,
                 totalQty: inventoryUtils.computeTotalQty(batch),
+                unitPrice: null,
                 unitCogs,
+                marginPercent: null,
                 totalValue: unitCogs !== null ? onHand * unitCogs : null,
                 receivedDate,
                 ageDays,
@@ -472,6 +477,57 @@ export const inventoryRouter = router({
             ];
           }
         );
+
+        const db = await getDb();
+        const pricingDefaultsRows = db
+          ? await db
+              .select({
+                productCategory: pricingDefaults.productCategory,
+                defaultMarginPercent: pricingDefaults.defaultMarginPercent,
+              })
+              .from(pricingDefaults)
+          : [];
+        const marginByCategory = new Map<string, number>();
+        for (const row of pricingDefaultsRows) {
+          const margin = parseFloat(String(row.defaultMarginPercent));
+          if (Number.isFinite(margin)) {
+            marginByCategory.set(row.productCategory, margin);
+          }
+        }
+        const defaultMargin = marginByCategory.get("DEFAULT");
+        const otherMargin = marginByCategory.get("OTHER");
+        const resolveMargin = (category: string | null) => {
+          if (category && marginByCategory.has(category)) {
+            return marginByCategory.get(category) ?? null;
+          }
+          if (category && category !== "OTHER" && otherMargin !== undefined) {
+            return otherMargin;
+          }
+          if (defaultMargin !== undefined) {
+            return defaultMargin;
+          }
+          return null;
+        };
+
+        filteredItems = filteredItems.map(item => {
+          const marginPercent = resolveMargin(item.category);
+          if (item.unitCogs === null || marginPercent === null) {
+            return { ...item, marginPercent, unitPrice: null };
+          }
+
+          try {
+            return {
+              ...item,
+              marginPercent,
+              unitPrice: marginCalculationService.calculatePriceFromMarginPercent(
+                item.unitCogs,
+                marginPercent
+              ),
+            };
+          } catch {
+            return { ...item, marginPercent, unitPrice: null };
+          }
+        });
 
         // Apply search filter
         if (input.search) {
@@ -522,8 +578,6 @@ export const inventoryRouter = router({
             item.code.toLowerCase().includes(batchIdFilter)
           );
         }
-
-        const db = await getDb();
 
         const parseDateValue = (value: Date | string | null): Date | null => {
           if (!value) return null;
@@ -1243,6 +1297,7 @@ export const inventoryRouter = router({
   // Create new batch (intake)
   // ✅ FIXED: Uses transactional service (TERP-INIT-005 Phase 1)
   // ✅ ENHANCED: TERP-INIT-005 Phase 2 - Comprehensive validation
+  // ✅ TER-1228: Progress tracking and rollback support
   // SECURITY FIX: Changed from inventory:read to inventory:create
   intake: protectedProcedure
     .use(requirePermission("inventory:create"))
@@ -1274,10 +1329,85 @@ export const inventoryRouter = router({
           vendor: result.vendor,
           brand: result.brand,
           product: result.product,
+          progress: result.progress,
         };
       } catch (error) {
         inventoryLogger.operationFailure("intake", error as Error, { input });
+        
+        // TER-1228: Extract progress from error cause if available
+        let progress = undefined;
+        if (error && typeof error === "object" && "cause" in error) {
+          const cause = error.cause as { progress?: unknown };
+          if (cause && typeof cause === "object" && "progress" in cause) {
+            progress = cause.progress;
+          }
+        }
+        
+        // Re-throw with progress attached if available
+        if (progress) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: error instanceof Error ? error.message : "Intake failed",
+            cause: { originalError: error, progress },
+          });
+        }
+        
         handleError(error, "inventory.intake");
+        throw error;
+      }
+    }),
+
+  // Rollback failed intake transaction (TER-1228)
+  rollbackIntake: protectedProcedure
+    .use(requirePermission("inventory:create"))
+    .input(
+      z.object({
+        targets: z.array(
+          z.object({
+            step: z.enum([
+              "VALIDATE_COGS",
+              "CREATE_VENDOR",
+              "LOOKUP_SUPPLIER",
+              "CREATE_BRAND",
+              "CREATE_PRODUCT",
+              "CREATE_LOT",
+              "CREATE_BATCH",
+              "CREATE_LOCATION",
+              "CREATE_AUDIT",
+              "CREATE_PAYABLE",
+            ]),
+            entityId: z.number(),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      try {
+        inventoryLogger.operationStart("rollbackIntake", {
+          targetCount: input.targets.length,
+        });
+
+        const { rollbackIntake } = await import(
+          "../services/intakeRollbackService"
+        );
+
+        const result = await rollbackIntake(
+          input.targets,
+          getAuthenticatedUserId(ctx)
+        );
+
+        inventoryLogger.operationSuccess("rollbackIntake", {
+          rolledBackSteps: result.rolledBackSteps,
+        });
+
+        return result;
+      } catch (error) {
+        inventoryLogger.operationFailure(
+          "rollbackIntake",
+          error as Error,
+          input
+        );
+        handleError(error, "inventory.rollbackIntake");
         throw error;
       }
     }),
@@ -1856,9 +1986,11 @@ export const inventoryRouter = router({
       .use(requirePermission("inventory:read"))
       .input(z.number().optional().default(10))
       .query(async ({ input }) => {
+        // TER-1148: Dashboard must not 500 when profitability data is
+        // incomplete (missing COGS, empty orders, deleted batches mid-scan).
+        // Degrade to an empty result instead of propagating to the client.
         try {
           const result = await inventoryDb.getTopProfitableBatches(input);
-          // BUG-034: Standardized pagination response
           return createSafeUnifiedResponse(
             result,
             result?.length || 0,
@@ -1866,8 +1998,12 @@ export const inventoryRouter = router({
             0
           );
         } catch (error) {
-          handleError(error, "inventory.profitability.top");
-          throw error;
+          inventoryLogger.operationFailure(
+            "profitability.top",
+            error as Error,
+            { input }
+          );
+          return createSafeUnifiedResponse([], 0, input, 0);
         }
       }),
 
@@ -1875,11 +2011,25 @@ export const inventoryRouter = router({
     summary: protectedProcedure
       .use(requirePermission("inventory:read"))
       .query(async () => {
+        // TER-1148: Return zero-state summary when the underlying query fails
+        // (missing tables, null COGS rows, etc.) so the dashboard tile can
+        // render "no data" instead of error.
         try {
           return await inventoryDb.getProfitabilitySummary();
         } catch (error) {
-          handleError(error, "inventory.profitability.summary");
-          throw error;
+          inventoryLogger.operationFailure(
+            "profitability.summary",
+            error as Error,
+            {}
+          );
+          return {
+            totalRevenue: 0,
+            totalCost: 0,
+            grossProfit: 0,
+            avgMargin: 0,
+            totalUnits: 0,
+            batchesWithSales: 0,
+          };
         }
       }),
   }),

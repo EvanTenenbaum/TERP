@@ -130,6 +130,43 @@ export async function getInvoiceById(id: number) {
 }
 
 /**
+ * Resolve the latest invoice linked to a business reference without depending
+ * on the parent record shape. This is useful for handoff flows where the
+ * source order may contain legacy payloads that no longer parse cleanly.
+ */
+export async function getInvoiceByReference(
+  referenceId: number,
+  referenceTypes: string[] = ["ORDER", "SALE"]
+) {
+  const db = await getDb();
+  if (!db) return null;
+  if (!Number.isFinite(referenceId) || referenceId <= 0) return null;
+
+  const normalizedReferenceTypes = referenceTypes
+    .map(type => type.trim().toUpperCase())
+    .filter(Boolean);
+
+  if (normalizedReferenceTypes.length === 0) {
+    return null;
+  }
+
+  const invoice = await db
+    .select()
+    .from(invoices)
+    .where(
+      and(
+        sql`${invoices.deletedAt} IS NULL`,
+        eq(invoices.referenceId, referenceId),
+        safeInArray(invoices.referenceType, normalizedReferenceTypes)
+      )
+    )
+    .orderBy(desc(invoices.invoiceDate), desc(invoices.id))
+    .limit(1);
+
+  return invoice[0] ?? null;
+}
+
+/**
  * Create invoice with line items
  */
 export async function createInvoice(
@@ -319,6 +356,11 @@ export async function calculateARAging() {
     let days60 = 0;
     let days90 = 0;
     let days90Plus = 0;
+    let currentCount = 0;
+    let days30Count = 0;
+    let days60Count = 0;
+    let days90Count = 0;
+    let days90PlusCount = 0;
 
     result.forEach(inv => {
       const amountDue = Number(inv.amountDue) || 0;
@@ -329,18 +371,34 @@ export async function calculateARAging() {
 
       if (daysPastDue < 0) {
         current += amountDue;
+        currentCount++;
       } else if (daysPastDue <= 30) {
         days30 += amountDue;
+        days30Count++;
       } else if (daysPastDue <= 60) {
         days60 += amountDue;
+        days60Count++;
       } else if (daysPastDue <= 90) {
         days90 += amountDue;
+        days90Count++;
       } else {
         days90Plus += amountDue;
+        days90PlusCount++;
       }
     });
 
-    return { current, days30, days60, days90, days90Plus };
+    return {
+      current,
+      days30,
+      days60,
+      days90,
+      days90Plus,
+      currentCount,
+      days30Count,
+      days60Count,
+      days90Count,
+      days90PlusCount,
+    };
   } catch (error) {
     // Log the error for debugging but rethrow for frontend to handle
     console.error("[arApDb] calculateARAging error:", error);
@@ -661,6 +719,11 @@ export async function recordBillPayment(billId: number, amount: number) {
 
 /**
  * Get outstanding payables (unpaid/partial bills)
+ *
+ * TER-1255: Include APPROVED bills (approved, ready for payment, not yet
+ * paid). Without APPROVED, bills sitting in the approved-for-payment queue
+ * vanished from the AP dashboard widgets, which made Accounts Payable
+ * appear as $0 on the accounting dashboard.
  */
 export async function getOutstandingPayables() {
   const db = await getDb();
@@ -671,7 +734,12 @@ export async function getOutstandingPayables() {
     .from(bills)
     .where(
       and(
-        safeInArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
+        safeInArray(bills.status, [
+          "PENDING",
+          "APPROVED",
+          "PARTIAL",
+          "OVERDUE",
+        ]),
         sql`${bills.amountDue} > 0`,
         sql`${bills.deletedAt} IS NULL`
       )
@@ -698,6 +766,8 @@ export async function calculateAPAging() {
   try {
     const today = new Date();
 
+    // TER-1255: Include APPROVED bills (approved-for-payment but not yet
+    // paid) so the AP aging totals match the receipts that finance owes.
     const result = await db
       .select({
         billId: bills.id,
@@ -707,7 +777,12 @@ export async function calculateAPAging() {
       .from(bills)
       .where(
         and(
-          safeInArray(bills.status, ["PENDING", "PARTIAL", "OVERDUE"]),
+          safeInArray(bills.status, [
+            "PENDING",
+            "APPROVED",
+            "PARTIAL",
+            "OVERDUE",
+          ]),
           sql`CAST(${bills.amountDue} AS DECIMAL(15,2)) > 0`,
           sql`${bills.deletedAt} IS NULL`
         )
@@ -718,6 +793,11 @@ export async function calculateAPAging() {
     let days60 = 0;
     let days90 = 0;
     let days90Plus = 0;
+    let currentCount = 0;
+    let days30Count = 0;
+    let days60Count = 0;
+    let days90Count = 0;
+    let days90PlusCount = 0;
 
     result.forEach(bill => {
       const amountDue = Number(bill.amountDue) || 0;
@@ -728,18 +808,34 @@ export async function calculateAPAging() {
 
       if (daysPastDue < 0) {
         current += amountDue;
+        currentCount++;
       } else if (daysPastDue <= 30) {
         days30 += amountDue;
+        days30Count++;
       } else if (daysPastDue <= 60) {
         days60 += amountDue;
+        days60Count++;
       } else if (daysPastDue <= 90) {
         days90 += amountDue;
+        days90Count++;
       } else {
         days90Plus += amountDue;
+        days90PlusCount++;
       }
     });
 
-    return { current, days30, days60, days90, days90Plus };
+    return {
+      current,
+      days30,
+      days60,
+      days90,
+      days90Plus,
+      currentCount,
+      days30Count,
+      days60Count,
+      days90Count,
+      days90PlusCount,
+    };
   } catch (error) {
     // Log the error for debugging but rethrow for frontend to handle
     console.error("[arApDb] calculateAPAging error:", error);

@@ -1,5 +1,7 @@
 # Active Claude Sessions
 
+> Status note (2026-04-06): This file is a legacy session registry snapshot and should not be treated as live startup truth. Start with `docs/agent-context/START_HERE.md` instead.
+
 ## Real-Time Coordination for Parallel Development
 
 **Last Updated:** 2026-02-04

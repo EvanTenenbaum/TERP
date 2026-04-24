@@ -2,6 +2,17 @@ interface DraftRef {
   id: string;
 }
 
+export function resolveSelectedDraft<T extends DraftRef>(
+  drafts: T[],
+  selectedDraftId?: string | null
+): T | null {
+  if (!selectedDraftId) {
+    return null;
+  }
+
+  return drafts.find(draft => draft.id === selectedDraftId) ?? null;
+}
+
 export function resolveNextSelectedDraftId(params: {
   drafts: DraftRef[];
   requestedDraftId?: string | null;

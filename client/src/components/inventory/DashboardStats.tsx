@@ -60,7 +60,7 @@ export function DashboardStats({
               {formatUnits(totalUnits)} total units
             </p>
           </div>
-          <DollarSign className="h-8 w-8 text-green-600" />
+          <DollarSign className="h-8 w-8 text-[var(--success)]" />
         </div>
       </Card>
 
@@ -74,7 +74,7 @@ export function DashboardStats({
               Average COGS
             </p>
           </div>
-          <TrendingUp className="h-8 w-8 text-blue-600" />
+          <TrendingUp className="h-8 w-8 text-[var(--info)]" />
         </div>
       </Card>
 
@@ -82,7 +82,7 @@ export function DashboardStats({
       <Card 
         className={`p-6 cursor-pointer transition-colors ${
           activeFilter === "AWAITING_INTAKE" 
-            ? "bg-blue-50 border-blue-300 ring-2 ring-blue-500" 
+            ? "bg-[var(--info-bg)] border-blue-300 ring-2 ring-blue-500" 
             : "hover:bg-muted/50"
         }`}
         onClick={() => onFilterChange(activeFilter === "AWAITING_INTAKE" ? null : "AWAITING_INTAKE")}
@@ -95,7 +95,7 @@ export function DashboardStats({
               {awaitingIntakeCount === 1 ? "batch" : "batches"} pending
             </p>
           </div>
-          <Clock className="h-8 w-8 text-orange-600" />
+          <Clock className="h-8 w-8 text-[var(--warning)]" />
         </div>
       </Card>
 
@@ -103,7 +103,7 @@ export function DashboardStats({
       <Card 
         className={`p-6 cursor-pointer transition-colors ${
           activeFilter === "LOW_STOCK" 
-            ? "bg-purple-50 border-purple-300 ring-2 ring-purple-500" 
+            ? "bg-muted border-purple-300 ring-2 ring-purple-500" 
             : "hover:bg-muted/50"
         }`}
         onClick={() => onFilterChange(activeFilter === "LOW_STOCK" ? null : "LOW_STOCK")}
@@ -116,7 +116,7 @@ export function DashboardStats({
               ≤100 units available
             </p>
           </div>
-          <Package className="h-8 w-8 text-purple-600" />
+          <Package className="h-8 w-8 text-primary" />
         </div>
       </Card>
     </div>

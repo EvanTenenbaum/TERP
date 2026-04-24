@@ -185,7 +185,7 @@ export function WeightCustomizer({
         <div className="flex items-center justify-between pt-4 border-t">
           <div className="text-sm">
             Total:{" "}
-            <span className={isValidTotal ? "text-green-600" : "text-red-600"}>
+            <span className={isValidTotal ? "text-[var(--success)]" : "text-destructive"}>
               {totalWeight.toFixed(0)}%
             </span>
             {weightData?.isCustom && (

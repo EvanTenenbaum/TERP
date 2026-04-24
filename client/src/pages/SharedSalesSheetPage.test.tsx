@@ -1,0 +1,81 @@
+/**
+ * @vitest-environment jsdom
+ */
+
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import SharedSalesSheetPage from "./SharedSalesSheetPage";
+
+const sharedSheet = {
+  clientName: "Golden State",
+  createdAt: "2026-04-07T10:00:00.000Z",
+  expiresAt: "2026-04-10T10:00:00.000Z",
+  itemCount: 1,
+  items: [
+    {
+      id: 1,
+      name: "Blue Dream",
+      category: "Flower",
+      subcategory: "Indoor",
+      brand: "Andy Rhan",
+      vendor: "SupplierCo",
+      batchSku: "BT-42",
+      quantity: 12,
+      price: 1200,
+      imageUrl: null,
+    },
+  ],
+};
+
+vi.mock("wouter", () => ({
+  useRoute: vi.fn(() => [true, { token: "share-token" }]),
+}));
+
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    salesSheets: {
+      getByToken: {
+        useQuery: vi.fn(() => ({
+          data: sharedSheet,
+          isLoading: false,
+          error: null,
+        })),
+      },
+    },
+  },
+}));
+
+describe("SharedSalesSheetPage", () => {
+  it("renders descriptor-rich item identity and confirmation terms", () => {
+    render(<SharedSalesSheetPage />);
+
+    expect(screen.getByText("Sales Catalogue")).toBeInTheDocument();
+    expect(screen.getByText("Prepared for Golden State")).toBeInTheDocument();
+    expect(screen.getByText("Blue Dream")).toBeInTheDocument();
+    expect(screen.getByText("Andy Rhan")).toBeInTheDocument();
+    expect(screen.getByText("Flower · Indoor")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("columnheader", { name: "Category" })
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Pricing and availability are subject to final confirmation."
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Shared on/)).toBeInTheDocument();
+  });
+
+  it("does not expose batch SKU or vendor in rendered output", () => {
+    render(<SharedSalesSheetPage />);
+
+    expect(screen.queryByText("BT-42")).not.toBeInTheDocument();
+    expect(screen.queryByText("SupplierCo")).not.toBeInTheDocument();
+  });
+
+  it("renders shared date label not created date", () => {
+    render(<SharedSalesSheetPage />);
+
+    expect(screen.getByText(/Shared on/)).toBeInTheDocument();
+    expect(screen.queryByText(/Created on/)).not.toBeInTheDocument();
+  });
+});

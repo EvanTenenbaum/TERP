@@ -17,6 +17,45 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+/**
+ * TER-1295: Recursively count children in the `actions` slot that look like
+ * primary buttons (i.e. our `<Button>` component rendered with the default
+ * variant — explicit `variant="default"` or no variant at all).
+ *
+ * Handles React fragments transparently so typical JSX like
+ * `actions={<>...<Button ... /></>}` is inspected correctly.
+ *
+ * We intentionally restrict detection to the project's `<Button>` component to
+ * avoid false positives from dropdown triggers, native `<button>` elements, or
+ * unrelated wrappers that happen to accept a `variant` prop.
+ */
+function countPrimaryActions(node: React.ReactNode): number {
+  let count = 0;
+  React.Children.forEach(node, child => {
+    if (!React.isValidElement(child)) return;
+
+    // Descend into fragments so `<>…</>` groupings are flattened.
+    if (child.type === React.Fragment) {
+      const fragmentProps = child.props as { children?: React.ReactNode };
+      count += countPrimaryActions(fragmentProps.children);
+      return;
+    }
+
+    if (child.type === Button) {
+      const buttonProps = child.props as { variant?: string };
+      // Default variant: either explicitly "default" or not specified.
+      if (
+        buttonProps.variant === undefined ||
+        buttonProps.variant === "default"
+      ) {
+        count++;
+      }
+    }
+  });
+  return count;
+}
 
 interface PageHeaderProps {
   /** Primary page title — rendered as an h1 */
@@ -50,6 +89,22 @@ export function PageHeader({
   className,
   divider = false,
 }: PageHeaderProps) {
+  // TER-1295: Development-only advisory invariant — warn (never throw) when a
+  // PageHeader renders more than one primary (variant="default") button in its
+  // `actions` slot. The check is stripped from production builds by the
+  // `process.env.NODE_ENV === "development"` guard, which Vite replaces at
+  // build time.
+  if (process.env.NODE_ENV === "development" && actions) {
+    const primaryCount = countPrimaryActions(actions);
+    if (primaryCount > 1) {
+      console.error(
+        `PageHeader: multiple primary actions detected on "${title}" ` +
+          `(${primaryCount} found). Only one button may have variant='default'. ` +
+          `Move extras to variant='outline', variant='ghost', or inside a <DropdownMenu>.`
+      );
+    }
+  }
+
   return (
     <div
       className={cn(

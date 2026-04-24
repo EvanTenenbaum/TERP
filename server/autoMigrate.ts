@@ -165,6 +165,24 @@ const FINGERPRINT_CANARIES = [
         AND COLUMN_NAME = 'dueDate'
     )`,
   },
+  {
+    key: "orders.shipping.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'orders'
+        AND COLUMN_NAME = 'shipping'
+    )`,
+  },
+  {
+    key: "orders.show_adjustment_on_document.column",
+    condition: sql`EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'orders'
+        AND COLUMN_NAME = 'show_adjustment_on_document'
+    )`,
+  },
 ] as const;
 
 export const FINGERPRINT_CANARY_COUNT = FINGERPRINT_CANARIES.length;
@@ -681,7 +699,7 @@ export async function runAutoMigrations() {
     // Add cogsAdjustmentType column (enum)
     try {
       await db.execute(
-        sql`ALTER TABLE clients ADD COLUMN cogsAdjustmentType ENUM('NONE', 'PERCENTAGE', 'FIXED_AMOUNT') DEFAULT 'NONE'`
+        sql`ALTER TABLE clients ADD COLUMN cogsAdjustmentType ENUM('NONE', 'PERCENTAGE', 'PERCENTAGE_DECREASE', 'PERCENTAGE_INCREASE', 'FIXED_AMOUNT', 'FIXED_DECREASE', 'FIXED_INCREASE') DEFAULT 'NONE'`
       );
       console.info("  ✅ Added cogsAdjustmentType column to clients");
     } catch (error) {
@@ -706,6 +724,22 @@ export async function runAutoMigrations() {
       } else {
         console.info("  ⚠️  clients.cogs_adjustment_value:", errMsg);
       }
+    }
+
+    // Expand cogsAdjustmentType enum to support INCREASE variants
+    try {
+      await db.execute(
+        sql`ALTER TABLE clients MODIFY COLUMN cogsAdjustmentType ENUM('NONE', 'PERCENTAGE', 'PERCENTAGE_DECREASE', 'PERCENTAGE_INCREASE', 'FIXED_AMOUNT', 'FIXED_DECREASE', 'FIXED_INCREASE') DEFAULT 'NONE'`
+      );
+      console.info(
+        "  ✅ Expanded cogsAdjustmentType enum with INCREASE variants"
+      );
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      console.info(
+        "  ℹ️  cogsAdjustmentType enum expand:",
+        errMsg.slice(0, 80)
+      );
     }
 
     // Add auto_defer_consignment column
@@ -877,6 +911,34 @@ export async function runAutoMigrations() {
         console.info("  ℹ️  orders.version already exists");
       } else {
         console.info("  ⚠️  orders.version:", errMsg);
+      }
+    }
+
+    try {
+      await db.execute(
+        sql`ALTER TABLE orders ADD COLUMN shipping DECIMAL(15, 2) DEFAULT 0`
+      );
+      console.info("  ✅ Added shipping column to orders");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  orders.shipping already exists");
+      } else {
+        console.info("  ⚠️  orders.shipping:", errMsg);
+      }
+    }
+
+    try {
+      await db.execute(
+        sql`ALTER TABLE orders ADD COLUMN show_adjustment_on_document BOOLEAN NOT NULL DEFAULT TRUE`
+      );
+      console.info("  ✅ Added show_adjustment_on_document column to orders");
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      if (errMsg.includes("Duplicate column")) {
+        console.info("  ℹ️  orders.show_adjustment_on_document already exists");
+      } else {
+        console.info("  ⚠️  orders.show_adjustment_on_document:", errMsg);
       }
     }
 

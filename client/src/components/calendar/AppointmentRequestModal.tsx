@@ -74,9 +74,9 @@ export default function AppointmentRequestModal({
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      approved: "bg-green-100 text-green-800 border-green-200",
-      rejected: "bg-red-100 text-red-800 border-red-200",
+      pending: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200",
+      approved: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
+      rejected: "bg-destructive/10 text-destructive border-red-200",
       cancelled: "bg-gray-100 text-gray-800 border-gray-200",
     };
     return (
@@ -167,7 +167,7 @@ export default function AppointmentRequestModal({
                     <Mail className="h-4 w-4" />
                     <a
                       href={`mailto:${request.clientEmail}`}
-                      className="text-blue-600 hover:underline"
+                      className="text-[var(--info)] hover:underline"
                     >
                       {request.clientEmail}
                     </a>
@@ -178,7 +178,7 @@ export default function AppointmentRequestModal({
                     <Phone className="h-4 w-4" />
                     <a
                       href={`tel:${request.clientPhone}`}
-                      className="text-blue-600 hover:underline"
+                      className="text-[var(--info)] hover:underline"
                     >
                       {request.clientPhone}
                     </a>
@@ -240,7 +240,7 @@ export default function AppointmentRequestModal({
                         disabled={
                           rejectMutation.isPending || !responseNotes.trim()
                         }
-                        className="flex-1 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                        className="flex-1 rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive disabled:opacity-50"
                       >
                         {rejectMutation.isPending
                           ? "Rejecting..."
@@ -265,7 +265,7 @@ export default function AppointmentRequestModal({
                     <div className="flex gap-3">
                       <button
                         onClick={() => setIsRejecting(true)}
-                        className="flex-1 rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                        className="flex-1 rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
                       >
                         <X className="mr-1 inline h-4 w-4" />
                         Reject
@@ -273,7 +273,7 @@ export default function AppointmentRequestModal({
                       <button
                         onClick={handleApprove}
                         disabled={approveMutation.isPending}
-                        className="flex-1 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                        className="flex-1 rounded-md bg-[var(--success)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--success)] disabled:opacity-50"
                       >
                         <Check className="mr-1 inline h-4 w-4" />
                         {approveMutation.isPending ? "Approving..." : "Approve"}

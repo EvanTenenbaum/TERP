@@ -1,6 +1,7 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
-import { simpleAuth } from "./simpleAuth";
+import { simpleAuth, type AuthStatus } from "./simpleAuth";
+import { getSessionCookieOptions } from "./cookies";
 import { getUserByEmail, getUser, upsertUser } from "../db";
 import { env } from "./env";
 import { logger } from "./logger";
@@ -180,30 +181,32 @@ export async function createContext(
 
   // Try to get authenticated user (completely optional - never throw)
   let user: User | null = null;
+  // TER-1149: track *why* auth did or didn't succeed so we can gate the
+  // DEMO_MODE auto-re-auth path. A cookie that was just revoked must NOT
+  // be silently re-provisioned as Super Admin on the very next request.
+  let authStatus: AuthStatus = "no-cookie";
 
   try {
-    // Check if there's a session token first (avoid calling authenticateRequest if no token)
-    const cookies = opts.req.cookies || {};
-    const token = cookies["terp_session"];
-    if (token && typeof token === "string") {
-      try {
-        user = await simpleAuth.authenticateRequest(opts.req);
-        logger.debug({ userId: user.id }, "Authenticated user in context");
-      } catch (_authError) {
-        // Authentication failed - this is expected for anonymous users
-        // Continue to public user provisioning
-        logger.debug("No valid auth token, using public user");
-      }
+    const result = await simpleAuth.authenticateRequestWithStatus(opts.req);
+    authStatus = result.status;
+    if (result.status === "ok" && result.user) {
+      user = result.user;
+      logger.debug({ userId: user.id }, "Authenticated user in context");
+    } else {
+      logger.debug({ authStatus }, "No valid auth token, using public user");
     }
   } catch (error) {
     // Any error in auth check - continue to public user
+    authStatus = "invalid";
     logger.debug({ error }, "Auth check error (non-fatal), using public user");
   }
 
   // If no authenticated user, check for DEMO_MODE or provision public user
   if (!user) {
-    // DEMO_MODE: Auto-authenticate as Super Admin
-    if (env.DEMO_MODE) {
+    // DEMO_MODE: Auto-authenticate as Super Admin — but ONLY when the browser
+    // did not just have its session revoked. TER-1149: skipping this for
+    // `invalidated` is the whole point; otherwise logout is instantly undone.
+    if (env.DEMO_MODE && authStatus !== "invalidated") {
       try {
         user = await getOrCreateDemoAdmin();
         logger.debug(
@@ -214,9 +217,7 @@ export async function createContext(
         // Set the session cookie for subsequent requests
         const token = simpleAuth.createSessionToken(user);
         opts.res.cookie("terp_session", token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
+          ...getSessionCookieOptions(opts.req),
           maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
         });
       } catch (error) {

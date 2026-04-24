@@ -4,7 +4,9 @@
 
 **Version:** 1.1  
 **Last Updated:** 2026-02-01  
-**Status:** ACTIVE
+**Status:** LEGACY ENTRYPOINT - redirect to `docs/agent-context/START_HERE.md`
+
+> Status note (2026-04-06): This file is preserved for historical compatibility with older prompt packs. Do not use it as current startup truth. Start with `docs/agent-context/START_HERE.md` and `docs/agent-context/state.json` instead.
 
 ---
 

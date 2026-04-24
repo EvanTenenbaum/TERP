@@ -6,16 +6,19 @@ import {
   ArrowRightLeft,
   CircleDollarSign,
   Edit,
+  Info,
   Receipt,
   ShieldAlert,
 } from "lucide-react";
 import { AddCommunicationModal } from "@/components/clients/AddCommunicationModal";
 import { ClientCalendarTab } from "@/components/clients/ClientCalendarTab";
 import { CommunicationTimeline } from "@/components/clients/CommunicationTimeline";
+import { PaymentFollowUpPanel } from "@/components/clients/PaymentFollowUpPanel";
 import { SupplierProfileSection } from "@/components/clients/SupplierProfileSection";
 import { VIPPortalSettings } from "@/components/clients/VIPPortalSettings";
 import { CommentWidget } from "@/components/comments/CommentWidget";
 import { BackButton } from "@/components/common/BackButton";
+import { ConsignmentRangePanel } from "@/components/accounting/ConsignmentRangePanel";
 import { CreditStatusCard } from "@/components/credit/CreditStatusCard";
 import { FreeformNoteWidget } from "@/components/dashboard/widgets-v2";
 import {
@@ -27,7 +30,13 @@ import { PricingConfigTab } from "@/components/pricing/PricingConfigTab";
 import { LiveCatalogConfig } from "@/components/vip-portal/LiveCatalogConfig";
 import { InspectorPanel } from "@/components/work-surface/InspectorPanel";
 import { Badge } from "@/components/ui/badge";
+import { RelationshipRoleBadge } from "@/components/relationships/RelationshipRoleBadge";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -57,6 +66,18 @@ import {
 import { trpc } from "@/lib/trpc";
 import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
 import type { RelationshipProfileMoneyData } from "@/types/relationshipProfile";
+import {
+  buildPaymentFollowUpNotes,
+  buildPaymentFollowUpSubject,
+  type PaymentCommunicationType,
+} from "@/components/clients/paymentFollowUp";
+
+type CommunicationDraft = {
+  type: PaymentCommunicationType;
+  subject: string;
+  notes?: string;
+  title?: string;
+};
 
 const PROFILE_TABS: Array<{
   value: RelationshipProfileSection;
@@ -93,7 +114,7 @@ const sourcePathForLedgerEntry = (
     case "PAYMENT":
       return `/accounting/payments?id=${entry.sourceId}`;
     case "PURCHASE_ORDER":
-      return `/purchase-orders?id=${entry.sourceId}`;
+      return `/purchase-orders?poId=${entry.sourceId}`;
     default:
       return null;
   }
@@ -144,6 +165,8 @@ export default function ClientProfilePage() {
     );
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [communicationModalOpen, setCommunicationModalOpen] = useState(false);
+  const [communicationDraft, setCommunicationDraft] =
+    useState<CommunicationDraft | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<
     RelationshipProfileMoneyData["transactionHistory"][number] | null
   >(null);
@@ -348,8 +371,36 @@ export default function ClientProfilePage() {
   const shell = shellQuery.data;
   const money = moneyQuery.data;
   const moneySummary = money?.summary ?? shell?.financials.moneySummary;
+  const supplierSettlementSummary =
+    supplyQuery.data?.supplier?.context?.settlementSummary ?? null;
   const isCustomer = shell?.roles.includes("Customer") ?? false;
   const isSupplier = shell?.roles.includes("Supplier") ?? false;
+
+  const handleOpenPaymentFollowUp = (type: PaymentCommunicationType) => {
+    if (!moneySummary) {
+      setCommunicationDraft({
+        type,
+        subject: buildPaymentFollowUpSubject(type),
+        title: "Log Payment Follow-up",
+      });
+      setCommunicationModalOpen(true);
+      return;
+    }
+
+    setCommunicationDraft({
+      type,
+      subject: buildPaymentFollowUpSubject(type),
+      notes: buildPaymentFollowUpNotes({
+        mode: moneySummary.mode,
+        receivableAmount: moneySummary.receivable.computedBalance,
+        payableAmount: moneySummary.payable.amountDue,
+        openPayableCount: moneySummary.payable.openPayableCount,
+        netPosition: moneySummary.netPosition,
+      }),
+      title: "Log Payment Follow-up",
+    });
+    setCommunicationModalOpen(true);
+  };
 
   const commandStrip = (
     <div className="flex flex-wrap items-center gap-2">
@@ -423,7 +474,7 @@ export default function ClientProfilePage() {
   if (!shell) {
     return (
       <div className="space-y-4 p-4 md:p-6">
-        <BackButton />
+        <BackButton className="block xl:hidden" />
         <EmptyCard message="This relationship profile could not be loaded." />
       </div>
     );
@@ -431,16 +482,13 @@ export default function ClientProfilePage() {
 
   return (
     <div className="space-y-4 px-4 py-4 md:px-6">
-      <BackButton />
+      <BackButton className="block xl:hidden" />
 
       <LinearWorkspaceShell
         title={shell.name}
-        description="Unified customer and supplier workspace with money, pricing, inventory, and activity in one place."
-        section="Relationships"
         activeTab={activeSection}
         tabs={PROFILE_TABS}
         onTabChange={handleSectionChange}
-        meta={meta}
         commandStrip={commandStrip}
       >
         <LinearWorkspacePanel value="overview">
@@ -468,12 +516,27 @@ export default function ClientProfilePage() {
                   </div>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm font-medium">Roles</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-sm font-medium">Roles</p>
+                        {shell.roles.includes("Customer") &&
+                        shell.roles.includes("Supplier") ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              This account acts as both a Customer (you sell to
+                              them) and a Supplier (you buy from them). Sales
+                              data appears in Sales &amp; Pricing; purchase
+                              history and payables appear in Supply &amp;
+                              Inventory.
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : null}
+                      </div>
                       <div className="mt-2 flex flex-wrap gap-2">
                         {shell.roles.map(role => (
-                          <Badge key={role} variant="secondary">
-                            {role}
-                          </Badge>
+                          <RelationshipRoleBadge key={role} role={role} />
                         ))}
                       </div>
                     </div>
@@ -554,14 +617,17 @@ export default function ClientProfilePage() {
               <MetricCard
                 label="Lifetime Value"
                 value={formatMoney(shell.financials.lifetimeValue)}
+                hint="Total invoiced across completed sales orders"
               />
               <MetricCard
                 label="Profit"
                 value={formatMoney(shell.financials.profitability)}
+                hint="Revenue minus COGS on completed orders"
               />
               <MetricCard
                 label="Average Margin"
                 value={`${shell.financials.averageMarginPercent.toFixed(1)}%`}
+                hint="Weighted average across completed orders"
               />
               <MetricCard
                 label="Open Quotes"
@@ -778,18 +844,48 @@ export default function ClientProfilePage() {
               <MetricCard
                 label="Ledger Net"
                 value={formatMoney(money?.ledgerTotals.netBalance)}
+                hint="Running total across all ledger entries (sales, payments, adjustments)"
               />
             </div>
+
+            <p className="text-xs text-muted-foreground">
+              Receivable is derived from stored transaction balances. Ledger Net
+              sums all sales, purchase, payment, and adjustment entries — they
+              represent different accounting views and may differ.
+            </p>
+
+            {moneySummary ? (
+              <PaymentFollowUpPanel
+                clientId={clientId}
+                context={{
+                  mode: moneySummary.mode,
+                  receivableAmount: moneySummary.receivable.computedBalance,
+                  payableAmount: moneySummary.payable.amountDue,
+                  openPayableCount: moneySummary.payable.openPayableCount,
+                  netPosition: moneySummary.netPosition,
+                }}
+                onLogFollowUp={handleOpenPaymentFollowUp}
+              />
+            ) : null}
 
             {shouldShowCreditWidgetInProfile && isCustomer ? (
               <CreditStatusCard clientId={clientId} clientName={shell.name} />
             ) : null}
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-base">Transaction History</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Click a row to edit supported transactions.
+              <CardHeader>
+                <div className="flex flex-row items-center justify-between">
+                  <CardTitle className="text-base">
+                    Transaction History
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Click a row to edit supported transactions.
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Legacy per-client records (TXN). The Ledger Timeline below
+                  reflects the full accounting view across orders, payments, and
+                  adjustments (ORD / PAY).
                 </p>
               </CardHeader>
               <CardContent>
@@ -811,7 +907,14 @@ export default function ClientProfilePage() {
                           className="cursor-pointer"
                           onClick={() => setSelectedTransaction(transaction)}
                         >
-                          <TableCell>{transaction.transactionType}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center gap-1">
+                              <span className="font-mono text-xs text-muted-foreground">
+                                TXN
+                              </span>
+                              <span>{transaction.transactionType}</span>
+                            </span>
+                          </TableCell>
                           <TableCell>
                             {transaction.transactionNumber ||
                               `#${transaction.id}`}
@@ -1038,6 +1141,63 @@ export default function ClientProfilePage() {
                   />
                 </div>
 
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">
+                      Settlement Context
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <MetricCard
+                        label="Payable Due"
+                        value={formatMoney(
+                          moneySummary?.payable.amountDue ?? 0
+                        )}
+                      />
+                      <MetricCard
+                        label="Paid Out"
+                        value={formatMoney(
+                          moneySummary?.payable.amountPaid ?? 0
+                        )}
+                      />
+                      <MetricCard
+                        label="Below-Range Sales"
+                        value={String(
+                          supplierSettlementSummary?.belowRangeSaleCount ?? 0
+                        )}
+                      />
+                      <MetricCard
+                        label="Below-Range Units"
+                        value={Number(
+                          supplierSettlementSummary?.belowRangeUnitsSold ?? 0
+                        ).toFixed(2)}
+                      />
+                    </div>
+
+                    <div className="rounded-xl border border-border/70 bg-muted/30 p-3">
+                      <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                        Latest settlement exception
+                      </p>
+                      <p className="mt-2 text-sm">
+                        {supplierSettlementSummary?.latestBelowRangeReason ||
+                          "No below-range sale exceptions recorded."}
+                      </p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {supplierSettlementSummary?.latestBelowRangeAt
+                          ? `Updated ${formatDate(
+                              supplierSettlementSummary.latestBelowRangeAt
+                            )}`
+                          : "No follow-up needed right now."}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {isSupplier ? (
+                  <ConsignmentRangePanel vendorClientId={clientId} />
+                ) : null}
+
                 <div className="grid gap-4 xl:grid-cols-2">
                   <Card>
                     <CardHeader>
@@ -1093,6 +1253,7 @@ export default function ClientProfilePage() {
                               <TableHead>PO</TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Date</TableHead>
+                              <TableHead>Expected</TableHead>
                               <TableHead className="text-right">
                                 Total
                               </TableHead>
@@ -1106,6 +1267,9 @@ export default function ClientProfilePage() {
                                   <TableCell>{po.status}</TableCell>
                                   <TableCell>
                                     {formatDate(po.orderDate)}
+                                  </TableCell>
+                                  <TableCell>
+                                    {formatDate(po.expectedDeliveryDate)}
                                   </TableCell>
                                   <TableCell className="text-right">
                                     {formatMoney(po.total)}
@@ -1133,7 +1297,10 @@ export default function ClientProfilePage() {
             <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
               <CommunicationTimeline
                 clientId={clientId}
-                onAddClick={() => setCommunicationModalOpen(true)}
+                onAddClick={() => {
+                  setCommunicationDraft(null);
+                  setCommunicationModalOpen(true);
+                }}
               />
 
               <Card>
@@ -1361,14 +1528,21 @@ export default function ClientProfilePage() {
       <AddCommunicationModal
         clientId={clientId}
         open={communicationModalOpen}
-        onOpenChange={setCommunicationModalOpen}
+        onOpenChange={open => {
+          setCommunicationModalOpen(open);
+          if (!open) {
+            setCommunicationDraft(null);
+          }
+        }}
         onSuccess={() => {
           void Promise.all([
             activityQuery.refetch(),
+            utils.clients.communications.list.invalidate(),
             utils.relationshipProfile.getActivity.invalidate({ clientId }),
             utils.relationshipProfile.getShell.invalidate({ clientId }),
           ]);
         }}
+        draft={communicationDraft}
       />
 
       <InspectorPanel

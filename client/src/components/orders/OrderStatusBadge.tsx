@@ -41,15 +41,15 @@ const STATUS_CONFIG: Record<
   },
   CONFIRMED: {
     label: "Confirmed",
-    className: "bg-blue-100 text-blue-900 border-blue-400",
+    className: "bg-[var(--info-bg)] text-[var(--info)] border-blue-400",
   },
   PENDING: {
     label: "Pending",
-    className: "bg-yellow-100 text-yellow-900 border-yellow-500",
+    className: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-500",
   },
   READY: {
     label: "Ready",
-    className: "bg-purple-100 text-purple-900 border-purple-400",
+    className: "bg-muted text-primary border-purple-400",
   },
   SHIPPED: {
     label: "Shipped",
@@ -57,11 +57,11 @@ const STATUS_CONFIG: Record<
   },
   DELIVERED: {
     label: "Delivered",
-    className: "bg-green-100 text-green-900 border-green-400",
+    className: "bg-[var(--success-bg)] text-[var(--success)] border-green-400",
   },
   RETURNED: {
     label: "Returned",
-    className: "bg-orange-100 text-orange-900 border-orange-400",
+    className: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-400",
   },
   RESTOCKED: {
     label: "Restocked",
@@ -73,7 +73,7 @@ const STATUS_CONFIG: Record<
   },
   CANCELLED: {
     label: "Cancelled",
-    className: "bg-red-100 text-red-900 border-red-400",
+    className: "bg-destructive/10 text-destructive border-red-400",
   },
 };
 

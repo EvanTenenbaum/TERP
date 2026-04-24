@@ -61,6 +61,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
+import { getRelationshipSummary } from "@/lib/relationshipSummary";
 
 // ============================================================================
 // TYPES
@@ -122,24 +123,29 @@ function VendorTypeBadges({ vendor }: { vendor: Vendor }) {
   const badges: { label: string; className: string }[] = [];
 
   // Always show Supplier badge for vendors
-  badges.push({ label: "Supplier", className: "bg-green-100 text-green-800" });
+  badges.push({ label: "Supplier", className: "bg-[var(--success-bg)] text-[var(--success)]" });
 
   if (vendor.isBuyer)
-    badges.push({ label: "Customer", className: "bg-blue-100 text-blue-800" });
+    badges.push({ label: "Customer", className: "bg-[var(--info-bg)] text-[var(--info)]" });
   if (vendor.isBrand)
-    badges.push({ label: "Brand", className: "bg-purple-100 text-purple-800" });
+    badges.push({ label: "Brand", className: "bg-muted text-primary" });
 
   return (
-    <div className="flex gap-1 flex-wrap">
-      {badges.map(badge => (
-        <Badge
-          key={badge.label}
-          variant="outline"
-          className={cn("text-xs", badge.className)}
-        >
-          {badge.label}
-        </Badge>
-      ))}
+    <div className="space-y-1">
+      <p className="text-sm font-medium text-foreground">
+        {getRelationshipSummary(vendor)}
+      </p>
+      <div className="flex gap-1 flex-wrap">
+        {badges.map(badge => (
+          <Badge
+            key={badge.label}
+            variant="outline"
+            className={cn("text-xs", badge.className)}
+          >
+            {badge.label}
+          </Badge>
+        ))}
+      </div>
     </div>
   );
 }
@@ -187,7 +193,7 @@ function VendorInspectorContent({
           <InspectorField label="Email">
             <a
               href={`mailto:${vendor.email}`}
-              className="flex items-center gap-2 text-blue-600 hover:underline"
+              className="flex items-center gap-2 text-[var(--info)] hover:underline"
             >
               <Mail className="h-4 w-4" />
               {vendor.email}
@@ -199,7 +205,7 @@ function VendorInspectorContent({
           <InspectorField label="Phone">
             <a
               href={`tel:${vendor.phone}`}
-              className="flex items-center gap-2 text-blue-600 hover:underline"
+              className="flex items-center gap-2 text-[var(--info)] hover:underline"
             >
               <Phone className="h-4 w-4" />
               {vendor.phone}
@@ -222,7 +228,7 @@ function VendorInspectorContent({
         <div className="grid grid-cols-2 gap-4">
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">All Time Value</p>
-            <p className="font-semibold text-green-600">
+            <p className="font-semibold text-[var(--success)]">
               {formatCurrency(vendor.lifetimeValue)}
             </p>
           </div>
@@ -242,7 +248,7 @@ function VendorInspectorContent({
               className={cn(
                 "font-semibold",
                 parseFloat(String(vendor.currentDebt || 0)) > 0 &&
-                  "text-red-600"
+                  "text-destructive"
               )}
             >
               {formatCurrency(vendor.currentDebt)}
@@ -615,7 +621,7 @@ export function VendorsWorkSurface() {
                         Name <SortIcon column="name" />
                       </span>
                     </TableHead>
-                    <TableHead>Type</TableHead>
+                    <TableHead>Relationship</TableHead>
                     <TableHead>Contact</TableHead>
                     <TableHead
                       className="cursor-pointer text-right"
@@ -668,7 +674,7 @@ export function VendorsWorkSurface() {
                       <TableCell className="text-sm text-muted-foreground">
                         {vendor.email || vendor.phone || "-"}
                       </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
+                      <TableCell className="text-right font-medium text-[var(--success)]">
                         {formatCurrency(vendor.lifetimeValue)}
                       </TableCell>
                       <TableCell className="text-right">
@@ -748,18 +754,16 @@ export function VendorsWorkSurface() {
         </InspectorPanel>
       </div>
 
-      {isAddSupplierOpen ? (
-        <AddClientWizard
-          open={isAddSupplierOpen}
-          onOpenChange={setIsAddSupplierOpen}
-          defaultRoles={{ isSeller: true }}
-          onSuccess={clientId => {
-            setLocation(
-              buildRelationshipProfilePath(clientId, "supply-inventory")
-            );
-          }}
-        />
-      ) : null}
+      <AddClientWizard
+        open={isAddSupplierOpen}
+        onOpenChange={setIsAddSupplierOpen}
+        defaultRoles={{ isSeller: true }}
+        onSuccess={clientId => {
+          setLocation(
+            buildRelationshipProfilePath(clientId, "supply-inventory")
+          );
+        }}
+      />
     </div>
   );
 }

@@ -25,6 +25,7 @@ import * as inventoryDb from "../inventoryDb";
 import * as pricingEngine from "../pricingEngine";
 import * as salesSheetsDb from "../salesSheetsDb";
 import * as vendorContextDb from "../vendorContextDb";
+import { isPublicDemoUser } from "../_core/context";
 import { requirePermission } from "../_core/permissionMiddleware";
 import {
   getAuthenticatedUserId,
@@ -374,7 +375,8 @@ export const relationshipProfileRouter = router({
     .use(requirePermission("clients:read"))
     .input(clientIdSchema)
     .query(async ({ ctx, input }) => {
-      const userId = getAuthenticatedUserId(ctx);
+      const userId =
+        ctx.user && !isPublicDemoUser(ctx.user) ? ctx.user.id : null;
       const { client, db } = await getClientOrThrow(input.clientId);
       const [
         referrer,
@@ -445,7 +447,9 @@ export const relationshipProfileRouter = router({
           })
           .from(clientTransactions)
           .where(eq(clientTransactions.clientId, input.clientId)),
-        salesSheetsDb.getDrafts(userId, input.clientId),
+        userId
+          ? salesSheetsDb.getDrafts(userId, input.clientId)
+          : Promise.resolve([]),
         db
           .select({
             sentSalesSheets: sql<number>`COUNT(*)`,
@@ -505,9 +509,11 @@ export const relationshipProfileRouter = router({
       }> = [];
       const moneyMode = getRelationshipMoneyMode(client);
 
+      const storedCreditLimit = parseMoney(client.creditLimit);
       if (
         (moneyMode === "customer" || moneyMode === "hybrid") &&
-        balance.computedBalance > parseMoney(client.creditLimit)
+        storedCreditLimit > 0 &&
+        balance.computedBalance > storedCreditLimit
       ) {
         alerts.push({
           tone: "warning",
@@ -873,28 +879,38 @@ export const relationshipProfileRouter = router({
               updatedAt: normalizeDate(creditLimitRow[0].updatedAt),
             }
           : null,
-        transactionHistory: transactions.map(row => ({
-          id: row.id,
-          transactionType: row.transactionType,
-          transactionNumber: row.transactionNumber,
-          transactionDate: normalizeDate(row.transactionDate),
-          amount: parseMoney(row.amount),
-          paymentStatus: row.paymentStatus,
-          paymentDate: normalizeDate(row.paymentDate),
-          paymentAmount: parseMoney(row.paymentAmount),
-          notes: row.notes,
-        })),
-        paymentHistory: paymentRows.map(row => ({
-          id: row.id,
-          paymentNumber: row.paymentNumber,
-          paymentType: row.paymentType,
-          paymentDate: normalizeDate(row.paymentDate),
-          amount: parseMoney(row.amount),
-          paymentMethod: row.paymentMethod,
-          referenceNumber: row.referenceNumber,
-          notes: row.notes,
-          createdByName: row.createdByName,
-        })),
+        transactionHistory: transactions
+          // Deduplicate by ID — guard against any duplicate rows from the DB
+          .filter(
+            (row, index, self) => index === self.findIndex(t => t.id === row.id)
+          )
+          .map(row => ({
+            id: row.id,
+            transactionType: row.transactionType,
+            transactionNumber: row.transactionNumber,
+            transactionDate: normalizeDate(row.transactionDate),
+            amount: parseMoney(row.amount),
+            paymentStatus: row.paymentStatus,
+            paymentDate: normalizeDate(row.paymentDate),
+            paymentAmount: parseMoney(row.paymentAmount),
+            notes: row.notes,
+          })),
+        paymentHistory: paymentRows
+          // Deduplicate by ID — a dual-role client can appear as both customerId and vendorId
+          .filter(
+            (row, index, self) => index === self.findIndex(p => p.id === row.id)
+          )
+          .map(row => ({
+            id: row.id,
+            paymentNumber: row.paymentNumber,
+            paymentType: row.paymentType,
+            paymentDate: normalizeDate(row.paymentDate),
+            amount: parseMoney(row.amount),
+            paymentMethod: row.paymentMethod,
+            referenceNumber: row.referenceNumber,
+            notes: row.notes,
+            createdByName: row.createdByName,
+          })),
         ledgerTimeline: ledger.entries,
         ledgerTotals: ledger.totals,
       };
@@ -990,6 +1006,32 @@ export const relationshipProfileRouter = router({
           : Promise.resolve(null),
       ]);
 
+      const settlementSummary = supplierContextResult?.data
+        ? supplierContextResult.data.supplyHistory.reduce(
+            (summary, lot) => {
+              for (const product of lot.products) {
+                summary.belowRangeSaleCount += product.belowRangeSaleCount;
+                summary.belowRangeUnitsSold += product.belowRangeUnitsSold;
+
+                const nextAt = product.latestBelowRangeAt || "";
+                if (nextAt && nextAt > summary.latestBelowRangeAt) {
+                  summary.latestBelowRangeAt = nextAt;
+                  summary.latestBelowRangeReason =
+                    product.latestBelowRangeReason || null;
+                }
+              }
+
+              return summary;
+            },
+            {
+              belowRangeSaleCount: 0,
+              belowRangeUnitsSold: 0,
+              latestBelowRangeReason: null as string | null,
+              latestBelowRangeAt: "",
+            }
+          )
+        : null;
+
       return {
         systemInventory: inventoryPreview.items.map(item => ({
           id: item.batch.id,
@@ -1047,6 +1089,18 @@ export const relationshipProfileRouter = router({
                     activeInventory:
                       supplierContextResult.data.activeInventory ?? [],
                     relatedBrands: supplierContextResult.data.relatedBrands,
+                    settlementSummary: settlementSummary
+                      ? {
+                          belowRangeSaleCount:
+                            settlementSummary.belowRangeSaleCount,
+                          belowRangeUnitsSold:
+                            settlementSummary.belowRangeUnitsSold,
+                          latestBelowRangeReason:
+                            settlementSummary.latestBelowRangeReason,
+                          latestBelowRangeAt:
+                            settlementSummary.latestBelowRangeAt || null,
+                        }
+                      : null,
                   }
                 : null,
               contextError: supplierContextResult?.error ?? null,

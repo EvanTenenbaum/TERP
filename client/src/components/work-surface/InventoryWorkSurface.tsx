@@ -14,10 +14,14 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useLocation } from "wouter";
+import { buildProductIdentityLines } from "@/lib/productIdentity";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { INVENTORY_STATUS_TOKENS } from "../../lib/statusTokens";
+import {
+  getBatchStatusLabel,
+  INVENTORY_STATUS_TOKENS,
+} from "../../lib/statusTokens";
 import { buildOperationsWorkspacePath } from "@/lib/workspaceRoutes";
 import { formatInventoryAdjustmentReason } from "@shared/inventoryAdjustmentReasons";
 
@@ -200,12 +204,12 @@ interface BatchVersionEntity {
 
 const BATCH_STATUSES = [
   { value: "ALL", label: "All Statuses" },
-  { value: "AWAITING_INTAKE", label: "Awaiting Intake" },
-  { value: "LIVE", label: "Live" },
-  { value: "ON_HOLD", label: "On Hold" },
-  { value: "QUARANTINED", label: "Quarantined" },
-  { value: "SOLD_OUT", label: "Sold Out" },
-  { value: "CLOSED", label: "Closed" },
+  { value: "AWAITING_INTAKE", label: getBatchStatusLabel("AWAITING_INTAKE") },
+  { value: "LIVE", label: getBatchStatusLabel("LIVE") },
+  { value: "ON_HOLD", label: getBatchStatusLabel("ON_HOLD") },
+  { value: "QUARANTINED", label: getBatchStatusLabel("QUARANTINED") },
+  { value: "SOLD_OUT", label: getBatchStatusLabel("SOLD_OUT") },
+  { value: "CLOSED", label: getBatchStatusLabel("CLOSED") },
 ];
 
 const STATUS_COLORS: Record<string, string> = {
@@ -352,7 +356,7 @@ function BatchStatusBadge({ status }: { status: string }) {
       variant="outline"
       className={cn("text-xs", STATUS_COLORS[status] || STATUS_COLORS.LIVE)}
     >
-      {status.replace(/_/g, " ")}
+      {getBatchStatusLabel(status)}
     </Badge>
   );
 }
@@ -405,12 +409,29 @@ function BatchInspectorContent({
 
         <InspectorField label="Product">
           <p className="font-medium">{product?.nameCanonical || "Unknown"}</p>
-          {product?.category && (
-            <p className="text-sm text-muted-foreground">
-              {product.category}{" "}
-              {product.subcategory ? `/ ${product.subcategory}` : ""}
-            </p>
-          )}
+          {(() => {
+            const identityLines = buildProductIdentityLines({
+              brand: brand?.name,
+              vendor: vendor?.name,
+              category: product?.category,
+              subcategory: product?.subcategory,
+            });
+
+            return (
+              <>
+                {identityLines.secondary ? (
+                  <p className="text-sm text-muted-foreground">
+                    {identityLines.secondary}
+                  </p>
+                ) : null}
+                {identityLines.tertiary ? (
+                  <p className="text-sm text-muted-foreground/80">
+                    {identityLines.tertiary}
+                  </p>
+                ) : null}
+              </>
+            );
+          })()}
         </InspectorField>
 
         {batch.grade && (
@@ -444,7 +465,7 @@ function BatchInspectorContent({
             <p
               className={cn(
                 "font-semibold text-lg",
-                available <= 0 && "text-red-600"
+                available <= 0 && "text-destructive"
               )}
             >
               {formatQuantity(available)}
@@ -459,9 +480,9 @@ function BatchInspectorContent({
             <p className="font-semibold">{formatQuantity(hold)}</p>
           </div>
           {quarantine > 0 && (
-            <div className="p-3 bg-red-50 rounded-lg col-span-2">
-              <p className="text-xs text-red-600">Quarantined</p>
-              <p className="font-semibold text-red-700">
+            <div className="p-3 bg-destructive/10 rounded-lg col-span-2">
+              <p className="text-xs text-destructive">Quarantined</p>
+              <p className="font-semibold text-destructive">
                 {formatQuantity(quarantine)}
               </p>
             </div>
@@ -475,7 +496,7 @@ function BatchInspectorContent({
             <p className="font-semibold">{formatCurrency(batch.unitCogs)}</p>
           </InspectorField>
           <InspectorField label="Total Value">
-            <p className="font-semibold text-green-600">
+            <p className="font-semibold text-[var(--success)]">
               {formatCurrency(totalValue)}
             </p>
           </InspectorField>
@@ -1341,7 +1362,7 @@ export function InventoryWorkSurface() {
             if (!previousStatus || previousStatus === newStatus) return;
             notifyStatusFilterExit({ sku: batch?.sku, id: batchId }, newStatus);
             undo.registerAction({
-              description: `Changed status to ${newStatus.replace(/_/g, " ")}`,
+              description: `Changed status to ${getBatchStatusLabel(newStatus)}`,
               undo: async () => {
                 setSaving("Undoing status update...");
                 await undoStatusMutation.mutateAsync({
@@ -1455,7 +1476,7 @@ export function InventoryWorkSurface() {
             editStatus
           );
           undo.registerAction({
-            description: `Edited status to ${editStatus.replace(/_/g, " ")}`,
+            description: `Edited status to ${getBatchStatusLabel(editStatus)}`,
             undo: async () => {
               setSaving("Undoing status update...");
               await undoStatusMutation.mutateAsync({
@@ -1599,7 +1620,9 @@ export function InventoryWorkSurface() {
         vendor: vendor?.name || "",
         brand: brand?.name || "",
         grade: batch?.grade || "",
-        status: batch?.batchStatus || "",
+        status: batch?.batchStatus
+          ? getBatchStatusLabel(batch.batchStatus)
+          : "",
         onHand: formatQuantity(onHand),
         reserved: formatQuantity(reserved),
         quarantine: formatQuantity(quarantine),
@@ -1863,7 +1886,9 @@ export function InventoryWorkSurface() {
           {/* TER-220: Unified receiving entry point */}
           <Button
             data-testid="new-batch-btn"
-            onClick={() => setLocation(buildOperationsWorkspacePath("receiving"))}
+            onClick={() =>
+              setLocation(buildOperationsWorkspacePath("receiving"))
+            }
           >
             <Plus className="h-4 w-4 mr-2" />
             Open Receiving Queue
@@ -1901,7 +1926,7 @@ export function InventoryWorkSurface() {
       {successMessage && (
         <div
           data-testid="success-toast"
-          className="toast-success mx-6 mt-3 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800"
+          className="toast-success mx-6 mt-3 rounded-md border border-green-200 bg-[var(--success-bg)] px-3 py-2 text-sm text-[var(--success)]"
         >
           {successMessage}
         </div>
@@ -1988,7 +2013,7 @@ export function InventoryWorkSurface() {
         <div
           role="alert"
           aria-live="assertive"
-          className="mx-6 mt-3 flex items-center justify-between rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          className="mx-6 mt-3 flex items-center justify-between rounded-md border border-red-200 bg-destructive/10 px-4 py-3 text-sm text-destructive"
         >
           <span>{bulkDeleteError}</span>
           <div className="flex items-center gap-2">
@@ -2101,11 +2126,16 @@ export function InventoryWorkSurface() {
               <EmptyState
                 variant="inventory"
                 title="No inventory found"
-                description="Receive products to start managing stock, locations, and availability."
+                description="Receive products to start managing stock, availability, and movement history from one sheet."
                 action={{
                   label: "Open Receiving Queue",
                   onClick: () =>
                     setLocation(buildOperationsWorkspacePath("receiving")),
+                }}
+                secondaryAction={{
+                  label: "Start Direct Intake",
+                  onClick: () =>
+                    setLocation(buildOperationsWorkspacePath("intake")),
                 }}
               />
             )
@@ -2422,7 +2452,33 @@ export function InventoryWorkSurface() {
                                   {item.batch?.sku}
                                 </TableCell>
                                 <TableCell>
-                                  {item.product?.nameCanonical || "-"}
+                                  {(() => {
+                                    const identityLines =
+                                      buildProductIdentityLines({
+                                        brand: item.brand?.name,
+                                        vendor: item.vendor?.name,
+                                        category: item.product?.category,
+                                        subcategory: item.product?.subcategory,
+                                      });
+
+                                    return (
+                                      <div className="flex min-w-0 flex-col py-0.5">
+                                        <span className="truncate font-medium">
+                                          {item.product?.nameCanonical || "-"}
+                                        </span>
+                                        {identityLines.secondary ? (
+                                          <span className="truncate text-[10px] text-muted-foreground">
+                                            {identityLines.secondary}
+                                          </span>
+                                        ) : null}
+                                        {identityLines.tertiary ? (
+                                          <span className="truncate text-[10px] text-muted-foreground/80">
+                                            {identityLines.tertiary}
+                                          </span>
+                                        ) : null}
+                                      </div>
+                                    );
+                                  })()}
                                 </TableCell>
                                 <TableCell>{item.brand?.name || "-"}</TableCell>
                                 <TableCell>
@@ -2454,7 +2510,7 @@ export function InventoryWorkSurface() {
                                   <span
                                     className={cn(
                                       available <= 100 &&
-                                        "text-orange-600 font-semibold"
+                                        "text-[var(--warning)] font-semibold"
                                     )}
                                   >
                                     {formatQuantity(available)}
@@ -2518,9 +2574,10 @@ export function InventoryWorkSurface() {
                             sku: item.batch.sku,
                             productName:
                               item.product?.nameCanonical || "Unknown",
-                            brandName: item.brand?.name || "Unknown",
-                            vendorName: item.vendor?.name || "Unknown",
+                            brandName: item.brand?.name,
+                            vendorName: item.vendor?.name,
                             category: item.product?.category,
+                            subcategory: item.product?.subcategory,
                             grade: item.batch.grade || "-",
                             status: item.batch.batchStatus,
                             onHandQty: item.batch.onHandQty,
@@ -2560,9 +2617,10 @@ export function InventoryWorkSurface() {
                         productName={
                           item.product?.nameCanonical || "Unknown Product"
                         }
-                        brandName={item.brand?.name || "-"}
-                        vendorName={item.vendor?.name || "-"}
+                        brandName={item.brand?.name}
+                        vendorName={item.vendor?.name}
                         category={item.product?.category}
+                        subcategory={item.product?.subcategory}
                         status={item.batch.batchStatus}
                         onHandQty={item.batch.onHandQty}
                         reservedQty={item.batch.reservedQty}

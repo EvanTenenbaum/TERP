@@ -1,0 +1,229 @@
+<h2>Phase 3: Banking + Ops Surfaces + Phase 4: Dashboard Styling</h2>
+<p class="subtitle">Four standard registry surfaces following the established template, plus a light styling pass on Dashboard.</p>
+
+<!-- ================================================================ -->
+<!-- SUMMARY TABLE -->
+<!-- ================================================================ -->
+<div class="section">
+  <h3>Phase 3 — Standard Registry Template Applied</h3>
+  <p style="font-size:12px;color:#666;margin-bottom:12px">All four follow the same skeleton: Toolbar (title + KPI badges) → Action Bar (filters + actions) → PowersheetGrid + Collapsible Inspector → Status Bar. No support modules needed — these are simple registries.</p>
+
+  <table style="width:100%;font-size:11px;border-collapse:collapse">
+    <tr style="background:#f5f6f8">
+      <th style="padding:8px;text-align:left;border-bottom:2px solid #d0d3d8;width:15%">Surface</th>
+      <th style="padding:8px;text-align:left;border-bottom:2px solid #d0d3d8;width:20%">KPI Badges</th>
+      <th style="padding:8px;text-align:left;border-bottom:2px solid #d0d3d8;width:20%">Filter Tabs</th>
+      <th style="padding:8px;text-align:left;border-bottom:2px solid #d0d3d8;width:25%">Grid Columns</th>
+      <th style="padding:8px;text-align:left;border-bottom:2px solid #d0d3d8;width:20%">Actions</th>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:8px;font-weight:600">Expenses</td>
+      <td style="padding:8px">
+        <span style="font-size:9px;padding:2px 5px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:3px;color:#e65100">$12,400 total</span>
+        <span style="font-size:9px;padding:2px 5px;background:#e3f2fd;border:1px solid #bbdefb;border-radius:3px;color:#1565c0">86 entries</span>
+        <span style="font-size:9px;padding:2px 5px;background:#fce4ec;border:1px solid #f8bbd0;border-radius:3px;color:#c62828">4 pending reimb.</span>
+      </td>
+      <td style="padding:8px">All | By category (dropdown)<br>+ Reimbursable toggle</td>
+      <td style="padding:8px">Expense#, Date, Description, Category, Amount, Reimbursable, Reimbursed</td>
+      <td style="padding:8px">Export CSV</td>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:8px;font-weight:600">Bank Accounts</td>
+      <td style="padding:8px">
+        <span style="font-size:9px;padding:2px 5px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:3px;color:#2e7d32">$156,800 cash</span>
+        <span style="font-size:9px;padding:2px 5px;background:#e3f2fd;border:1px solid #bbdefb;border-radius:3px;color:#1565c0">5 accounts</span>
+        <span style="font-size:9px;padding:2px 5px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:3px;color:#2e7d32">4 active</span>
+      </td>
+      <td style="padding:8px">All | By type (Checking/Savings/Credit Card/Money Market)</td>
+      <td style="padding:8px">Account Name, Account#, Bank, Type, Balance, Active</td>
+      <td style="padding:8px">Toggle Active</td>
+    </tr>
+    <tr style="border-bottom:1px solid #eee">
+      <td style="padding:8px;font-weight:600">Bank Txns</td>
+      <td style="padding:8px">
+        <span style="font-size:9px;padding:2px 5px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:3px;color:#2e7d32">$42,100 deposits</span>
+        <span style="font-size:9px;padding:2px 5px;background:#ffebee;border:1px solid #ffcdd2;border-radius:3px;color:#c62828">$28,600 withdrawals</span>
+        <span style="font-size:9px;padding:2px 5px;background:#fff8e1;border:1px solid #ffecb3;border-radius:3px;color:#f57f17">12 unreconciled</span>
+      </td>
+      <td style="padding:8px">All | Deposit | Withdrawal | Transfer | Fee<br>+ Reconciled / Unreconciled</td>
+      <td style="padding:8px">Date, Type, Description, Reference#, Amount, Reconciled</td>
+      <td style="padding:8px">Toggle Reconciled, Export CSV</td>
+    </tr>
+    <tr>
+      <td style="padding:8px;font-weight:600">Fiscal Periods</td>
+      <td style="padding:8px">
+        <span style="font-size:9px;padding:2px 5px;background:#e3f2fd;border:1px solid #bbdefb;border-radius:3px;color:#1565c0">12 periods</span>
+        <span style="font-size:9px;padding:2px 5px;background:#e8f5e9;border:1px solid #c8e6c9;border-radius:3px;color:#2e7d32">Q1 2026 open</span>
+      </td>
+      <td style="padding:8px">All | Open | Closed | Locked<br>Group by fiscal year</td>
+      <td style="padding:8px">Period Name, Fiscal Year, Start Date, End Date, Status</td>
+      <td style="padding:8px">Create Period, Close Period, Lock Period</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ================================================================ -->
+<!-- EXPENSES MOCKUP (representative) -->
+<!-- ================================================================ -->
+<div class="section" style="margin-top:20px">
+  <h3>Representative Mockup: Expenses</h3>
+  <p style="font-size:11px;color:#888">All Phase 3 surfaces follow this same pattern — only data/actions differ.</p>
+  <div class="mockup">
+    <div class="mockup-header">ExpensesSurface — Standard Registry</div>
+    <div class="mockup-body" style="font-size:11px;line-height:1.4;padding:0">
+      <!-- Toolbar -->
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 8px;background:#f8f9fa;border-bottom:1px solid #e2e4e7">
+        <span style="font-weight:700;font-size:12px;letter-spacing:-0.3px">Expenses</span>
+        <span style="font-size:9px;padding:2px 7px;background:#fff3e0;border:1px solid #ffe0b2;border-radius:4px;color:#e65100;font-weight:500">$12,400 total</span>
+        <span style="font-size:9px;padding:2px 7px;background:#e3f2fd;border:1px solid #bbdefb;border-radius:4px;color:#1565c0;font-weight:500">86 entries</span>
+        <span style="font-size:9px;padding:2px 7px;background:#fce4ec;border:1px solid #f8bbd0;border-radius:4px;color:#c62828;font-weight:500">4 pending reimb.</span>
+        <span style="flex:1"></span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#999">🔍 Search expenses...</span>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;cursor:pointer;color:#555">↻</span>
+      </div>
+      <!-- Action bar -->
+      <div style="display:flex;align-items:center;gap:5px;padding:3px 8px;background:#fafbfc;border-bottom:1px solid #eee">
+        <span style="font-size:9px;padding:2px 8px;background:#1565c0;color:white;border-radius:3px;font-weight:500">All</span>
+        <div style="display:flex;align-items:center;gap:3px;padding:2px 6px;background:white;border:1px solid #ddd;border-radius:4px">
+          <span style="font-size:8px;color:#888">Category:</span>
+          <span style="font-size:9px">All categories</span>
+          <span style="font-size:8px;color:#999">▾</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:3px;padding:2px 6px;background:white;border:1px solid #ddd;border-radius:4px;cursor:pointer">
+          <span style="font-size:9px;color:#555">☐ Reimbursable only</span>
+        </div>
+        <div style="flex:1"></div>
+        <span style="font-size:9px;padding:2px 7px;border:1px solid #ddd;border-radius:4px;color:#555;cursor:pointer">↓ Export CSV</span>
+      </div>
+      <!-- Grid -->
+      <div style="background:white">
+        <div style="display:grid;grid-template-columns:85px 70px 1fr 100px 75px 60px 65px;gap:0;font-size:9px">
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Expense #</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Date</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Description</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee">Category</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee;text-align:right">Amount</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;border-right:1px solid #eee;text-align:center">Reimb.</div>
+          <div style="padding:4px 6px;background:#f5f6f8;font-weight:600;border-bottom:2px solid #d0d3d8;text-align:center">Paid?</div>
+          <!-- Rows -->
+          <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">EXP-086</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 25</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Packaging supplies — bulk</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#f3e5f5;color:#7b1fa2;border-radius:3px">Supplies</span></div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$340.00</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:center;color:#2e7d32">✓</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;text-align:center;color:#ccc">—</div>
+
+          <div style="padding:4px 6px;font-family:monospace;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">EXP-085</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Mar 22</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee">Delivery fuel — weekly fill</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#e3f2fd;color:#1565c0;border-radius:3px">Transport</span></div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:right;font-family:monospace">$185.00</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;border-right:1px solid #eee;text-align:center;color:#ccc">—</div>
+          <div style="padding:4px 6px;border-bottom:1px solid #f0f0f0;text-align:center;color:#ccc">—</div>
+
+          <div style="padding:4px 6px;font-family:monospace;border-right:1px solid #eee">EXP-084</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee">Mar 20</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee">Compliance lab testing fee</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee"><span style="font-size:8px;padding:1px 4px;background:#fff8e1;color:#f57f17;border-radius:3px">Compliance</span></div>
+          <div style="padding:4px 6px;border-right:1px solid #eee;text-align:right;font-family:monospace">$750.00</div>
+          <div style="padding:4px 6px;border-right:1px solid #eee;text-align:center;color:#2e7d32">✓</div>
+          <div style="padding:4px 6px;text-align:center;color:#2e7d32">✓</div>
+        </div>
+      </div>
+      <!-- Status bar -->
+      <div style="display:flex;align-items:center;padding:3px 8px;background:#f8f9fa;border-top:1px solid #e2e4e7;border-radius:0 0 6px 6px;font-size:9px;color:#888">
+        <span>0 selected · All categories · 86 expenses</span>
+        <span style="flex:1"></span>
+        <span>Click select · ⌘C copy</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
+<!-- PHASE 4: DASHBOARD STYLING PASS -->
+<!-- ================================================================ -->
+<div class="section" style="margin-top:28px">
+  <h3>Phase 4: Dashboard Styling Pass</h3>
+  <p style="font-size:12px;color:#666;margin-bottom:12px">No layout changes. Apply density tokens so Dashboard doesn't feel jarring next to the new surfaces.</p>
+
+  <div class="split" style="gap:16px">
+    <div>
+      <div style="font-size:11px;font-weight:600;margin-bottom:6px;color:#888">Before (current)</div>
+      <div style="padding:12px;background:#f8f9fa;border:1px solid #eee;border-radius:8px;font-size:10px">
+        <div style="padding:16px;background:white;border:1px solid #e2e4e7;border-radius:12px;margin-bottom:12px">
+          <div style="font-size:14px;font-weight:600;margin-bottom:8px">Receive payment</div>
+          <div style="font-size:11px;color:#888;margin-bottom:8px">Record incoming cash...</div>
+          <div style="font-size:18px;font-weight:700;color:#2e7d32;margin-bottom:8px">$24,500</div>
+          <div style="padding:8px 16px;background:#2e7d32;color:white;border-radius:8px;display:inline-block;font-size:12px">Receive Payment</div>
+        </div>
+        <div style="font-size:9px;color:#999;text-align:center">12px border-radius · 16px card padding · 18px data · 14px headers</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:11px;font-weight:600;margin-bottom:6px;color:#1565c0">After (density-aligned)</div>
+      <div style="padding:8px;background:#f8f9fa;border:1px solid #eee;border-radius:6px;font-size:10px">
+        <div style="padding:10px;background:white;border:1px solid #e2e4e7;border-radius:6px;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:600;margin-bottom:4px">Receive payment</div>
+          <div style="font-size:10px;color:#888;margin-bottom:6px">Record incoming cash...</div>
+          <div style="font-size:16px;font-weight:700;color:#2e7d32;margin-bottom:6px">$24,500</div>
+          <div style="padding:5px 12px;background:#2e7d32;color:white;border-radius:4px;display:inline-block;font-size:11px">Receive Payment</div>
+        </div>
+        <div style="font-size:9px;color:#999;text-align:center">6px border-radius · 10px card padding · 16px data · 12px headers</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px">
+    <h3>Dashboard Density Tokens Applied</h3>
+    <table style="width:100%;font-size:11px;border-collapse:collapse">
+      <tr style="background:#f5f6f8">
+        <th style="padding:6px;text-align:left;border-bottom:2px solid #d0d3d8">Property</th>
+        <th style="padding:6px;text-align:left;border-bottom:2px solid #d0d3d8">Current</th>
+        <th style="padding:6px;text-align:left;border-bottom:2px solid #d0d3d8">New</th>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <td style="padding:6px">Card border-radius</td>
+        <td style="padding:6px">12px (rounded-xl)</td>
+        <td style="padding:6px;font-weight:500">6px (rounded-md)</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <td style="padding:6px">Card padding</td>
+        <td style="padding:6px">16px (p-4)</td>
+        <td style="padding:6px;font-weight:500">10px (p-2.5)</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <td style="padding:6px">Card gap</td>
+        <td style="padding:6px">16px (gap-4)</td>
+        <td style="padding:6px;font-weight:500">8px (gap-2)</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <td style="padding:6px">Section headers</td>
+        <td style="padding:6px">14-16px</td>
+        <td style="padding:6px;font-weight:500">12px</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <td style="padding:6px">KPI values</td>
+        <td style="padding:6px">18-24px</td>
+        <td style="padding:6px;font-weight:500">16px</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <td style="padding:6px">Labels/descriptions</td>
+        <td style="padding:6px">11-14px</td>
+        <td style="padding:6px;font-weight:500">9-11px</td>
+      </tr>
+      <tr style="border-bottom:1px solid #eee">
+        <td style="padding:6px">Button padding</td>
+        <td style="padding:6px">8px 16px</td>
+        <td style="padding:6px;font-weight:500">5px 12px</td>
+      </tr>
+      <tr>
+        <td style="padding:6px">Button border-radius</td>
+        <td style="padding:6px">8px</td>
+        <td style="padding:6px;font-weight:500">4px</td>
+      </tr>
+    </table>
+    <p style="font-size:11px;color:#888;margin-top:8px"><strong>What doesn't change:</strong> Layout structure, quick action positions, tab navigation, color scheme, "Start here" badge, AR/AP totals, overdue tables, recent activity, expense breakdown. Everything stays where it is — just tighter and denser.</p>
+  </div>
+</div>

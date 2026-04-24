@@ -116,6 +116,16 @@ const samplesAffordances: PowersheetAffordance[] = [
 
 type TabFilter = "ALL" | "OUT" | "RETURN";
 
+function formatOperationalDate(value: Date | string | null | undefined): string {
+  if (!value) return "—";
+  try {
+    const date = typeof value === "string" ? new Date(value) : value;
+    return format(date, "MMM d, yyyy");
+  } catch {
+    return "—";
+  }
+}
+
 // ============================================================================
 // Row type
 // ============================================================================
@@ -746,6 +756,8 @@ export function SamplesPilotSurface({
         minWidth: 110,
         maxWidth: 130,
         cellClass: "powersheet-cell--locked",
+        valueFormatter: params =>
+          formatOperationalDate(params.value as string | null | undefined),
       },
       {
         // DISC-SAM-003: dedicated column parsed from notes text
@@ -756,7 +768,8 @@ export function SamplesPilotSurface({
         cellClass: "powersheet-cell--locked",
         headerTooltip:
           "Due date parsed from notes field (Due Date: YYYY-MM-DD)",
-        valueFormatter: params => (params.value as string | null) ?? "-",
+        valueFormatter: params =>
+          formatOperationalDate(params.value as string | null | undefined),
       },
       {
         field: "location",
@@ -1031,15 +1044,9 @@ export function SamplesPilotSurface({
         <PowersheetGrid
           surfaceId="samples-queue"
           requirementIds={["SAM-001", "SAM-002", "SAM-003", "SAM-009"]}
-          releaseGateIds={[
-            "SAM-WF-001",
-            "SAM-WF-002",
-            "SAM-WF-003",
-            "SAM-WF-009",
-          ]}
           affordances={samplesAffordances}
           title="Sample Request Queue"
-          description="All active sample requests with status, location, due date (parsed from notes), and expiration. Select a row to access workflow actions. DISC-SAM-001: fulfillRequest is now wired."
+          description="All active sample requests with status, location, due date, and expiration. Select a row to access workflow actions."
           rows={rows}
           columnDefs={columnDefs}
           getRowId={row => row.identity.rowKey}
@@ -1047,6 +1054,12 @@ export function SamplesPilotSurface({
           onSelectedRowChange={row =>
             setSelectedSampleId(row?.sampleId ?? null)
           }
+          onRowClicked={event => {
+            const row = event.data;
+            if (row) {
+              setSelectedSampleId(row.sampleId);
+            }
+          }}
           selectionMode="cell-range"
           enableFillHandle={false}
           enableUndoRedo={false}
@@ -1057,11 +1070,9 @@ export function SamplesPilotSurface({
           emptyDescription="Adjust the search or tab filter, or create a new sample request."
           summary={
             <span>
-              {rows.length} visible rows of {allRows.length} total · dueDate
-              column: DISC-SAM-003 resolved
+              {rows.length} visible · {allRows.length} total
             </span>
           }
-          antiDriftSummary="Samples queue: selection drives row action bar, inspector, and workflow dialogs. fulfillRequest (DISC-SAM-001) must remain wired."
           minHeight={400}
         />
 
@@ -1136,11 +1147,11 @@ export function SamplesPilotSurface({
 
             <InspectorSection title="Dates">
               <InspectorField label="Requested">
-                <p>{selectedRow.requestedDate}</p>
+                <p>{formatOperationalDate(selectedRow.requestedDate)}</p>
               </InspectorField>
               <InspectorField label="Due Date">
                 {/* DISC-SAM-003 */}
-                <p>{selectedRow.dueDate ?? "—"}</p>
+                <p>{formatOperationalDate(selectedRow.dueDate)}</p>
               </InspectorField>
               {/* DISC-SAM-002: Editable expiration date */}
               <InspectorField label="Expires">
@@ -1190,7 +1201,7 @@ export function SamplesPilotSurface({
                     </PopoverContent>
                   </Popover>
                 ) : (
-                  <p>{selectedRow.expirationDate ?? "—"}</p>
+                  <p>{formatOperationalDate(selectedRow.expirationDate)}</p>
                 )}
               </InspectorField>
             </InspectorSection>

@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "domscribe": {
+      "command": "pnpm",
+      "args": ["exec", "domscribe", "mcp"]
+    },
     "digitalocean": {
       "command": "npx",
       "args": ["-y", "@digitalocean/mcp"],

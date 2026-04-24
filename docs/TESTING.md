@@ -16,6 +16,7 @@ Local TERP verification now auto-bootstrap the shared MySQL test DB by default.
 Useful commands:
 
 ```bash
+pnpm agent:prepare        # In local worktrees, link shared node_modules and verify local bins
 pnpm test:db:ensure        # Start/migrate/seed local DB only when needed
 pnpm test:db:fresh         # Force a clean light reset
 pnpm test:db:ensure:full   # Ensure full dataset is available
@@ -41,6 +42,43 @@ Opt-outs:
 | Pre-production deploy  | `pnpm test:smoke:prod`                                            | ~2 min  |
 | Stress testing staging | `pnpm qa:stress --env=staging --profile=smoke`                    | ~5 min  |
 | Full QA pipeline       | `pnpm qa:pipeline`                                                | ~15 min |
+
+---
+
+## Local UI Runtime Inspection with Domscribe
+
+Use Domscribe when you need live UI truth during implementation, not just post-merge browser QA. It is especially useful for styling bugs, conditional rendering issues, wrong props, and "what is actually on screen right now?" questions.
+
+### When to Use It
+
+- The change is visual or behaviorally tied to rendered UI.
+- The source code alone is ambiguous.
+- You want Codex to inspect the live browser state before or after an edit.
+
+### Workflow
+
+1. Start the app with `pnpm dev`.
+   If local DB bootstrap is slowing down or blocking a quick UI-debug session, use `pnpm domscribe:dev`.
+2. Open the target page in a browser.
+3. Confirm the relay is up with `pnpm domscribe:status`.
+4. Ask Codex to use Domscribe before editing, or use the in-browser overlay to capture an annotation.
+   The overlay starts collapsed by default, so a small root shell is normal until you expand it.
+
+Interpret results carefully:
+
+- `browserConnected: false` means the browser page is not connected yet, so runtime truth is unavailable.
+- `rendered: false` can be expected for wrapper components. Retry on a nearby native rendered element before assuming the UI is broken.
+- `domSnapshot` is the most useful payload for actual classes, text, and attributes.
+
+### Repo Integration Notes
+
+- App-side wiring lives in `vite.config.ts`.
+- Codex MCP wiring lives in `.codex/config.toml`.
+- Claude project MCP wiring lives in `.mcp.json`.
+- Claude skill guidance lives in `.claude/skills/terp-domscribe/SKILL.md`.
+- Local runtime artifacts live under `.domscribe/` and are gitignored.
+
+See `docs/dev-guide/DOMSCRIBE_WORKFLOW.md` for the full TERP-specific flow and prompt examples.
 
 ---
 
@@ -192,6 +230,25 @@ pnpm staging:load-test:quick # Quick 1-day simulation
 ```
 
 Chain definitions: `tests-e2e/chains/definitions/`
+
+### 5.5 Human QA Packet — `pnpm qa:human:flows`
+
+Seeded live-browser packet generation for confused-human exploratory QA.
+
+```bash
+pnpm qa:human:flows -- --help
+pnpm qa:human:flows -- --count 40 --seed "$(date +%Y%m%d)"
+pnpm qa:human:flows -- --count 60 --seed "$(date +%Y%m%d)" --format json --output "qa-results/confused-human/packet-$(date +%Y%m%d).json"
+pnpm qa:human:flows:check -- --help
+pnpm qa:human:flows:check -- --seed "$(date +%Y%m%d)"
+pnpm qa:human:flows:check -- --file "qa-results/confused-human/packet-20260401.json"
+```
+
+Validation rules:
+
+- `Candidate rows` must be non-zero
+- `Generated runs` must be non-zero
+- JSON packets must parse and expose `selectedCount > 0`
 
 ### 6. Stress Tests — `pnpm qa:stress`
 

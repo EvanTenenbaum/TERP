@@ -169,6 +169,12 @@ export function UserManagement() {
       });
       return;
     }
+    if (newPassword.length < 8) {
+      toast.error("Validation error", {
+        description: "Password must be at least 8 characters",
+      });
+      return;
+    }
     createUser.mutate({
       username: newUsername,
       password: newPassword,
@@ -190,6 +196,12 @@ export function UserManagement() {
     if (!resetUsername || !resetPassword) {
       toast.error("Validation error", {
         description: "Username and new password are required",
+      });
+      return;
+    }
+    if (resetPassword.length < 8) {
+      toast.error("Validation error", {
+        description: "Password must be at least 8 characters",
       });
       return;
     }
@@ -262,7 +274,7 @@ export function UserManagement() {
             <div className="flex items-center gap-2">
               {authError.type === "NOT_LOGGED_IN" ||
               authError.type === "SESSION_EXPIRED" ? (
-                <LogIn className="h-5 w-5 text-yellow-600" />
+                <LogIn className="h-5 w-5 text-[var(--warning)]" />
               ) : (
                 <Lock className="h-5 w-5 text-destructive" />
               )}
@@ -360,6 +372,7 @@ export function UserManagement() {
                   onChange={e => setNewUsername(e.target.value)}
                   placeholder="username"
                   required
+                  autoComplete="off"
                   aria-describedby="username-hint"
                 />
                 <p id="username-hint" className="text-xs text-muted-foreground">
@@ -375,10 +388,11 @@ export function UserManagement() {
                   onChange={e => setNewPassword(e.target.value)}
                   placeholder="password"
                   required
+                  autoComplete="new-password"
                   aria-describedby="password-hint"
                 />
                 <p id="password-hint" className="text-xs text-muted-foreground">
-                  Minimum 4 characters
+                  Minimum 8 characters
                 </p>
               </div>
               <div className="space-y-2">
@@ -388,6 +402,7 @@ export function UserManagement() {
                   value={newName}
                   onChange={e => setNewName(e.target.value)}
                   placeholder="Optional"
+                  autoComplete="off"
                 />
               </div>
             </div>
@@ -452,6 +467,7 @@ export function UserManagement() {
                   onChange={e => setResetUsername(e.target.value)}
                   placeholder="username"
                   required
+                  autoComplete="off"
                 />
               </div>
               <div className="space-y-2">
@@ -463,13 +479,14 @@ export function UserManagement() {
                   onChange={e => setResetPassword(e.target.value)}
                   placeholder="new password"
                   required
+                  autoComplete="new-password"
                   aria-describedby="reset-password-hint"
                 />
                 <p
                   id="reset-password-hint"
                   className="text-xs text-muted-foreground"
                 >
-                  Minimum 4 characters
+                  Minimum 8 characters
                 </p>
               </div>
             </div>

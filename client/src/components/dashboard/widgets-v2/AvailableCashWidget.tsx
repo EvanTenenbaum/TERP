@@ -8,7 +8,7 @@ import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/ui/empty-state";
+import { EmptyState, DatabaseErrorState } from "@/components/ui/empty-state";
 import { ArrowRight, DollarSign, Clock, Wallet } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
@@ -17,10 +17,11 @@ import { formatDateTime } from "@/lib/dateFormat";
 export const AvailableCashWidget = memo(function AvailableCashWidget() {
   const [, setLocation] = useLocation();
 
-  const { data, isLoading, error } = trpc.cashAudit.getCashDashboard.useQuery(
-    undefined,
-    { refetchInterval: 60000 } // Refresh every minute
-  );
+  const { data, isLoading, error, refetch } =
+    trpc.cashAudit.getCashDashboard.useQuery(
+      undefined,
+      { refetchInterval: 60000 } // Refresh every minute
+    );
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -74,11 +75,10 @@ export const AvailableCashWidget = memo(function AvailableCashWidget() {
             </div>
           </div>
         ) : error ? (
-          <EmptyState
-            variant="generic"
-            size="sm"
-            title="Unable to load cash data"
-            description="Please try refreshing the page"
+          <DatabaseErrorState
+            entity="cash data"
+            errorMessage={error.message}
+            onRetry={() => void refetch()}
           />
         ) : data ? (
           <div className="space-y-4">
@@ -87,12 +87,12 @@ export const AvailableCashWidget = memo(function AvailableCashWidget() {
               className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
               onClick={() => setLocation("/accounting/cash-locations")}
             >
-              <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30">
-                <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-[var(--success-bg)] dark:bg-[var(--success)]/30">
+                <DollarSign className="h-5 w-5 text-[var(--success)] dark:text-green-400" />
               </div>
               <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Cash on Hand</p>
-                <p className="text-lg font-semibold text-green-600 dark:text-green-400 font-mono">
+                <p className="text-lg font-semibold text-[var(--success)] dark:text-green-400 font-mono">
                   {formatCurrency(data.totalCashOnHand)}
                 </p>
               </div>

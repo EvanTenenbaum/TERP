@@ -78,6 +78,17 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
   const routeBillId = routeContext.billId;
 
+  // Fetch line items for the selected bill detail drawer
+  const {
+    data: selectedBillDetail,
+    isLoading: isSelectedBillDetailLoading,
+    isError: isSelectedBillDetailError,
+    error: selectedBillDetailError,
+  } = trpc.accounting.bills.getById.useQuery(
+    { id: selectedBill?.id ?? 0 },
+    { enabled: selectedBill !== null }
+  );
+
   // Fetch bills
   const {
     data: bills,
@@ -184,7 +195,23 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
   };
 
   useEffect(() => {
-    setSelectedBill(findBillByRouteId(bills?.items ?? [], routeBillId));
+    const billList = (bills?.items ?? []) as Bill[];
+
+    if (routeBillId !== null) {
+      setSelectedBill(findBillByRouteId(billList, routeBillId));
+      return;
+    }
+
+    setSelectedBill(currentSelection => {
+      if (!currentSelection) {
+        return null;
+      }
+
+      return (
+        billList.find(bill => bill.id === currentSelection.id) ??
+        currentSelection
+      );
+    });
   }, [bills, routeBillId]);
 
   useEffect(() => {
@@ -436,17 +463,61 @@ export default function Bills({ embedded }: { embedded?: boolean } = {}) {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Amount Paid:</span>
-                    <span className="font-mono text-green-600">
+                    <span className="font-mono text-[var(--success)]">
                       {formatCurrency(selectedBill.amountPaid)}
                     </span>
                   </div>
                   <div className="flex justify-between font-semibold">
                     <span>Amount Due:</span>
-                    <span className="font-mono text-red-600">
+                    <span className="font-mono text-destructive">
                       {formatCurrency(selectedBill.amountDue)}
                     </span>
                   </div>
                 </div>
+              </div>
+
+              <Separator />
+
+              {/* Line Items */}
+              <div>
+                <h3 className="font-semibold mb-3">Line Items</h3>
+                {isSelectedBillDetailLoading ? (
+                  <p className="text-sm text-muted-foreground">
+                    Loading line items...
+                  </p>
+                ) : isSelectedBillDetailError ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {selectedBillDetailError?.message
+                      ? `Unable to load line items: ${selectedBillDetailError.message}`
+                      : "Unable to load line items right now."}
+                  </p>
+                ) : (selectedBillDetail?.lineItems?.length ?? 0) === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No line items recorded for this bill.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {selectedBillDetail?.lineItems.map(item => (
+                      <div
+                        key={item.id}
+                        className="flex items-start justify-between text-sm border rounded p-2"
+                      >
+                        <div className="flex-1 min-w-0 mr-2">
+                          <p className="font-medium truncate">
+                            {item.description}
+                          </p>
+                          <p className="text-muted-foreground text-xs">
+                            Qty {item.quantity} &times;{" "}
+                            {formatCurrency(item.unitPrice)}
+                          </p>
+                        </div>
+                        <span className="font-mono font-medium shrink-0">
+                          {formatCurrency(item.lineTotal)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Separator />

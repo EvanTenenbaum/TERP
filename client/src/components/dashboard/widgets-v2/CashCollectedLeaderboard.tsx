@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState, DatabaseErrorState } from "@/components/ui/empty-state";
 import { trpc } from "@/lib/trpc";
 
 // LINT-005: Define interface for cash collected client data
@@ -29,11 +30,15 @@ export const CashCollectedLeaderboard = memo(
   function CashCollectedLeaderboard() {
     const [months, setMonths] = useState(24);
 
-    const { data: response, isLoading } =
-      trpc.dashboard.getCashCollected.useQuery(
-        { months },
-        { refetchInterval: 60000 } // Refetch every 60 seconds
-      );
+    const {
+      data: response,
+      isLoading,
+      error,
+      refetch,
+    } = trpc.dashboard.getCashCollected.useQuery(
+      { months },
+      { refetchInterval: 60000 } // Refetch every 60 seconds
+    );
 
     const data = response?.data || [];
 
@@ -71,6 +76,12 @@ export const CashCollectedLeaderboard = memo(
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-8 w-full" />
             </div>
+          ) : error ? (
+            <DatabaseErrorState
+              entity="cash collection data"
+              errorMessage={error.message}
+              onRetry={() => void refetch()}
+            />
           ) : data.length > 0 ? (
             <Table>
               <TableHeader>
@@ -89,7 +100,7 @@ export const CashCollectedLeaderboard = memo(
                     <TableCell className="font-medium">
                       {client.customerName}
                     </TableCell>
-                    <TableCell className="text-right font-mono text-green-600">
+                    <TableCell className="text-right font-mono text-[var(--success)]">
                       {formatCurrency(client.cashCollected)}
                     </TableCell>
                   </TableRow>
@@ -97,9 +108,12 @@ export const CashCollectedLeaderboard = memo(
               </TableBody>
             </Table>
           ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No cash collection data available
-            </div>
+            <EmptyState
+              variant="analytics"
+              size="sm"
+              title="No cash collection yet"
+              description="Cash collected by client appears here once payments land."
+            />
           )}
         </CardContent>
       </Card>

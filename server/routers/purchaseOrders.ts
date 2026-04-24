@@ -12,7 +12,7 @@ import {
   clients,
   brands,
 } from "../../drizzle/schema";
-import { eq, desc, sql, and, isNull } from "drizzle-orm";
+import { eq, desc, sql, and, inArray, isNull } from "drizzle-orm";
 import { getSupplierByLegacyVendorId } from "../inventoryDb";
 import { resolveOrCreateLegacyVendorId } from "../services/vendorMappingService";
 import { createSafeUnifiedResponse } from "../_core/pagination";
@@ -40,6 +40,35 @@ export function shouldFallbackRecentProductsBySupplier(error: unknown) {
     "unitcostmax",
     "deletedat",
   ]);
+}
+
+type PurchaseOrderTotalsRecord = {
+  subtotal: string | number | null;
+  total: string | number | null;
+};
+
+type PurchaseOrderTotalsItem = {
+  totalCost: string | number | null;
+  deletedAt?: Date | string | null;
+};
+
+export function normalizePurchaseOrderTotals<
+  T extends PurchaseOrderTotalsRecord,
+>(po: T, items: PurchaseOrderTotalsItem[]): T {
+  const activeSubtotal = items.reduce((sum, item) => {
+    if (item.deletedAt) return sum;
+    const totalCost = Number(item.totalCost ?? 0);
+    return Number.isFinite(totalCost) ? sum + totalCost : sum;
+  }, 0);
+
+  const normalizedSubtotal = Math.max(0, activeSubtotal);
+  const normalizedTotal = normalizedSubtotal.toFixed(2);
+
+  return {
+    ...po,
+    subtotal: normalizedTotal,
+    total: normalizedTotal,
+  };
 }
 
 const purchaseOrderItemInputSchema = z
@@ -72,6 +101,7 @@ const purchaseOrderItemInputSchema = z
       .min(0, "Maximum unit cost cannot be negative")
       .max(100_000, "Maximum unit cost must not exceed 100,000")
       .optional(),
+    notes: z.string().trim().max(1000).optional(),
   })
   .superRefine((item, ctx) => {
     if (!item.productId && !item.productName) {
@@ -209,6 +239,36 @@ export const purchaseOrdersRouter = router({
         .limit(limit)
         .offset(offset);
 
+      const poIds = pos.map(po => po.id);
+      const poItems =
+        poIds.length === 0
+          ? []
+          : await db
+              .select({
+                purchaseOrderId: purchaseOrderItems.purchaseOrderId,
+                totalCost: purchaseOrderItems.totalCost,
+              })
+              .from(purchaseOrderItems)
+              .where(
+                and(
+                  inArray(purchaseOrderItems.purchaseOrderId, poIds),
+                  isNull(purchaseOrderItems.deletedAt)
+                )
+              );
+
+      const itemsByPoId = poItems.reduce<
+        Map<number, Array<{ totalCost: string | number | null }>>
+      >((map, item) => {
+        const current = map.get(item.purchaseOrderId) ?? [];
+        current.push({ totalCost: item.totalCost });
+        map.set(item.purchaseOrderId, current);
+        return map;
+      }, new Map());
+
+      const normalizedPurchaseOrders = pos.map(po =>
+        normalizePurchaseOrderTotals(po, itemsByPoId.get(po.id) ?? [])
+      );
+
       // Get total count for pagination
       const countQuery =
         conditions.length > 0
@@ -221,7 +281,12 @@ export const purchaseOrdersRouter = router({
       const [countResult] = await countQuery;
       const total = countResult?.count ?? pos.length;
 
-      return createSafeUnifiedResponse(pos, total, limit, offset);
+      return createSafeUnifiedResponse(
+        normalizedPurchaseOrders,
+        total,
+        limit,
+        offset
+      );
     }),
 
   // Create new purchase order
@@ -355,6 +420,7 @@ export const purchaseOrdersRouter = router({
       // Generate PO number
       const poNumber = await generatePONumber(db);
 
+      // Preserve legacy create semantics: blank terms default to CONSIGNMENT.
       const normalizedPaymentTerms = normalizePurchaseOrderPaymentTerms(
         poData.paymentTerms
       );
@@ -376,6 +442,7 @@ export const purchaseOrdersRouter = router({
             unitCostMax: costSummary.unitCostMax,
             quantityOrdered: item.quantityOrdered,
             totalCost: costSummary.unitCost * item.quantityOrdered,
+            notes: item.notes?.trim() || null,
           };
         })
       );
@@ -427,7 +494,7 @@ export const purchaseOrdersRouter = router({
             unitCostMax: item.unitCostMax?.toString() ?? null,
             totalCost: (item.quantityOrdered * item.unitCost).toString(),
             supplierClientId: resolvedSupplierClientId ?? null,
-            notes: null, // Explicit null for nullable column (BUG-002)
+            notes: item.notes ?? null,
           }))
         );
       }
@@ -507,8 +574,43 @@ export const purchaseOrdersRouter = router({
         .orderBy(desc(purchaseOrders.createdAt))
         .limit(limit)
         .offset(offset);
+
+      const poIds = pos.map(po => po.id);
+      const poItems =
+        poIds.length === 0
+          ? []
+          : await db
+              .select({
+                purchaseOrderId: purchaseOrderItems.purchaseOrderId,
+                totalCost: purchaseOrderItems.totalCost,
+              })
+              .from(purchaseOrderItems)
+              .where(
+                and(
+                  inArray(purchaseOrderItems.purchaseOrderId, poIds),
+                  isNull(purchaseOrderItems.deletedAt)
+                )
+              );
+
+      const itemsByPoId = poItems.reduce<
+        Map<number, Array<{ totalCost: string | number | null }>>
+      >((map, item) => {
+        const current = map.get(item.purchaseOrderId) ?? [];
+        current.push({ totalCost: item.totalCost });
+        map.set(item.purchaseOrderId, current);
+        return map;
+      }, new Map());
+
+      const normalizedPurchaseOrders = pos.map(po =>
+        normalizePurchaseOrderTotals(po, itemsByPoId.get(po.id) ?? [])
+      );
       // BUG-034: Standardized pagination response
-      return createSafeUnifiedResponse(pos, -1, limit, offset);
+      return createSafeUnifiedResponse(
+        normalizedPurchaseOrders,
+        -1,
+        limit,
+        offset
+      );
     }),
 
   // Get purchase order by ID with items and supplier details
@@ -550,7 +652,12 @@ export const purchaseOrdersRouter = router({
         })
         .from(purchaseOrderItems)
         .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
-        .where(eq(purchaseOrderItems.purchaseOrderId, input.id));
+        .where(
+          and(
+            eq(purchaseOrderItems.purchaseOrderId, input.id),
+            isNull(purchaseOrderItems.deletedAt)
+          )
+        );
 
       // PARTY-001: Get supplier details from clients table if supplierClientId exists
       let supplier = null;
@@ -571,7 +678,7 @@ export const purchaseOrdersRouter = router({
       }
 
       return {
-        ...po,
+        ...normalizePurchaseOrderTotals(po, itemsResult),
         items: itemsResult,
         supplier, // PARTY-001: Include supplier details
       };
@@ -584,10 +691,11 @@ export const purchaseOrdersRouter = router({
       z.object({
         id: z.number(),
         supplierClientId: z.number().optional(), // Allow updating supplier
-        expectedDeliveryDate: z.string().optional(),
-        paymentTerms: z.string().optional(),
-        notes: z.string().optional(),
-        vendorNotes: z.string().optional(),
+        orderDate: z.string().optional(),
+        expectedDeliveryDate: z.string().nullable().optional(),
+        paymentTerms: z.string().nullable().optional(),
+        notes: z.string().nullable().optional(),
+        vendorNotes: z.string().nullable().optional(),
         status: z.string().optional(),
       })
     )
@@ -595,12 +703,38 @@ export const purchaseOrdersRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database not available");
 
-      const { id, expectedDeliveryDate, ...rest } = input;
+      const {
+        id,
+        orderDate,
+        expectedDeliveryDate,
+        paymentTerms,
+        notes,
+        vendorNotes,
+        ...rest
+      } = input;
 
       // Build update object with proper types
       const updateData: Record<string, unknown> = { ...rest };
-      if (expectedDeliveryDate) {
-        updateData.expectedDeliveryDate = new Date(expectedDeliveryDate);
+      if (orderDate !== undefined) {
+        updateData.orderDate = new Date(orderDate);
+      }
+      if (expectedDeliveryDate !== undefined) {
+        updateData.expectedDeliveryDate = expectedDeliveryDate
+          ? new Date(expectedDeliveryDate)
+          : null;
+      }
+      if (paymentTerms !== undefined) {
+        updateData.paymentTerms = paymentTerms?.trim()
+          ? normalizePurchaseOrderPaymentTerms(paymentTerms)
+          : null;
+      }
+      if (notes !== undefined) {
+        updateData.notes = notes?.trim() ? notes.trim() : null;
+      }
+      if (vendorNotes !== undefined) {
+        updateData.vendorNotes = vendorNotes?.trim()
+          ? vendorNotes.trim()
+          : null;
       }
 
       await db
@@ -1205,7 +1339,12 @@ export const purchaseOrdersRouter = router({
         })
         .from(purchaseOrderItems)
         .leftJoin(products, eq(purchaseOrderItems.productId, products.id))
-        .where(eq(purchaseOrderItems.purchaseOrderId, input.id));
+        .where(
+          and(
+            eq(purchaseOrderItems.purchaseOrderId, input.id),
+            isNull(purchaseOrderItems.deletedAt)
+          )
+        );
 
       // Get supplier info
       let supplierInfo = null;
@@ -1223,7 +1362,7 @@ export const purchaseOrdersRouter = router({
       }
 
       return {
-        ...po,
+        ...normalizePurchaseOrderTotals(po, items),
         items,
         supplier: supplierInfo,
       };
@@ -1506,6 +1645,7 @@ async function generatePONumber(
 }
 
 // Helper function to recalculate PO totals
+// TER-925: Filter soft-deleted items and clamp to >= 0 to prevent negative totals
 async function recalculatePOTotals(
   db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
   purchaseOrderId: number
@@ -1513,18 +1653,23 @@ async function recalculatePOTotals(
   const items = await db
     .select()
     .from(purchaseOrderItems)
-    .where(eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId));
+    .where(
+      and(
+        eq(purchaseOrderItems.purchaseOrderId, purchaseOrderId),
+        isNull(purchaseOrderItems.deletedAt)
+      )
+    );
 
-  const subtotal = items.reduce(
-    (sum, item) => sum + parseFloat(item.totalCost),
-    0
+  const subtotal = Math.max(
+    0,
+    items.reduce((sum, item) => sum + parseFloat(item.totalCost), 0)
   );
 
   await db
     .update(purchaseOrders)
     .set({
-      subtotal: subtotal.toString(),
-      total: subtotal.toString(), // Update this if tax/shipping logic is added
+      subtotal: subtotal.toFixed(2),
+      total: subtotal.toFixed(2), // Update this if tax/shipping logic is added
     })
     .where(eq(purchaseOrders.id, purchaseOrderId));
 }

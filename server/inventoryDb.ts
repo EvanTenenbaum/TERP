@@ -2092,7 +2092,8 @@ export async function calculateBatchProfitability(batchId: number) {
     totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
 
   // Calculate potential profit (remaining inventory)
-  const onHand = parseFloat(batch.onHandQty);
+  // TER-1148: Guard against null onHandQty so NaN never leaks into totals.
+  const onHand = parseFloat(batch.onHandQty || "0");
   const avgSellingPrice = unitsSold > 0 ? totalRevenue / unitsSold : 0;
   const potentialRevenue = onHand * avgSellingPrice;
   const potentialCost = onHand * unitCogs;

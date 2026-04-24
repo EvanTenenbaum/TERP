@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   router,
+  publicProcedure,
   protectedProcedure,
   getAuthenticatedUserId,
 } from "../_core/trpc";
@@ -33,6 +34,8 @@ const salesSheetItemSchema = z.object({
   name: z.string().max(255),
   category: z.string().optional(),
   subcategory: z.string().optional(),
+  brand: z.string().optional(),
+  batchSku: z.string().optional(),
   strain: z.string().optional(),
   basePrice: z.number().min(0).finite(),
   cogsMode: z.enum(["FIXED", "RANGE"]).optional(),
@@ -46,6 +49,7 @@ const salesSheetItemSchema = z.object({
   quantity: z.number().min(0).finite(),
   grade: z.string().optional(),
   vendor: z.string().optional(),
+  imageUrl: z.string().url().optional(),
   priceMarkup: z.number().finite(),
   appliedRules: z
     .array(
@@ -64,6 +68,8 @@ const draftItemSchema = z.object({
   name: z.string().max(255),
   category: z.string().optional(),
   subcategory: z.string().optional(),
+  brand: z.string().optional(),
+  batchSku: z.string().optional(),
   strain: z.string().optional(),
   basePrice: z.number().min(0).finite(),
   cogsMode: z.enum(["FIXED", "RANGE"]).optional(),
@@ -76,6 +82,7 @@ const draftItemSchema = z.object({
   quantity: z.number().min(0).finite(),
   grade: z.string().optional(),
   vendor: z.string().optional(),
+  imageUrl: z.string().url().optional(),
   priceMarkup: z.number().finite(),
   appliedRules: z
     .array(
@@ -119,21 +126,18 @@ export const salesSheetsRouter = router({
       const offset = input?.offset ?? 0;
       const clientId = input?.clientId;
 
-      // Fetch sales sheet history with optional client filter
-      const sheets = await salesSheetsDb.getSalesSheetHistory(
-        clientId ?? 0, // 0 means fetch all when supported
-        limit + offset // Fetch more to slice, since getSalesSheetHistory doesn't support offset directly
+      const { sheets, total } = await salesSheetsDb.listSalesSheets(
+        clientId,
+        limit,
+        offset
       );
 
-      // Apply offset manually
-      const paginatedSheets = sheets.slice(offset, offset + limit);
-
       return {
-        data: paginatedSheets,
-        total: sheets.length,
+        data: sheets,
+        total,
         limit,
         offset,
-        hasMore: offset + limit < sheets.length,
+        hasMore: offset + limit < total,
       };
     }),
 
@@ -389,7 +393,7 @@ export const salesSheetsRouter = router({
   /**
    * Get a sales sheet by share token (public - no auth required)
    */
-  getByToken: protectedProcedure
+  getByToken: publicProcedure
     .input(z.object({ token: z.string().min(1) }))
     .query(async ({ input }) => {
       const sheet = await salesSheetsDb.getSalesSheetByToken(input.token);
@@ -401,30 +405,55 @@ export const salesSheetsRouter = router({
       // Increment view count
       await salesSheetsDb.incrementViewCount(sheet.id);
 
-      // Return sanitized data (no COGS, no margin info)
+      // Return client-safe data only.
+      // SECURITY: never expose internal fields to this public endpoint:
+      //   - vendor / supplier names (internal procurement identity)
+      //   - batchSku (internal batch reference)
+      //   - cogs*, effectiveCogs*, unitCogs* (cost-of-goods)
+      //   - basePrice, priceMarkup, appliedRules (margin intelligence)
+      type StoredItem = {
+        id: number;
+        name: string;
+        category?: string;
+        subcategory?: string;
+        brand?: string;
+        strain?: string;
+        quantity: number;
+        finalPrice?: number;
+        retailPrice: number;
+        imageUrl?: string;
+        // internal fields present in JSON but intentionally omitted below
+        vendor?: string;
+        batchSku?: string;
+        basePrice?: number;
+        priceMarkup?: number;
+        unitCogs?: number;
+        unitCogsMin?: number | null;
+        unitCogsMax?: number | null;
+        effectiveCogs?: number;
+        cogsMode?: string;
+        effectiveCogsBasis?: string;
+        appliedRules?: unknown[];
+      };
       return {
         id: sheet.id,
         clientName: sheet.clientName,
-        items: (
-          sheet.items as unknown as Array<{
-            id: number;
-            name: string;
-            category?: string;
-            quantity: number;
-            finalPrice?: number;
-            retailPrice: number;
-          }>
-        ).map(item => ({
+        createdAt: sheet.createdAt,
+        expiresAt: sheet.shareExpiresAt,
+        totalValue: sheet.totalValue,
+        itemCount: sheet.itemCount,
+        items: (sheet.items as unknown as StoredItem[]).map(item => ({
           id: item.id,
           name: item.name,
           category: item.category,
+          subcategory: item.subcategory,
+          brand: item.brand,
+          strain: item.strain,
           quantity: item.quantity,
           price: item.finalPrice ?? item.retailPrice,
+          imageUrl: item.imageUrl,
+          // vendor, batchSku, cogs*, basePrice, priceMarkup intentionally excluded
         })),
-        totalValue: sheet.totalValue,
-        itemCount: sheet.itemCount,
-        createdAt: sheet.createdAt,
-        expiresAt: sheet.shareExpiresAt,
       };
     }),
 
@@ -487,12 +516,14 @@ export const salesSheetsRouter = router({
         filters: z.object({
           search: z.string(),
           categories: z.array(z.string()),
+          brands: z.array(z.string()),
           grades: z.array(z.string()),
           priceMin: z.number().nullable(),
           priceMax: z.number().nullable(),
           strainFamilies: z.array(z.string()),
           vendors: z.array(z.string()),
           inStockOnly: z.boolean(),
+          includeUnavailable: z.boolean(),
         }),
         sort: z.object({
           field: z.enum([

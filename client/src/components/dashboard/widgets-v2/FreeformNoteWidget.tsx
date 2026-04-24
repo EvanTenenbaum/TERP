@@ -235,7 +235,7 @@ export const FreeformNoteWidget = memo(function FreeformNoteWidget({
               </div>
             ) : lastSaved ? (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Check className="h-3 w-3 text-green-600" />
+                <Check className="h-3 w-3 text-[var(--success)]" />
                 <span>Saved {lastSaved.toLocaleTimeString()}</span>
               </div>
             ) : null}

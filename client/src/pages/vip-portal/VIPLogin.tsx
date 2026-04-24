@@ -86,7 +86,7 @@ export default function VIPLogin() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* FIX-002: Inline error display for better visibility */}
             {errorMessage && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+              <div className="p-3 text-sm text-destructive bg-destructive/10 border border-red-200 rounded-md">
                 {errorMessage}
               </div>
             )}

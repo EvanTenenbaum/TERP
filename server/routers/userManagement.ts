@@ -45,7 +45,7 @@ export const userManagementRouter = router({
     .input(
       z.object({
         username: z.string().min(3, "Username must be at least 3 characters"),
-        password: z.string().min(4, "Password must be at least 4 characters"),
+        password: z.string().min(8, "Password must be at least 8 characters"),
         name: z.string().optional(),
       })
     )
@@ -196,7 +196,7 @@ export const userManagementRouter = router({
         username: z.string(),
         newPassword: z
           .string()
-          .min(4, "Password must be at least 4 characters"),
+          .min(8, "Password must be at least 8 characters"),
       })
     )
     .mutation(async ({ ctx, input }) => {

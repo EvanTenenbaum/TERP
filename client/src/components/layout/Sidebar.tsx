@@ -12,21 +12,31 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  FileText,
+  Layers,
   LogOut,
+  Plus,
+  Truck,
   UserCircle2,
+  Users,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   buildNavigationAccessModel,
   defaultQuickLinkPaths,
+  navigationGroups,
   navigationItems,
   type NavigationGroupKey,
 } from "@/config/navigation";
 import { normalizeOperationsTab } from "@/lib/workspaceRoutes";
+import { FEATURE_FLAGS } from "@/lib/constants/featureFlags";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
+import { useOptionalFeatureFlag } from "@/contexts/FeatureFlagContext";
 import { useNavigationState } from "@/hooks/useNavigationState";
+import { getNavOpenGroups, setNavOpenGroups } from "@/lib/navState";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -114,20 +124,68 @@ function getDefaultOpenGroups(currentPath: string) {
   } satisfies Record<NavigationGroupKey, boolean>;
 }
 
+/**
+ * TER-1306: Map the persisted array of open group keys into the full
+ * {@link NavigationGroupKey} record used by the sidebar. Unknown keys are
+ * discarded; missing keys default to closed.
+ */
+function openGroupsFromPersisted(
+  persisted: string[]
+): Record<NavigationGroupKey, boolean> {
+  const openSet = new Set(persisted);
+  const next: Partial<Record<NavigationGroupKey, boolean>> = {};
+  for (const { key } of navigationGroups) {
+    next[key] = openSet.has(key);
+  }
+  return next as Record<NavigationGroupKey, boolean>;
+}
+
 export const Sidebar = React.memo(function Sidebar({
   open = false,
   onClose,
 }: SidebarProps) {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   const search = useSearch();
+  // TER-1149: Route logout through useAuth so the same teardown path is used
+  // everywhere (Sidebar previously only navigated to /login without calling
+  // the logout mutation, leaving the session authenticated).
+  const { logout } = useAuth();
   const { flags, isLoading: featureFlagsLoading } = useFeatureFlags();
   const { data: currentUser } = trpc.auth.me.useQuery(undefined, {
     staleTime: 60_000,
   });
+  // TER-1306: When the ux.v2.nav-persist flag is enabled, the sidebar reads
+  // the last-known open groups from localStorage on mount and writes back on
+  // every accordion toggle so state survives refreshes and navigation.
+  const navPersistEnabled = useOptionalFeatureFlag(
+    FEATURE_FLAGS.uxV2NavPersist
+  );
   const [openGroups, setOpenGroups] = useState<
     Record<NavigationGroupKey, boolean>
-  >(() => getDefaultOpenGroups(`${location}${search || ""}`));
+  >(() => {
+    const defaults = getDefaultOpenGroups(`${location}${search || ""}`);
+    if (!navPersistEnabled) {
+      return defaults;
+    }
+    const persisted = getNavOpenGroups();
+    if (persisted.length === 0) {
+      return defaults;
+    }
+    return openGroupsFromPersisted(persisted);
+  });
+  const navHydratedFromStorageRef = useRef(navPersistEnabled);
   const [collapsed, setCollapsed] = useState(false);
+
+  // BUG-103: Auto-close the mobile drawer whenever the active route changes so
+  // the workspace is immediately visible after any navigation (including
+  // programmatic navigation that bypasses the Link onClick handlers).
+  useEffect(() => {
+    if (open) {
+      onClose?.();
+    }
+    // Only re-run when the *location* changes — not when open/onClose change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location]);
 
   const navigationScopeKey = useMemo(() => {
     if (currentUser?.id !== undefined && currentUser?.id !== null) {
@@ -157,11 +215,25 @@ export const Sidebar = React.memo(function Sidebar({
   );
   const groupedNavigation = navigationAccessModel.groups;
 
-  const toggleGroup = useCallback((key: NavigationGroupKey) => {
-    flushSync(() => {
-      setOpenGroups(prev => ({ ...prev, [key]: !prev[key] }));
-    });
-  }, []);
+  const toggleGroup = useCallback(
+    (key: NavigationGroupKey) => {
+      flushSync(() => {
+        setOpenGroups(prev => {
+          const next = { ...prev, [key]: !prev[key] };
+          if (navPersistEnabled) {
+            // TER-1306: Persist the full set of currently-open group keys on
+            // every accordion toggle so the state survives refresh/navigation.
+            const openKeys = (
+              Object.keys(next) as NavigationGroupKey[]
+            ).filter(groupKey => next[groupKey]);
+            setNavOpenGroups(openKeys);
+          }
+          return next;
+        });
+      });
+    },
+    [navPersistEnabled]
+  );
 
   const isActivePath = useCallback(
     (path: string) => {
@@ -172,8 +244,8 @@ export const Sidebar = React.memo(function Sidebar({
 
   const handleLogout = useCallback(() => {
     onClose?.();
-    setLocation("/login");
-  }, [onClose, setLocation]);
+    void logout();
+  }, [onClose, logout]);
 
   const navRef = useRef<HTMLElement>(null);
   const activeGroupKey = useMemo(
@@ -200,30 +272,55 @@ export const Sidebar = React.memo(function Sidebar({
     );
   }, [activeGroupKey]);
 
+  // TER-1306: Feature flags load asynchronously; if the ux.v2.nav-persist
+  // flag flips from false → true after the initial render, hydrate the
+  // sidebar from localStorage exactly once so the user still sees their
+  // persisted layout on cold loads.
+  useEffect(() => {
+    if (!navPersistEnabled || navHydratedFromStorageRef.current) {
+      return;
+    }
+    navHydratedFromStorageRef.current = true;
+    const persisted = getNavOpenGroups();
+    if (persisted.length === 0) {
+      return;
+    }
+    setOpenGroups(openGroupsFromPersisted(persisted));
+  }, [navPersistEnabled]);
+
   return (
     <>
       {open && (
         <button
           type="button"
-          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          className="fixed inset-x-0 bottom-0 top-14 bg-black/50 z-40 md:hidden"
           onClick={onClose}
           aria-label="Close navigation"
         />
       )}
       <aside
         className={cn(
-          "flex flex-col bg-background/96 border-r border-border/80 transition-all duration-200 ease-in-out z-50 backdrop-blur-sm",
+          "flex flex-col bg-[oklch(0.22_0.05_155)] border-r border-white/5 transition-all duration-200 ease-in-out z-50",
           "md:relative md:translate-x-0",
-          "fixed inset-y-0 left-0",
+          // Keep the mobile header interactive so the same top-left affordance can close the drawer.
+          "fixed left-0 top-14 bottom-0 max-w-[calc(100vw-3rem)]",
           collapsed ? "w-16" : "w-[17.25rem]",
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
       >
         {/* TER-599: Simplified header — just collapse/expand button */}
-        <div className="flex items-center justify-end h-12 px-3 border-b border-border/80">
+        {/* BUG-102: close button must be visible and reachable on all phone widths */}
+        <div className="flex items-center justify-between h-12 px-3 border-b border-white/10">
+          <button
+            onClick={onClose}
+            className="md:hidden p-2 hover:bg-white/10 rounded-md max-md:size-11 flex-shrink-0 text-white/70"
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5" />
+          </button>
           <button
             onClick={() => setCollapsed(prev => !prev)}
-            className="hidden md:flex p-2 hover:bg-accent rounded-md text-muted-foreground"
+            className="hidden md:flex p-2 hover:bg-white/10 rounded-md text-white/50 hover:text-white/80 ml-auto"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
@@ -232,16 +329,125 @@ export const Sidebar = React.memo(function Sidebar({
               <ChevronsLeft className="h-5 w-5" />
             )}
           </button>
-          <button
-            onClick={onClose}
-            className="md:hidden p-2 hover:bg-accent rounded-md max-md:size-11"
-            aria-label="Close menu"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
 
         <nav ref={navRef} className="flex-1 overflow-y-auto p-3 space-y-2.5">
+          {/* TER-1217: Sales Quick Actions Section */}
+          {!collapsed && (
+            <div className="rounded-lg border border-white/10 bg-white/5 mb-3">
+              <div className="px-2 py-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-wide text-white/40">
+                  Sales Quick Actions
+                </span>
+              </div>
+              <ul className="space-y-1 pb-2">
+                <li>
+                  <Link
+                    href="/sales?tab=create-order"
+                    onClick={onClose}
+                    aria-label="Create a new sales order"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
+                      isActivePath("/sales?tab=create-order")
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
+                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                    )}
+                    aria-current={
+                      isActivePath("/sales?tab=create-order")
+                        ? "page"
+                        : undefined
+                    }
+                  >
+                    <Plus className="h-5 w-5" aria-hidden />
+                    New Order
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/sales?tab=orders"
+                    onClick={onClose}
+                    aria-label="View active sales orders"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
+                      isActivePath("/sales?tab=orders")
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
+                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                    )}
+                    aria-current={
+                      isActivePath("/sales?tab=orders") ? "page" : undefined
+                    }
+                  >
+                    <FileText className="h-5 w-5" aria-hidden />
+                    Active Orders
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/sales?tab=sales-sheets"
+                    onClick={onClose}
+                    aria-label="View and manage sales catalogues"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
+                      isActivePath("/sales?tab=sales-sheets")
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
+                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                    )}
+                    aria-current={
+                      isActivePath("/sales?tab=sales-sheets")
+                        ? "page"
+                        : undefined
+                    }
+                  >
+                    <Layers className="h-5 w-5" aria-hidden />
+                    Sales Catalogue
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/relationships?tab=clients"
+                    onClick={onClose}
+                    aria-label="View recent customers and client relationships"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
+                      isActivePath("/relationships?tab=clients")
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
+                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                    )}
+                    aria-current={
+                      isActivePath("/relationships?tab=clients")
+                        ? "page"
+                        : undefined
+                    }
+                  >
+                    <Users className="h-5 w-5" aria-hidden />
+                    Recent Customers
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/inventory?tab=shipping"
+                    onClick={onClose}
+                    aria-label="View today's shipments and fulfillment"
+                    className={cn(
+                      "flex items-center gap-3 rounded-md text-sm transition-colors max-md:min-h-11 px-3 py-2",
+                      isActivePath("/inventory?tab=shipping")
+                        ? "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
+                        : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
+                    )}
+                    aria-current={
+                      isActivePath("/inventory?tab=shipping")
+                        ? "page"
+                        : undefined
+                    }
+                  >
+                    <Truck className="h-5 w-5" aria-hidden />
+                    Today's Shipments
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
+
           {groupedNavigation.map(group => {
             const hasActiveItem = group.items.some(item =>
               isActivePath(item.path)
@@ -252,7 +458,7 @@ export const Sidebar = React.memo(function Sidebar({
                 key={group.key}
                 className={cn(
                   "rounded-lg border border-transparent transition-colors",
-                  hasActiveItem && "border-border bg-muted/40"
+                  false
                 )}
               >
                 {!collapsed && (
@@ -261,20 +467,14 @@ export const Sidebar = React.memo(function Sidebar({
                     className={cn(
                       "flex w-full items-center justify-between px-2 py-1.5 text-[11px] font-semibold uppercase tracking-wide transition-colors max-md:min-h-11",
                       hasActiveItem
-                        ? "text-[oklch(0.53_0.13_44)] hover:text-[oklch(0.45_0.13_44)]"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "text-white/40 hover:text-white/60"
+                        : "text-white/40 hover:text-white/60"
                     )}
                     onClick={() => toggleGroup(group.key)}
                     aria-expanded={isOpen}
                     data-testid="nav-group-label"
                   >
                     <span className="flex items-center gap-1.5">
-                      {hasActiveItem && (
-                        <span
-                          className="inline-block h-1.5 w-1.5 rounded-full bg-[oklch(0.53_0.13_44)] flex-shrink-0"
-                          aria-hidden
-                        />
-                      )}
                       {group.label}
                     </span>
                     {isOpen ? (
@@ -312,9 +512,9 @@ export const Sidebar = React.memo(function Sidebar({
                                   : "px-3 py-2",
                                 isActive
                                   ? cn(
-                                      "border-l border-[oklch(0.53_0.13_44)] bg-muted/40 text-foreground font-medium"
+                                      "border-l-[3px] border-[oklch(0.78_0.18_130)] text-white"
                                     )
-                                  : "border-l border-transparent font-normal text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                                  : "border-l-[3px] border-transparent font-normal text-white/65 hover:bg-white/8 hover:text-white/90"
                               )}
                               aria-current={isActive ? "page" : undefined}
                             >
@@ -343,24 +543,13 @@ export const Sidebar = React.memo(function Sidebar({
         </nav>
 
         {/* TER-599: Simplified footer — user info + logout only */}
-        <div className="border-t border-border/80 p-3">
-          {!collapsed && (
-            <div className="flex items-center gap-2 mb-2">
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="text-xs">
-                  <UserCircle2 className="h-4 w-4" />
-                </AvatarFallback>
-              </Avatar>
-              <p className="text-xs text-muted-foreground truncate">
-                {currentUser?.name || currentUser?.email || "TERP Operator"}
-              </p>
-            </div>
-          )}
+        <div className="border-t border-white/10 p-3">
+          
           <Button
             variant="ghost"
             size="sm"
             className={cn(
-              "text-muted-foreground hover:text-foreground",
+              "text-white/50 hover:text-white/80 hover:bg-white/10",
               collapsed ? "w-10 p-0" : "w-full justify-start"
             )}
             onClick={handleLogout}

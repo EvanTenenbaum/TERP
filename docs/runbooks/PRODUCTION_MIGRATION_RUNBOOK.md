@@ -69,7 +69,7 @@ If a job exits with a non-zero code, DigitalOcean automatically **rolls back the
 
 - The web service reverts to the old code
 - The job's `run_command` reverts to whatever it was in the previous spec
-- You must fix the script, push to `main`, and trigger a new deployment
+- You must fix the script, then trigger a new production deployment through the current promotion path
 
 This is actually a safety feature, but it can be confusing if you don't expect it. Always verify your scripts will exit cleanly before deploying them as jobs.
 
@@ -85,7 +85,7 @@ When using `&&` to chain two scripts (`script1.ts && script2.ts`), only the firs
 
 ## 6. `deploy_on_push` Interaction with Jobs
 
-If the web service has `deploy_on_push: true` (which TERP does), every push to `main` triggers a new deployment. If a job component is still in the spec, it will re-run on every push.
+If the tracked production web service has `deploy_on_push: true`, every push to that tracked branch triggers a new deployment. If a job component is still in the spec, it will re-run on every push. As of March 28, 2026, do not assume `main` is production — `main` is currently the staging branch.
 
 **Always clean up the job immediately after it succeeds.**
 
@@ -273,7 +273,7 @@ If the migration script exits with a non-zero code, DigitalOcean automatically r
 
 - The web service reverts to the old code
 - The job component may revert to the old `run_command`
-- You need to fix the script, push to main, and redeploy
+- You need to fix the script, then redeploy through the current production promotion path
 
 **Always test migration scripts locally or in dry-run mode before running in production.**
 
@@ -293,7 +293,7 @@ The `server/autoMigrate.ts` system checks a schema fingerprint on startup. If th
 
 ### 5. deploy_on_push Behavior
 
-If the web service has `deploy_on_push: true` (which it does), any push to `main` triggers a new deployment. This includes the job component if it's still in the spec. Be mindful of this when pushing fixes — the job will re-run on every deployment until removed.
+If the tracked production web service has `deploy_on_push: true`, any push to that tracked branch triggers a new deployment. This includes the job component if it's still in the spec. As of March 28, 2026, do not assume `main` is production — `main` is currently the staging branch. Be mindful of this when pushing fixes — the job will re-run on every deployment until removed.
 
 ## TER-235 Specific Reference
 

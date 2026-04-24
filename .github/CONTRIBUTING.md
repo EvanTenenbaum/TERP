@@ -76,7 +76,7 @@ If you are an AI agent working on this codebase, you **must**:
 2.  **Make your changes** and commit your work.
 3.  **Open a Pull Request** targeting the `main` branch.
 4.  **Merge the PR** to `main` after review and checks pass.
-5.  **Automatic Staging Deploy**: The merge to `main` triggers a GitHub Action that automatically deploys your changes to the staging environment.
+5.  **Automatic Staging Deploy**: The staging app tracks `main` directly in DigitalOcean, so merging to `main` automatically deploys your changes to the staging environment.
 6.  **Verify on Staging**: Confirm your feature works as expected on the staging URL (`https://terp-staging-yicld.ondigitalocean.app`).
 
 ---

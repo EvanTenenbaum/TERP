@@ -153,7 +153,7 @@ export function PayVendorModal({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Send className="h-5 w-5 text-red-600" />
+            <Send className="h-5 w-5 text-destructive" />
             Pay Supplier
           </DialogTitle>
           <DialogDescription>
@@ -335,7 +335,7 @@ export function PayVendorModal({
             <div className="rounded-lg border p-4 space-y-2 bg-muted/50">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Payment Amount:</span>
-                <span className="font-mono font-medium text-red-600">
+                <span className="font-mono font-medium text-destructive">
                   {formatCurrency(parseFloat(amount))}
                 </span>
               </div>

@@ -210,9 +210,9 @@ export function InlineProductCreate({
         {success && createdProduct ? (
           // Success State
           <div className="py-4 space-y-4">
-            <Alert className="bg-green-50 border-green-200">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">
+            <Alert className="bg-[var(--success-bg)] border-green-200">
+              <CheckCircle2 className="h-4 w-4 text-[var(--success)]" />
+              <AlertDescription className="text-[var(--success)]">
                 {createdProduct.isDuplicate
                   ? "Found existing product that matches your criteria."
                   : "Product created successfully!"}

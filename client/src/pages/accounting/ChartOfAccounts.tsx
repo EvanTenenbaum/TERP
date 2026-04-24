@@ -210,15 +210,15 @@ export default function ChartOfAccounts({ embedded }: { embedded?: boolean } = {
   const getTypeColor = (type: AccountType) => {
     switch (type) {
       case "ASSET":
-        return "bg-green-100 text-green-700 border-green-200";
+        return "bg-[var(--success-bg)] text-[var(--success)] border-green-200";
       case "LIABILITY":
-        return "bg-red-100 text-red-700 border-red-200";
+        return "bg-destructive/10 text-destructive border-red-200";
       case "EQUITY":
-        return "bg-blue-100 text-blue-700 border-blue-200";
+        return "bg-[var(--info-bg)] text-[var(--info)] border-blue-200";
       case "REVENUE":
-        return "bg-purple-100 text-purple-700 border-purple-200";
+        return "bg-muted text-primary border-purple-200";
       case "EXPENSE":
-        return "bg-orange-100 text-orange-700 border-orange-200";
+        return "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200";
     }
   };
 
@@ -425,7 +425,7 @@ export default function ChartOfAccounts({ embedded }: { embedded?: boolean } = {
                                     variant="outline"
                                     className={`text-xs ${
                                       account.isActive
-                                        ? "bg-green-100 text-green-700 border-green-200"
+                                        ? "bg-[var(--success-bg)] text-[var(--success)] border-green-200"
                                         : "bg-gray-100 text-gray-700 border-gray-200"
                                     }`}
                                   >

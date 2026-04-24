@@ -227,12 +227,12 @@ export function IncomeStatementReport({
                 {/* Revenue Section */}
                 <TableRow className="bg-muted/50">
                   <TableCell colSpan={2} className="font-semibold">
-                    <TrendingUp className="h-3 w-3 inline mr-2 text-green-600" />
+                    <TrendingUp className="h-3 w-3 inline mr-2 text-[var(--success)]" />
                     Revenue
                   </TableCell>
                 </TableRow>
                 {renderAccountSection(data.revenue?.items, true)}
-                <TableRow className="bg-green-50 dark:bg-green-950/20 font-semibold">
+                <TableRow className="bg-[var(--success-bg)] dark:bg-[var(--success)]/20 font-semibold">
                   <TableCell className="pl-4">Total Revenue</TableCell>
                   <TableCell className="text-right font-mono">
                     {formatCurrency(data.revenue?.total)}
@@ -242,12 +242,12 @@ export function IncomeStatementReport({
                 {/* COGS Section */}
                 <TableRow className="bg-muted/50">
                   <TableCell colSpan={2} className="font-semibold">
-                    <Minus className="h-3 w-3 inline mr-2 text-orange-600" />
+                    <Minus className="h-3 w-3 inline mr-2 text-[var(--warning)]" />
                     Cost of Goods Sold
                   </TableCell>
                 </TableRow>
                 {renderAccountSection(data.costOfGoodsSold?.items, true)}
-                <TableRow className="bg-orange-50 dark:bg-orange-950/20 font-semibold">
+                <TableRow className="bg-[var(--warning-bg)] dark:bg-[var(--warning)]/20 font-semibold">
                   <TableCell className="pl-4">Total COGS</TableCell>
                   <TableCell className="text-right font-mono">
                     ({formatCurrency(data.costOfGoodsSold?.total)})
@@ -255,7 +255,7 @@ export function IncomeStatementReport({
                 </TableRow>
 
                 {/* Gross Profit */}
-                <TableRow className="bg-blue-50 dark:bg-blue-950/20 font-bold border-y-2">
+                <TableRow className="bg-[var(--info-bg)] dark:bg-[var(--info)]/20 font-bold border-y-2">
                   <TableCell>
                     <DollarSign className="h-3 w-3 inline mr-2" />
                     Gross Profit
@@ -266,8 +266,8 @@ export function IncomeStatementReport({
                   <TableCell
                     className={`text-right font-mono ${
                       isPositive(data.grossProfit)
-                        ? "text-green-700"
-                        : "text-red-700"
+                        ? "text-[var(--success)]"
+                        : "text-destructive"
                     }`}
                   >
                     {formatCurrency(data.grossProfit)}
@@ -277,12 +277,12 @@ export function IncomeStatementReport({
                 {/* Operating Expenses */}
                 <TableRow className="bg-muted/50">
                   <TableCell colSpan={2} className="font-semibold">
-                    <TrendingDown className="h-3 w-3 inline mr-2 text-red-600" />
+                    <TrendingDown className="h-3 w-3 inline mr-2 text-destructive" />
                     Operating Expenses
                   </TableCell>
                 </TableRow>
                 {renderAccountSection(data.operatingExpenses?.items, true)}
-                <TableRow className="bg-red-50 dark:bg-red-950/20 font-semibold">
+                <TableRow className="bg-destructive/10 dark:bg-destructive/20 font-semibold">
                   <TableCell className="pl-4">
                     Total Operating Expenses
                   </TableCell>
@@ -295,8 +295,8 @@ export function IncomeStatementReport({
                 <TableRow
                   className={`font-bold text-lg ${
                     isPositive(data.netIncome)
-                      ? "bg-green-100 dark:bg-green-950/30"
-                      : "bg-red-100 dark:bg-red-950/30"
+                      ? "bg-[var(--success-bg)] dark:bg-[var(--success)]/30"
+                      : "bg-destructive/10 dark:bg-destructive/30"
                   }`}
                 >
                   <TableCell>
@@ -313,8 +313,8 @@ export function IncomeStatementReport({
                   <TableCell
                     className={`text-right font-mono text-lg ${
                       isPositive(data.netIncome)
-                        ? "text-green-700"
-                        : "text-red-700"
+                        ? "text-[var(--success)]"
+                        : "text-destructive"
                     }`}
                   >
                     {formatCurrency(data.netIncome)}

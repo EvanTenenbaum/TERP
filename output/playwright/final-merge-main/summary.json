@@ -1,0 +1,32 @@
+{
+  "generatedAt": "2026-04-07T09:18:30.695Z",
+  "baseUrl": "http://127.0.0.1:3305",
+  "checks": [
+    {
+      "name": "sales-catalogue-copy-for-chat",
+      "status": "pass",
+      "finalUrl": "http://127.0.0.1:3305/sales?tab=sales-sheets",
+      "screenshot": "output/playwright/final-merge-main/sales-catalogue-copy-for-chat.png",
+      "disabled": true,
+      "note": "Seeded demo client has no priced inventory rows in runtime, so the control remains disabled; clipboard behavior is covered by component tests."
+    },
+    {
+      "name": "orders-document-deep-link",
+      "status": "pass",
+      "finalUrl": "http://127.0.0.1:3305/sales?tab=orders&surface=sheet-native&ordersView=document&draftId=1",
+      "screenshot": "output/playwright/final-merge-main/orders-document-deep-link.png"
+    },
+    {
+      "name": "purchase-orders-surface",
+      "status": "pass",
+      "finalUrl": "http://127.0.0.1:3305/purchase-orders?tab=purchase-orders",
+      "screenshot": "output/playwright/final-merge-main/purchase-orders-surface.png"
+    },
+    {
+      "name": "payments-order-handoff",
+      "status": "pass",
+      "finalUrl": "http://127.0.0.1:3305/accounting?tab=payments&orderId=34&from=sales",
+      "screenshot": "output/playwright/final-merge-main/payments-order-handoff.png"
+    }
+  ]
+}

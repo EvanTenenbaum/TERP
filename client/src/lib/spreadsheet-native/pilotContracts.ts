@@ -41,24 +41,20 @@ function formatAgeLabel(value: Date | string | null | undefined) {
   return `${diffDays}d`;
 }
 
+/**
+ * TER-1051: Build product summary with strain/product name prominently
+ * Format: "Product Name\nSupplier / Brand / Grade" for text-only contexts
+ * For grid cells, use ProductNameCell component instead for better formatting
+ */
 function buildProductSummary(input: {
   productName: string;
   vendorName: string | null | undefined;
   brandName: string | null | undefined;
   grade: string | null | undefined;
 }) {
-  const details = [input.vendorName, input.brandName, input.grade]
-    .map(value => value?.trim())
-    .filter(
-      (value): value is string =>
-        Boolean(value) && value !== "-" && value !== "Unknown"
-    );
-
-  if (details.length === 0) {
-    return input.productName;
-  }
-
-  return `${input.productName} · ${details.join(" / ")}`;
+  // For plain text contexts, just return product name
+  // Supplier/brand are shown in separate columns or via ProductNameCell renderer
+  return input.productName;
 }
 
 export interface InventoryPilotRow {
@@ -76,7 +72,9 @@ export interface InventoryPilotRow {
   onHandQty: number;
   reservedQty: number;
   availableQty: number;
+  unitPrice: number | null;
   unitCogs: number | null;
+  marginPercent: number | null;
   receivedDate: string | null;
   ageLabel: string;
   stockStatus: string | null;
@@ -141,6 +139,57 @@ function toNumber(value: number | string | null | undefined) {
   return 0;
 }
 
+/**
+ * TER-1256: Normalize a money value to a dollar-based number.
+ *
+ * All order/line totals are persisted as MySQL decimals (dollars, 2dp) and
+ * surfaced by the tRPC layer as numeric strings. The detail inspector panel
+ * must use the exact same normalization as the grid column so that a single
+ * row cannot render at 100x the grid value due to accidental cents/dollars
+ * drift in an intermediate type cast.
+ *
+ * Accepts number | string | null | undefined. Returns 0 for invalid inputs.
+ */
+export function normalizeOrderTotal(
+  value: number | string | null | undefined
+): number {
+  return toNumber(value);
+}
+
+function parseOptionalNumber(value: unknown) {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function hasDraftPricingGaps(order: OrdersQueueItem) {
+  const storedItems = (order as { items?: unknown[] }).items;
+  if (!Array.isArray(storedItems) || storedItems.length === 0) {
+    return false;
+  }
+
+  return storedItems.some(item => {
+    if (!item || typeof item !== "object") {
+      return true;
+    }
+
+    const record = item as {
+      unitCogs?: unknown;
+      cogsPerUnit?: unknown;
+    };
+    const unitCogs = parseOptionalNumber(
+      record.unitCogs ?? record.cogsPerUnit ?? null
+    );
+
+    return unitCogs === null || unitCogs <= 0;
+  });
+}
+
 export function extractItems<T>(
   data: T[] | { items?: T[] } | null | undefined
 ): T[] {
@@ -193,10 +242,18 @@ export function mapInventoryItemsToPilotRows(
       onHandQty,
       reservedQty,
       availableQty: onHandQty - reservedQty - quarantineQty - holdQty,
+      unitPrice:
+        item.unitPrice === null || item.unitPrice === undefined
+          ? null
+          : toNumber(item.unitPrice),
       unitCogs:
         item.unitCogs === null || item.unitCogs === undefined
           ? null
           : toNumber(item.unitCogs),
+      marginPercent:
+        item.marginPercent === null || item.marginPercent === undefined
+          ? null
+          : toNumber(item.marginPercent),
       receivedDate: toDateString(item.receivedDate),
       ageLabel: formatAgeLabel(item.receivedDate),
       stockStatus: item.stockStatus ?? null,
@@ -239,10 +296,12 @@ export function mapInventoryDetailToPilotRow(
     onHandQty,
     reservedQty,
     availableQty: toNumber(detail.availableQty),
+    unitPrice: null,
     unitCogs:
       detail.batch.unitCogs === null || detail.batch.unitCogs === undefined
         ? null
         : toNumber(detail.batch.unitCogs),
+    marginPercent: null,
     receivedDate: toDateString(detail.batch.createdAt),
     ageLabel: formatAgeLabel(detail.batch.createdAt),
     stockStatus: null,
@@ -257,6 +316,13 @@ export function mapOrdersToPilotRows(input: {
   return input.orders.map(order => {
     const createdAt = toDateString(order.createdAt);
     const invoiceId = order.invoiceId ?? null;
+    const lineItemCount =
+      (order as unknown as { lineItemCount?: number }).lineItemCount ??
+      (Array.isArray((order as { lineItems?: unknown[] }).lineItems)
+        ? ((order as { lineItems?: unknown[] }).lineItems?.length ?? 0)
+        : Array.isArray((order as { items?: unknown[] }).items)
+          ? ((order as { items?: unknown[] }).items?.length ?? 0)
+          : 0);
     const stageLabel = input.lane === "drafts" ? "Draft" : "Confirmed";
     const invoiceStateLabel =
       input.lane === "drafts"
@@ -266,7 +332,11 @@ export function mapOrdersToPilotRows(input: {
           : "Pending";
     const nextStepLabel =
       input.lane === "drafts"
-        ? "Open draft"
+        ? lineItemCount === 0
+          ? "Add products"
+          : hasDraftPricingGaps(order)
+            ? "Review pricing"
+            : "Confirm"
         : invoiceId
           ? "Ship"
           : "Accounting";
@@ -284,11 +354,7 @@ export function mapOrdersToPilotRows(input: {
           ? "DRAFT"
           : order.fulfillmentStatus || order.saleStatus || "READY_FOR_PACKING",
       total: toNumber(order.total),
-      lineItemCount:
-        (order as unknown as { lineItemCount?: number }).lineItemCount ??
-        (Array.isArray((order as { lineItems?: unknown[] }).lineItems)
-          ? ((order as { lineItems?: unknown[] }).lineItems?.length ?? 0)
-          : 0),
+      lineItemCount,
       createdAt,
       ageLabel: formatAgeLabel(createdAt),
       confirmedAt: toDateString(order.confirmedAt),

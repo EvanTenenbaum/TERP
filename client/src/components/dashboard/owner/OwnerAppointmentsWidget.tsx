@@ -17,7 +17,7 @@ function getStatusBadgeClass(status: AppointmentStatus): string {
     case "pending":
       return "border-amber-300 bg-amber-50 text-amber-800";
     case "rejected":
-      return "border-red-300 bg-red-50 text-red-800";
+      return "border-red-300 bg-destructive/10 text-destructive";
     case "cancelled":
       return "border-gray-300 bg-gray-50 text-gray-600";
     default:

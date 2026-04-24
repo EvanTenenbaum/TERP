@@ -417,7 +417,7 @@ export function ReceiptCapture({
                   />
                 </div>
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <CheckCircle2 className="h-4 w-4 text-[var(--success)]" />
                   <span>
                     Captured at {screenshot.timestamp.toLocaleTimeString()} (
                     {screenshot.width}x{screenshot.height}px)

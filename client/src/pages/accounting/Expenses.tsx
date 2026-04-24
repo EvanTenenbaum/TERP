@@ -207,10 +207,10 @@ export default function Expenses({ embedded }: { embedded?: boolean } = {}) {
             <CardTitle className="text-sm font-medium">
               Pending Reimbursements
             </CardTitle>
-            <AlertCircle className="h-4 w-4 text-orange-600" />
+            <AlertCircle className="h-4 w-4 text-[var(--warning)]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-[var(--warning)]">
               {reimbursableExpenses}
             </div>
           </CardContent>
@@ -371,7 +371,7 @@ export default function Expenses({ embedded }: { embedded?: boolean } = {}) {
                         {expense.isReimbursable ? (
                           <Badge
                             variant="outline"
-                            className="bg-blue-100 text-blue-700 border-blue-200"
+                            className="bg-[var(--info-bg)] text-[var(--info)] border-blue-200"
                           >
                             Yes
                           </Badge>
@@ -388,14 +388,14 @@ export default function Expenses({ embedded }: { embedded?: boolean } = {}) {
                         {expense.isReimbursed ? (
                           <Badge
                             variant="outline"
-                            className="bg-green-100 text-green-700 border-green-200"
+                            className="bg-[var(--success-bg)] text-[var(--success)] border-green-200"
                           >
                             Yes
                           </Badge>
                         ) : expense.isReimbursable ? (
                           <Badge
                             variant="outline"
-                            className="bg-orange-100 text-orange-700 border-orange-200"
+                            className="bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200"
                           >
                             Pending
                           </Badge>

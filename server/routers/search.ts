@@ -7,7 +7,13 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { clients, batches, orders, products } from "../../drizzle/schema";
+import {
+  clients,
+  batches,
+  orders,
+  products,
+  strains,
+} from "../../drizzle/schema";
 import { like, or, and, eq, sql, isNull } from "drizzle-orm";
 import { requirePermission } from "../_core/permissionMiddleware";
 import { logger } from "../_core/logger";
@@ -15,7 +21,7 @@ import { logger } from "../_core/logger";
 // Search result interface for consistent typing
 interface SearchResult {
   id: number;
-  type: "quote" | "customer" | "product" | "batch";
+  type: "quote" | "order" | "customer" | "product" | "batch";
   title: string;
   description?: string;
   url: string;
@@ -40,7 +46,7 @@ const searchLimitSchema = z
 
 // Search types enum
 const searchTypesSchema = z
-  .array(z.enum(["quote", "customer", "product", "batch"]))
+  .array(z.enum(["quote", "order", "customer", "product", "batch"]))
   .optional();
 
 /**
@@ -133,10 +139,12 @@ export const searchRouter = router({
               orderNumber: orders.orderNumber,
               notes: orders.notes,
               clientId: orders.clientId,
+              clientName: clients.name,
               total: orders.total,
               createdAt: orders.createdAt,
             })
             .from(orders)
+            .leftJoin(clients, eq(orders.clientId, clients.id))
             .where(
               and(
                 eq(orders.orderType, "QUOTE"),
@@ -144,7 +152,9 @@ export const searchRouter = router({
                 or(
                   like(sql`CAST(${orders.id} AS CHAR)`, searchTerm),
                   like(orders.orderNumber, searchTerm),
-                  like(orders.notes, searchTerm)
+                  like(orders.notes, searchTerm),
+                  like(clients.name, searchTerm),
+                  like(clients.email, searchTerm)
                 )
               )
             )
@@ -155,18 +165,91 @@ export const searchRouter = router({
               id: q.id,
               type: "quote" as const,
               title: `Quote #${q.orderNumber || q.id}`,
-              description: q.notes || undefined,
+              description:
+                [q.clientName, q.notes].filter(Boolean).join(" · ") ||
+                undefined,
               url: `/quotes?selected=${q.id}`,
               metadata: {
                 orderNumber: q.orderNumber,
                 total: q.total,
                 clientId: q.clientId,
+                clientName: q.clientName,
               },
-              relevance: calculateRelevance(query, q.orderNumber, q.notes),
+              relevance: calculateRelevance(
+                query,
+                q.orderNumber,
+                q.clientName,
+                q.notes
+              ),
             }))
           );
         } catch (error) {
           logger.warn({ msg: "Quote search failed", error });
+        }
+      }
+
+      // Search live sales orders by order number, notes, and client name.
+      if (!types || types.includes("order")) {
+        try {
+          const liveOrders = await db
+            .select({
+              id: orders.id,
+              orderNumber: orders.orderNumber,
+              notes: orders.notes,
+              clientId: orders.clientId,
+              clientName: clients.name,
+              total: orders.total,
+              saleStatus: orders.saleStatus,
+              orderType: orders.orderType,
+              createdAt: orders.createdAt,
+            })
+            .from(orders)
+            .leftJoin(clients, eq(orders.clientId, clients.id))
+            .where(
+              and(
+                sql`${orders.orderType} <> 'QUOTE'`,
+                eq(orders.isDraft, false),
+                isNull(orders.deletedAt),
+                or(
+                  like(sql`CAST(${orders.id} AS CHAR)`, searchTerm),
+                  like(orders.orderNumber, searchTerm),
+                  like(orders.notes, searchTerm),
+                  like(clients.name, searchTerm),
+                  like(clients.email, searchTerm)
+                )
+              )
+            )
+            .limit(limit);
+
+          allResults.push(
+            ...liveOrders.map(order => ({
+              id: order.id,
+              type: "order" as const,
+              title: `Order #${order.orderNumber || order.id}`,
+              description:
+                [order.clientName, order.saleStatus, order.notes]
+                  .filter(Boolean)
+                  .join(" · ") || undefined,
+              url: `/sales?tab=orders&id=${order.id}`,
+              metadata: {
+                orderNumber: order.orderNumber,
+                total: order.total,
+                clientId: order.clientId,
+                clientName: order.clientName,
+                status: order.saleStatus,
+                orderType: order.orderType,
+              },
+              relevance: calculateRelevance(
+                query,
+                order.orderNumber,
+                order.clientName,
+                order.saleStatus,
+                order.notes
+              ),
+            }))
+          );
+        } catch (error) {
+          logger.warn({ msg: "Order search failed", error });
         }
       }
 
@@ -239,10 +322,9 @@ export const searchRouter = router({
 
       // Search products (via batches with product join)
       // BUG-042: Now includes product name and category
-      // SCHEMA-015: Removed strains join - strainId column doesn't exist in production
+      // TER-1049: Added strains join for strain-based search
       if (!types || types.includes("product") || types.includes("batch")) {
         try {
-          // Query without strains - strainId column doesn't exist in production
           const batchResults = await db
             .select({
               id: batches.id,
@@ -255,11 +337,12 @@ export const searchRouter = router({
               productName: products.nameCanonical,
               category: products.category,
               subcategory: products.subcategory,
-              strainName: sql<string | null>`NULL`.as("strainName"),
-              strainCategory: sql<string | null>`NULL`.as("strainCategory"),
+              strainName: strains.name,
+              strainCategory: strains.category,
             })
             .from(batches)
             .leftJoin(products, eq(batches.productId, products.id))
+            .leftJoin(strains, eq(products.strainId, strains.id))
             .where(
               and(
                 isNull(batches.deletedAt),
@@ -268,7 +351,9 @@ export const searchRouter = router({
                   like(batches.sku, searchTerm),
                   like(products.nameCanonical, searchTerm),
                   like(products.category, searchTerm),
-                  like(products.subcategory, searchTerm)
+                  like(products.subcategory, searchTerm),
+                  like(strains.name, searchTerm),
+                  like(strains.category, searchTerm)
                 )
               )
             )
@@ -284,7 +369,7 @@ export const searchRouter = router({
                 description: b.productName
                   ? `${b.productName}${b.strainName ? ` - ${b.strainName}` : ""}`
                   : b.sku || undefined,
-                url: `/inventory/${b.id}`,
+                url: `/inventory?tab=inventory&batchId=${b.id}`,
                 metadata: {
                   sku: b.sku,
                   productName: b.productName,
@@ -322,7 +407,11 @@ export const searchRouter = router({
                 description:
                   [b.strainName, b.category].filter(Boolean).join(" - ") ||
                   undefined,
-                url: `/products/${b.productId}`,
+                url: `/products${
+                  b.productName
+                    ? `?search=${encodeURIComponent(b.productName)}`
+                    : ""
+                }`,
                 metadata: {
                   category: b.category,
                   subcategory: b.subcategory,
@@ -358,6 +447,16 @@ export const searchRouter = router({
       return {
         quotes: finalResults
           .filter(r => r.type === "quote")
+          .map(r => ({
+            id: r.id,
+            type: r.type,
+            title: r.title,
+            description: r.description,
+            url: r.url,
+            metadata: r.metadata,
+          })),
+        orders: finalResults
+          .filter(r => r.type === "order")
           .map(r => ({
             id: r.id,
             type: r.type,

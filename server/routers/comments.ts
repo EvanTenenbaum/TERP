@@ -13,10 +13,10 @@ import * as commentsDb from "../commentsDb";
 import * as inboxDb from "../inboxDb";
 import * as mentionParser from "../services/mentionParser";
 import { requirePermission } from "../_core/permissionMiddleware";
-import {
-  DEFAULT_PAGE_SIZE,
-} from "../_core/pagination";
-import { type Comment } from "../../drizzle/schema";
+import { DEFAULT_PAGE_SIZE } from "../_core/pagination";
+import { getDb } from "../db";
+import { users, type Comment } from "../../drizzle/schema";
+import { isNull } from "drizzle-orm";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -116,11 +116,16 @@ export interface DeleteSuccessResponse {
  */
 export const getEntityCommentsInputSchema = z.object({
   commentableType: z.string().min(1, "Commentable type is required"),
-  commentableId: z.number().int().positive("Commentable ID must be a positive integer"),
+  commentableId: z
+    .number()
+    .int()
+    .positive("Commentable ID must be a positive integer"),
   limit: z.number().int().min(1).max(100).default(DEFAULT_PAGE_SIZE).optional(),
   offset: z.number().int().min(0).default(0).optional(),
 });
-export type GetEntityCommentsInput = z.infer<typeof getEntityCommentsInputSchema>;
+export type GetEntityCommentsInput = z.infer<
+  typeof getEntityCommentsInputSchema
+>;
 
 /**
  * Schema for getting a comment by ID
@@ -135,8 +140,14 @@ export type GetCommentByIdInput = z.infer<typeof getCommentByIdInputSchema>;
  */
 export const createCommentInputSchema = z.object({
   commentableType: z.string().min(1, "Commentable type is required"),
-  commentableId: z.number().int().positive("Commentable ID must be a positive integer"),
-  content: z.string().min(1, "Comment content is required").max(10000, "Comment content is too long"),
+  commentableId: z
+    .number()
+    .int()
+    .positive("Commentable ID must be a positive integer"),
+  content: z
+    .string()
+    .min(1, "Comment content is required")
+    .max(10000, "Comment content is too long"),
 });
 export type CreateCommentInput = z.infer<typeof createCommentInputSchema>;
 
@@ -145,7 +156,10 @@ export type CreateCommentInput = z.infer<typeof createCommentInputSchema>;
  */
 export const updateCommentInputSchema = z.object({
   commentId: z.number().int().positive("Comment ID must be a positive integer"),
-  content: z.string().min(1, "Comment content is required").max(10000, "Comment content is too long"),
+  content: z
+    .string()
+    .min(1, "Comment content is required")
+    .max(10000, "Comment content is too long"),
 });
 export type UpdateCommentInput = z.infer<typeof updateCommentInputSchema>;
 
@@ -162,7 +176,10 @@ export type CommentIdInput = z.infer<typeof commentIdInputSchema>;
  */
 export const entityIdentifierInputSchema = z.object({
   commentableType: z.string().min(1, "Commentable type is required"),
-  commentableId: z.number().int().positive("Commentable ID must be a positive integer"),
+  commentableId: z
+    .number()
+    .int()
+    .positive("Commentable ID must be a positive integer"),
 });
 export type EntityIdentifierInput = z.infer<typeof entityIdentifierInputSchema>;
 
@@ -461,4 +478,45 @@ export const commentsRouter = router({
       const mentions = await commentsDb.getUserMentions(ctx.user.id);
       return mentions as UserMentionWithContext[];
     }),
+
+  /**
+   * List users available for @mention in comments.
+   * Available to any authenticated user who can create comments,
+   * since mentions are a core feature of commenting.
+   */
+  listMentionableUsers: protectedProcedure
+    .use(requirePermission("comments:create"))
+    .query(
+      async ({
+        ctx,
+      }): Promise<
+        Array<{ id: number; name: string | null; email: string | null }>
+      > => {
+        if (!ctx.user) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Authentication required",
+          });
+        }
+
+        const db = await getDb();
+        if (!db) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Database not available",
+          });
+        }
+
+        const rows = await db
+          .select({
+            id: users.id,
+            name: users.name,
+            email: users.email,
+          })
+          .from(users)
+          .where(isNull(users.deletedAt));
+
+        return rows;
+      }
+    ),
 });

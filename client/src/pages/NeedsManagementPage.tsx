@@ -441,7 +441,7 @@ export default function NeedsManagementPage({
                             <p className="text-muted-foreground">
                               Potential Revenue
                             </p>
-                            <p className="font-medium text-green-600">
+                            <p className="font-medium text-[var(--success)]">
                               ${formatCurrencyValue(opp.potentialRevenue)}
                             </p>
                           </div>

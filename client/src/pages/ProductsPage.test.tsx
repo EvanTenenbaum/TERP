@@ -66,6 +66,7 @@ vi.mock("@/lib/trpc", () => ({
 
 vi.mock("wouter", () => ({
   useLocation: () => ["/products", vi.fn()],
+  useSearch: () => "",
 }));
 
 vi.mock("sonner", () => ({

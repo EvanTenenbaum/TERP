@@ -136,8 +136,8 @@ Useful current commands:
 
 - Branch from the current Orders runtime worktree unless explicitly told otherwise.
 - Push frequently after meaningful product or packet progress.
-- Staging auto-deploys from `main`.
-- For docs-only commits that should not deploy, add `[skip-staging-sync]` to the commit message.
+- As of March 28, 2026, `main` is the staging branch and staging auto-deploys from `main`.
+- For docs-only commits that should not redeploy staging, add `[skip-staging-sync]` to the commit message.
 - For code-bearing changes that need staging proof, follow:
   - branch
   - commit

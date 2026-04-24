@@ -317,15 +317,15 @@ export default function CreditSettingsPage({
         </p>
       </div>
 
-      <Card className="border-blue-200 bg-blue-50/70">
+      <Card className="border-blue-200 bg-[var(--info-bg)]/70">
         <CardContent className="pt-6">
           <div className="flex gap-3">
-            <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <Info className="h-5 w-5 text-[var(--info)] flex-shrink-0 mt-0.5" />
             <div className="text-sm">
-              <p className="font-medium text-blue-900 dark:text-blue-100">
+              <p className="font-medium text-[var(--info)] dark:text-blue-100">
                 Capacity settings are not issued adjustments
               </p>
-              <p className="text-blue-800 dark:text-blue-200 mt-1">
+              <p className="text-[var(--info)] dark:text-blue-200 mt-1">
                 Use this page to change client limits, score weights, and order
                 guardrails. Use the Issued Adjustments tab when you need to
                 create or apply a post-sale adjustment balance.
@@ -349,15 +349,15 @@ export default function CreditSettingsPage({
 
         {/* Signal Weights Tab */}
         <TabsContent value="weights" className="space-y-6">
-          <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
+          <Card className="border-blue-200 dark:border-blue-800 bg-[var(--info-bg)] dark:bg-[var(--info)]">
             <CardContent className="pt-6">
               <div className="flex gap-3">
-                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <Info className="h-5 w-5 text-[var(--info)] flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-medium text-blue-900 dark:text-blue-100">
+                  <p className="font-medium text-[var(--info)] dark:text-blue-100">
                     How the capacity model works
                   </p>
-                  <p className="text-blue-800 dark:text-blue-200 mt-1">
+                  <p className="text-[var(--info)] dark:text-blue-200 mt-1">
                     Each signal is scored 0-100. The score is multiplied by its
                     weight to determine how much it influences recommended
                     client capacity. All weights must sum to 100%.
@@ -407,24 +407,24 @@ export default function CreditSettingsPage({
               ))}
 
               <div
-                className={`flex items-center justify-between p-4 rounded-lg ${weightsValid ? "bg-green-50 dark:bg-green-950 border border-green-200" : "bg-red-50 dark:bg-red-950 border border-red-200"}`}
+                className={`flex items-center justify-between p-4 rounded-lg ${weightsValid ? "bg-[var(--success-bg)] dark:bg-[var(--success)] border border-green-200" : "bg-destructive/10 dark:bg-destructive border border-red-200"}`}
               >
                 <div className="flex items-center gap-2">
                   {weightsValid ? (
-                    <Check className="h-5 w-5 text-green-600" />
+                    <Check className="h-5 w-5 text-[var(--success)]" />
                   ) : (
-                    <AlertCircle className="h-5 w-5 text-red-600" />
+                    <AlertCircle className="h-5 w-5 text-destructive" />
                   )}
                   <span className="font-medium">Total Weight</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span
-                    className={`text-2xl font-bold ${weightsValid ? "text-green-600" : "text-red-600"}`}
+                    className={`text-2xl font-bold ${weightsValid ? "text-[var(--success)]" : "text-destructive"}`}
                   >
                     {weightsSum.toFixed(0)}%
                   </span>
                   {weightsValid ? (
-                    <Badge className="bg-green-600">Valid</Badge>
+                    <Badge className="bg-[var(--success)]">Valid</Badge>
                   ) : (
                     <Badge variant="destructive">Must equal 100%</Badge>
                   )}
@@ -468,9 +468,9 @@ export default function CreditSettingsPage({
         {/* Visibility & Enforcement Tab */}
         <TabsContent value="visibility" className="space-y-6">
           {hasVisibilityChanges && (
-            <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 rounded-lg">
-              <AlertCircle className="h-4 w-4 text-yellow-600" />
-              <span className="text-sm text-yellow-800 dark:text-yellow-200">
+            <div className="flex items-center gap-2 p-3 bg-[var(--warning-bg)] dark:bg-[var(--warning)] border border-yellow-200 rounded-lg">
+              <AlertCircle className="h-4 w-4 text-[var(--warning)]" />
+              <span className="text-sm text-[var(--warning)] dark:text-yellow-200">
                 You have unsaved changes
               </span>
             </div>
@@ -596,7 +596,7 @@ export default function CreditSettingsPage({
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
-                            className="bg-yellow-50 text-yellow-700"
+                            className="bg-[var(--warning-bg)] text-[var(--warning)]"
                           >
                             Warning
                           </Badge>
@@ -607,7 +607,7 @@ export default function CreditSettingsPage({
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
-                            className="bg-orange-50 text-orange-700"
+                            className="bg-[var(--warning-bg)] text-[var(--warning)]"
                           >
                             Soft Block
                           </Badge>
@@ -618,7 +618,7 @@ export default function CreditSettingsPage({
                         <div className="flex items-center gap-2">
                           <Badge
                             variant="outline"
-                            className="bg-red-50 text-red-700"
+                            className="bg-destructive/10 text-destructive"
                           >
                             Hard Block
                           </Badge>
@@ -644,7 +644,7 @@ export default function CreditSettingsPage({
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-sm flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                        <div className="w-3 h-3 rounded-full bg-[var(--warning)]" />
                         Warning
                       </span>
                       <div className="flex items-center gap-2">
@@ -666,7 +666,7 @@ export default function CreditSettingsPage({
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full bg-red-500" />
+                        <div className="w-3 h-3 rounded-full bg-destructive" />
                         Alert
                       </span>
                       <div className="flex items-center gap-2">
@@ -696,20 +696,20 @@ export default function CreditSettingsPage({
                   </p>
                   <div className="relative h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                     <div
-                      className="absolute left-0 top-0 h-full bg-green-500"
+                      className="absolute left-0 top-0 h-full bg-[var(--success)]"
                       style={{
                         width: `${visibility.warningThresholdPercent}%`,
                       }}
                     />
                     <div
-                      className="absolute top-0 h-full bg-yellow-500"
+                      className="absolute top-0 h-full bg-[var(--warning)]"
                       style={{
                         left: `${visibility.warningThresholdPercent}%`,
                         width: `${visibility.alertThresholdPercent - visibility.warningThresholdPercent}%`,
                       }}
                     />
                     <div
-                      className="absolute top-0 h-full bg-red-500"
+                      className="absolute top-0 h-full bg-destructive"
                       style={{
                         left: `${visibility.alertThresholdPercent}%`,
                         width: `${100 - visibility.alertThresholdPercent}%`,

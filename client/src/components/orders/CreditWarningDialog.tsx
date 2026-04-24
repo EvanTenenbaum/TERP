@@ -16,7 +16,14 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, XCircle, Info } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRightCircle,
+  CreditCard,
+  FileClock,
+  Info,
+  XCircle,
+} from "lucide-react";
 
 interface CreditCheckResult {
   allowed: boolean;
@@ -37,6 +44,11 @@ interface CreditWarningDialogProps {
   orderTotal: number;
   clientName: string;
   onProceed: (overrideReason?: string) => void;
+  onRequestOverride?: (overrideReason?: string) => void | Promise<void>;
+  requestOverrideLabel?: string;
+  requestOverrideBusy?: boolean;
+  onViewPaymentHistory?: () => void;
+  onRecordPayment?: () => void;
   onCancel: () => void;
 }
 
@@ -47,6 +59,11 @@ export function CreditWarningDialog({
   orderTotal,
   clientName,
   onProceed,
+  onRequestOverride,
+  requestOverrideLabel = "Request Credit Override",
+  requestOverrideBusy = false,
+  onViewPaymentHistory,
+  onRecordPayment,
   onCancel,
 }: CreditWarningDialogProps) {
   const [overrideReason, setOverrideReason] = useState("");
@@ -54,8 +71,13 @@ export function CreditWarningDialog({
   if (!creditCheck) return null;
 
   const isHardBlock = creditCheck.enforcementMode === "HARD_BLOCK";
-  const requiresReason = creditCheck.requiresOverride || creditCheck.enforcementMode === "SOFT_BLOCK";
-  const canProceed = !isHardBlock && (!requiresReason || overrideReason.length >= 10);
+  const requiresReason =
+    creditCheck.requiresOverride ||
+    creditCheck.enforcementMode === "SOFT_BLOCK";
+  const supportsOverrideRequest = Boolean(onRequestOverride);
+  const showReasonField = requiresReason || supportsOverrideRequest;
+  const canProceed =
+    !isHardBlock && (!requiresReason || overrideReason.length >= 10);
 
   const handleProceed = () => {
     onProceed(requiresReason ? overrideReason : undefined);
@@ -67,18 +89,22 @@ export function CreditWarningDialog({
     setOverrideReason("");
   };
 
-  const formatCurrency = (value: number) => 
+  const handleRequestOverride = async () => {
+    await onRequestOverride?.(overrideReason);
+  };
+
+  const formatCurrency = (value: number) =>
     value.toLocaleString(undefined, { style: "currency", currency: "USD" });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[560px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isHardBlock ? (
-              <XCircle className="h-5 w-5 text-red-600" />
+              <XCircle className="h-5 w-5 text-destructive" />
             ) : (
-              <AlertTriangle className="h-5 w-5 text-yellow-600" />
+              <AlertTriangle className="h-5 w-5 text-[var(--warning)]" />
             )}
             {isHardBlock ? "Order Blocked" : "Credit Limit Warning"}
           </DialogTitle>
@@ -100,9 +126,9 @@ export function CreditWarningDialog({
 
           {/* Warning Message */}
           {creditCheck.warning && (
-            <div className="flex gap-2 p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800">
-              <AlertTriangle className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-yellow-800 dark:text-yellow-200">
+            <div className="flex gap-2 p-3 bg-[var(--warning-bg)] dark:bg-[var(--warning)] rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <AlertTriangle className="h-4 w-4 text-[var(--warning)] flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-[var(--warning)] dark:text-yellow-200">
                 {creditCheck.warning}
               </p>
             </div>
@@ -112,11 +138,15 @@ export function CreditWarningDialog({
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div className="space-y-1">
               <p className="text-muted-foreground">Credit Limit</p>
-              <p className="font-semibold">{formatCurrency(creditCheck.creditLimit)}</p>
+              <p className="font-semibold">
+                {formatCurrency(creditCheck.creditLimit)}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground">Current Exposure</p>
-              <p className="font-semibold">{formatCurrency(creditCheck.currentExposure)}</p>
+              <p className="font-semibold">
+                {formatCurrency(creditCheck.currentExposure)}
+              </p>
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground">Order Total</p>
@@ -124,23 +154,25 @@ export function CreditWarningDialog({
             </div>
             <div className="space-y-1">
               <p className="text-muted-foreground">New Exposure</p>
-              <p className={`font-semibold ${creditCheck.newExposure > creditCheck.creditLimit ? "text-red-600" : ""}`}>
+              <p
+                className={`font-semibold ${creditCheck.newExposure > creditCheck.creditLimit ? "text-destructive" : ""}`}
+              >
                 {formatCurrency(creditCheck.newExposure)}
               </p>
             </div>
           </div>
 
-          {/* Override Reason (for SOFT_BLOCK) */}
-          {requiresReason && !isHardBlock && (
+          {showReasonField && (
             <div className="space-y-2">
               <Label htmlFor="override-reason">
-                Override Reason <span className="text-red-500">*</span>
+                Override / Credit Request Reason{" "}
+                <span className="text-destructive">*</span>
               </Label>
               <Textarea
                 id="override-reason"
-                placeholder="Enter reason for proceeding with this order (min 10 characters)..."
+                placeholder="Explain the payment plan, approval context, or why this order should move forward (min 10 characters)..."
                 value={overrideReason}
-                onChange={(e) => setOverrideReason(e.target.value)}
+                onChange={e => setOverrideReason(e.target.value)}
                 className="min-h-[80px]"
               />
               <p className="text-xs text-muted-foreground">
@@ -151,21 +183,77 @@ export function CreditWarningDialog({
 
           {/* Info for WARNING mode */}
           {creditCheck.enforcementMode === "WARNING" && !isHardBlock && (
-            <div className="flex gap-2 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
-              <Info className="h-4 w-4 text-blue-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                You can proceed with this order. The warning is for your awareness.
+            <div className="flex gap-2 p-3 bg-[var(--info-bg)] dark:bg-[var(--info)] rounded-lg border border-blue-200 dark:border-blue-800">
+              <Info className="h-4 w-4 text-[var(--info)] flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-[var(--info)] dark:text-blue-200">
+                You can proceed with this order. The warning is for your
+                awareness.
               </p>
             </div>
           )}
 
           {/* Hard Block Message */}
           {isHardBlock && (
-            <div className="flex gap-2 p-3 bg-red-50 dark:bg-red-950 rounded-lg border border-red-200 dark:border-red-800">
-              <XCircle className="h-4 w-4 text-red-600 flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-red-800 dark:text-red-200">
-                Credit enforcement is set to Hard Block. Contact an administrator to adjust the client's credit limit or change enforcement settings.
+            <div className="flex gap-2 p-3 bg-destructive/10 dark:bg-destructive rounded-lg border border-red-200 dark:border-red-800">
+              <XCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-destructive dark:text-red-200">
+                Credit enforcement is set to Hard Block. Contact an
+                administrator to adjust the client's credit limit or change
+                enforcement settings.
               </p>
+            </div>
+          )}
+
+          {(supportsOverrideRequest ||
+            onViewPaymentHistory ||
+            onRecordPayment) && (
+            <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+              <div>
+                <p className="text-sm font-medium">Next steps</p>
+                <p className="text-xs text-muted-foreground">
+                  Resolve the credit issue without losing your place in the
+                  order flow.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {supportsOverrideRequest ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      void handleRequestOverride();
+                    }}
+                    disabled={
+                      requestOverrideBusy || overrideReason.trim().length < 10
+                    }
+                  >
+                    <ArrowRightCircle className="mr-2 h-4 w-4" />
+                    {requestOverrideBusy
+                      ? "Submitting..."
+                      : requestOverrideLabel}
+                  </Button>
+                ) : null}
+                {onViewPaymentHistory ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onViewPaymentHistory}
+                  >
+                    <FileClock className="mr-2 h-4 w-4" />
+                    View Payment History
+                  </Button>
+                ) : null}
+                {onRecordPayment ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onRecordPayment}
+                  >
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Record Payment
+                  </Button>
+                ) : null}
+              </div>
             </div>
           )}
         </div>

@@ -11,7 +11,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, Users, Package, Loader2 } from "lucide-react";
+import { OperationalEmptyState } from "@/components/ui/operational-states";
+import {
+  Search,
+  FileText,
+  ReceiptText,
+  Users,
+  Package,
+  Loader2,
+} from "lucide-react";
 
 export default function SearchResultsPage() {
   const [, setLocation] = useLocation();
@@ -94,7 +102,7 @@ export default function SearchResultsPage() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search quotes, relationships, products..."
+                placeholder="Search orders, quotes, relationships, products..."
                 className="pl-10 w-full"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -172,6 +180,61 @@ export default function SearchResultsPage() {
                                     {Number(
                                       (
                                         quote.metadata as Record<
+                                          string,
+                                          unknown
+                                        >
+                                      ).total
+                                    ).toFixed(2)}
+                                  </p>
+                                ) : null}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {results.orders?.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <ReceiptText className="h-5 w-5" />
+                    <h2 className="text-xl font-semibold">
+                      Orders ({results.orders.length})
+                    </h2>
+                  </div>
+                  <div className="space-y-2">
+                    {results.orders.map(order => (
+                      <a
+                        key={order.id}
+                        href={order.url}
+                        onClick={e => handleResultClick(order.url, e)}
+                      >
+                        <Card
+                          className="search-result hover:bg-accent cursor-pointer transition-colors"
+                          data-testid="search-result"
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <h3 className="font-medium">{order.title}</h3>
+                                  <Badge variant="outline">Order</Badge>
+                                </div>
+                                {order.description && (
+                                  <p className="text-sm text-muted-foreground line-clamp-2">
+                                    {order.description}
+                                  </p>
+                                )}
+                                {(order.metadata as Record<string, unknown>)
+                                  ?.total ? (
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    Total: $
+                                    {Number(
+                                      (
+                                        order.metadata as Record<
                                           string,
                                           unknown
                                         >
@@ -332,19 +395,16 @@ export default function SearchResultsPage() {
 
               {/* No Results */}
               {results.quotes.length === 0 &&
+                (results.orders?.length ?? 0) === 0 &&
                 results.customers.length === 0 &&
                 results.products.length === 0 && (
-                  <div
-                    className="text-center py-12 text-muted-foreground"
+                  <OperationalEmptyState
                     data-testid="search-empty-state"
-                  >
-                    <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-medium">No results found</p>
-                    <p className="text-sm mt-2">
-                      No results found for &quot;{searchQuery}&quot;. Try a
-                      different search term.
-                    </p>
-                  </div>
+                    variant="search"
+                    title="No matching records"
+                    description={`No results matched "${searchQuery}". Try a different client, order, or product term.`}
+                    searchActive={searchQuery.trim().length > 0}
+                  />
                 )}
             </div>
           )}

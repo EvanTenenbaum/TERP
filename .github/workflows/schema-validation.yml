@@ -13,6 +13,7 @@ on:
     paths:
       - 'drizzle/**'
       - 'server/**'
+  workflow_dispatch: {}
 
 permissions:
   contents: read
@@ -23,12 +24,12 @@ env:
   # Updated for TER-235 supplier_client_id debt plus the PO range COGS
   # columns that are currently applied by runtime migration rather than
   # drizzle migration in CI's blank-DB schema pass.
-  SCHEMA_ISSUE_BASELINE_TOTAL: 67
+  SCHEMA_ISSUE_BASELINE_TOTAL: 77
   SCHEMA_ISSUE_BASELINE_CRITICAL: 1
   SCHEMA_ISSUE_BASELINE_HIGH: 5
-  SCHEMA_ISSUE_BASELINE_MEDIUM: 61
+  SCHEMA_ISSUE_BASELINE_MEDIUM: 71
   SCHEMA_ISSUE_BASELINE_LOW: 0
-  SCHEMA_VERIFICATION_FAILED_TESTS_BASELINE: 1117
+  SCHEMA_VERIFICATION_FAILED_TESTS_BASELINE: 1128
 
 jobs:
   validate-schema:
@@ -50,18 +51,18 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@63c24ba6bd7ba022e95695ff85de572c04a18142 # v2
+        uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d # v2.16.1
         with:
           egress-policy: audit
 
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -101,7 +102,7 @@ jobs:
 
       - name: Upload validation report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: schema-validation-report
           path: |

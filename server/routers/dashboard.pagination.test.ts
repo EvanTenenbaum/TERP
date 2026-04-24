@@ -217,7 +217,12 @@ describe("Dashboard Pagination (RF-002)", () => {
         days30: 0,
         days60: 0,
         days90: 0,
-        over90: 0,
+        days90Plus: 0,
+        currentCount: 0,
+        days30Count: 0,
+        days60Count: 0,
+        days90Count: 0,
+        days90PlusCount: 0,
       });
 
       // Act
@@ -268,7 +273,12 @@ describe("Dashboard Pagination (RF-002)", () => {
         days30: 0,
         days60: 0,
         days90: 0,
-        over90: 0,
+        days90Plus: 0,
+        currentCount: 0,
+        days30Count: 0,
+        days60Count: 0,
+        days90Count: 0,
+        days90PlusCount: 0,
       });
 
       // Act

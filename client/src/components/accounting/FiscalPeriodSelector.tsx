@@ -83,7 +83,7 @@ export function FiscalPeriodSelector({
         return (
           <Badge
             variant="outline"
-            className="ml-2 bg-green-100 text-green-700 border-green-200"
+            className="ml-2 bg-[var(--success-bg)] text-[var(--success)] border-green-200"
           >
             Open
           </Badge>
@@ -101,7 +101,7 @@ export function FiscalPeriodSelector({
         return (
           <Badge
             variant="outline"
-            className="ml-2 bg-red-100 text-red-700 border-red-200"
+            className="ml-2 bg-destructive/10 text-destructive border-red-200"
           >
             Locked
           </Badge>
@@ -147,7 +147,7 @@ export function FiscalPeriodSelector({
                 key={period.id}
                 value={period.id.toString()}
                 className={cn(
-                  isCurrent && "bg-blue-50 font-medium",
+                  isCurrent && "bg-[var(--info-bg)] font-medium",
                   isPeriodLocked && "opacity-60",
                   isPeriodClosed && "opacity-80"
                 )}
@@ -156,7 +156,7 @@ export function FiscalPeriodSelector({
                   <div className="flex flex-col">
                     <span className="flex items-center gap-2">
                       {isPeriodLocked && (
-                        <Lock className="h-3 w-3 text-red-500" />
+                        <Lock className="h-3 w-3 text-destructive" />
                       )}
                       {isPeriodClosed && !isPeriodLocked && (
                         <XCircle className="h-3 w-3 text-gray-400" />
@@ -165,7 +165,7 @@ export function FiscalPeriodSelector({
                       {isCurrent && (
                         <Badge
                           variant="outline"
-                          className="bg-blue-100 text-blue-700 border-blue-200 text-xs"
+                          className="bg-[var(--info-bg)] text-[var(--info)] border-blue-200 text-xs"
                         >
                           Current
                         </Badge>

@@ -27,18 +27,18 @@ preconditions:
   # For E2E testing, we use admin tools or direct API call
 
 steps:
-  # Navigate to accounting dashboard where overdue check can be triggered
+  # Navigate to the unified invoices surface where the follow-up queue lives.
   - action: navigate
-    path: "/accounting/dashboard"
-    wait_for: "[data-testid='accounting-dashboard'], main"
+    path: "/accounting?tab=invoices"
+    wait_for: "[data-testid='overdue-follow-up-banner'], [data-testid='focus-overdue-button'], main"
 
   - action: wait
     network_idle: true
     timeout: 10000
 
-  # Look for manual trigger button (admin feature)
+  # Trigger the manual overdue refresh from the sheet-native follow-up queue.
   - action: click
-    target: "[data-testid='check-overdue-btn'], button:has-text('Check Overdue'), [data-testid='run-overdue-check'], [role='tab']:has-text('Overdue Invoices')"
+    target: "[data-testid='refresh-overdue-button'], button:has-text('Refresh Overdue')"
     wait_after: 3000
 
   - action: wait
@@ -50,9 +50,9 @@ steps:
 
 expected_ui:
   visible:
-    - "[data-testid='accounting-dashboard'], main"
+    - "[data-testid='overdue-follow-up-banner'], main"
   text_present:
-    - "Overdue"
+    - "overdue"
 
 expected_db:
   invoices:

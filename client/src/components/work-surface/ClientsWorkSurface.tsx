@@ -84,6 +84,13 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { buildRelationshipProfilePath } from "@/lib/relationshipProfile";
+import { getRelationshipSummary } from "@/lib/relationshipSummary";
+import { buildSalesWorkspacePath } from "@/lib/workspaceRoutes";
+import { OperationalEmptyState } from "@/components/ui/operational-states";
+import {
+  RELATIONSHIP_ROLE_TOKENS,
+  RELATIONSHIP_STATUS_TOKENS,
+} from "@/lib/statusTokens";
 
 // ============================================================================
 // TYPES & SCHEMAS
@@ -150,6 +157,7 @@ const CLIENT_TYPE_FILTERS: {
 
 // TER-508: localStorage key for persisting view state across page reloads
 const CLIENTS_VIEW_STATE_KEY = "terp-clients-view-v2";
+const CLIENTS_SCROLL_STATE_KEY = `${CLIENTS_VIEW_STATE_KEY}:scroll-top`;
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -164,7 +172,7 @@ const formatCurrency = (value: string | number | null | undefined): string => {
   }).format(num || 0);
 };
 
-const formatDate = (dateString: string | null | undefined): string => {
+const formatDate = (dateString: string | Date | null | undefined): string => {
   if (!dateString) return "-";
   try {
     return new Date(dateString).toLocaleDateString();
@@ -173,6 +181,34 @@ const formatDate = (dateString: string | null | undefined): string => {
   }
 };
 
+const getRelationshipStatus = (
+  client: Pick<Client, "currentDebt" | "lastOrderDate" | "updatedAt">
+) => {
+  const debt = parseFloat(String(client.currentDebt || 0));
+  const lastTouch = client.lastOrderDate ?? client.updatedAt ?? null;
+  const lastTouchDays = lastTouch
+    ? Math.floor(
+        (Date.now() - new Date(lastTouch).getTime()) / (1000 * 60 * 60 * 24)
+      )
+    : null;
+
+  if (debt > 0) {
+    return { label: "Needs Attention", toneKey: "NEEDS-ATTENTION" as const };
+  }
+  if (lastTouchDays !== null && lastTouchDays <= 30) {
+    return { label: "Active", toneKey: "ACTIVE" as const };
+  }
+  if (lastTouchDays !== null && lastTouchDays <= 90) {
+    return { label: "Watch", toneKey: "WATCH" as const };
+  }
+
+  return { label: "Dormant", toneKey: "DORMANT" as const };
+};
+
+const getLastActivityDate = (
+  client: Pick<Client, "lastOrderDate" | "updatedAt">
+) => client.lastOrderDate ?? client.updatedAt ?? null;
+
 // ============================================================================
 // CLIENT TYPE BADGES
 // ============================================================================
@@ -180,36 +216,47 @@ const formatDate = (dateString: string | null | undefined): string => {
 function ClientTypeBadges({ client }: { client: Client }) {
   const badges: { label: string; className: string }[] = [];
   if (client.isBuyer)
-    badges.push({ label: "Customer", className: "bg-blue-100 text-blue-800" });
+    badges.push({
+      label: "Customer",
+      className: RELATIONSHIP_ROLE_TOKENS.Customer,
+    });
   if (client.isSeller)
     badges.push({
       label: "Supplier",
-      className: "bg-green-100 text-green-800",
+      className: RELATIONSHIP_ROLE_TOKENS.Supplier,
     });
   if (client.isBrand)
-    badges.push({ label: "Brand", className: "bg-purple-100 text-purple-800" });
+    badges.push({
+      label: "Brand",
+      className: RELATIONSHIP_ROLE_TOKENS.Brand,
+    });
   if (client.isReferee)
     badges.push({
       label: "Referee",
-      className: "bg-yellow-100 text-yellow-800",
+      className: RELATIONSHIP_ROLE_TOKENS.Referee,
     });
   if (client.isContractor)
     badges.push({
       label: "Contractor",
-      className: "bg-gray-100 text-gray-800",
+      className: RELATIONSHIP_ROLE_TOKENS.Contractor,
     });
 
   return (
-    <div className="flex gap-1 flex-wrap">
-      {badges.map(badge => (
-        <Badge
-          key={badge.label}
-          variant="outline"
-          className={cn("text-xs", badge.className)}
-        >
-          {badge.label}
-        </Badge>
-      ))}
+    <div className="space-y-1">
+      <p className="text-sm font-medium text-foreground">
+        {getRelationshipSummary(client)}
+      </p>
+      <div className="flex gap-1 flex-wrap">
+        {badges.map(badge => (
+          <Badge
+            key={badge.label}
+            variant="outline"
+            className={cn("text-xs", badge.className)}
+          >
+            {badge.label}
+          </Badge>
+        ))}
+      </div>
     </div>
   );
 }
@@ -305,7 +352,7 @@ function ClientInspectorContent({
                 )}
               />
               {validation.getFieldState("name").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("name").error}
                 </p>
               )}
@@ -326,7 +373,7 @@ function ClientInspectorContent({
                 )}
               />
               {validation.getFieldState("email").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("email").error}
                 </p>
               )}
@@ -374,7 +421,7 @@ function ClientInspectorContent({
               <InspectorField label="Email Handle">
                 <a
                   href={`mailto:${client.email}`}
-                  className="flex items-center gap-2 text-blue-600 hover:underline"
+                  className="flex items-center gap-2 text-[var(--info)] hover:underline"
                 >
                   <Mail className="h-4 w-4" />
                   {client.email}
@@ -386,7 +433,7 @@ function ClientInspectorContent({
               <InspectorField label="Phone or Messaging Handle">
                 <a
                   href={`tel:${client.phone}`}
-                  className="flex items-center gap-2 text-blue-600 hover:underline"
+                  className="flex items-center gap-2 text-[var(--info)] hover:underline"
                 >
                   <Phone className="h-4 w-4" />
                   {client.phone}
@@ -432,7 +479,7 @@ function ClientInspectorContent({
               className={cn(
                 "font-semibold",
                 parseFloat(String(client.currentDebt || 0)) > 0 &&
-                  "text-red-600"
+                  "text-destructive"
               )}
             >
               {formatCurrency(client.currentDebt)}
@@ -440,7 +487,7 @@ function ClientInspectorContent({
           </div>
           <div className="p-3 bg-muted/50 rounded-lg">
             <p className="text-xs text-muted-foreground">All Time Value</p>
-            <p className="font-semibold text-green-600">
+            <p className="font-semibold text-[var(--success)]">
               {formatCurrency(client.lifetimeValue)}
             </p>
           </div>
@@ -491,7 +538,7 @@ function ClientInspectorContent({
             <Button
               type="button"
               variant="outline"
-              className="w-full justify-start text-red-600 hover:text-red-700"
+              className="w-full justify-start text-destructive hover:text-destructive"
               data-testid="archive-client-btn"
               onClick={e => {
                 e.stopPropagation();
@@ -518,6 +565,29 @@ function ClientInspectorContent({
 export function ClientsWorkSurface() {
   const [, setLocation] = useLocation();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const hasRestoredScrollRef = useRef(false);
+  const getScrollContainer = () => {
+    if (typeof window === "undefined") {
+      return tableScrollRef.current;
+    }
+
+    let current: HTMLElement | null = tableScrollRef.current;
+    while (current) {
+      const style = window.getComputedStyle(current);
+      const scrollable =
+        (style.overflowY === "auto" || style.overflowY === "scroll") &&
+        current.scrollHeight > current.clientHeight;
+
+      if (scrollable) {
+        return current;
+      }
+
+      current = current.parentElement;
+    }
+
+    return tableScrollRef.current;
+  };
 
   // State — TER-508: Initialize from localStorage for filter persistence
   // Parse localStorage once and distribute to avoid redundant JSON.parse calls
@@ -622,6 +692,73 @@ export function ClientsWorkSurface() {
         : ((clientsData as { items?: unknown[] })?.items ?? []),
     [clientsData]
   );
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      hasRestoredScrollRef.current ||
+      isLoading ||
+      clients.length === 0
+    ) {
+      return;
+    }
+
+    const rawScrollTop = window.sessionStorage.getItem(CLIENTS_SCROLL_STATE_KEY);
+    const scrollTop = Number(rawScrollTop);
+    if (!rawScrollTop || !Number.isFinite(scrollTop)) {
+      return;
+    }
+
+    let animationFrameId = 0;
+    let intervalId = 0;
+    let attempts = 0;
+    const maxAttempts = 8;
+    const startRestoreLoop = () => {
+      attempts = 0;
+      window.clearInterval(intervalId);
+      restoreScroll();
+      intervalId = window.setInterval(restoreScroll, 150);
+    };
+
+    const restoreScroll = () => {
+      animationFrameId = window.requestAnimationFrame(() => {
+        const container = getScrollContainer();
+        if (!container) {
+          return;
+        }
+
+        container.scrollTop = scrollTop;
+        attempts += 1;
+
+        if (Math.abs(container.scrollTop - scrollTop) <= 1) {
+          hasRestoredScrollRef.current = true;
+          window.clearInterval(intervalId);
+          return;
+        }
+
+        if (attempts >= maxAttempts) {
+          hasRestoredScrollRef.current = true;
+          window.clearInterval(intervalId);
+        }
+      });
+    };
+
+    const handleHistoryRestore = () => {
+      hasRestoredScrollRef.current = false;
+      startRestoreLoop();
+    };
+
+    startRestoreLoop();
+    window.addEventListener("pageshow", handleHistoryRestore);
+    window.addEventListener("popstate", handleHistoryRestore);
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+      window.clearInterval(intervalId);
+      window.removeEventListener("pageshow", handleHistoryRestore);
+      window.removeEventListener("popstate", handleHistoryRestore);
+    };
+  }, [clients.length, isLoading]);
 
   const { data: totalCount } = trpc.clients.count.useQuery({
     search: search || undefined,
@@ -863,6 +1000,20 @@ export function ClientsWorkSurface() {
     );
   };
 
+  const navigateToProfile = (clientId: number) => {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.setItem(
+        CLIENTS_SCROLL_STATE_KEY,
+        String(getScrollContainer()?.scrollTop ?? 0)
+      );
+    }
+    setLocation(buildRelationshipProfilePath(clientId));
+  };
+
+  const navigateToClientOrders = (clientId: number) => {
+    setLocation(buildSalesWorkspacePath("orders", { clientId }));
+  };
+
   // Render
   return (
     <div {...keyboardProps} className="h-full flex flex-col">
@@ -945,6 +1096,7 @@ export function ClientsWorkSurface() {
       <div className="flex-1 flex overflow-hidden">
         {/* Table Area */}
         <div
+          ref={tableScrollRef}
           className={cn(
             "flex-1 overflow-auto transition-all duration-200",
             inspector.isOpen && "mr-96"
@@ -970,17 +1122,31 @@ export function ClientsWorkSurface() {
               </div>
             </div>
           ) : displayClients.length === 0 ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="text-center">
-                <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <p className="font-medium">No clients found</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {search || typeFilter !== "all"
-                    ? "Try adjusting your filters"
-                    : "Add your first client"}
-                </p>
-              </div>
-            </div>
+            <OperationalEmptyState
+              variant="clients"
+              title="No clients found"
+              description={
+                search || typeFilter !== "all"
+                  ? "Clear the filters or broaden the search to bring more relationship records into view."
+                  : "Add your first client so conversations, orders, and collections all start from one shared record."
+              }
+              searchActive={Boolean(search)}
+              filterActive={typeFilter !== "all"}
+              action={
+                search || typeFilter !== "all"
+                  ? {
+                      label: "Clear Filters",
+                      onClick: () => {
+                        setSearch("");
+                        setTypeFilter("all");
+                      },
+                    }
+                  : {
+                      label: "Quick Add Client",
+                      onClick: () => setIsAddClientOpen(true),
+                    }
+              }
+            />
           ) : (
             <>
               <Table data-testid="clients-table">
@@ -994,7 +1160,9 @@ export function ClientsWorkSurface() {
                         Code Name <SortIcon column="name" />
                       </span>
                     </TableHead>
-                    <TableHead>Type</TableHead>
+                    <TableHead>Relationship</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Activity</TableHead>
                     <TableHead>Reachable Handles</TableHead>
                     <TableHead
                       className="cursor-pointer text-right"
@@ -1039,9 +1207,7 @@ export function ClientsWorkSurface() {
                         setSelectedIndex(index);
                         inspector.open();
                       }}
-                      onDoubleClick={() =>
-                        setLocation(buildRelationshipProfilePath(client.id))
-                      }
+                      onDoubleClick={() => navigateToProfile(client.id)}
                     >
                       <TableCell className="font-medium">
                         <div className="space-y-1">
@@ -1056,25 +1222,49 @@ export function ClientsWorkSurface() {
                       <TableCell>
                         <ClientTypeBadges client={client} />
                       </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            RELATIONSHIP_STATUS_TOKENS[
+                              getRelationshipStatus(client).toneKey
+                            ]
+                          }
+                        >
+                          {getRelationshipStatus(client).label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {formatDate(getLastActivityDate(client))}
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {[client.email, client.phone]
                           .filter(Boolean)
                           .join(" · ") || "-"}
                       </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
+                      <TableCell className="text-right font-medium text-[var(--success)]">
                         {formatCurrency(client.lifetimeValue)}
                       </TableCell>
                       <TableCell
                         className={cn(
                           "text-right font-medium",
                           parseFloat(String(client.currentDebt || 0)) > 0 &&
-                            "text-red-600"
+                            "text-destructive"
                         )}
                       >
                         {formatCurrency(client.currentDebt)}
                       </TableCell>
                       <TableCell className="text-right">
-                        {client.orderCount || 0}
+                        <button
+                          type="button"
+                          className="font-medium text-primary underline-offset-2 hover:underline"
+                          onClick={event => {
+                            event.stopPropagation();
+                            navigateToClientOrders(client.id);
+                          }}
+                        >
+                          {client.orderCount || 0}
+                        </button>
                       </TableCell>
                       <TableCell>
                         <Button
@@ -1084,9 +1274,7 @@ export function ClientsWorkSurface() {
                           onClick={e => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setLocation(
-                              buildRelationshipProfilePath(client.id)
-                            );
+                            navigateToProfile(client.id);
                           }}
                           aria-label={`Open ${client.name}`}
                         >
@@ -1153,7 +1341,7 @@ export function ClientsWorkSurface() {
             <ClientInspectorContent
               client={selectedClient}
               onUpdate={handleUpdateClient}
-              onNavigate={id => setLocation(buildRelationshipProfilePath(id))}
+              onNavigate={navigateToProfile}
               onArchive={handleArchive}
             />
           )}
@@ -1199,7 +1387,7 @@ export function ClientsWorkSurface() {
         onSuccess={client => {
           refetch();
           toast.success(`Relationship created: ${client.teriCode}`);
-          setLocation(buildRelationshipProfilePath(client.id));
+          navigateToProfile(client.id);
         }}
       />
 

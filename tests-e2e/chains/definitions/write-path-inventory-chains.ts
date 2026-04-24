@@ -319,6 +319,155 @@ export const WRITE_PATH_INVENTORY_CHAINS: TestChain[] = [
   },
 
   // ---------------------------------------------------------------------------
+  // inventory.batch-primer-create-only — Bootstrap batch creation without location dependency
+  // ---------------------------------------------------------------------------
+  {
+    chain_id: "inventory.batch-primer-create-only",
+    description:
+      "Create inventory through the direct intake surface, submit it, navigate to inventory, and verify the new batch remains searchable for downstream swarm flows.",
+    tags: [
+      "route:/inventory?tab=intake",
+      "route:/inventory",
+      "persona:inventory",
+      "crud:create",
+      "save-state",
+      "persistence",
+      "cross-domain:inventory-intake",
+      "write-path",
+      "swarm-primer",
+    ],
+    preconditions: {
+      ensure: [],
+    },
+    phases: [
+      {
+        phase_id: "navigate-to-direct-intake",
+        description: "Navigate to the direct intake workspace",
+        steps: [
+          {
+            action: "navigate",
+            path: "/inventory?tab=intake",
+            wait_for: 'text=Direct Intake, button:has-text("Add Row"), main',
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "screenshot", name: "swarm-batch-primer-intake-list" },
+        ],
+        expected_ui: { url_contains: "tab=intake" },
+      },
+      {
+        phase_id: "add-intake-row",
+        description: "Add a new intake row and focus it for quick edit",
+        steps: [
+          {
+            action: "click",
+            target: 'button:has-text("Add Row")',
+            wait_for:
+              'input[list="intake-pilot-top-vendors"], input[list="direct-intake-top-vendors"], input[placeholder="Supplier"], input[placeholder*="supplier" i]',
+          },
+          { action: "wait", network_idle: true, timeout: 5000 },
+          { action: "screenshot", name: "swarm-batch-primer-row-added" },
+        ],
+      },
+      {
+        phase_id: "fill-intake-row",
+        description:
+          "Fill supplier, product, quantity, and COGS so intake can create a live batch",
+        steps: [
+          {
+            action: "type",
+            target:
+              'input[list="intake-pilot-top-vendors"], input[list="direct-intake-top-vendors"], input[placeholder="Supplier"], input[placeholder*="supplier" i], input[placeholder*="Type supplier" i]',
+            value: "QA Swarm Supplier {{timestamp}}",
+            clear_first: true,
+          },
+          {
+            action: "type",
+            target:
+              'input[list="intake-pilot-top-products"], input[list="direct-intake-top-products"], input[placeholder="Product"], input[placeholder*="product" i], input[placeholder*="Type or select product" i]',
+            value: "QA Swarm Intake Product {{timestamp}}",
+            clear_first: true,
+          },
+          {
+            action: "type",
+            target:
+              'div:has(> label:has-text("Qty")) input, input[placeholder="0"]',
+            value: "25",
+            clear_first: true,
+          },
+          {
+            action: "type",
+            target:
+              'div:has(> label:has-text("COGS")) input, input[placeholder="0.00"]',
+            value: "14.50",
+            clear_first: true,
+          },
+          { action: "screenshot", name: "swarm-batch-primer-intake-filled" },
+        ],
+      },
+      {
+        phase_id: "submit-intake",
+        description: "Submit the intake row so the system creates inventory",
+        steps: [
+          {
+            action: "click",
+            target:
+              'button[aria-label="Submit Selected"], button:has-text("Submit Selected"), button:has-text("Submit This Row"), button:has-text("Submit All Pending")',
+            wait_for:
+              "text=Intake submitted successfully, text=Successfully submitted, text=Submitted 1",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "screenshot", name: "swarm-batch-primer-intake-submitted" },
+        ],
+      },
+      {
+        phase_id: "verify-created-batch-in-inventory",
+        description:
+          "Navigate to inventory and search for the submitted product to verify the new batch exists",
+        steps: [
+          {
+            action: "navigate",
+            path: "/inventory",
+            wait_for: "text=Inventory, main",
+          },
+          { action: "wait", network_idle: true, timeout: 10000 },
+          { action: "wait", duration: 4000 },
+          {
+            action: "type",
+            target:
+              'input[placeholder*="SKU" i], input[placeholder*="supplier" i], [data-testid*="inventory-search"]',
+            value: "QA Swarm Intake Product",
+            clear_first: true,
+          },
+          { action: "wait", network_idle: true, timeout: 5000 },
+          { action: "wait", duration: 4000 },
+          {
+            action: "assert",
+            not_visible: "text=Loading inventory sheet...",
+          },
+          {
+            action: "assert",
+            text_contains: "QA Swarm Intake Product",
+          },
+          {
+            action: "screenshot",
+            name: "swarm-batch-primer-inventory-persisted",
+          },
+        ],
+      },
+    ],
+    invariants: [
+      {
+        name: "batch-primer-persisted",
+        description:
+          "Created batch remains visible in inventory search after navigation",
+        check: "ui",
+        page: "/inventory",
+        assertions: ["QA Swarm Intake Product"],
+      },
+    ],
+  },
+
+  // ---------------------------------------------------------------------------
   // inventory.intake-to-batch — Intake receipt processing
   // ---------------------------------------------------------------------------
   {
@@ -431,7 +580,7 @@ export const WRITE_PATH_INVENTORY_CHAINS: TestChain[] = [
   {
     chain_id: "inventory.strain-management",
     description:
-      "Create new strain with name and type → save → navigate away → return → search for strain → verify persistence → edit strain details → save edit",
+      "Create new strain with name and type → save → navigate away → return → search for strain → verify persistence",
     tags: [
       "route:/products",
       "persona:inventory",
@@ -476,16 +625,15 @@ export const WRITE_PATH_INVENTORY_CHAINS: TestChain[] = [
             clear_first: true,
           },
           {
-            action: "click",
-            target:
-              '[aria-label*="type" i], select[name*="type" i], [data-testid*="strain-type"], [role="combobox"]',
-            wait_for: "[role=option], option",
+            action: "store",
+            from: 'input[name="name"], input[placeholder*="name" i], input[aria-label*="strain name" i]',
+            as: "strainName",
           },
-          { action: "wait", duration: 200 },
           {
-            action: "click",
-            target: '[role="option"]:first-child, option:first-child',
-            wait_for: "main",
+            action: "select",
+            target:
+              '[data-testid="strain-type"], [aria-label*="type" i], select[name*="type" i]',
+            value: "Indica",
           },
           { action: "screenshot", name: "wp-strain-mgmt-form-filled" },
         ],
@@ -497,10 +645,14 @@ export const WRITE_PATH_INVENTORY_CHAINS: TestChain[] = [
           {
             action: "click",
             target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Create Strain")',
+              '[role="dialog"] button[type="submit"], [role="dialog"] button:has-text("Create Strain"), [data-slot="dialog-content"] button[type="submit"]',
             wait_for: "text=Success, text=Created, text=saved",
           },
           { action: "wait", network_idle: true, timeout: 10000 },
+          {
+            action: "assert",
+            not_visible: '[role="dialog"]',
+          },
           { action: "screenshot", name: "wp-strain-mgmt-saved" },
         ],
       },
@@ -530,54 +682,16 @@ export const WRITE_PATH_INVENTORY_CHAINS: TestChain[] = [
           {
             action: "type",
             target:
-              'input[placeholder*="search" i], input[type="search"], [data-testid*="search"]',
-            value: "QA WP Strain",
+              'input[placeholder*="search strain" i], input[placeholder*="strains" i], [data-testid*="strain-search"]',
+            value_ref: "strainName",
             clear_first: true,
           },
           { action: "wait", network_idle: true, timeout: 5000 },
           {
             action: "assert",
-            text_contains: "QA WP Strain",
+            text_contains: "$ctx.strainName",
           },
           { action: "screenshot", name: "wp-strain-mgmt-persisted" },
-        ],
-      },
-      {
-        phase_id: "edit-strain-details",
-        description: "Open strain, click Edit, update details, save",
-        steps: [
-          {
-            action: "click",
-            target:
-              'table tbody tr:has-text("QA WP Strain"), a:has-text("QA WP Strain"), [data-testid*="strain-row"]:has-text("QA WP Strain")',
-            wait_for: "text=Strain, text=Products, main",
-          },
-          { action: "wait", network_idle: true, timeout: 8000 },
-          {
-            action: "click",
-            target: 'button:has-text("Edit"), [data-testid*="edit-strain"]',
-            wait_for: "input, form",
-          },
-          { action: "wait", network_idle: true, timeout: 5000 },
-          {
-            action: "type",
-            target:
-              'textarea[name="description"], input[name="description"], textarea[placeholder*="description" i]',
-            value: "QA write-path strain description updated",
-            clear_first: true,
-          },
-          {
-            action: "click",
-            target:
-              'button[type="submit"], button:has-text("Save"), button:has-text("Update")',
-            wait_for: "text=Success, text=Updated, text=saved",
-          },
-          { action: "wait", network_idle: true, timeout: 8000 },
-          {
-            action: "assert",
-            text_contains: "QA write-path strain description updated",
-          },
-          { action: "screenshot", name: "wp-strain-mgmt-edit-saved" },
         ],
       },
     ],

@@ -46,29 +46,29 @@ const BRACKET_CONFIG = {
   fresh: {
     label: "Fresh (0-7d)",
     icon: Leaf,
-    color: "text-green-600",
-    bgColor: "bg-green-50",
+    color: "text-[var(--success)]",
+    bgColor: "bg-[var(--success-bg)]",
     borderColor: "border-green-200",
   },
   moderate: {
     label: "Moderate (8-14d)",
     icon: Clock,
-    color: "text-yellow-600",
-    bgColor: "bg-yellow-50",
+    color: "text-[var(--warning)]",
+    bgColor: "bg-[var(--warning-bg)]",
     borderColor: "border-yellow-200",
   },
   aging: {
     label: "Aging (15-30d)",
     icon: AlertTriangle,
-    color: "text-orange-600",
-    bgColor: "bg-orange-50",
+    color: "text-[var(--warning)]",
+    bgColor: "bg-[var(--warning-bg)]",
     borderColor: "border-orange-200",
   },
   critical: {
     label: "Critical (30+d)",
     icon: AlertCircle,
-    color: "text-red-600",
-    bgColor: "bg-red-50",
+    color: "text-destructive",
+    bgColor: "bg-destructive/10",
     borderColor: "border-red-200",
   },
 };
@@ -223,13 +223,13 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
 
         {/* Aging Value Summary */}
         {data.agingItemsCount > 0 && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
+          <div className="bg-[var(--warning-bg)] border border-orange-200 rounded-lg p-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-orange-700">
+                <p className="text-sm font-medium text-[var(--warning)]">
                   Items Over 2 Weeks Old
                 </p>
-                <p className="text-xs text-orange-600">
+                <p className="text-xs text-[var(--warning)]">
                   {data.agingItemsCount} batches -{" "}
                   {formatCurrency(data.agingItemsValue)} value at risk
                 </p>
@@ -238,7 +238,7 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
                 variant="outline"
                 size="sm"
                 onClick={() => navigateToFilteredInventory("AGING")}
-                className="text-orange-700 border-orange-300 hover:bg-orange-100"
+                className="text-[var(--warning)] border-orange-300 hover:bg-[var(--warning-bg)]"
               >
                 View All
               </Button>
@@ -285,7 +285,7 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
         {data.topAgingItems && data.topAgingItems.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-500" />
+              <AlertCircle className="h-4 w-4 text-destructive" />
               Top 5 Oldest Items
             </h4>
             <div className="space-y-2">
@@ -306,10 +306,10 @@ export const AgingInventoryWidget = memo(function AgingInventoryWidget() {
                       variant="outline"
                       className={
                         item.ageDays > 30
-                          ? "bg-red-100 text-red-700 border-red-200"
+                          ? "bg-destructive/10 text-destructive border-red-200"
                           : item.ageDays > 14
-                            ? "bg-orange-100 text-orange-700 border-orange-200"
-                            : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                            ? "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200"
+                            : "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200"
                       }
                     >
                       {item.ageDays}d

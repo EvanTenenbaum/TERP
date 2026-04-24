@@ -2,34 +2,36 @@ import { describe, expect, it } from "vitest";
 import {
   buildConfirmedQueryInput,
   buildDraftQueryInput,
+  canViewOrderCogsDetails,
   canDownloadInvoice,
   canGenerateInvoice,
   getMakePaymentRoute,
   getDisplayOrderNumber,
   parseDeepLinkedOrderId,
+  resolveOrderInvoiceId,
   resolveDeepLinkedOrderSelection,
 } from "./OrdersWorkSurface";
 
 describe("buildDraftQueryInput", () => {
-  it("keeps the orders draft tab constrained to sales drafts", () => {
+  // TER-1257: Standard View must mirror the Spreadsheet View queue, which does
+  // not constrain by orderType. The previous `orderType: "SALE"` filter caused
+  // Standard View to return zero orders when data was visible in Spreadsheet.
+  it("requests all draft orders without constraining orderType", () => {
     expect(buildDraftQueryInput()).toEqual({
-      orderType: "SALE",
       isDraft: true,
     });
   });
 });
 
 describe("buildConfirmedQueryInput", () => {
-  it("always constrains confirmed orders to sales", () => {
+  it("requests all confirmed orders without constraining orderType", () => {
     expect(buildConfirmedQueryInput()).toEqual({
-      orderType: "SALE",
       isDraft: false,
     });
   });
 
-  it("preserves the selected fulfillment filter for sales only", () => {
+  it("preserves the selected fulfillment filter", () => {
     expect(buildConfirmedQueryInput("SHIPPED")).toEqual({
-      orderType: "SALE",
       isDraft: false,
       fulfillmentStatus: "SHIPPED",
     });
@@ -123,10 +125,41 @@ describe("resolveDeepLinkedOrderSelection", () => {
 
 describe("canDownloadInvoice", () => {
   it("allows invoice download only when accounting access and an invoice id are present", () => {
-    expect(canDownloadInvoice({ invoiceId: 12 }, true)).toBe(true);
-    expect(canDownloadInvoice({ invoiceId: null }, true)).toBe(false);
-    expect(canDownloadInvoice({ invoiceId: 12 }, false)).toBe(false);
+    expect(canDownloadInvoice(12, true)).toBe(true);
     expect(canDownloadInvoice(null, true)).toBe(false);
+    expect(canDownloadInvoice(12, false)).toBe(false);
+    expect(canDownloadInvoice(null, false)).toBe(false);
+  });
+});
+
+describe("resolveOrderInvoiceId", () => {
+  it("prefers a direct order invoice id before linked reference fallbacks", () => {
+    expect(resolveOrderInvoiceId(12, 44)).toBe(12);
+  });
+
+  it("falls back to a linked invoice id when the order record is stale", () => {
+    expect(resolveOrderInvoiceId(null, 44)).toBe(44);
+  });
+
+  it("returns null when neither source provides a valid invoice id", () => {
+    expect(resolveOrderInvoiceId(null, null)).toBeNull();
+    expect(resolveOrderInvoiceId(0, -1)).toBeNull();
+  });
+});
+
+describe("canViewOrderCogsDetails", () => {
+  it("only exposes COGS inspector content when display settings confirm access", () => {
+    expect(
+      canViewOrderCogsDetails({
+        display: { canViewCogsData: true },
+      })
+    ).toBe(true);
+    expect(
+      canViewOrderCogsDetails({
+        display: { canViewCogsData: false },
+      })
+    ).toBe(false);
+    expect(canViewOrderCogsDetails(undefined)).toBe(false);
   });
 });
 
@@ -200,9 +233,9 @@ describe("canGenerateInvoice", () => {
 });
 
 describe("getMakePaymentRoute", () => {
-  it("routes sales payment handoffs into the invoice workspace with record-payment intent", () => {
+  it("routes sales payment handoffs into the canonical invoice workspace", () => {
     expect(getMakePaymentRoute({ id: 18, invoiceId: 91 })).toBe(
-      "/accounting?tab=invoices&id=91&orderId=18&openRecordPayment=true&from=sales"
+      "/accounting?tab=invoices&invoiceId=91&orderId=18&from=sales"
     );
   });
 

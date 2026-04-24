@@ -331,6 +331,18 @@ describe("InventoryWorkSurface", () => {
     ).toHaveLength(2);
   });
 
+  it("shows guided empty-state CTAs when inventory is empty", () => {
+    render(<InventoryWorkSurface />);
+
+    expect(screen.getByText("No inventory found")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: /open receiving queue/i }).length
+    ).toBeGreaterThan(1);
+    expect(
+      screen.getByRole("button", { name: /start direct intake/i })
+    ).toBeInTheDocument();
+  });
+
   it("switches to gallery view from the shared display items set", async () => {
     mockGetEnhanced.mockReturnValue({
       data: {

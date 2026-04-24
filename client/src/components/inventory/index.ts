@@ -6,7 +6,12 @@
 
 export { BatchMediaUpload } from "./BatchMediaUpload";
 // Sprint 4 Track A exports
-export { StockStatusBadge, type StockStatus } from "./StockStatusBadge";
+export {
+  StockStatusBadge,
+  STOCK_STATUS_LABELS,
+  getStockStatusLabel,
+  type StockStatus,
+} from "./StockStatusBadge";
 export {
   AgingBadge,
   getAgeBracket,

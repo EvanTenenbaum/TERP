@@ -52,6 +52,7 @@ pids
 *.seed
 *.pid.lock
 *.bak
+.domscribe/
 
 # Coverage directory used by tools like istanbul
 coverage/
@@ -158,3 +159,6 @@ scripts/test-adjust-api.ts
 
 # Dolt database files (added by bd init)
 .dolt/
+
+client/version.json
+client/public/version.json

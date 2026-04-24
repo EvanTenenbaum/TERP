@@ -7,6 +7,28 @@ import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ReturnsPilotSurface } from "./ReturnsPilotSurface";
 
+let lastPowersheetGridProps: Record<string, unknown> | null = null;
+let mockReturnItems = [
+  {
+    id: 1,
+    orderId: 100,
+    returnNumber: "RET-001",
+    returnReason: "DEFECTIVE",
+    status: "PENDING",
+    processedBy: 1,
+    processedAt: "2026-03-01T00:00:00.000Z",
+    notes: null,
+    items: [
+      {
+        id: 10,
+        batchId: 5,
+        quantity: "2",
+        status: "PENDING",
+      },
+    ],
+  },
+];
+
 vi.mock("wouter", () => ({
   useLocation: () => ["/operations?tab=returns", vi.fn()],
 }));
@@ -30,25 +52,7 @@ vi.mock("@/lib/trpc", () => ({
       list: {
         useQuery: () => ({
           data: {
-            items: [
-              {
-                id: 1,
-                orderId: 100,
-                returnNumber: "RET-001",
-                returnReason: "DEFECTIVE",
-                processedBy: 1,
-                processedAt: "2026-03-01T00:00:00.000Z",
-                notes: null,
-                items: [
-                  {
-                    id: 10,
-                    batchId: 5,
-                    quantity: "2",
-                    status: "PENDING",
-                  },
-                ],
-              },
-            ],
+            items: mockReturnItems,
             pagination: { total: 1, hasMore: false },
           },
           isLoading: false,
@@ -133,15 +137,23 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     description,
+    rows,
   }: {
     title: string;
     description?: string;
-  }) => (
-    <div>
-      <h2>{title}</h2>
-      {description ? <p>{description}</p> : null}
-    </div>
-  ),
+    rows: Array<{ derivedStatus: string }>;
+  }) => {
+    lastPowersheetGridProps = { title, description, rows };
+    return (
+      <div>
+        <h2>{title}</h2>
+        {description ? <p>{description}</p> : null}
+        <span data-testid="derived-statuses">
+          {rows.map(row => row.derivedStatus).join(",")}
+        </span>
+      </div>
+    );
+  },
 }));
 
 vi.mock("./SpreadsheetPilotGrid", () => ({
@@ -217,6 +229,27 @@ vi.mock("@/components/work-surface/KeyboardHintBar", () => ({
 describe("ReturnsPilotSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    lastPowersheetGridProps = null;
+    mockReturnItems = [
+      {
+        id: 1,
+        orderId: 100,
+        returnNumber: "RET-001",
+        returnReason: "DEFECTIVE",
+        status: "PENDING",
+        processedBy: 1,
+        processedAt: "2026-03-01T00:00:00.000Z",
+        notes: null,
+        items: [
+          {
+            id: 10,
+            batchId: 5,
+            quantity: "2",
+            status: "PENDING",
+          },
+        ],
+      },
+    ];
   });
 
   it("renders without crashing", () => {
@@ -267,5 +300,28 @@ describe("ReturnsPilotSurface", () => {
     expect(
       screen.getByRole("group", { name: /keyboard shortcuts/i })
     ).toBeInTheDocument();
+  });
+
+  it("prefers the dedicated status column over legacy notes when mapping return rows", () => {
+    mockReturnItems = [
+      {
+        id: 2,
+        orderId: 101,
+        returnNumber: "RET-002",
+        returnReason: "WRONG_ITEM",
+        status: "APPROVED",
+        processedBy: 1,
+        processedAt: "2026-03-02T00:00:00.000Z",
+        notes: "[REJECTED 2026-03-02]",
+        items: [],
+      },
+    ];
+
+    render(<ReturnsPilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByTestId("derived-statuses")).toHaveTextContent(
+      "APPROVED"
+    );
+    expect(lastPowersheetGridProps).not.toBeNull();
   });
 });

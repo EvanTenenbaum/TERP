@@ -138,7 +138,7 @@ export default function CalendarFilters({
           <Filter className="h-4 w-4 text-gray-500" />
           <span className="text-sm font-medium text-gray-700">Filters</span>
           {activeFilterCount > 0 && (
-            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+            <span className="rounded-full bg-[var(--info-bg)] px-2 py-0.5 text-xs font-medium text-[var(--info)]">
               {activeFilterCount}
             </span>
           )}
@@ -149,7 +149,7 @@ export default function CalendarFilters({
               e.stopPropagation();
               clearAllFilters();
             }}
-            className="text-xs text-blue-600 hover:text-blue-800"
+            className="text-xs text-[var(--info)] hover:text-[var(--info)]"
           >
             Clear all
           </button>
@@ -223,7 +223,7 @@ export default function CalendarFilters({
                           setSelectedModules
                         )
                       }
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-gray-300 text-[var(--info)] focus:ring-blue-500"
                     />
                     {moduleLabels[module] ?? formatLabel(module)}
                   </label>
@@ -252,7 +252,7 @@ export default function CalendarFilters({
                           setSelectedEventTypes
                         )
                       }
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-gray-300 text-[var(--info)] focus:ring-blue-500"
                     />
                     {formatLabel(type)}
                   </label>
@@ -281,7 +281,7 @@ export default function CalendarFilters({
                           setSelectedStatuses
                         )
                       }
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-gray-300 text-[var(--info)] focus:ring-blue-500"
                     />
                     {formatLabel(status)}
                   </label>
@@ -310,7 +310,7 @@ export default function CalendarFilters({
                           setSelectedPriorities
                         )
                       }
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      className="h-4 w-4 rounded border-gray-300 text-[var(--info)] focus:ring-blue-500"
                     />
                     {formatLabel(priority)}
                   </label>

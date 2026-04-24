@@ -4,11 +4,12 @@ import type {
   ICellRendererParams,
   RowSelectedEvent,
 } from "ag-grid-community";
-import { AgGridReact } from "ag-grid-react";
+import { AgGridReactCompat } from "@/components/ag-grid/AgGridReactCompat";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { trpc, staleTimePresets } from "@/lib/trpc";
+import { formatDate } from "@/lib/utils";
 import { useUiDensity } from "@/hooks/useUiDensity";
 import { toast } from "sonner";
 import type { PickPackGridRow, PickPackStats } from "@/types/spreadsheet";
@@ -18,9 +19,9 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 
 const statusColors: Record<string, string> = {
-  PENDING: "bg-yellow-100 text-yellow-800",
-  PARTIAL: "bg-blue-100 text-blue-800",
-  READY: "bg-green-100 text-green-800",
+  PENDING: "bg-[var(--warning-bg)] text-[var(--warning)]",
+  PARTIAL: "bg-[var(--info-bg)] text-[var(--info)]",
+  READY: "bg-[var(--success-bg)] text-[var(--success)]",
   SHIPPED: "bg-slate-100 text-slate-800",
 };
 
@@ -38,7 +39,7 @@ const ProgressCellRenderer = (params: ICellRendererParams<PickPackGridRow>) => {
     <div className="flex items-center gap-2">
       <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
         <div
-          className="h-full bg-green-500 transition-all"
+          className="h-full bg-[var(--success)] transition-all"
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -170,6 +171,8 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
         headerName: "Date",
         field: "orderDate",
         width: 120,
+        valueFormatter: params =>
+          formatDate(params.value as string | Date | null | undefined),
       },
       {
         headerName: "Items",
@@ -302,17 +305,17 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
           {/* Stats */}
           <div className="flex gap-3 text-sm">
             <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4 text-yellow-500" />
+              <Clock className="h-4 w-4 text-[var(--warning)]" />
               <span className="text-muted-foreground">Pending:</span>
               <span className="font-semibold">{stats.pending}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Loader2 className="h-4 w-4 text-blue-500" />
+              <Loader2 className="h-4 w-4 text-[var(--info)]" />
               <span className="text-muted-foreground">Partial:</span>
               <span className="font-semibold">{stats.partial}</span>
             </div>
             <div className="flex items-center gap-1">
-              <Package className="h-4 w-4 text-green-500" />
+              <Package className="h-4 w-4 text-[var(--success)]" />
               <span className="text-muted-foreground">Ready:</span>
               <span className="font-semibold">{stats.ready}</span>
             </div>
@@ -413,7 +416,7 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
         )}
         {!isLoading && !error && rows.length > 0 && (
           <div className="ag-theme-alpine h-[600px] w-full">
-            <AgGridReact<PickPackGridRow>
+            <AgGridReactCompat<PickPackGridRow>
               rowData={rows}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
@@ -428,11 +431,11 @@ export const PickPackGrid = React.memo(function PickPackGrid() {
               getRowId={params => String(params.data.orderId)}
               suppressLoadingOverlay={!isLoading}
               rowClassRules={{
-                "bg-yellow-50": params =>
+                "bg-[var(--warning-bg)]": params =>
                   params.data?.pickPackStatus === "PENDING",
-                "bg-blue-50": params =>
+                "bg-[var(--info-bg)]": params =>
                   params.data?.pickPackStatus === "PARTIAL",
-                "bg-green-50": params =>
+                "bg-[var(--success-bg)]": params =>
                   params.data?.pickPackStatus === "READY",
                 "bg-slate-50": params =>
                   params.data?.pickPackStatus === "SHIPPED",

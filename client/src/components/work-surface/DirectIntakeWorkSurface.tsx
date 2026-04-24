@@ -29,7 +29,7 @@ import type {
   ICellRendererParams,
   SelectionChangedEvent,
 } from "ag-grid-community";
-import { AgGridReact } from "ag-grid-react";
+import { AgGridReactCompat } from "@/components/ag-grid/AgGridReactCompat";
 import { z } from "zod";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
@@ -70,6 +70,10 @@ import {
 } from "./InspectorPanel";
 import { WorkSurfaceStatusBar } from "./WorkSurfaceStatusBar";
 import { KeyboardHintBar } from "./KeyboardHintBar";
+
+// TER-1228: Intake progress and rollback
+import { IntakeProgressDialog } from "@/components/intake/IntakeProgressDialog";
+import type { IntakeProgress } from "@shared/intakeProgress";
 
 // Nomenclature utilities for dynamic Brand/Farmer labels (LEX-011)
 import { getBrandLabel } from "@/lib/nomenclature";
@@ -174,6 +178,20 @@ const intakeRowSchema = z
 
 type IntakeRowData = z.infer<typeof intakeRowSchema>;
 type IntakeCogsMode = IntakeRowData["cogsMode"];
+type IntakeFieldErrorMap = Partial<
+  Record<
+    | "vendorName"
+    | "brandName"
+    | "item"
+    | "qty"
+    | "cogsMode"
+    | "cogs"
+    | "cogsMin"
+    | "cogsMax"
+    | "site",
+    string
+  >
+>;
 
 interface IntakeGridRow extends IntakeRowData {
   id: string;
@@ -184,8 +202,11 @@ interface IntakeGridRow extends IntakeRowData {
   locationName: string;
   // TER-222: Matched strain name for validation assistant
   matchedStrainName?: string;
+  // TER-1059: PO reference — null for direct intake rows (always direct in this surface)
+  poNumber?: string | null;
   status: "pending" | "submitted" | "error";
   errorMessage?: string;
+  fieldErrors?: IntakeFieldErrorMap;
 }
 
 type IntakeExportRow = IntakeGridRow & Record<string, unknown>;
@@ -280,6 +301,7 @@ const createEmptyRow = (defaults?: {
   site: defaults?.site ?? "",
   notes: "",
   status: "pending",
+  fieldErrors: undefined,
 });
 
 const getEffectiveCogs = (
@@ -334,6 +356,65 @@ const normalizeRowForValidation = (row: IntakeGridRow): IntakeGridRow => {
   });
 };
 
+const isEmptyTemplateRow = (
+  row: Pick<
+    IntakeGridRow,
+    "vendorName" | "brandName" | "item" | "qty" | "cogs" | "cogsMin" | "cogsMax"
+  >
+) =>
+  !row.vendorName.trim() &&
+  !row.brandName.trim() &&
+  !row.item.trim() &&
+  Number(row.qty || 0) <= 0 &&
+  Number(row.cogs || 0) <= 0 &&
+  Number(row.cogsMin || 0) <= 0 &&
+  Number(row.cogsMax || 0) <= 0;
+
+const hasMissingCostWarning = (
+  row: Pick<IntakeGridRow, "cogsMode" | "cogs" | "cogsMin" | "cogsMax"> &
+    Pick<IntakeGridRow, "vendorName" | "brandName" | "item" | "qty">
+) => {
+  if (isEmptyTemplateRow(row)) return false;
+  if (row.cogsMode === "RANGE") {
+    return Number(row.cogsMin || 0) <= 0 || Number(row.cogsMax || 0) <= 0;
+  }
+  return Number(row.cogs || 0) <= 0;
+};
+
+const getRowErrorFieldMap = (issues: z.ZodIssue[]): IntakeFieldErrorMap => {
+  const fieldErrors: IntakeFieldErrorMap = {};
+
+  for (const issue of issues) {
+    const field = issue.path[0];
+    if (
+      field === "vendorName" ||
+      field === "brandName" ||
+      field === "item" ||
+      field === "qty" ||
+      field === "cogsMode" ||
+      field === "cogs" ||
+      field === "cogsMin" ||
+      field === "cogsMax" ||
+      field === "site"
+    ) {
+      fieldErrors[field] ??= issue.message;
+    }
+  }
+
+  return fieldErrors;
+};
+
+const getInlineErrorCellClass = (
+  row: IntakeGridRow | undefined,
+  field: keyof IntakeFieldErrorMap
+) =>
+  row?.fieldErrors?.[field]
+    ? "border-l-2 border-red-400 bg-destructive/10/70"
+    : undefined;
+
+const getMissingCostCellClass = (row: IntakeGridRow | undefined) =>
+  row && hasMissingCostWarning(row) ? "bg-amber-50 text-amber-900" : undefined;
+
 // ============================================================================
 // STATUS CELL RENDERER
 // ============================================================================
@@ -344,7 +425,7 @@ function StatusCellRenderer({ data }: { data?: IntakeGridRow }) {
 
   if (status === "submitted") {
     return (
-      <div className="flex items-center gap-1 text-green-600">
+      <div className="flex items-center gap-1 text-[var(--success)]">
         <CheckCircle2 className="h-4 w-4" />
         <span>Submitted</span>
       </div>
@@ -354,12 +435,20 @@ function StatusCellRenderer({ data }: { data?: IntakeGridRow }) {
   if (status === "error") {
     return (
       <div
-        className="flex items-center gap-1 text-red-600"
+        className="flex items-center gap-1 text-destructive"
         title={errorMessage}
       >
         <AlertCircle className="h-4 w-4" />
         <span>Error</span>
       </div>
+    );
+  }
+
+  if (data && isEmptyTemplateRow(data)) {
+    return (
+      <Badge variant="secondary" className="text-muted-foreground">
+        New
+      </Badge>
     );
   }
 
@@ -485,7 +574,7 @@ function RowInspectorContent({
             ))}
           </datalist>
           {validation.getFieldState("vendorName").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("vendorName").error}
             </p>
           )}
@@ -506,7 +595,7 @@ function RowInspectorContent({
             placeholder="Enter brand or farmer name"
           />
           {validation.getFieldState("brandName").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("brandName").error}
             </p>
           )}
@@ -582,19 +671,19 @@ function RowInspectorContent({
             ))}
           </datalist>
           {validation.getFieldState("item").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("item").error}
             </p>
           )}
           {/* TER-222: Strain validation assistant — show matched strain info */}
           {row.strainId && row.productId && (
-            <div className="flex items-center gap-2 mt-1 p-1.5 bg-green-50 rounded text-xs text-green-700">
+            <div className="flex items-center gap-2 mt-1 p-1.5 bg-[var(--success-bg)] rounded text-xs text-[var(--success)]">
               <CheckCircle2 className="h-3 w-3" />
               <span>Matched to existing product (strain #{row.strainId})</span>
             </div>
           )}
           {row.item && !row.productId && (
-            <div className="flex items-center gap-2 mt-1 p-1.5 bg-yellow-50 rounded text-xs text-yellow-700">
+            <div className="flex items-center gap-2 mt-1 p-1.5 bg-[var(--warning-bg)] rounded text-xs text-[var(--warning)]">
               <AlertCircle className="h-3 w-3" />
               <span>New product — will be created on submit</span>
             </div>
@@ -630,7 +719,7 @@ function RowInspectorContent({
               )}
             />
             {validation.getFieldState("qty").showError && (
-              <p className="text-xs text-red-500 mt-1">
+              <p className="text-xs text-destructive mt-1">
                 {validation.getFieldState("qty").error}
               </p>
             )}
@@ -638,7 +727,7 @@ function RowInspectorContent({
 
           <InspectorField label="COGS Mode" required>
             <Select
-              value={row.cogsMode}
+              value={isEmptyTemplateRow(row) ? undefined : row.cogsMode}
               onValueChange={value => {
                 onUpdate({
                   cogsMode: value as IntakeCogsMode,
@@ -675,7 +764,7 @@ function RowInspectorContent({
               )}
             />
             {validation.getFieldState("cogs").showError && (
-              <p className="text-xs text-red-500 mt-1">
+              <p className="text-xs text-destructive mt-1">
                 {validation.getFieldState("cogs").error}
               </p>
             )}
@@ -700,7 +789,7 @@ function RowInspectorContent({
                 )}
               />
               {validation.getFieldState("cogsMin").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("cogsMin").error}
                 </p>
               )}
@@ -723,7 +812,7 @@ function RowInspectorContent({
                 )}
               />
               {validation.getFieldState("cogsMax").showError && (
-                <p className="text-xs text-red-500 mt-1">
+                <p className="text-xs text-destructive mt-1">
                   {validation.getFieldState("cogsMax").error}
                 </p>
               )}
@@ -789,7 +878,7 @@ function RowInspectorContent({
             </SelectContent>
           </Select>
           {validation.getFieldState("site").showError && (
-            <p className="text-xs text-red-500 mt-1">
+            <p className="text-xs text-destructive mt-1">
               {validation.getFieldState("site").error}
             </p>
           )}
@@ -952,6 +1041,12 @@ export function DirectIntakeWorkSurface() {
     [rowSelection]
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // TER-1228: Progress tracking and rollback state
+  const [progressDialogOpen, setProgressDialogOpen] = useState(false);
+  const [intakeProgress, setIntakeProgress] = useState<IntakeProgress | null>(null);
+  const [intakeError, setIntakeError] = useState<string | undefined>();
+  
   const gridApiRef = useRef<GridApi | null>(null);
   const undo = useUndo({ enableKeyboard: false });
   const { exportCSV, state: exportState } = useExport<IntakeExportRow>();
@@ -1142,11 +1237,25 @@ export function DirectIntakeWorkSurface() {
   const columnDefs = useMemo<ColDef<IntakeGridRow>[]>(
     () => [
       {
+        // TER-1059: PO reference column — always em-dash for direct intake rows
+        headerName: "PO #",
+        colId: "poNumber",
+        width: 80,
+        editable: false,
+        sortable: false,
+        filter: false,
+        headerTooltip:
+          "Purchase Order reference. Shows \u2014 for direct intake (no PO).",
+        valueGetter: () => null,
+        valueFormatter: () => "\u2014",
+      },
+      {
         headerName: "Supplier",
         field: "vendorName",
         minWidth: 130,
         flex: 1,
         editable: params => params.data?.status === "pending",
+        cellClass: params => getInlineErrorCellClass(params.data, "vendorName"),
         cellEditor: "agTextCellEditor",
         cellEditorParams: {
           useFormatter: false,
@@ -1162,6 +1271,7 @@ export function DirectIntakeWorkSurface() {
         minWidth: 180,
         flex: 2,
         editable: params => params.data?.status === "pending",
+        cellClass: params => getInlineErrorCellClass(params.data, "item"),
         cellEditor: "agTextCellEditor",
         cellEditorParams: {
           useFormatter: false,
@@ -1176,6 +1286,7 @@ export function DirectIntakeWorkSurface() {
         field: "qty",
         width: 90,
         editable: params => params.data?.status === "pending",
+        cellClass: params => getInlineErrorCellClass(params.data, "qty"),
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1186,8 +1297,19 @@ export function DirectIntakeWorkSurface() {
         field: "cogsMode",
         width: 120,
         editable: params => params.data?.status === "pending",
+        cellClass: params =>
+          cn(
+            getInlineErrorCellClass(params.data, "cogsMode"),
+            getMissingCostCellClass(params.data)
+          ),
         cellEditor: "agSelectCellEditor",
         cellEditorParams: { values: ["FIXED", "RANGE"] },
+        valueFormatter: params => {
+          if (params.data && isEmptyTemplateRow(params.data)) {
+            return "—";
+          }
+          return params.value === "RANGE" ? "Range" : "Fixed";
+        },
       },
       {
         headerName: "COGS",
@@ -1196,10 +1318,17 @@ export function DirectIntakeWorkSurface() {
         editable: params =>
           params.data?.status === "pending" &&
           params.data?.cogsMode !== "RANGE",
+        cellClass: params =>
+          cn(
+            getInlineErrorCellClass(params.data, "cogs"),
+            getMissingCostCellClass(params.data)
+          ),
         valueFormatter: params =>
-          params.data
-            ? formatCogsLabel(params.data)
-            : `$${(params.value ?? 0).toFixed(2)}`,
+          params.data && isEmptyTemplateRow(params.data)
+            ? "—"
+            : params.data
+              ? formatCogsLabel(params.data)
+              : `$${(params.value ?? 0).toFixed(2)}`,
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1212,10 +1341,17 @@ export function DirectIntakeWorkSurface() {
         editable: params =>
           params.data?.status === "pending" &&
           params.data?.cogsMode === "RANGE",
+        cellClass: params =>
+          cn(
+            getInlineErrorCellClass(params.data, "cogsMin"),
+            getMissingCostCellClass(params.data)
+          ),
         valueFormatter: params =>
-          params.data?.cogsMode === "RANGE"
-            ? `$${(params.value ?? 0).toFixed(2)}`
-            : "Fixed",
+          params.data && isEmptyTemplateRow(params.data)
+            ? "—"
+            : params.data?.cogsMode === "RANGE"
+              ? `$${(params.value ?? 0).toFixed(2)}`
+              : "Fixed",
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1228,10 +1364,17 @@ export function DirectIntakeWorkSurface() {
         editable: params =>
           params.data?.status === "pending" &&
           params.data?.cogsMode === "RANGE",
+        cellClass: params =>
+          cn(
+            getInlineErrorCellClass(params.data, "cogsMax"),
+            getMissingCostCellClass(params.data)
+          ),
         valueFormatter: params =>
-          params.data?.cogsMode === "RANGE"
-            ? `$${(params.value ?? 0).toFixed(2)}`
-            : "Fixed",
+          params.data && isEmptyTemplateRow(params.data)
+            ? "—"
+            : params.data?.cogsMode === "RANGE"
+              ? `$${(params.value ?? 0).toFixed(2)}`
+              : "Fixed",
         valueParser: params => {
           const val = Number(params.newValue);
           return Number.isFinite(val) && val >= 0 ? val : params.oldValue;
@@ -1243,6 +1386,7 @@ export function DirectIntakeWorkSurface() {
         minWidth: 120,
         flex: 1,
         editable: params => params.data?.status === "pending",
+        cellClass: params => getInlineErrorCellClass(params.data, "site"),
         cellEditor: "agSelectCellEditor",
         cellEditorParams: { values: locations.map(l => l.site) },
       },
@@ -1259,7 +1403,7 @@ export function DirectIntakeWorkSurface() {
           return hasNotes ? (
             <span
               title={`Notes: ${params.data?.notes}`}
-              className="text-blue-600 cursor-help"
+              className="text-[var(--info)] cursor-help"
             >
               📝
             </span>
@@ -1392,6 +1536,7 @@ export function DirectIntakeWorkSurface() {
       if (nextRow.status === "error") {
         nextRow.status = "pending";
         nextRow.errorMessage = undefined;
+        nextRow.fieldErrors = undefined;
       }
 
       // Update rows state
@@ -1427,6 +1572,7 @@ export function DirectIntakeWorkSurface() {
     updateRows(prev => [...prev, newRow]);
     setSelectedRowId(newRow.id);
     replaceSelection([newRow.id]);
+    toast.success("Added Product Intake row");
 
     // Focus the new row
     setTimeout(() => {
@@ -1540,6 +1686,9 @@ export function DirectIntakeWorkSurface() {
       });
       rowSelection.clear();
       setSelectedRowId(null);
+      toast.success(
+        `Removed ${removalPlan.removedIds.length} Product Intake row${removalPlan.removedIds.length === 1 ? "" : "s"}`
+      );
     },
     [replaceSelection, rowSelection, undo, updateRows, updateRowMediaFilesById]
   );
@@ -1604,6 +1753,7 @@ export function DirectIntakeWorkSurface() {
       const result = intakeRowSchema.safeParse(normalizedRow);
       if (!result.success) {
         const firstError = result.error.issues[0];
+        const fieldErrors = getRowErrorFieldMap(result.error.issues);
         updateRows(prev =>
           prev.map(r =>
             r.id === row.id
@@ -1611,6 +1761,7 @@ export function DirectIntakeWorkSurface() {
                   ...r,
                   status: "error" as const,
                   errorMessage: firstError?.message || "Validation failed",
+                  fieldErrors,
                 }
               : r
           )
@@ -1636,7 +1787,9 @@ export function DirectIntakeWorkSurface() {
         }
 
         setSaving("Submitting intake...");
-        await intakeMutation.mutateAsync({
+        // TER-1228: Show progress dialog during intake
+        setProgressDialogOpen(true);
+        const result = await intakeMutation.mutateAsync({
           vendorName: normalizedRow.vendorName,
           brandName: normalizedRow.brandName,
           productName: normalizedRow.item,
@@ -1665,11 +1818,24 @@ export function DirectIntakeWorkSurface() {
           mediaUrls:
             uploadedMediaUrls.length > 0 ? uploadedMediaUrls : undefined,
         });
+        
+        // TER-1228: Store progress for display
+        if (result.progress) {
+          setIntakeProgress(result.progress);
+          setIntakeError(undefined);
+        }
 
         // Mark as submitted
         updateRows(prev =>
           prev.map(r =>
-            r.id === row.id ? { ...r, status: "submitted" as const } : r
+            r.id === row.id
+              ? {
+                  ...r,
+                  status: "submitted" as const,
+                  errorMessage: undefined,
+                  fieldErrors: undefined,
+                }
+              : r
           )
         );
         updateRowMediaFilesById(prev => {
@@ -1678,8 +1844,27 @@ export function DirectIntakeWorkSurface() {
           return next;
         });
         setSaved();
-        toast.success("Intake submitted successfully");
+        toast.success("Product Intake submitted");
       } catch (error) {
+        // TER-1228: Extract progress from error if available
+        let progress = null;
+        if (error && typeof error === "object" && "data" in error) {
+          const data = error.data as { cause?: { progress?: unknown } };
+          if (data.cause && typeof data.cause === "object" && "progress" in data.cause) {
+            progress = data.cause.progress as IntakeProgress;
+          }
+        }
+        
+        const message =
+          error instanceof Error ? error.message : "Failed to submit intake";
+        
+        // TER-1228: Show progress dialog with error state
+        if (progress) {
+          setIntakeProgress(progress);
+          setIntakeError(message);
+          setProgressDialogOpen(true);
+        }
+        
         // Rollback uploaded files if intake failed
         if (uploadedMediaUrls.length > 0) {
           try {
@@ -1695,12 +1880,15 @@ export function DirectIntakeWorkSurface() {
           }
         }
 
-        const message =
-          error instanceof Error ? error.message : "Failed to submit intake";
         updateRows(prev =>
           prev.map(r =>
             r.id === row.id
-              ? { ...r, status: "error" as const, errorMessage: message }
+              ? {
+                  ...r,
+                  status: "error" as const,
+                  errorMessage: message,
+                  fieldErrors: undefined,
+                }
               : r
           )
         );
@@ -1757,6 +1945,9 @@ export function DirectIntakeWorkSurface() {
             ...row,
             status: "error" as const,
             errorMessage: firstIssue?.message ?? "Validation failed",
+            fieldErrors: invalid.result.success
+              ? undefined
+              : getRowErrorFieldMap(invalid.result.error.issues),
           };
         })
       );
@@ -1764,13 +1955,13 @@ export function DirectIntakeWorkSurface() {
 
     if (pendingRows.length === 0) {
       toast.error(
-        "No valid rows to submit. Ensure all required fields are filled."
+        "No valid Product Intake rows to submit. Fill product, quantity, and cost before submitting."
       );
       return;
     }
 
     setIsSubmitting(true);
-    setSaving(`Submitting ${pendingRows.length} records...`);
+    setSaving(`Submitting ${pendingRows.length} Product Intake rows...`);
 
     let successCount = 0;
     let errorCount = 0;
@@ -1792,7 +1983,7 @@ export function DirectIntakeWorkSurface() {
           }
         }
 
-        setSaving(`Submitting ${pendingRows.length} records...`);
+        setSaving(`Submitting ${pendingRows.length} Product Intake rows...`);
         await intakeMutation.mutateAsync({
           vendorName: row.vendorName,
           brandName: row.brandName,
@@ -1820,7 +2011,14 @@ export function DirectIntakeWorkSurface() {
 
         updateRows(prev =>
           prev.map(r =>
-            r.id === row.id ? { ...r, status: "submitted" as const } : r
+            r.id === row.id
+              ? {
+                  ...r,
+                  status: "submitted" as const,
+                  errorMessage: undefined,
+                  fieldErrors: undefined,
+                }
+              : r
           )
         );
         updateRowMediaFilesById(prev => {
@@ -1852,6 +2050,7 @@ export function DirectIntakeWorkSurface() {
                   status: "error" as const,
                   errorMessage:
                     error instanceof Error ? error.message : "Failed",
+                  fieldErrors: undefined,
                 }
               : r
           )
@@ -1861,7 +2060,9 @@ export function DirectIntakeWorkSurface() {
     }
 
     if (successCount > 0) {
-      toast.success(`Successfully submitted ${successCount} intake record(s)`);
+      toast.success(
+        `Submitted ${successCount} Product Intake row${successCount === 1 ? "" : "s"}`
+      );
     }
     if (errorCount > 0) {
       toast.error(`Failed to submit ${errorCount} record(s)`);
@@ -1952,6 +2153,7 @@ export function DirectIntakeWorkSurface() {
                   status: r.status === "error" ? "pending" : r.status,
                   errorMessage:
                     r.status === "error" ? undefined : r.errorMessage,
+                  fieldErrors: r.status === "error" ? undefined : r.fieldErrors,
                 };
               })()
             : r
@@ -2052,6 +2254,7 @@ export function DirectIntakeWorkSurface() {
         id: `new-${timestamp}-${duplicateIndex++}-${Math.random().toString(36).slice(2, 9)}`,
         status: "pending" as const,
         errorMessage: undefined,
+        fieldErrors: undefined,
       }),
     });
 
@@ -2086,6 +2289,7 @@ export function DirectIntakeWorkSurface() {
   return (
     <section
       {...keyboardProps}
+      data-testid="direct-intake-surface"
       className="h-full min-h-[calc(100vh-8rem)] flex flex-col overflow-hidden bg-background"
     >
       <div className="flex flex-col gap-3 border-b border-border/70 bg-background px-3 py-3 md:flex-row md:items-center md:justify-between md:px-4">
@@ -2097,7 +2301,7 @@ export function DirectIntakeWorkSurface() {
           <Badge variant="outline">Submitted {submittedCount}</Badge>
           <Badge
             variant="outline"
-            className={cn(errorCount > 0 && "border-red-200 text-red-600")}
+            className={cn(errorCount > 0 && "border-red-200 text-destructive")}
           >
             Errors {errorCount}
           </Badge>
@@ -2227,7 +2431,11 @@ export function DirectIntakeWorkSurface() {
           <div className="space-y-1 min-w-0">
             <Label className="text-xs text-muted-foreground">COGS Mode</Label>
             <Select
-              value={selectedRow?.cogsMode ?? "FIXED"}
+              value={
+                selectedRow && !isEmptyTemplateRow(selectedRow)
+                  ? selectedRow.cogsMode
+                  : undefined
+              }
               onValueChange={value =>
                 handleUpdateSelectedRow({
                   cogsMode: value as IntakeCogsMode,
@@ -2336,7 +2544,7 @@ export function DirectIntakeWorkSurface() {
           </div>
         </div>
         {selectedRow?.status === "error" && selectedRow.errorMessage && (
-          <p className="mt-2 text-xs font-medium text-red-600">
+          <p className="mt-2 text-xs font-medium text-destructive">
             {selectedRow.errorMessage}
           </p>
         )}
@@ -2356,6 +2564,7 @@ export function DirectIntakeWorkSurface() {
                 createEmptyRow(defaultLocationOverrides)
               );
               updateRows(prev => [...prev, ...newRows]);
+              toast.success("Added 5 Product Intake rows");
             }}
           >
             <Plus className="mr-1 h-4 w-4" />
@@ -2372,7 +2581,7 @@ export function DirectIntakeWorkSurface() {
               disabled={isSubmitting}
             >
               <Send className="mr-1 h-4 w-4" />
-              Submit Selected ({selectedPendingRows.length})
+              Submit Selected Rows ({selectedPendingRows.length})
             </Button>
           )}
           {selectedPendingRows.length > 0 && (
@@ -2461,7 +2670,7 @@ export function DirectIntakeWorkSurface() {
             ) : (
               <>
                 <Send className="mr-1 h-4 w-4" />
-                Submit All Pending
+                Submit All Product Intake
               </>
             )}
           </Button>
@@ -2506,7 +2715,7 @@ export function DirectIntakeWorkSurface() {
             </div>
           ) : (
             <div className="h-full min-h-[420px] w-full">
-              <AgGridReact<IntakeGridRow>
+              <AgGridReactCompat<IntakeGridRow>
                 theme={themeAlpine}
                 rowData={rows}
                 columnDefs={columnDefs}
@@ -2525,8 +2734,8 @@ export function DirectIntakeWorkSurface() {
                 onSelectionChanged={handleSelectionChanged}
                 getRowId={params => params.data.id}
                 rowClassRules={{
-                  "bg-green-50": params => params.data?.status === "submitted",
-                  "bg-red-50": params => params.data?.status === "error",
+                  "bg-[var(--success-bg)]": params => params.data?.status === "submitted",
+                  "bg-destructive/10": params => params.data?.status === "error",
                 }}
               />
             </div>
@@ -2592,6 +2801,20 @@ export function DirectIntakeWorkSurface() {
             ]}
           />
         }
+      />
+
+      {/* TER-1228: Intake Progress and Rollback Dialog */}
+      <IntakeProgressDialog
+        open={progressDialogOpen}
+        onOpenChange={setProgressDialogOpen}
+        progress={intakeProgress}
+        error={intakeError}
+        onRollbackComplete={() => {
+          // Refresh the UI after rollback
+          setIntakeProgress(null);
+          setIntakeError(undefined);
+          toast.info("Intake rolled back successfully");
+        }}
       />
     </section>
   );

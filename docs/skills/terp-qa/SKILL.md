@@ -20,6 +20,8 @@ PM: "Verify the wave" or "Run QA"
 → Report results to PM
 ```
 
+For local implementation-time UI diagnosis, use `docs/skills/terp-domscribe/SKILL.md` instead. `terp-qa` remains the broader verification lane after code is ready for staged or deployed proof.
+
 ---
 
 ## Input: What PM Provides

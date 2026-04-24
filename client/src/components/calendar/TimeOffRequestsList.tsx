@@ -27,9 +27,9 @@ interface TimeOffRequestsListProps {
 }
 
 const TIME_OFF_COLORS: Record<string, string> = {
-  vacation: "bg-blue-500",
-  sick: "bg-red-500",
-  personal: "bg-purple-500",
+  vacation: "bg-[var(--info)]",
+  sick: "bg-destructive",
+  personal: "bg-primary",
 };
 
 const TIME_OFF_LABELS: Record<string, string> = {
@@ -189,9 +189,9 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      approved: "bg-green-100 text-green-800",
-      rejected: "bg-red-100 text-red-800",
+      pending: "bg-[var(--warning-bg)] text-[var(--warning)]",
+      approved: "bg-[var(--success-bg)] text-[var(--success)]",
+      rejected: "bg-destructive/10 text-destructive",
     };
     return (
       <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${styles[status] || styles.pending}`}>
@@ -220,13 +220,13 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
   if (error) {
     console.error('[TimeOffRequestsList] Error:', error);
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center">
-        <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-        <h3 className="mt-2 text-sm font-medium text-red-800">Failed to load time off requests</h3>
-        <p className="mt-1 text-sm text-red-600">{error.message || 'An unexpected error occurred'}</p>
+      <div className="rounded-lg border border-red-200 bg-destructive/10 p-8 text-center">
+        <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+        <h3 className="mt-2 text-sm font-medium text-destructive">Failed to load time off requests</h3>
+        <p className="mt-1 text-sm text-destructive">{error.message || 'An unexpected error occurred'}</p>
         <button
           onClick={() => refetch()}
-          className="mt-4 inline-flex items-center gap-2 rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200"
+          className="mt-4 inline-flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
         >
           <RefreshCw className="h-4 w-4" />
           Retry
@@ -242,7 +242,7 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold text-gray-900">Time Off Requests</h3>
           {isAdmin && teamPendingCount && teamPendingCount.count > 0 && (
-            <span className="inline-flex items-center justify-center rounded-full bg-orange-500 px-2 py-0.5 text-xs font-bold text-white">
+            <span className="inline-flex items-center justify-center rounded-full bg-[var(--warning)] px-2 py-0.5 text-xs font-bold text-white">
               {teamPendingCount.count} pending
             </span>
           )}
@@ -259,7 +259,7 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
           </select>
           <button
             onClick={() => setIsFormOpen(true)}
-            className="inline-flex items-center gap-1 rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-flex items-center gap-1 rounded-md bg-[var(--info)] px-3 py-1.5 text-sm font-medium text-white hover:bg-[var(--info)]"
           >
             <Plus className="h-4 w-4" />
             Request Time Off
@@ -269,7 +269,7 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
 
       {/* My pending requests indicator */}
       {myPendingCount && myPendingCount.count > 0 && statusFilter !== "pending" && (
-        <div className="rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
+        <div className="rounded-lg bg-[var(--warning-bg)] border border-yellow-200 p-3 text-sm text-[var(--warning)]">
           You have {myPendingCount.count} pending time-off request(s).{" "}
           <button
             onClick={() => setStatusFilter("pending")}
@@ -347,7 +347,7 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
                         <button
                           onClick={() => handleApprove(request.id)}
                           disabled={approveMutation.isPending}
-                          className="rounded-md bg-green-50 p-2 text-green-600 hover:bg-green-100 disabled:opacity-50"
+                          className="rounded-md bg-[var(--success-bg)] p-2 text-[var(--success)] hover:bg-[var(--success-bg)] disabled:opacity-50"
                           title="Approve"
                         >
                           <Check className="h-5 w-5" />
@@ -355,7 +355,7 @@ export default function TimeOffRequestsList({ isAdmin = false }: TimeOffRequests
                         <button
                           onClick={() => handleReject(request.id)}
                           disabled={rejectMutation.isPending}
-                          className="rounded-md bg-red-50 p-2 text-red-600 hover:bg-red-100 disabled:opacity-50"
+                          className="rounded-md bg-destructive/10 p-2 text-destructive hover:bg-destructive/10 disabled:opacity-50"
                           title="Reject"
                         >
                           <X className="h-5 w-5" />

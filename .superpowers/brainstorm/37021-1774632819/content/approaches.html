@@ -1,0 +1,94 @@
+<h2>Implementation Approach</h2>
+<p class="subtitle">How to restructure Sales Catalogue + Sales Order into unified sheet-native surfaces</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Bottom-Up Decomposition</h3>
+      <p><strong>Extract → Compose → Wire → Retire</strong></p>
+      <p>Start by extracting reusable modules from OrderCreatorPage (21K lines) into standalone components: InventoryBrowserGrid, OrderDocumentGrid, CreditCard, ReferralCard, WholeOrderChangesPanel, FinalizeGuardrails. Then compose them into the new layout shells. Finally retire the classic surfaces and SheetModeToggle.</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>Pros</h4>
+          <ul>
+            <li>Clean decomposition — each module is testable in isolation</li>
+            <li>Shared InventoryBrowserGrid reused across both surfaces</li>
+            <li>OrderCreatorPage shrinks from 21K to ~2K orchestration</li>
+            <li>No wrapper-over-monolith pattern</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>Cons</h4>
+          <ul>
+            <li>Highest risk — touching the monolith can break existing flows</li>
+            <li>Largest scope — 3-4 waves of work</li>
+            <li>Need careful state management during extraction</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Surface-First Composition</h3>
+      <p><strong>New Shells → Migrate Features → Extract Shared → Retire</strong></p>
+      <p>Build the two new unified surface components first as layout shells, importing existing sub-components where they exist (InventoryBrowser, SalesSheetPreview, OrdersDocumentLineItemsGrid, AdvancedFilters, etc.). Migrate state/logic from the classic pages into the new shells. Extract shared pieces (InventoryBrowserGrid) as a natural byproduct. Retire classic surfaces last.</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>Pros</h4>
+          <ul>
+            <li>New surfaces work alongside old ones during development</li>
+            <li>Can ship incrementally — Sales Catalogue first, then Sales Order</li>
+            <li>Reuses existing sub-components immediately (InventoryBrowser, LineItemsGrid, filters)</li>
+            <li>OrderCreatorPage stays functional until fully replaced</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>Cons</h4>
+          <ul>
+            <li>Temporary duplication between old and new surfaces</li>
+            <li>OrderCreatorPage decomposition happens gradually, not upfront</li>
+            <li>Risk of forgetting to retire old code paths</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Hybrid: Catalogue First, Order Decompose</h3>
+      <p><strong>Quick win on Catalogue → Deep work on Orders</strong></p>
+      <p>Sales Catalogue is simpler — rewrite SalesSheetsPilotSurface as the unified surface using existing InventoryBrowser + SalesSheetPreview + filters, wrapped in the mockup's PowersheetGrid layout. Ship that. Then decompose OrderCreatorPage for the Sales Order surface as a second phase.</p>
+      <div class="pros-cons">
+        <div class="pros">
+          <h4>Pros</h4>
+          <ul>
+            <li>Fast first deliverable — Catalogue surface ships in days</li>
+            <li>Validates the layout pattern before tackling the harder surface</li>
+            <li>Lessons from Catalogue inform Orders decomposition</li>
+            <li>Reduces risk by splitting into two focused phases</li>
+          </ul>
+        </div>
+        <div class="cons">
+          <h4>Cons</h4>
+          <ul>
+            <li>Two phases means two review cycles</li>
+            <li>Shared InventoryBrowserGrid may need refactoring between phases</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top: 2rem; padding: 1.5rem; background: #1a2332; border-radius: 12px; border: 1px solid #2a3a4a;">
+  <h3 style="color: #7dd3fc; margin-top: 0;">⭐ Recommendation: Option C</h3>
+  <p>The Sales Catalogue surface is a contained rewrite — existing components (InventoryBrowser, SalesSheetPreview, AdvancedFilters, QuickViewSelector, DraftControls) can be composed into the new PowersheetGrid layout with moderate effort. This gives a shipped result fast and proves the pattern.</p>
+  <p>The Sales Order surface is the hard one — it requires decomposing a 21K-line monolith. Doing that second, with the Catalogue pattern as a proven template, is lower risk and higher quality.</p>
+  <p>Both phases retire their respective classic surfaces and SheetModeToggle entries when complete.</p>
+</div>

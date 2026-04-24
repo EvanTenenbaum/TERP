@@ -1,0 +1,361 @@
+/**
+ * FEAT-007: Payment Modal
+ * Allows recording payments against invoices with partial payment support
+ */
+
+import React, { useState, useEffect, useRef } from "react";
+import { trpc } from "@/lib/trpc";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import {
+  DollarSign,
+  CreditCard,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
+import { format } from "date-fns";
+
+interface PaymentModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  invoice: {
+    id: number;
+    invoiceNumber: string;
+    totalAmount: string;
+    amountPaid: string;
+    amountDue: string;
+    status: string;
+  } | null;
+  onSuccess?: () => void;
+}
+
+const PAYMENT_METHODS = [
+  { value: "CASH", label: "Cash" },
+  { value: "CHECK", label: "Check" },
+  { value: "WIRE", label: "Wire Transfer" },
+  { value: "ACH", label: "ACH" },
+  { value: "CREDIT_CARD", label: "Credit Card" },
+  { value: "DEBIT_CARD", label: "Debit Card" },
+  { value: "OTHER", label: "Other" },
+] as const;
+
+export function PaymentModal({
+  open,
+  onOpenChange,
+  invoice,
+  onSuccess,
+}: PaymentModalProps) {
+  const [amount, setAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
+  const [referenceNumber, setReferenceNumber] = useState("");
+  const [notes, setNotes] = useState("");
+  const [paymentDate, setPaymentDate] = useState(
+    format(new Date(), "yyyy-MM-dd")
+  );
+
+  const submittingRef = useRef(false);
+
+  const utils = trpc.useUtils();
+
+  // Reset form when dialog opens with new invoice
+  useEffect(() => {
+    if (open && invoice) {
+      const dueAmount = parseFloat(invoice.amountDue);
+      setAmount(dueAmount > 0 ? dueAmount.toFixed(2) : "");
+      setPaymentMethod("CASH");
+      setReferenceNumber("");
+      setNotes("");
+      setPaymentDate(format(new Date(), "yyyy-MM-dd"));
+    }
+  }, [open, invoice]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onOpenChange(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [open, onOpenChange]);
+
+  const recordPaymentMutation = trpc.payments.recordPayment.useMutation({
+    onSuccess: data => {
+      const previousBalance = invoice
+        ? parseFloat(invoice.amountDue)
+        : data.amount + data.amountDue;
+      toast.success(
+        <div className="flex flex-col gap-1">
+          <span className="font-medium">
+            Payment recorded for invoice {invoice?.invoiceNumber}
+          </span>
+          <span className="text-sm">
+            {data.amountDue > 0
+              ? `Remaining balance: ${formatCurrency(data.amountDue)} (was ${formatCurrency(previousBalance)})`
+              : "Balance cleared. $0.00 remaining"}
+          </span>
+        </div>
+      );
+      utils.accounting.invoices.list.invalidate();
+      utils.payments.list.invalidate();
+      onOpenChange(false);
+      onSuccess?.();
+    },
+    onError: error => {
+      toast.error(error.message || "Failed to record payment");
+    },
+  });
+
+  const formatCurrency = (value: number | string) => {
+    const num = typeof value === "string" ? parseFloat(value) : value;
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(num);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!invoice) return;
+    if (submittingRef.current) return;
+
+    const paymentAmount = parseFloat(amount);
+    if (isNaN(paymentAmount) || paymentAmount <= 0) {
+      toast.error("Please enter a valid payment amount");
+      return;
+    }
+
+    const amountDue = parseFloat(invoice.amountDue);
+    if (paymentAmount > amountDue) {
+      toast.error(
+        `Payment amount cannot exceed amount due (${formatCurrency(amountDue)})`
+      );
+      return;
+    }
+
+    submittingRef.current = true;
+    try {
+      await recordPaymentMutation.mutateAsync({
+        invoiceId: invoice.id,
+        amount: paymentAmount,
+        paymentMethod: paymentMethod as
+          | "CASH"
+          | "CHECK"
+          | "WIRE"
+          | "ACH"
+          | "CREDIT_CARD"
+          | "DEBIT_CARD"
+          | "OTHER",
+        referenceNumber: referenceNumber || undefined,
+        notes: notes || undefined,
+        paymentDate: paymentDate,
+      });
+    } finally {
+      submittingRef.current = false;
+    }
+  };
+
+  if (!open || !invoice) return null;
+
+  const amountDue = parseFloat(invoice.amountDue);
+  const amountPaid = parseFloat(invoice.amountPaid);
+  const totalAmount = parseFloat(invoice.totalAmount);
+  const paymentAmount = parseFloat(amount) || 0;
+  const remainingAfterPayment = Math.max(0, amountDue - paymentAmount);
+  const isFullPayment = paymentAmount >= amountDue;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="record-payment-dialog-title"
+      onMouseDown={event => {
+        if (event.target === event.currentTarget) {
+          onOpenChange(false);
+        }
+      }}
+      data-testid="record-payment-dialog"
+    >
+      <div className="w-full max-w-[500px] rounded-lg border bg-background p-6 shadow-lg">
+        <div className="mb-4 flex flex-col gap-2 text-center sm:text-left">
+          <h2
+            id="record-payment-dialog-title"
+            className="flex items-center gap-2 text-lg leading-none font-semibold"
+          >
+            <DollarSign className="h-5 w-5" />
+            Record Payment
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            Record a payment for invoice {invoice.invoiceNumber}
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Invoice Summary */}
+          <div className="bg-muted p-4 rounded-lg space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Invoice Total:</span>
+              <span className="font-medium">{formatCurrency(totalAmount)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Already Paid:</span>
+              <span className="font-medium text-[var(--success)]">
+                {formatCurrency(amountPaid)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm border-t pt-2 mt-2">
+              <span className="font-medium">Amount Due:</span>
+              <span className="font-bold text-destructive">
+                {formatCurrency(amountDue)}
+              </span>
+            </div>
+          </div>
+
+          {/* Payment Amount */}
+          <div className="space-y-2">
+            <Label htmlFor="amount">Payment Amount *</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                $
+              </span>
+              <Input
+                id="amount"
+                type="number"
+                step="0.01"
+                min="0.01"
+                max={amountDue}
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                className="pl-7"
+                placeholder="0.00"
+                required
+              />
+            </div>
+            {paymentAmount > 0 && (
+              <div className="flex items-center gap-2 text-sm">
+                {isFullPayment ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 text-[var(--success)]" />
+                    <span className="text-[var(--success)]">
+                      Full payment - invoice will be marked as paid
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <span className="text-amber-600">
+                      Partial payment - {formatCurrency(remainingAfterPayment)}{" "}
+                      will remain due
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Payment Method */}
+          <div className="space-y-2">
+            <Label htmlFor="paymentMethod">Payment Method *</Label>
+            <select
+              id="paymentMethod"
+              value={paymentMethod}
+              onChange={e => setPaymentMethod(e.target.value)}
+              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+            >
+              {PAYMENT_METHODS.map(method => (
+                <option key={method.value} value={method.value}>
+                  {method.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Payment Date */}
+          <div className="space-y-2">
+            <Label htmlFor="paymentDate">Payment Date</Label>
+            <Input
+              id="paymentDate"
+              type="date"
+              value={paymentDate}
+              onChange={e => setPaymentDate(e.target.value)}
+            />
+          </div>
+
+          {/* Reference Number */}
+          <div className="space-y-2">
+            <Label htmlFor="referenceNumber">Reference Number</Label>
+            <Input
+              id="referenceNumber"
+              value={referenceNumber}
+              onChange={e => setReferenceNumber(e.target.value)}
+              placeholder="Check #, Transaction ID, etc."
+            />
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Optional notes about this payment..."
+              rows={2}
+            />
+          </div>
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={recordPaymentMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={
+                recordPaymentMutation.isPending ||
+                !amount ||
+                parseFloat(amount) <= 0
+              }
+            >
+              {recordPaymentMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Recording...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Record Payment
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default PaymentModal;

@@ -153,7 +153,7 @@ export function OrderStatusActions({
               <p>
                 You are about to cancel order <strong>{orderNumber}</strong>.
               </p>
-              <p className="text-red-600 mt-2 flex items-center gap-2">
+              <p className="text-destructive mt-2 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
                 This action cannot be undone. Any reserved inventory will be
                 released.
@@ -161,7 +161,7 @@ export function OrderStatusActions({
             </>
           ),
           buttonText: "Cancel Order",
-          buttonClass: "bg-red-600 hover:bg-red-700",
+          buttonClass: "bg-destructive hover:bg-destructive",
         };
       case "DELIVERED":
         return {
@@ -179,7 +179,7 @@ export function OrderStatusActions({
             </>
           ),
           buttonText: "Mark Delivered",
-          buttonClass: "bg-green-600 hover:bg-green-700",
+          buttonClass: "bg-[var(--success)] hover:bg-[var(--success)]",
         };
       case "RESTOCKED":
         return {
@@ -190,7 +190,7 @@ export function OrderStatusActions({
                 You are about to restock items from order{" "}
                 <strong>{orderNumber}</strong>.
               </p>
-              <p className="text-blue-600 mt-2 flex items-center gap-2">
+              <p className="text-[var(--info)] mt-2 flex items-center gap-2">
                 <Warehouse className="h-4 w-4" />
                 The returned items will be added back to inventory.
               </p>
@@ -277,8 +277,8 @@ export function OrderStatusActions({
                   onClick={() => handleStatusSelect(status)}
                   className={cn(
                     "gap-2 cursor-pointer",
-                    isDestructive && "text-red-600",
-                    isPositive && "text-green-600"
+                    isDestructive && "text-destructive",
+                    isPositive && "text-[var(--success)]"
                   )}
                 >
                   {STATUS_ICONS[status]}

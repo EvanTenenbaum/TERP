@@ -82,8 +82,8 @@ const ACTION_CONTRACTS: ActionContract[] = [
   {
     id: "purchase-orders-create-po",
     route: "/purchase-orders?tab=purchase-orders",
-    selector: 'button:has-text("Create PO")',
-    expectedVisibleSelector: "text=New Purchase Order",
+    selector: 'button:has-text("+ New PO"), button:has-text("Create PO")',
+    expectedVisibleSelector: '[data-powersheet-surface-id="po-document"]',
   },
 ];
 

@@ -1,0 +1,24 @@
+{
+  "timestamp": "2026-03-21T21:01:42.382Z",
+  "databaseUrl": "mysql://doadmin:****@terp-staging-db-do-user-28175253-0.g.db.ondigitalocean.com:25060/defaultdb?ssl-mode=REQUIRED",
+  "totalTables": 232,
+  "tablesWithDrift": 0,
+  "totalIssues": 0,
+  "criticalIssues": 0,
+  "highIssues": 0,
+  "mediumIssues": 0,
+  "lowIssues": 0,
+  "autoFixableIssues": 0,
+  "tables": [],
+  "summary": {
+    "missingColumns": 0,
+    "extraColumns": 0,
+    "typeMismatches": 0,
+    "precisionMismatches": 0,
+    "missingFKs": 0,
+    "missingIndexes": 0,
+    "namingInconsistencies": 0,
+    "enumDrifts": 0,
+    "nullableMismatches": 0
+  }
+}

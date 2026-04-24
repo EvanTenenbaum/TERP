@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { useLocation } from "wouter";
+import { useMemo, useState, useEffect, useCallback } from "react";
+import { useLocation, useSearch } from "wouter";
 import {
   CommandDialog,
   CommandInput,
@@ -9,13 +9,28 @@ import {
   CommandItem,
   CommandShortcut,
 } from "@/components/ui/command";
-import { HelpCircle, LayoutDashboard, Plus, ReceiptText } from "lucide-react";
+import {
+  FileText,
+  HelpCircle,
+  LayoutDashboard,
+  Loader2,
+  Layers,
+  Package,
+  Plus,
+  History,
+  ReceiptText,
+  Truck,
+  Users,
+} from "lucide-react";
 import { buildNavigationAccessModel } from "@/config/navigation";
 import { useFeatureFlags } from "@/hooks/useFeatureFlag";
+import { useRecentPages } from "@/hooks/useRecentPages";
 import {
   buildOperationsWorkspacePath,
+  buildProcurementWorkspacePath,
   buildSalesWorkspacePath,
 } from "@/lib/workspaceRoutes";
+import { trpc } from "@/lib/trpc";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -23,8 +38,39 @@ interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  const search = useSearch();
   const { flags, isLoading } = useFeatureFlags();
+  const { recentPages, recordPage } = useRecentPages();
+  const [inputValue, setInputValue] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  // Minimal debounce (30ms) for search query — starts after 1 character
+  useEffect(() => {
+    if (inputValue.length < 1) {
+      setDebouncedQuery("");
+      return;
+    }
+    const timer = setTimeout(() => {
+      setDebouncedQuery(inputValue);
+    }, 30);
+    return () => clearTimeout(timer);
+  }, [inputValue]);
+
+  // Reset state when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setInputValue("");
+      setDebouncedQuery("");
+    }
+  }, [open]);
+
+  const { data: searchResults, isLoading: isSearching } =
+    trpc.search.global.useQuery(
+      { query: debouncedQuery },
+      { enabled: debouncedQuery.length >= 1 }
+    );
+
   const navigationAccessModel = useMemo(
     () =>
       buildNavigationAccessModel({
@@ -70,85 +116,293 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     return commands;
   }, [navigationAccessModel.commandNavigationItems]);
 
-  const actionCommands = [
+  const handleNavigate = useCallback(
+    (url: string) => {
+      recordPage(url);
+      setLocation(url);
+      onOpenChange(false);
+    },
+    [recordPage, setLocation, onOpenChange]
+  );
+
+  const actionCommands = useMemo(
+    () => [
+      {
+        id: "new-sale",
+        label: "New Sales Order",
+        icon: Plus,
+        shortcut: "N",
+        action: () => {
+          handleNavigate(buildSalesWorkspacePath("create-order"));
+        },
+      },
+      {
+        id: "record-receipt",
+        label: "Record Receiving",
+        icon: ReceiptText,
+        shortcut: "R",
+        action: () => {
+          handleNavigate(buildOperationsWorkspacePath("receiving"));
+        },
+      },
+      {
+        // TER-1060: Expected deliveries today quick-action
+        id: "expected-deliveries-today",
+        label: "Expected deliveries today",
+        icon: Truck,
+        action: () => {
+          handleNavigate(
+            buildProcurementWorkspacePath(undefined, { expectedToday: "1" })
+          );
+        },
+      },
+      {
+        id: "sales-catalogue",
+        label: "Sales Catalogue",
+        icon: Layers,
+        action: () => {
+          handleNavigate(buildSalesWorkspacePath("sales-sheets"));
+        },
+      },
+      {
+        id: "help",
+        label: "Help & Documentation",
+        icon: HelpCircle,
+        shortcut: "?",
+        action: () => {
+          handleNavigate("/help");
+        },
+      },
+    ],
+    [handleNavigate]
+  );
+
+  const currentPath = `${location}${search || ""}`;
+  const recentCommands = useMemo(
+    () => recentPages.filter(page => page.path !== currentPath).slice(0, 5),
+    [currentPath, recentPages]
+  );
+
+  // Pinned items — always visible shortcuts
+  const pinnedCommands = [
     {
-      id: "new-sale",
-      label: "New Sales Order",
+      id: "pinned-new-order",
+      label: "New Order",
+      path: buildSalesWorkspacePath("create-order"),
       icon: Plus,
-      shortcut: "N",
-      action: () => {
-        setLocation(buildSalesWorkspacePath("create-order"));
-        onOpenChange(false);
-      },
     },
     {
-      id: "record-receipt",
-      label: "Record Receiving",
+      id: "pinned-new-intake",
+      label: "New Intake",
+      path: buildOperationsWorkspacePath("receiving"),
       icon: ReceiptText,
-      shortcut: "R",
-      action: () => {
-        setLocation(buildOperationsWorkspacePath("receiving"));
-        onOpenChange(false);
-      },
     },
     {
-      id: "help",
-      label: "Help & Documentation",
-      icon: HelpCircle,
-      shortcut: "?",
-      action: () => {
-        setLocation("/help");
-        onOpenChange(false);
-      },
+      id: "pinned-inventory",
+      label: "Inventory",
+      path: "/inventory",
+      icon: Package,
+    },
+    {
+      id: "pinned-customers",
+      label: "Customers",
+      path: "/relationships?tab=clients",
+      icon: Users,
     },
   ];
 
+  const isActiveSearch = debouncedQuery.length >= 1;
+  const hasQuotes = (searchResults?.quotes?.length ?? 0) > 0;
+  const hasOrders = (searchResults?.orders?.length ?? 0) > 0;
+  const hasCustomers = (searchResults?.customers?.length ?? 0) > 0;
+  const hasProducts = (searchResults?.products?.length ?? 0) > 0;
+  const hasSearchResults =
+    hasQuotes || hasOrders || hasCustomers || hasProducts;
+
   return (
-    <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput autoFocus placeholder="Type a command or search..." />
+    <CommandDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      commandProps={{ shouldFilter: !isActiveSearch }}
+    >
+      <CommandInput
+        autoFocus
+        placeholder="Type a command or search..."
+        value={inputValue}
+        onValueChange={setInputValue}
+      />
       <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
+        {isActiveSearch ? (
+          <>
+            {isSearching && (
+              <CommandGroup heading="Search Results">
+                <CommandItem disabled value="search-status-loading">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span>Searching...</span>
+                </CommandItem>
+              </CommandGroup>
+            )}
 
-        <CommandGroup heading="Navigation">
-          {navigationCommands.map(item => {
-            const Icon = item.icon;
-            return (
-              <CommandItem
-                key={item.id}
-                value={`${item.label} navigation`}
-                onSelect={() => {
-                  setLocation(item.path);
-                  onOpenChange(false);
-                }}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                <span>{item.label}</span>
-                {item.shortcut && (
-                  <CommandShortcut>{item.shortcut}</CommandShortcut>
-                )}
-              </CommandItem>
-            );
-          })}
-        </CommandGroup>
+            {!isSearching && hasQuotes && (
+              <CommandGroup heading="Quotes">
+                {(searchResults?.quotes ?? []).map(quote => (
+                  <CommandItem
+                    key={`quote-${quote.id}`}
+                    value={`quote-${quote.id}`}
+                    onSelect={() => handleNavigate(quote.url)}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    <span>{quote.title}</span>
+                    {quote.description && (
+                      <span className="ml-2 text-xs text-muted-foreground truncate">
+                        {quote.description}
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
 
-        <CommandGroup heading="Actions">
-          {actionCommands.map(item => {
-            const Icon = item.icon;
-            return (
-              <CommandItem
-                key={item.id}
-                value={`${item.label} action`}
-                onSelect={item.action}
-              >
-                <Icon className="mr-2 h-4 w-4" />
-                <span>{item.label}</span>
-                {item.shortcut && (
-                  <CommandShortcut>{item.shortcut}</CommandShortcut>
-                )}
-              </CommandItem>
-            );
-          })}
-        </CommandGroup>
+            {!isSearching && hasOrders && (
+              <CommandGroup heading="Orders">
+                {(searchResults?.orders ?? []).map(order => (
+                  <CommandItem
+                    key={`order-${order.id}`}
+                    value={`order-${order.id}`}
+                    onSelect={() => handleNavigate(order.url)}
+                  >
+                    <ReceiptText className="mr-2 h-4 w-4" />
+                    <span>{order.title}</span>
+                    {order.description && (
+                      <span className="ml-2 text-xs text-muted-foreground truncate">
+                        {order.description}
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {!isSearching && hasCustomers && (
+              <CommandGroup heading="Relationships">
+                {(searchResults?.customers ?? []).map(customer => (
+                  <CommandItem
+                    key={`customer-${customer.id}`}
+                    value={`customer-${customer.id}`}
+                    onSelect={() => handleNavigate(customer.url)}
+                  >
+                    <Users className="mr-2 h-4 w-4" />
+                    <span>{customer.title}</span>
+                    {customer.description && (
+                      <span className="ml-2 text-xs text-muted-foreground truncate">
+                        {customer.description}
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {!isSearching && hasProducts && (
+              <CommandGroup heading="Products & Batches">
+                {(searchResults?.products ?? []).map(product => (
+                  <CommandItem
+                    key={`product-${product.type}-${product.id}`}
+                    value={`product-${product.type}-${product.id}`}
+                    onSelect={() => handleNavigate(product.url)}
+                  >
+                    <Package className="mr-2 h-4 w-4" />
+                    <span>{product.title}</span>
+                    {product.description && (
+                      <span className="ml-2 text-xs text-muted-foreground truncate">
+                        {product.description}
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            {!isSearching && !hasSearchResults && (
+              <div className="py-6 text-center text-sm text-muted-foreground">
+                No results found.
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <CommandEmpty>No results found.</CommandEmpty>
+
+            <CommandGroup heading="Pinned">
+              {pinnedCommands.map(item => {
+                const Icon = item.icon;
+                return (
+                  <CommandItem
+                    key={item.id}
+                    value={`${item.label} pinned`}
+                    onSelect={() => handleNavigate(item.path)}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    <span>{item.label}</span>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+
+            {recentCommands.length > 0 && (
+              <CommandGroup heading="Recently Opened">
+                {recentCommands.map(page => (
+                  <CommandItem
+                    key={`recent:${page.path}`}
+                    value={`${page.label} recent ${page.path}`}
+                    onSelect={() => handleNavigate(page.path)}
+                  >
+                    <History className="mr-2 h-4 w-4" />
+                    <span>{page.label}</span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+
+            <CommandGroup heading="Navigation">
+              {navigationCommands.map(item => {
+                const Icon = item.icon;
+                return (
+                  <CommandItem
+                    key={item.id}
+                    value={`${item.label} navigation`}
+                    onSelect={() => handleNavigate(item.path)}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    <span>{item.label}</span>
+                    {item.shortcut && (
+                      <CommandShortcut>{item.shortcut}</CommandShortcut>
+                    )}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+
+            <CommandGroup heading="Actions">
+              {actionCommands.map(item => {
+                const Icon = item.icon;
+                return (
+                  <CommandItem
+                    key={item.id}
+                    value={`${item.label} action`}
+                    onSelect={item.action}
+                  >
+                    <Icon className="mr-2 h-4 w-4" />
+                    <span>{item.label}</span>
+                    {item.shortcut && (
+                      <CommandShortcut>{item.shortcut}</CommandShortcut>
+                    )}
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          </>
+        )}
       </CommandList>
     </CommandDialog>
   );

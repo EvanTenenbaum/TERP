@@ -61,7 +61,8 @@ export function PricingContextPanel({
 
     const { client } = context;
     const availableAfterOrder = client.availableCredit - orderTotal;
-    const exceedsCredit = client.creditLimit > 0 && orderTotal > client.availableCredit;
+    const exceedsCredit =
+      client.creditLimit > 0 && orderTotal > client.availableCredit;
     const utilizationPercent =
       client.creditLimit > 0
         ? ((client.totalOwed + orderTotal) / client.creditLimit) * 100
@@ -91,15 +92,15 @@ export function PricingContextPanel({
     `$${value.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   const getUtilizationColor = (percent: number) => {
-    if (percent >= 90) return "text-red-600";
-    if (percent >= 75) return "text-yellow-600";
-    return "text-green-600";
+    if (percent >= 90) return "text-destructive";
+    if (percent >= 75) return "text-[var(--warning)]";
+    return "text-[var(--success)]";
   };
 
   const getProgressColor = (percent: number) => {
-    if (percent >= 90) return "bg-red-600";
-    if (percent >= 75) return "bg-yellow-600";
-    return "bg-green-600";
+    if (percent >= 90) return "bg-destructive";
+    if (percent >= 75) return "bg-[var(--warning)]";
+    return "bg-[var(--success)]";
   };
 
   if (isLoading) {
@@ -207,7 +208,7 @@ export function PricingContextPanel({
               {creditStatus.isHighUtilization &&
                 !creditStatus.exceedsCredit && (
                   <Alert>
-                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <AlertTriangle className="h-4 w-4 text-[var(--warning)]" />
                     <AlertDescription>
                       Credit utilization at{" "}
                       <strong>
@@ -315,16 +316,54 @@ export function PricingContextPanel({
             )}
 
             {/* COGS Adjustment */}
-            {client.cogsAdjustmentType !== "NONE" && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">COGS Adjustment</span>
-                <Badge variant="secondary">
-                  {client.cogsAdjustmentType === "PERCENTAGE"
-                    ? `${client.cogsAdjustmentValue}%`
-                    : `$${client.cogsAdjustmentValue}`}
-                </Badge>
-              </div>
-            )}
+            {client.cogsAdjustmentType !== "NONE" &&
+              (() => {
+                const rawValue = parseFloat(
+                  String(client.cogsAdjustmentValue ?? "0")
+                );
+                const adjustmentValue = Number.isFinite(rawValue)
+                  ? rawValue
+                  : 0;
+                const absoluteValue = Math.abs(adjustmentValue);
+                const isPercent =
+                  client.cogsAdjustmentType === "PERCENTAGE" ||
+                  client.cogsAdjustmentType === "PERCENTAGE_DECREASE" ||
+                  client.cogsAdjustmentType === "PERCENTAGE_INCREASE";
+                if (adjustmentValue === 0) {
+                  return (
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        COGS Adjustment
+                      </span>
+                      <Badge variant="outline">No adjustment</Badge>
+                    </div>
+                  );
+                }
+                // Legacy `PERCENTAGE`/`FIXED_AMOUNT` types encode direction via the
+                // sign of the value (negative => increase). New `*_INCREASE` /
+                // `*_DECREASE` variants are direction-explicit.
+                const isLegacyIncrease =
+                  (client.cogsAdjustmentType === "PERCENTAGE" ||
+                    client.cogsAdjustmentType === "FIXED_AMOUNT") &&
+                  adjustmentValue < 0;
+                const isIncrease =
+                  client.cogsAdjustmentType === "PERCENTAGE_INCREASE" ||
+                  client.cogsAdjustmentType === "FIXED_INCREASE" ||
+                  isLegacyIncrease;
+                const direction = isIncrease ? "Increase" : "Decrease";
+                return (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      COGS Adjustment
+                    </span>
+                    <Badge variant={isIncrease ? "destructive" : "secondary"}>
+                      {isPercent
+                        ? `${absoluteValue}% COGS ${direction}`
+                        : `$${absoluteValue} COGS ${direction}`}
+                    </Badge>
+                  </div>
+                );
+              })()}
 
             {/* Credit Source */}
             <div className="flex items-center justify-between text-sm">
@@ -356,10 +395,10 @@ export function PricingContextPanel({
             {/* Oldest Debt Warning */}
             {client.oldestDebtDays > 30 && (
               <Alert>
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertTriangle className="h-4 w-4 text-[var(--warning)]" />
                 <AlertDescription>
-                  Oldest outstanding debt: <strong>{client.oldestDebtDays}</strong>{" "}
-                  days old
+                  Oldest outstanding debt:{" "}
+                  <strong>{client.oldestDebtDays}</strong> days old
                 </AlertDescription>
               </Alert>
             )}

@@ -10,11 +10,15 @@ import {
   router,
 } from "../_core/trpc";
 import { simpleAuth } from "../_core/simpleAuth";
+import { isPublicDemoUser } from "../_core/context";
 import * as db from "../db";
 import { logAuditEvent, AuditEventType } from "../auditLogger";
 import { logger } from "../_core/logger";
 import { env } from "../_core/env";
-import { invalidateUserTokens, invalidateToken } from "../_core/tokenInvalidation";
+import {
+  invalidateUserTokens,
+  invalidateToken,
+} from "../_core/tokenInvalidation";
 
 export const authRouter = router({
   me: publicProcedure.query(opts => opts.ctx.user),
@@ -27,6 +31,12 @@ export const authRouter = router({
         tokenId: token,
         reason: "LOGOUT",
       });
+    }
+    // TER-1149: Also bulk-invalidate every JWT issued to this user before
+    // now — covers multi-tab logouts and stolen-token scenarios where other
+    // outstanding tokens would otherwise still authenticate.
+    if (ctx.user && !isPublicDemoUser(ctx.user)) {
+      invalidateUserTokens(ctx.user.id, "LOGOUT");
     }
     const cookieOptions = getSessionCookieOptions(ctx.req);
     ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
@@ -118,7 +128,7 @@ export const authRouter = router({
         currentPassword: z.string().min(1, "Current password is required"),
         newPassword: z
           .string()
-          .min(4, "Password must be at least 4 characters"),
+          .min(8, "Password must be at least 8 characters"),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -249,7 +259,11 @@ export const authRouter = router({
     .input(
       z.object({
         userId: z.number().int().positive("User ID must be a positive integer"),
-        reason: z.string().min(1, "Reason is required").max(500, "Reason too long").optional(),
+        reason: z
+          .string()
+          .min(1, "Reason is required")
+          .max(500, "Reason too long")
+          .optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {

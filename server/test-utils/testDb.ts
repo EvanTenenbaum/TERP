@@ -18,6 +18,221 @@ interface MockCondition {
   args?: MockCondition[];
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isMockCondition(value: unknown): value is MockCondition {
+  return (
+    isRecord(value) && typeof value.op === "string" && isColumnLike(value.col)
+  );
+}
+
+function isSqlLike(value: unknown): value is { queryChunks: unknown[] } {
+  return isRecord(value) && Array.isArray(value.queryChunks);
+}
+
+function isColumnLike(
+  value: unknown
+): value is { table?: unknown; name: string } {
+  return isRecord(value) && typeof value.name === "string";
+}
+
+function getStringChunkValue(chunk: unknown): string | null {
+  if (!isRecord(chunk) || !Array.isArray(chunk.value)) {
+    return null;
+  }
+
+  const values = chunk.value;
+  return values.every(value => typeof value === "string")
+    ? values.join("")
+    : null;
+}
+
+function unwrapSqlValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(entry => unwrapSqlValue(entry));
+  }
+
+  if (isColumnLike(value)) {
+    return value;
+  }
+
+  if (isRecord(value) && "value" in value) {
+    return unwrapSqlValue(value.value);
+  }
+
+  return value;
+}
+
+function splitSqlChunks(
+  chunks: unknown[],
+  separator: " and " | " or "
+): unknown[][] | null {
+  const groups: unknown[][] = [];
+  let current: unknown[] = [];
+
+  for (const chunk of chunks) {
+    if (getStringChunkValue(chunk) === separator) {
+      groups.push(current);
+      current = [];
+      continue;
+    }
+    current.push(chunk);
+  }
+
+  if (groups.length === 0) {
+    return null;
+  }
+
+  groups.push(current);
+  return groups;
+}
+
+function normalizeCondition(condition: unknown): MockCondition | null {
+  if (!condition) return null;
+
+  if (isMockCondition(condition)) {
+    return condition;
+  }
+
+  if (!isSqlLike(condition)) {
+    return null;
+  }
+
+  const compactChunks = condition.queryChunks.filter(chunk => {
+    const value = getStringChunkValue(chunk);
+    return value === null || value.length > 0;
+  });
+
+  if (compactChunks.length === 1 && isSqlLike(compactChunks[0])) {
+    return normalizeCondition(compactChunks[0]);
+  }
+
+  if (
+    getStringChunkValue(compactChunks[0]) === "(" &&
+    getStringChunkValue(compactChunks[compactChunks.length - 1]) === ")"
+  ) {
+    return normalizeCondition({
+      queryChunks: compactChunks.slice(1, -1),
+    });
+  }
+
+  const andGroups = splitSqlChunks(compactChunks, " and ");
+  if (andGroups) {
+    return {
+      op: "and",
+      col: { name: "__group__" },
+      args: andGroups
+        .map(group => normalizeCondition({ queryChunks: group }))
+        .filter((group): group is MockCondition => group !== null),
+    };
+  }
+
+  const orGroups = splitSqlChunks(compactChunks, " or ");
+  if (orGroups) {
+    return {
+      op: "or",
+      col: { name: "__group__" },
+      args: orGroups
+        .map(group => normalizeCondition({ queryChunks: group }))
+        .filter((group): group is MockCondition => group !== null),
+    };
+  }
+
+  if (compactChunks.length < 2 || !isColumnLike(compactChunks[0])) {
+    return null;
+  }
+
+  const operator = getStringChunkValue(compactChunks[1]);
+  if (!operator) {
+    return null;
+  }
+
+  if (operator === " is null") {
+    return {
+      op: "isNull",
+      col: compactChunks[0],
+    };
+  }
+
+  const right = compactChunks[2];
+  if (right === undefined) {
+    return null;
+  }
+
+  switch (operator) {
+    case " = ":
+      return {
+        op: "eq",
+        col: compactChunks[0],
+        val: unwrapSqlValue(right),
+      };
+    case " in ":
+      return {
+        op: "inArray",
+        col: compactChunks[0],
+        values: Array.isArray(right)
+          ? right.map(entry => unwrapSqlValue(entry))
+          : [],
+      };
+    case " > ":
+      return {
+        op: "gt",
+        col: compactChunks[0],
+        val: unwrapSqlValue(right),
+      };
+    case " >= ":
+      return {
+        op: "gte",
+        col: compactChunks[0],
+        val: unwrapSqlValue(right),
+      };
+    case " <= ":
+      return {
+        op: "lte",
+        col: compactChunks[0],
+        val: unwrapSqlValue(right),
+      };
+    default:
+      return null;
+  }
+}
+
+function normalizeComparableValue(value: unknown) {
+  if (value instanceof Date) {
+    return value.getTime();
+  }
+  return value;
+}
+
+function compareValues(
+  operator: "gt" | "gte" | "lte",
+  leftRaw: unknown,
+  rightRaw: unknown
+): boolean {
+  const left = normalizeComparableValue(leftRaw);
+  const right = normalizeComparableValue(rightRaw);
+
+  if (
+    (typeof left !== "number" && typeof left !== "string") ||
+    (typeof right !== "number" && typeof right !== "string")
+  ) {
+    return false;
+  }
+
+  switch (operator) {
+    case "gt":
+      return left > right;
+    case "gte":
+      return left >= right;
+    case "lte":
+      return left <= right;
+    default:
+      return false;
+  }
+}
+
 // Helper to get table name from object
 function getTableName(table: unknown): string {
   if (typeof table === "string") return table;
@@ -38,12 +253,84 @@ function getTableName(table: unknown): string {
 
 function getColValue(
   rowCtx: Record<string, unknown>,
-  col: { table?: unknown; name: string }
+  col: { table?: unknown; name: string } | undefined
 ): unknown {
+  if (!col) return undefined;
   const tableName = getTableName(col.table);
   const row = rowCtx[tableName] as Record<string, unknown> | undefined;
   if (!row) return undefined;
   return row[col.name];
+}
+
+function matchesFlatCondition(row: MockRow, cond: MockCondition): boolean {
+  const normalized = normalizeCondition(cond);
+  if (!normalized) return true;
+  cond = normalized;
+
+  if (!cond) return true;
+
+  if (cond.op === "and") {
+    return cond.args?.every(arg => matchesFlatCondition(row, arg)) ?? true;
+  }
+
+  if (cond.op === "or") {
+    return cond.args?.some(arg => matchesFlatCondition(row, arg)) ?? false;
+  }
+
+  const val = (row as Record<string, unknown>)[cond.col?.name];
+  switch (cond.op) {
+    case "eq":
+      return val == cond.val;
+    case "isNull":
+      return val === null || val === undefined;
+    case "inArray":
+      return (cond.values as unknown[])?.includes(val) ?? false;
+    case "gt":
+      return compareValues("gt", val, cond.val);
+    case "gte":
+      return compareValues("gte", val, cond.val);
+    case "lte":
+      return compareValues("lte", val, cond.val);
+    default:
+      return false;
+  }
+}
+
+function matchesJoinedCondition(
+  rowCtx: Record<string, unknown>,
+  cond: MockCondition
+): boolean {
+  const normalized = normalizeCondition(cond);
+  if (!normalized) return true;
+  cond = normalized;
+
+  if (!cond) return true;
+
+  if (cond.op === "and") {
+    return cond.args?.every(arg => matchesJoinedCondition(rowCtx, arg)) ?? true;
+  }
+
+  if (cond.op === "or") {
+    return cond.args?.some(arg => matchesJoinedCondition(rowCtx, arg)) ?? false;
+  }
+
+  const val = getColValue(rowCtx, cond.col);
+  switch (cond.op) {
+    case "eq":
+      return val == cond.val;
+    case "isNull":
+      return val === null || val === undefined;
+    case "inArray":
+      return (cond.values as unknown[])?.includes(val) ?? false;
+    case "gt":
+      return compareValues("gt", val, cond.val);
+    case "gte":
+      return compareValues("gte", val, cond.val);
+    case "lte":
+      return compareValues("lte", val, cond.val);
+    default:
+      return false;
+  }
 }
 
 export function createMockDb() {
@@ -162,28 +449,9 @@ export function createMockDb() {
           return builder;
         }),
         where: vi.fn(condition => {
-          const applyCondition = (cond: MockCondition) => {
-            if (!cond) return;
-            if (cond.op === "eq") {
-              currentRows = currentRows.filter(rowCtx => {
-                const val = getColValue(rowCtx, cond.col);
-                return val == cond.val;
-              });
-            } else if (cond.op === "isNull") {
-              currentRows = currentRows.filter(rowCtx => {
-                const val = getColValue(rowCtx, cond.col);
-                return val === null || val === undefined;
-              });
-            } else if (cond.op === "and") {
-              cond.args?.forEach(applyCondition);
-            } else if (cond.op === "inArray") {
-              currentRows = currentRows.filter(rowCtx => {
-                const val = getColValue(rowCtx, cond.col);
-                return (cond.values as unknown[])?.includes(val);
-              });
-            }
-          };
-          applyCondition(condition as MockCondition);
+          currentRows = currentRows.filter(rowCtx =>
+            matchesJoinedCondition(rowCtx, condition as MockCondition)
+          );
           return builder;
         }),
         for: vi.fn(() => builder),
@@ -389,29 +657,9 @@ export function createMockDb() {
               const rows = getStorage(prop);
               let result = rows;
               if (args?.where) {
-                const applyCondition = (cond: MockCondition) => {
-                  if (!cond) return;
-                  if (cond.op === "eq") {
-                    const colName = cond.col.name;
-                    const initialLen = result.length;
-                    result = result.filter((r: MockRow) => {
-                      const val = (r as Record<string, unknown>)[colName];
-                      const match = val == cond.val;
-                      process.stdout.write(
-                        `[findFirst] Filter ${prop}: ${colName}=${String(val)} vs ${String(cond.val)} -> ${String(match)}\n`
-                      );
-                      return match;
-                    });
-                    void initialLen;
-                  } else if (cond.op === "and") {
-                    cond.args?.forEach(applyCondition);
-                  } else {
-                    process.stdout.write(
-                      `[findFirst] Unknown Op: ${cond.op}\n`
-                    );
-                  }
-                };
-                applyCondition(args.where as MockCondition);
+                result = result.filter((row: MockRow) =>
+                  matchesFlatCondition(row, args.where as MockCondition)
+                );
               } else {
                 process.stdout.write(`[findFirst] No where args\n`);
               }
@@ -420,19 +668,9 @@ export function createMockDb() {
             findMany: vi.fn(args => {
               let result = getStorage(prop);
               if (args?.where) {
-                const applyCondition = (cond: MockCondition) => {
-                  if (!cond) return;
-                  if (cond.op === "eq") {
-                    const colName = cond.col.name;
-                    result = result.filter(
-                      (r: MockRow) =>
-                        (r as Record<string, unknown>)[colName] == cond.val
-                    );
-                  } else if (cond.op === "and") {
-                    cond.args?.forEach(applyCondition);
-                  }
-                };
-                applyCondition(args.where as MockCondition);
+                result = result.filter((row: MockRow) =>
+                  matchesFlatCondition(row, args.where as MockCondition)
+                );
               }
               if (args?.limit) result = result.slice(0, args.limit);
               return Promise.resolve(result);

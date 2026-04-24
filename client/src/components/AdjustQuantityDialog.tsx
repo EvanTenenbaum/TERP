@@ -163,7 +163,7 @@ export function AdjustQuantityDialog({
               </p>
             ) : null}
             {errors.adjustment ? (
-              <p className="text-xs text-red-500">{errors.adjustment}</p>
+              <p className="text-xs text-destructive">{errors.adjustment}</p>
             ) : null}
           </div>
           <div className="space-y-2">
@@ -195,7 +195,7 @@ export function AdjustQuantityDialog({
               </SelectContent>
             </Select>
             {errors.adjustmentReason ? (
-              <p className="text-xs text-red-500">{errors.adjustmentReason}</p>
+              <p className="text-xs text-destructive">{errors.adjustmentReason}</p>
             ) : null}
           </div>
           <div className="space-y-2">

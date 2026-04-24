@@ -11,6 +11,7 @@ import { featureFlagService } from "../services/featureFlagService";
 import { featureFlagsDb } from "../featureFlagsDb";
 import { seedFeatureFlags } from "../services/seedFeatureFlags";
 import { TRPCError } from "@trpc/server";
+import { logger } from "../_core/logger";
 
 /**
  * Input validation schemas
@@ -52,17 +53,23 @@ export const featureFlagsRouter = router({
   /**
    * Get effective flags for the current user
    * Used by frontend FeatureFlagContext to load all flags at once
+   *
+   * TER-899: Explicit z.void() input schema prevents HTTP 400 when
+   * sanitizationMiddleware passes `next({ input: undefined })` and tRPC
+   * re-validates against an implicit undefined schema.
    */
-  getEffectiveFlags: protectedProcedure.query(async ({ ctx }) => {
-    if (!ctx.user?.openId) {
-      // Return empty object for unauthenticated users
-      return {};
-    }
+  getEffectiveFlags: protectedProcedure
+    .input(z.void())
+    .query(async ({ ctx }) => {
+      if (!ctx.user?.openId) {
+        // Return empty object for unauthenticated users
+        return {};
+      }
 
-    return featureFlagService.getEffectiveFlags({
-      userOpenId: ctx.user.openId,
-    });
-  }),
+      return featureFlagService.getEffectiveFlags({
+        userOpenId: ctx.user.openId,
+      });
+    }),
 
   /**
    * Check if a specific flag is enabled for the current user
@@ -100,12 +107,14 @@ export const featureFlagsRouter = router({
    */
   list: adminProcedure
     .input(
-      z.object({
-        limit: z.number().min(1).max(1000).optional().default(50),
-        offset: z.number().min(0).optional().default(0),
-        search: z.string().optional(),
-        module: z.string().optional(),
-      }).optional()
+      z
+        .object({
+          limit: z.number().min(1).max(1000).optional().default(50),
+          offset: z.number().min(0).optional().default(0),
+          search: z.string().optional(),
+          module: z.string().optional(),
+        })
+        .optional()
     )
     .query(async ({ input }) => {
       const limit = input?.limit ?? 50;
@@ -117,7 +126,7 @@ export const featureFlagsRouter = router({
       if (input?.search) {
         const searchLower = input.search.toLowerCase();
         flags = flags.filter(
-          (flag) =>
+          flag =>
             flag.key?.toLowerCase().includes(searchLower) ||
             flag.name?.toLowerCase().includes(searchLower) ||
             flag.description?.toLowerCase().includes(searchLower)
@@ -126,7 +135,7 @@ export const featureFlagsRouter = router({
 
       // Apply module filter if provided
       if (input?.module) {
-        flags = flags.filter((flag) => flag.module === input.module);
+        flags = flags.filter(flag => flag.module === input.module);
       }
 
       // Get total count before pagination
@@ -377,7 +386,24 @@ export const featureFlagsRouter = router({
       })
     )
     .query(async ({ input }) => {
-      return featureFlagService.getAuditHistory(input.flagKey, input.limit);
+      // TER-1156: The audit log table may be empty or unavailable (missing
+      // migration, stale replica). Render an empty history instead of 500
+      // so /settings/feature-flags stays usable.
+      try {
+        return await featureFlagService.getAuditHistory(
+          input.flagKey,
+          input.limit
+        );
+      } catch (error) {
+        logger.error(
+          {
+            err: error instanceof Error ? error.message : String(error),
+            flagKey: input.flagKey,
+          },
+          "[FeatureFlags] getAuditHistory failed — returning empty list"
+        );
+        return [];
+      }
     }),
 
   /**

@@ -6,6 +6,7 @@ export type AgingBucket = "current" | "30" | "60" | "90" | "90+";
 interface AgingBadgeProps {
   bucket: AgingBucket | string;
   amount?: number;
+  count?: number;
   currency?: string;
   className?: string;
 }
@@ -22,6 +23,7 @@ interface AgingBadgeProps {
 export function AgingBadge({
   bucket,
   amount,
+  count,
   currency: _currency = "$",
   className,
 }: AgingBadgeProps) {
@@ -32,27 +34,27 @@ export function AgingBadge({
       case "current":
         return {
           label: "Current",
-          className: "bg-green-100 text-green-700 border-green-200",
+          className: "bg-[var(--success-bg)] text-[var(--success)] border-green-200",
         };
       case "30":
         return {
           label: "30 Days",
-          className: "bg-yellow-100 text-yellow-700 border-yellow-200",
+          className: "bg-[var(--warning-bg)] text-[var(--warning)] border-yellow-200",
         };
       case "60":
         return {
           label: "60 Days",
-          className: "bg-orange-100 text-orange-700 border-orange-200",
+          className: "bg-[var(--warning-bg)] text-[var(--warning)] border-orange-200",
         };
       case "90":
         return {
           label: "90 Days",
-          className: "bg-red-100 text-red-700 border-red-200",
+          className: "bg-destructive/10 text-destructive border-red-200",
         };
       case "90+":
         return {
           label: "90+ Days",
-          className: "bg-red-200 text-red-800 border-red-300 font-semibold",
+          className: "bg-destructive/10 text-destructive border-red-300 font-semibold",
         };
       default:
         return {
@@ -78,6 +80,11 @@ export function AgingBadge({
       {config.label}
       {amount !== undefined && amount > 0 && (
         <span className="ml-1 font-semibold">{formatAmount(amount)}</span>
+      )}
+      {count !== undefined && (
+        <span className="ml-1 rounded-full border border-current/20 px-1.5 py-0.5 text-[10px] leading-none">
+          {count}
+        </span>
       )}
     </Badge>
   );

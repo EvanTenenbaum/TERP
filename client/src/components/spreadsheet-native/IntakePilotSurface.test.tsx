@@ -3,7 +3,7 @@ import React from "react";
  * @vitest-environment jsdom
  */
 
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IntakePilotSurface } from "./IntakePilotSurface";
 
@@ -82,7 +82,14 @@ vi.mock("@/hooks/work-surface/useUndo", () => ({
 const MOCK_CLIENTS_DATA = {
   items: [{ id: 10, name: "North Farm Supply" }],
 };
-const MOCK_LOCATIONS_DATA = [
+let mockLocationsData: Array<{
+  id: number;
+  site: string;
+  zone?: string;
+  rack?: string;
+  shelf?: string;
+  bin?: string;
+}> = [
   { id: 1, site: "Vault A" },
   { id: 2, site: "Vault B" },
 ];
@@ -107,7 +114,7 @@ vi.mock("@/lib/trpc", () => ({
     locations: {
       getAll: {
         useQuery: () => ({
-          data: MOCK_LOCATIONS_DATA,
+          data: mockLocationsData,
           isLoading: false,
           error: null,
           refetch: vi.fn(),
@@ -233,13 +240,32 @@ vi.mock("./PowersheetGrid", () => ({
   PowersheetGrid: ({
     title,
     description,
+    columnDefs = [],
+    rows = [],
   }: {
     title: string;
     description?: string;
+    columnDefs?: Array<{
+      headerName?: string;
+      valueGetter?: (params: { data: Record<string, unknown> }) => string;
+    }>;
+    rows?: Array<Record<string, unknown>>;
   }) => (
     <div>
       <h2>{title}</h2>
       {description ? <p>{description}</p> : null}
+      <div data-testid="intake-grid-headers">
+        {columnDefs.map(column => (
+          <span key={column.headerName}>{column.headerName}</span>
+        ))}
+      </div>
+      {rows[0] ? (
+        <div data-testid="intake-grid-first-row-source">
+          {columnDefs
+            .find(column => column.headerName === "Source")
+            ?.valueGetter?.({ data: rows[0] }) ?? null}
+        </div>
+      ) : null}
     </div>
   ),
 }));
@@ -324,6 +350,10 @@ vi.mock("@/components/work-surface/KeyboardHintBar", () => ({
 describe("IntakePilotSurface", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockLocationsData = [
+      { id: 1, site: "Vault A" },
+      { id: 2, site: "Vault B" },
+    ];
   });
 
   it("renders without crashing", () => {
@@ -350,10 +380,10 @@ describe("IntakePilotSurface", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the Submit All Pending button", () => {
+  it("renders the primary Product Intake submit button", () => {
     render(<IntakePilotSurface onOpenClassic={vi.fn()} />);
     expect(
-      screen.getByRole("button", { name: /submit all pending/i })
+      screen.getByRole("button", { name: /submit all product intake/i })
     ).toBeInTheDocument();
   });
 
@@ -369,5 +399,29 @@ describe("IntakePilotSurface", () => {
     expect(
       screen.getByRole("group", { name: /keyboard shortcuts/i })
     ).toBeInTheDocument();
+  });
+
+  it("preserves distinct hierarchical location labels when sites repeat", () => {
+    mockLocationsData = [
+      { id: 11, site: "Main Warehouse", zone: "Zone A" },
+      { id: 12, site: "Main Warehouse", zone: "Zone B" },
+    ];
+
+    render(<IntakePilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByText("Main Warehouse / Zone A")).toBeInTheDocument();
+    expect(screen.getByText("Main Warehouse / Zone B")).toBeInTheDocument();
+  });
+
+  it("labels intake rows as direct intake so they stay distinct from PO-linked receiving", () => {
+    render(<IntakePilotSurface onOpenClassic={vi.fn()} />);
+
+    expect(screen.getByText("Source")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /add row/i }));
+
+    expect(
+      screen.getByTestId("intake-grid-first-row-source")
+    ).toHaveTextContent("Direct intake");
   });
 });

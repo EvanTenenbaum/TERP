@@ -4,9 +4,12 @@ import type { ReactNode } from "react";
 import type {
   CellSelectionDeleteEndEvent,
   CellSelectionDeleteStartEvent,
+  CellClickedEvent,
   CellFocusedEvent,
   ProcessCellForExportParams,
   ProcessDataFromClipboardParams,
+  RowClassParams,
+  RowClassRules,
   CellSelectionChangedEvent,
   CellValueChangedEvent,
   CellRange,
@@ -20,18 +23,134 @@ import type {
   GridReadyEvent,
   PasteEndEvent,
   PasteStartEvent,
+  RowClickedEvent,
   SendToClipboardParams,
   SelectionChangedEvent,
+  ValueFormatterParams,
 } from "ag-grid-community";
 import { themeAlpine } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingState } from "@/components/ui/loading-state";
+import { useOptionalFeatureFlag } from "@/contexts/FeatureFlagContext";
+import { FEATURE_FLAGS } from "@/lib/constants/featureFlags";
+import { cn } from "@/lib/utils";
 import type {
   PowersheetSelectionSet,
   PowersheetSelectionSummary,
 } from "@/lib/powersheet/contracts";
+
+/**
+ * Recognized numeric cell data types for which `SpreadsheetPilotGrid`
+ * auto-applies right-alignment, tabular-nums styling, and locale-aware
+ * value formatters when the {@link FEATURE_FLAGS.uxV2Grid} flag is
+ * enabled.
+ */
+const NUMERIC_CELL_DATA_TYPES = ["currency", "number", "percent"] as const;
+type NumericCellDataType = (typeof NUMERIC_CELL_DATA_TYPES)[number];
+
+function isNumericCellDataType(
+  value: ColDef["cellDataType"]
+): value is NumericCellDataType {
+  return (
+    typeof value === "string" &&
+    (NUMERIC_CELL_DATA_TYPES as readonly string[]).includes(value)
+  );
+}
+
+const USD_CURRENCY_FORMATTER = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+const PERCENT_NUMBER_FORMATTER = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+});
+
+function coerceToFiniteNumber(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const num = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+function formatCurrencyValue(params: ValueFormatterParams): string {
+  const num = coerceToFiniteNumber(params.value);
+  if (num === null) {
+    return params.value === null || params.value === undefined
+      ? ""
+      : String(params.value);
+  }
+  return USD_CURRENCY_FORMATTER.format(num);
+}
+
+function formatPercentValue(params: ValueFormatterParams): string {
+  const num = coerceToFiniteNumber(params.value);
+  if (num === null) {
+    return params.value === null || params.value === undefined
+      ? ""
+      : String(params.value);
+  }
+  return `${PERCENT_NUMBER_FORMATTER.format(num)}%`;
+}
+
+const NUMERIC_CELL_CLASS = "text-right font-mono tabular-nums";
+const NUMERIC_HEADER_CLASS = "text-right";
+
+/**
+ * Apply numeric column defaults (right-alignment, tabular-nums styling,
+ * and locale-aware value formatters) to any ColDef whose `cellDataType`
+ * is one of {@link NUMERIC_CELL_DATA_TYPES}.
+ *
+ * Existing explicit `cellClass` / `valueFormatter` on a ColDef are
+ * preserved — defaults are only applied where those fields are
+ * `undefined` on the incoming column definition.
+ */
+function applyNumericColumnDefaults<Row extends object>(
+  columnDefs: ColDef<Row>[]
+): ColDef<Row>[] {
+  let changed = false;
+  const nextDefs = columnDefs.map(colDef => {
+    if (!isNumericCellDataType(colDef.cellDataType)) {
+      return colDef;
+    }
+
+    const dataType: NumericCellDataType = colDef.cellDataType;
+    const next: ColDef<Row> = { ...colDef };
+    let mutated = false;
+
+    if (next.cellClass === undefined) {
+      next.cellClass = NUMERIC_CELL_CLASS;
+      mutated = true;
+    }
+    if (next.headerClass === undefined) {
+      next.headerClass = NUMERIC_HEADER_CLASS;
+      mutated = true;
+    }
+    if (next.valueFormatter === undefined) {
+      if (dataType === "currency") {
+        next.valueFormatter = formatCurrencyValue;
+        mutated = true;
+      } else if (dataType === "percent") {
+        next.valueFormatter = formatPercentValue;
+        mutated = true;
+      }
+    }
+
+    if (mutated) {
+      changed = true;
+      return next;
+    }
+    return colDef;
+  });
+
+  return changed ? nextDefs : columnDefs;
+}
 
 export type SpreadsheetPilotGridSelectionMode = "single-row" | "cell-range";
 
@@ -189,18 +308,47 @@ function buildSelectionSummary<Row extends object>(
   };
 }
 
+function getCoordinateKey(
+  coordinate: PowersheetSelectionSet["focusedCell"]
+): string {
+  if (!coordinate) {
+    return "null";
+  }
+
+  return `${coordinate.rowIndex}:${coordinate.columnKey}`;
+}
+
+function getSelectionSetKey(selectionSet: PowersheetSelectionSet): string {
+  return JSON.stringify({
+    focusedCell: getCoordinateKey(selectionSet.focusedCell),
+    focusedRowId: selectionSet.focusedRowId,
+    anchorCell: getCoordinateKey(selectionSet.anchorCell),
+    ranges: selectionSet.ranges.map(range => ({
+      anchor: getCoordinateKey(range.anchor),
+      focus: getCoordinateKey(range.focus),
+    })),
+    selectedRowIds: [...selectionSet.selectedRowIds].sort(),
+  });
+}
+
+function getSelectionSummaryKey(
+  selectionSummary: PowersheetSelectionSummary
+): string {
+  return JSON.stringify(selectionSummary);
+}
+
 function focusSelectedRowCell<Row extends object>(
   gridApi: GridApi<Row>,
   selectedRowId: string | null,
   getRowId: (row: Row) => string
-) {
+): boolean {
   if (!selectedRowId || isGridApiDestroyed(gridApi)) {
-    return;
+    return false;
   }
 
   const focusColumn = gridApi.getAllDisplayedColumns()[0];
   if (!focusColumn) {
-    return;
+    return false;
   }
 
   let matchedRowIndex: number | null = null;
@@ -215,7 +363,7 @@ function focusSelectedRowCell<Row extends object>(
   });
 
   if (matchedRowIndex === null) {
-    return;
+    return false;
   }
 
   const focusedCell = gridApi.getFocusedCell();
@@ -223,10 +371,11 @@ function focusSelectedRowCell<Row extends object>(
     focusedCell?.rowIndex === matchedRowIndex &&
     focusedCell.column.getColId() === focusColumn.getColId()
   ) {
-    return;
+    return true;
   }
 
   gridApi.setFocusedCell(matchedRowIndex, focusColumn);
+  return true;
 }
 
 export interface SpreadsheetPilotGridProps<Row extends object> {
@@ -243,7 +392,7 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
   emptyDescription: string;
   headerActions?: ReactNode;
   summary?: ReactNode;
-  minHeight?: number;
+  minHeight?: number | string;
   onCellValueChanged?: (event: CellValueChangedEvent<Row>) => void;
   selectionMode?: SpreadsheetPilotGridSelectionMode;
   selectionSurface?: PowersheetSelectionSummary["focusedSurface"];
@@ -280,7 +429,14 @@ export interface SpreadsheetPilotGridProps<Row extends object> {
   onSelectionSummaryChange?: (
     selectionSummary: PowersheetSelectionSummary
   ) => void;
+  onRowClicked?: (event: RowClickedEvent<Row>) => void;
+  onCellClicked?: (event: CellClickedEvent<Row>) => void;
+  rowClassRules?: RowClassRules<Row>;
+  getRowClass?: (params: RowClassParams<Row>) => string | string[] | undefined;
   rowHeight?: number;
+  cardClassName?: string;
+  headerClassName?: string;
+  contentClassName?: string;
 }
 
 export function SpreadsheetPilotGrid<Row extends object>({
@@ -324,9 +480,19 @@ export function SpreadsheetPilotGrid<Row extends object>({
   onCellSelectionDeleteEnd,
   onSelectionSetChange,
   onSelectionSummaryChange,
+  onRowClicked,
+  onCellClicked,
+  rowClassRules,
+  getRowClass,
   rowHeight: rowHeightProp,
+  cardClassName,
+  headerClassName,
+  contentClassName,
 }: SpreadsheetPilotGridProps<Row>) {
   const gridApiRef = useRef<GridApi<Row> | null>(null);
+  const lastEmittedRowIdRef = useRef<string | null>(null);
+  const lastSelectionSetKeyRef = useRef<string | null>(null);
+  const lastSelectionSummaryKeyRef = useRef<string | null>(null);
   const isCellRangeMode = selectionMode === "cell-range";
 
   useEffect(() => {
@@ -346,6 +512,31 @@ export function SpreadsheetPilotGrid<Row extends object>({
     [allowColumnReorder, suppressKeyboardEvent]
   );
 
+  const numericDefaultsEnabled = useOptionalFeatureFlag(
+    FEATURE_FLAGS.uxV2Grid
+  );
+
+  const effectiveColumnDefs = useMemo<ColDef<Row>[]>(() => {
+    if (!numericDefaultsEnabled) {
+      return columnDefs;
+    }
+    return applyNumericColumnDefaults(columnDefs);
+  }, [columnDefs, numericDefaultsEnabled]);
+
+  const emitSelectedRowChange = useCallback(
+    (row: Row | null) => {
+      const nextId = row ? getRowId(row) : null;
+
+      if (nextId === lastEmittedRowIdRef.current) {
+        return;
+      }
+
+      lastEmittedRowIdRef.current = nextId;
+      onSelectedRowChange?.(row);
+    },
+    [getRowId, onSelectedRowChange]
+  );
+
   const emitSelectionState = useCallback(
     (gridApi: GridApi<Row>) => {
       if (!isCellRangeMode || isGridApiDestroyed(gridApi)) {
@@ -353,25 +544,39 @@ export function SpreadsheetPilotGrid<Row extends object>({
       }
 
       const selectionSet = buildSelectionSet(gridApi, getRowId);
-      onSelectionSetChange?.(selectionSet);
+      const selectionSetKey = getSelectionSetKey(selectionSet);
+      if (selectionSetKey !== lastSelectionSetKeyRef.current) {
+        lastSelectionSetKeyRef.current = selectionSetKey;
+        onSelectionSetChange?.(selectionSet);
+      }
 
       if (selectionSurface) {
-        onSelectionSummaryChange?.(
-          buildSelectionSummary(gridApi, selectionSet, selectionSurface)
+        const selectionSummary = buildSelectionSummary(
+          gridApi,
+          selectionSet,
+          selectionSurface
         );
+        const selectionSummaryKey = getSelectionSummaryKey(selectionSummary);
+        if (selectionSummaryKey !== lastSelectionSummaryKeyRef.current) {
+          lastSelectionSummaryKeyRef.current = selectionSummaryKey;
+          onSelectionSummaryChange?.(selectionSummary);
+        }
       }
 
       if (selectionSet.focusedCell) {
         const focusedRowNode = gridApi.getDisplayedRowAtIndex(
           selectionSet.focusedCell.rowIndex
         );
-        onSelectedRowChange?.(focusedRowNode?.data ?? null);
+        emitSelectedRowChange(focusedRowNode?.data ?? null);
+        return;
       }
+
+      emitSelectedRowChange(null);
     },
     [
+      emitSelectedRowChange,
       getRowId,
       isCellRangeMode,
-      onSelectedRowChange,
       onSelectionSetChange,
       onSelectionSummaryChange,
       selectionSurface,
@@ -386,7 +591,26 @@ export function SpreadsheetPilotGrid<Row extends object>({
     const activeGridApi: GridApi<Row> = gridApi;
 
     if (isCellRangeMode) {
-      focusSelectedRowCell(activeGridApi, selectedRowId, getRowId);
+      if (selectedRowId === null) {
+        activeGridApi.clearFocusedCell();
+        activeGridApi.clearCellSelection();
+        emitSelectedRowChange(null);
+        return;
+      }
+
+      const focusedSelectedRow = focusSelectedRowCell(
+        activeGridApi,
+        selectedRowId,
+        getRowId
+      );
+
+      if (!focusedSelectedRow) {
+        activeGridApi.clearFocusedCell();
+        activeGridApi.clearCellSelection();
+        emitSelectedRowChange(null);
+        return;
+      }
+
       emitSelectionState(activeGridApi);
       return;
     }
@@ -398,7 +622,13 @@ export function SpreadsheetPilotGrid<Row extends object>({
         getRowId(node.data) === selectedRowId;
       node.setSelected(Boolean(shouldSelect), false);
     });
-  }, [emitSelectionState, getRowId, isCellRangeMode, selectedRowId]);
+  }, [
+    emitSelectedRowChange,
+    emitSelectionState,
+    getRowId,
+    isCellRangeMode,
+    selectedRowId,
+  ]);
 
   useEffect(() => {
     syncSelection();
@@ -407,7 +637,6 @@ export function SpreadsheetPilotGrid<Row extends object>({
   const handleGridReady = (event: GridReadyEvent<Row>) => {
     gridApiRef.current = event.api;
     syncSelection();
-    emitSelectionState(event.api);
   };
 
   const handleSelectionChanged = (event: SelectionChangedEvent<Row>) => {
@@ -416,7 +645,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
     }
 
     const selectedRow = event.api.getSelectedRows()[0] ?? null;
-    onSelectedRowChange?.(selectedRow);
+    emitSelectedRowChange(selectedRow);
   };
 
   const handleCellFocused = (event: CellFocusedEvent<Row>) => {
@@ -430,8 +659,13 @@ export function SpreadsheetPilotGrid<Row extends object>({
   };
 
   return (
-    <Card className="border-border/70 shadow-sm">
-      <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0 pb-2">
+    <Card className={cn("border-border/70 shadow-sm", cardClassName)}>
+      <CardHeader
+        className={cn(
+          "flex flex-row items-start justify-between gap-2 space-y-0 pb-2",
+          headerClassName
+        )}
+      >
         <div className="space-y-0.5">
           <CardTitle className="text-sm font-semibold">{title}</CardTitle>
           {description ? (
@@ -443,7 +677,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
         </div>
         {headerActions ? <div className="shrink-0">{headerActions}</div> : null}
       </CardHeader>
-      <CardContent>
+      <CardContent className={contentClassName}>
         {isLoading ? (
           <LoadingState message={`Loading ${title.toLowerCase()}...`} />
         ) : errorMessage ? (
@@ -467,7 +701,7 @@ export function SpreadsheetPilotGrid<Row extends object>({
             <AgGridReact<Row>
               theme={themeAlpine}
               rowData={rows}
-              columnDefs={columnDefs}
+              columnDefs={effectiveColumnDefs}
               defaultColDef={defaultColDef}
               rowHeight={rowHeightProp ?? 28}
               headerHeight={32}
@@ -522,6 +756,10 @@ export function SpreadsheetPilotGrid<Row extends object>({
               onFillEnd={onFillEnd}
               onCellSelectionDeleteStart={onCellSelectionDeleteStart}
               onCellSelectionDeleteEnd={onCellSelectionDeleteEnd}
+              onRowClicked={onRowClicked}
+              onCellClicked={onCellClicked}
+              rowClassRules={rowClassRules}
+              getRowClass={getRowClass}
               getRowId={params => getRowId(params.data)}
             />
           </div>

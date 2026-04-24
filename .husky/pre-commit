@@ -1,10 +1,47 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # Pre-commit hook for TERP (Enforcement v3.0)
 # Blocks commits with security vulnerabilities and known anti-patterns
 
 set -e
 
 echo "🔍 Running pre-commit checks..."
+
+# ============================================================
+# SESSION FILE VALIDATION
+# ============================================================
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo '')
+
+# Exempt branches: main, staging, production, hotfix/*, renovate/*, dependabot/*
+if [[ "$CURRENT_BRANCH" =~ ^(main|staging|production)$ ]] || \
+   [[ "$CURRENT_BRANCH" =~ ^(hotfix|renovate|dependabot)/ ]]; then
+  : # skip session check — exempt branch
+elif [ "${HOTFIX:-}" = '1' ]; then
+  # HOTFIX mode — skip session check but record in audit log
+  mkdir -p docs/agent-handoff
+  echo "[HOTFIX] timestamp=$(date -u +%Y-%m-%dT%H:%M:%SZ) branch=${CURRENT_BRANCH} operator=$(git config user.email 2>/dev/null || echo unknown) reason=${HOTFIX_REASON:-no reason provided}" >> docs/agent-handoff/audit.log
+  git add docs/agent-handoff/audit.log 2>/dev/null || true
+  echo "⚠️  HOTFIX mode — session check skipped. Recorded in audit.log."
+elif [ -n "$CURRENT_BRANCH" ]; then
+  # Check for a session file referencing this branch
+  SESSION_FILE=$(grep -rl "Branch:.*\`${CURRENT_BRANCH}\`" docs/sessions/active/ 2>/dev/null | head -1 || true)
+  if [ -z "$SESSION_FILE" ]; then
+    echo ""
+    echo "❌ No session file found for branch: ${CURRENT_BRANCH}"
+    echo ""
+    echo "   To start a session:"
+    echo "     export AGENT_PREFIX=cc  # cc=claude-code, codex=codex, oh=openhands"
+    echo "     bash scripts/start-task.sh TER-NNNN"
+    echo ""
+    echo "   For untracked work:"
+    echo "     bash scripts/start-task.sh --adhoc 'description'"
+    echo ""
+    echo "   Emergency only:"
+    echo "     HOTFIX=1 HOTFIX_REASON='prod: reason' git commit ..."
+    echo ""
+    exit 1
+  fi
+fi
+
 
 # Get list of staged .ts and .tsx files
 STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx)$' || true)
@@ -104,7 +141,13 @@ fi
 
 echo "✅ Security checks passed"
 
+
 # Run lint-staged for formatting and linting
 npx lint-staged
+
+# TypeScript check runs on GHA CI (pre-merge.yml) — not locally.
+# Running pnpm tsc locally saturates Mac Mini when multiple agents run concurrently.
+# GHA validates TSC on every PR before merge — correctness guarantee is preserved.
+echo "  ℹ️  TSC validation runs in CI (GHA), not locally — skipping local tsc check"
 
 echo "✅ All pre-commit checks passed"

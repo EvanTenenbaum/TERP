@@ -141,9 +141,9 @@ export default function AppointmentRequestsList({
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      approved: "bg-green-100 text-green-800",
-      rejected: "bg-red-100 text-red-800",
+      pending: "bg-[var(--warning-bg)] text-[var(--warning)]",
+      approved: "bg-[var(--success-bg)] text-[var(--success)]",
+      rejected: "bg-destructive/10 text-destructive",
       cancelled: "bg-gray-100 text-gray-800",
     };
     return (
@@ -165,13 +165,13 @@ export default function AppointmentRequestsList({
   if (error) {
     console.error('[AppointmentRequestsList] Error:', error);
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center">
-        <AlertCircle className="mx-auto h-12 w-12 text-red-500" />
-        <h3 className="mt-2 text-sm font-medium text-red-800">Failed to load appointment requests</h3>
-        <p className="mt-1 text-sm text-red-600">{error.message || 'An unexpected error occurred'}</p>
+      <div className="rounded-lg border border-red-200 bg-destructive/10 p-8 text-center">
+        <AlertCircle className="mx-auto h-12 w-12 text-destructive" />
+        <h3 className="mt-2 text-sm font-medium text-destructive">Failed to load appointment requests</h3>
+        <p className="mt-1 text-sm text-destructive">{error.message || 'An unexpected error occurred'}</p>
         <button
           onClick={() => refetch()}
-          className="mt-4 inline-flex items-center gap-2 rounded-md bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200"
+          className="mt-4 inline-flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive hover:bg-destructive/10"
         >
           <RefreshCw className="h-4 w-4" />
           Retry
@@ -187,7 +187,7 @@ export default function AppointmentRequestsList({
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-semibold text-gray-900">Appointment Requests</h3>
           {pendingCount && pendingCount.count > 0 && (
-            <span className="inline-flex items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+            <span className="inline-flex items-center justify-center rounded-full bg-destructive px-2 py-0.5 text-xs font-bold text-white">
               {pendingCount.count}
             </span>
           )}
@@ -257,7 +257,7 @@ export default function AppointmentRequestsList({
                     <button
                       onClick={(e) => handleQuickApprove(e, request.id)}
                       disabled={approveMutation.isPending}
-                      className="rounded-md bg-green-50 p-2 text-green-600 hover:bg-green-100 disabled:opacity-50"
+                      className="rounded-md bg-[var(--success-bg)] p-2 text-[var(--success)] hover:bg-[var(--success-bg)] disabled:opacity-50"
                       title="Approve"
                     >
                       <Check className="h-5 w-5" />
@@ -265,7 +265,7 @@ export default function AppointmentRequestsList({
                     <button
                       onClick={(e) => handleQuickReject(e, request.id)}
                       disabled={rejectMutation.isPending}
-                      className="rounded-md bg-red-50 p-2 text-red-600 hover:bg-red-100 disabled:opacity-50"
+                      className="rounded-md bg-destructive/10 p-2 text-destructive hover:bg-destructive/10 disabled:opacity-50"
                       title="Reject"
                     >
                       <X className="h-5 w-5" />

@@ -9,7 +9,6 @@ import {
   Bell,
   LogOut,
   ChevronDown,
-  Command,
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLocation } from "wouter";
@@ -26,6 +27,7 @@ import { useState } from "react";
 import { AppBreadcrumb } from "./AppBreadcrumb";
 import { NotificationBell } from "../notifications/NotificationBell";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { useUiDensity } from "@/hooks/useUiDensity";
 import versionInfo from "../../../version.json";
 
@@ -38,18 +40,34 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const { theme, toggleTheme, switchable } = useTheme();
   const { isCompact, toggleDensity } = useUiDensity();
-  const showBreadcrumbRow = location !== "/";
+  const isApplePlatform =
+    typeof navigator !== "undefined" &&
+    /mac|iphone|ipad|ipod/i.test(navigator.platform || navigator.userAgent);
+  const commandShortcut = isApplePlatform ? "⌘K" : "Ctrl K";
 
   // Get current user
   const { data: user } = trpc.auth.me.useQuery();
-  const logout = trpc.auth.logout.useMutation({
-    onSuccess: () => {
-      setLocation("/login");
-    },
-  });
+  // TER-1149: Route through useAuth().logout so the single helper owns the
+  // full teardown (server invalidation + tRPC cache clear + hard redirect).
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    logout.mutate();
+    void logout();
+  };
+
+  const openCommandPalette = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.dispatchEvent(
+      new KeyboardEvent("keydown", {
+        key: "k",
+        metaKey: isApplePlatform,
+        ctrlKey: !isApplePlatform,
+        bubbles: true,
+      })
+    );
   };
 
   // Handle search submission
@@ -69,100 +87,88 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
   };
 
   return (
-    <header className="border-b border-border/80 bg-background/95 backdrop-blur-sm">
-      {/* Main header row */}
-      <div className="flex items-center justify-between h-14 px-3 md:px-4">
-        {/* Mobile menu button */}
+    <header className="border-b border-border/70 bg-background">
+      <div className="mx-auto flex min-h-[56px] w-full max-w-[1800px] items-center gap-2 px-3 py-2 md:px-4">
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden mr-2"
+          className="h-11 w-11 shrink-0 md:hidden"
           onClick={onMenuClick}
           aria-label="Open menu"
         >
           <Menu className="h-5 w-5" />
         </Button>
 
-        {/* Spacer for layout balance */}
-        <div className="hidden md:block w-4" />
+        {location !== "/" ? (
+          <div className="hidden xl:block max-w-[18rem] shrink-0 overflow-hidden">
+            <AppBreadcrumb className="max-w-full overflow-hidden" />
+          </div>
+        ) : (
+          <div className="hidden xl:block w-3 shrink-0" aria-hidden />
+        )}
 
-        {/* Search bar */}
         <form
           onSubmit={handleSearch}
-          className="flex items-center flex-1 max-w-3xl"
+          className="flex min-w-0 flex-1 items-center xl:max-w-4xl"
         >
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="relative flex w-full items-center rounded-md border border-border/70 bg-card/90">
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search across TERP..."
-              className="pl-10 w-full h-9 bg-background"
+              placeholder="Search, jump, or run a command..."
+              className="h-10 w-full rounded-[var(--radius)] border-0 bg-transparent pl-10 pr-[5.5rem] text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
             />
+            <button
+              type="button"
+              className="absolute right-1.5 inline-flex h-7 items-center rounded-full border border-border/80 bg-background px-2.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+              onClick={openCommandPalette}
+              title={`Open command palette (${commandShortcut})`}
+              aria-label={`Open command palette (${commandShortcut})`}
+            >
+              {commandShortcut}
+            </button>
           </div>
         </form>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-1 md:gap-2 ml-2">
-          <Button
-            variant="ghost"
-            className="hidden lg:flex h-8 rounded-full border border-border/70 bg-background px-2.5 text-[11px] font-medium text-muted-foreground"
-            title="Open command palette"
-            onClick={() =>
-              window.dispatchEvent(
-                new KeyboardEvent("keydown", { key: "k", metaKey: true })
-              )
-            }
-          >
-            <Command className="h-3.5 w-3.5 mr-1.5" />K
-          </Button>
-
-          <NotificationBell className="hidden sm:flex relative" />
-
-          {/* Theme Toggle */}
-          {switchable && toggleTheme && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hidden sm:flex"
-              onClick={toggleTheme}
-              title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-              aria-label={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
-            >
-              {theme === "light" ? (
-                <Moon className="h-5 w-5" />
-              ) : (
-                <Sun className="h-5 w-5" />
-              )}
-            </Button>
-          )}
-          {/* UX-010: Updated tooltip to match renamed navigation item */}
+        <div className="ml-auto flex shrink-0 items-center gap-1 rounded-md border border-border/70 bg-card/90 p-1">
+          <NotificationBell className="relative flex h-11 w-11 items-center justify-center sm:h-9 sm:w-9" />
           <Button
             variant="ghost"
             size="icon"
-            className="hidden sm:flex"
+            className="flex h-11 w-11 touch-manipulation rounded-full border-0 bg-transparent shadow-none sm:hidden"
             onClick={() => setLocation("/settings")}
-            title="System Settings"
-            aria-label="System Settings"
+            aria-label="Settings"
           >
             <Settings className="h-5 w-5" />
           </Button>
-
-          {/* User Menu Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="flex items-center gap-2 px-2">
-                <User className="h-5 w-5" />
-                <span className="hidden md:inline max-w-[120px] truncate">
+              <Button
+                variant="ghost"
+                className="flex h-11 min-w-[44px] items-center gap-2 rounded-full border-0 bg-transparent px-2.5 shadow-none md:h-9 md:min-w-0"
+              >
+                <User className="h-4 w-4 shrink-0" />
+                <span className="hidden max-w-[132px] truncate text-sm font-medium md:inline">
                   {user?.name || user?.email || "Account"}
                 </span>
-                <ChevronDown className="h-4 w-4 hidden md:inline" />
+                <ChevronDown className="hidden h-4 w-4 text-muted-foreground md:inline" />
               </Button>
             </DropdownMenuTrigger>
-            {/* UX-010: Clarified menu items - "My Account" for personal settings, "System Settings" for admin */}
-            <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuLabel>
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-medium text-foreground">
+                    {user?.name || "Account"}
+                  </span>
+                  <span className="text-xs font-normal text-muted-foreground">
+                    {user?.email || "Signed in to TERP"}
+                  </span>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => setLocation("/account")}>
                 <User className="h-4 w-4 mr-2" />
                 My Account
@@ -171,18 +177,36 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
                 <Bell className="h-4 w-4 mr-2" />
                 Notifications
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setLocation("/settings")}
-                className="sm:hidden"
-              >
+              <DropdownMenuItem onClick={openCommandPalette}>
+                <Search className="h-4 w-4 mr-2" />
+                Command Palette
+                <DropdownMenuShortcut>{commandShortcut}</DropdownMenuShortcut>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setLocation("/settings")}>
                 <Settings className="h-4 w-4 mr-2" />
                 System Settings
               </DropdownMenuItem>
+              {switchable && toggleTheme ? (
+                <DropdownMenuItem onClick={toggleTheme}>
+                  {theme === "light" ? (
+                    <Moon className="h-4 w-4 mr-2" />
+                  ) : (
+                    <Sun className="h-4 w-4 mr-2" />
+                  )}
+                  {theme === "light"
+                    ? "Switch to dark mode"
+                    : "Switch to light mode"}
+                </DropdownMenuItem>
+              ) : null}
               <DropdownMenuItem onClick={toggleDensity}>
                 {isCompact
                   ? "Switch to comfortable spacing"
                   : "Switch to compact spacing"}
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
+                v{versionInfo.version} · {versionInfo.commit}
+              </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}
@@ -195,18 +219,6 @@ export function AppHeader({ onMenuClick }: AppHeaderProps) {
           </DropdownMenu>
         </div>
       </div>
-
-      {showBreadcrumbRow ? (
-        <div className="flex items-center justify-between px-3 md:px-4 py-1.5 border-t border-border/40">
-          <AppBreadcrumb />
-          <span
-            className="text-[11px] text-muted-foreground hidden sm:inline-block"
-            title={`Build: ${versionInfo.commit} (${versionInfo.date})`}
-          >
-            v{versionInfo.version}
-          </span>
-        </div>
-      ) : null}
     </header>
   );
 }

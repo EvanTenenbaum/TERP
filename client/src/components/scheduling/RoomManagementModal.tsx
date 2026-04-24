@@ -52,7 +52,9 @@ export function RoomManagementModal({
     features: [],
   });
   const [featureInput, setFeatureInput] = useState("");
-  const [deleteFeatureConfirm, setDeleteFeatureConfirm] = useState<string | null>(null);
+  const [deleteFeatureConfirm, setDeleteFeatureConfirm] = useState<
+    string | null
+  >(null);
 
   const utils = trpc.useUtils();
 
@@ -148,9 +150,9 @@ export function RoomManagementModal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4">
-        {/* Backdrop */}
+        {/* Backdrop (TER-1191: z-[-1] so modal content stays clickable inside the z-50 parent) */}
         <div
-          className="fixed inset-0 bg-black/50 transition-opacity"
+          className="fixed inset-0 z-[-1] bg-black/50 transition-opacity"
           onClick={onClose}
         />
 
@@ -292,7 +294,7 @@ export function RoomManagementModal({
                     <button
                       type="button"
                       onClick={addFeature}
-                      className="px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                      className="px-3 py-2 text-[var(--info)] hover:bg-[var(--info-bg)] rounded-lg"
                     >
                       <Plus className="h-5 w-5" />
                     </button>
@@ -332,7 +334,7 @@ export function RoomManagementModal({
                   <button
                     type="submit"
                     disabled={createRoom.isPending || updateRoom.isPending}
-                    className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50"
+                    className="px-4 py-2 text-white bg-[var(--info)] hover:bg-[var(--info)] rounded-lg disabled:opacity-50"
                   >
                     {editingRoom ? "Save Changes" : "Create Room"}
                   </button>
@@ -341,7 +343,7 @@ export function RoomManagementModal({
             ) : (
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-blue-600 transition-colors mb-6"
+                className="w-full flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-400 hover:text-[var(--info)] transition-colors mb-6"
               >
                 <Plus className="h-5 w-5" />
                 Add New Room
@@ -352,7 +354,10 @@ export function RoomManagementModal({
             {isLoading ? (
               <div className="animate-pulse space-y-4">
                 {[1, 2, 3].map(i => (
-                  <div key={`skeleton-${i}`} className="h-16 bg-gray-200 rounded" />
+                  <div
+                    key={`skeleton-${i}`}
+                    className="h-16 bg-gray-200 rounded"
+                  />
                 ))}
               </div>
             ) : (
@@ -413,7 +418,7 @@ export function RoomManagementModal({
       </div>
       <ConfirmDialog
         open={deleteFeatureConfirm !== null}
-        onOpenChange={(open) => !open && setDeleteFeatureConfirm(null)}
+        onOpenChange={open => !open && setDeleteFeatureConfirm(null)}
         title="Remove Feature"
         description="Are you sure you want to remove this feature from the room?"
         confirmLabel="Remove"
@@ -467,7 +472,7 @@ function RoomCard({ room, onEdit, onDelete }: RoomCardProps) {
       <div className="flex items-center gap-1">
         <button
           onClick={() => onEdit(room)}
-          className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          className="p-2 text-gray-500 hover:text-[var(--info)] hover:bg-[var(--info-bg)] rounded-lg transition-colors"
           title="Edit"
         >
           <Edit2 className="h-4 w-4" />
@@ -479,7 +484,7 @@ function RoomCard({ room, onEdit, onDelete }: RoomCardProps) {
                 onDelete(room.id);
                 setConfirmDelete(false);
               }}
-              className="p-2 text-white bg-red-600 hover:bg-red-700 rounded-lg"
+              className="p-2 text-white bg-destructive hover:bg-destructive rounded-lg"
               title="Confirm Delete"
             >
               <Check className="h-4 w-4" />
@@ -495,7 +500,7 @@ function RoomCard({ room, onEdit, onDelete }: RoomCardProps) {
         ) : (
           <button
             onClick={() => setConfirmDelete(true)}
-            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="p-2 text-gray-500 hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
             title="Delete"
           >
             <Trash2 className="h-4 w-4" />

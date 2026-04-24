@@ -12,6 +12,7 @@ import {
   orders,
   batches,
   clients,
+  users,
   sampleInventoryLog,
   orderLineItems,
   orderLineItemAllocations,
@@ -38,6 +39,7 @@ import {
   isReadyForPackingLikeStatus,
   normalizeFulfillmentStatus,
 } from "./lib/fulfillmentStatusCompatibility";
+import { resolveQuoteValidUntilDate } from "./lib/quoteValidity";
 import { parseMoneyOrNull, parseMoneyOrZero } from "./utils/money";
 // MEET-005: Import payables service for tracking vendor payables when inventory is sold
 import * as payablesService from "./services/payablesService";
@@ -224,8 +226,16 @@ function normalizeStoredOrderItem(rawItem: unknown): OrderItem {
   }
 
   const item = rawItem as OrderItemLike;
-  const batchId = Number(item.batchId);
-  if (!Number.isFinite(batchId) || batchId <= 0) {
+  const displayName =
+    item.displayName ||
+    item.productName ||
+    item.originalName ||
+    (item.batchId ? `Batch ${item.batchId}` : "Legacy order item");
+  const parsedBatchId = Number(item.batchId);
+  const batchId =
+    Number.isFinite(parsedBatchId) && parsedBatchId > 0 ? parsedBatchId : 0;
+
+  if (batchId === 0 && !displayName.trim()) {
     throw new Error("Order contains an item with a missing batchId");
   }
 
@@ -259,12 +269,6 @@ function normalizeStoredOrderItem(rawItem: unknown): OrderItem {
     ["LOW", "MID", "HIGH", "MANUAL"].includes(item.effectiveCogsBasis)
       ? item.effectiveCogsBasis
       : "MANUAL";
-  const displayName =
-    item.displayName ||
-    item.productName ||
-    item.originalName ||
-    `Batch ${batchId}`;
-
   return {
     batchId,
     displayName,
@@ -559,9 +563,9 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
       totalMargin: totalMargin.toString(),
       avgMarginPercent: avgMarginPercent.toString(),
       validUntil: input.validUntil
-        ? new Date(input.validUntil)
+        ? resolveQuoteValidUntilDate(input.validUntil)
         : input.orderType === "QUOTE"
-          ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          ? resolveQuoteValidUntilDate()
           : undefined,
       quoteStatus: input.orderType === "QUOTE" ? "UNSENT" : undefined,
       paymentTerms: input.paymentTerms || "NET_30",
@@ -921,7 +925,8 @@ export async function getAllOrders(filters?: {
 
   // BUG-078: Explicitly select columns from both tables to avoid ambiguous column names
   // When using leftJoin, bare .select() causes MySQL column name conflicts (both tables have 'id', 'created_at', etc.)
-  // This fix ensures result structure is { orders: {...}, clients: {...} }
+  // TER-1065: Added users join to include creator info for "Submitted By" column
+  // This fix ensures result structure is { orders: {...}, clients: {...}, createdByUser: {...} }
   let results;
 
   if (conditions.length > 0) {
@@ -929,9 +934,11 @@ export async function getAllOrders(filters?: {
       .select({
         orders: orders,
         clients: clients,
+        createdByUser: users,
       })
       .from(orders)
       .leftJoin(clients, eq(orders.clientId, clients.id))
+      .leftJoin(users, eq(orders.createdBy, users.id))
       .where(and(...conditions))
       .orderBy(desc(orders.createdAt))
       .limit(safeLimit)
@@ -941,28 +948,29 @@ export async function getAllOrders(filters?: {
       .select({
         orders: orders,
         clients: clients,
+        createdByUser: users,
       })
       .from(orders)
       .leftJoin(clients, eq(orders.clientId, clients.id))
+      .leftJoin(users, eq(orders.createdBy, users.id))
       .orderBy(desc(orders.createdAt))
       .limit(safeLimit)
       .offset(safeOffset);
   }
 
-  // Transform results to include client data and parse JSON items
-  // ST-050: Error propagation - JSON parsing errors now throw instead of silently returning empty array
+  // Transform results to include client data and parse JSON items.
+  // TER-1146: list endpoints never 500 from a single corrupted items payload —
+  // log the row and fall back to items=[] so the rest of /orders still renders.
+  // Strict propagation still applies to single-order reads (getOrderById).
+  // TER-1065: Include createdByUser data for "Submitted By" column
   const transformed: Order[] = results.map(row => {
-    // Parse items JSON string to array
     let parsedItems: OrderItem[] = [];
     if (row.orders.items) {
       try {
         parsedItems = parseStoredOrderItems(row.orders.items);
       } catch (e) {
         console.error(`Failed to parse items for order ${row.orders.id}:`, e);
-        throw new Error(
-          `Data corruption detected: Cannot parse items for order ${row.orders.id}. ` +
-            `This order requires data remediation. Original error: ${e instanceof Error ? e.message : String(e)}`
-        );
+        parsedItems = [];
       }
     }
 
@@ -971,6 +979,7 @@ export async function getAllOrders(filters?: {
       items: parsedItems,
       lineItemCount: parsedItems.length,
       client: row.clients,
+      createdByUser: row.createdByUser,
     } as Order;
   });
 
@@ -1856,7 +1865,7 @@ export async function updateDraftOrder(input: {
           totalMargin: totalMargin.toString(),
           avgMarginPercent: avgMarginPercent.toString(),
           validUntil: input.validUntil
-            ? new Date(input.validUntil)
+            ? resolveQuoteValidUntilDate(input.validUntil)
             : draft.validUntil,
           notes: input.notes || draft.notes,
         })

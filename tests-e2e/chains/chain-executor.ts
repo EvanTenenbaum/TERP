@@ -35,10 +35,13 @@ const NETWORK_IDLE_TIMEOUT_MS = Number(
 const DEFAULT_ACTION_TIMEOUT_MS = Number(
   process.env.ORACLE_ACTION_TIMEOUT_MS || 15000
 );
-const BASE_URL =
-  process.env.PLAYWRIGHT_BASE_URL ||
-  process.env.MEGA_QA_BASE_URL ||
-  "http://localhost:5173";
+function getBaseUrl(): string {
+  return (
+    process.env.PLAYWRIGHT_BASE_URL ||
+    process.env.MEGA_QA_BASE_URL ||
+    "http://localhost:5173"
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Context helpers
@@ -230,7 +233,7 @@ async function executeNavigate(
   timeout: number
 ): Promise<ActionResult> {
   const path = resolveTemplateString(action.path, context);
-  const url = path.startsWith("http") ? path : `${BASE_URL}${path}`;
+  const url = path.startsWith("http") ? path : `${getBaseUrl()}${path}`;
 
   await page.goto(url, { waitUntil: "domcontentloaded", timeout });
 
@@ -1109,7 +1112,7 @@ async function setupPreconditions(
 
       const entityPage = entityPageMap[precondition.entity];
       if (entityPage) {
-        await page.goto(`${BASE_URL}${entityPage}`, {
+        await page.goto(`${getBaseUrl()}${entityPage}`, {
           waitUntil: "domcontentloaded",
           timeout: 15000,
         });
@@ -1167,7 +1170,7 @@ async function cleanupChainEntities(
       const data = entityData as Record<string, unknown>;
       if (data.deleteUrl && typeof data.deleteUrl === "string") {
         // Navigate to delete URL if provided
-        await page.goto(`${BASE_URL}${data.deleteUrl}`, {
+        await page.goto(`${getBaseUrl()}${data.deleteUrl}`, {
           waitUntil: "domcontentloaded",
           timeout: 10000,
         });
@@ -1201,6 +1204,7 @@ export async function executeChain(
     phases: [],
     invariant_results: [],
     tags_covered: [...chain.tags],
+    stored_snapshot: {},
   };
 
   try {
@@ -1283,6 +1287,7 @@ export async function executeChain(
   } finally {
     // Best-effort cleanup of created entities
     await cleanupChainEntities(page, context).catch(() => undefined);
+    result.stored_snapshot = { ...context.stored };
     result.duration_ms = Date.now() - startTime;
   }
 
@@ -1301,7 +1306,7 @@ async function checkInvariant(
   try {
     if (invariant.check === "ui" && invariant.page) {
       const path = resolveTemplateString(invariant.page, context);
-      const url = path.startsWith("http") ? path : `${BASE_URL}${path}`;
+      const url = path.startsWith("http") ? path : `${getBaseUrl()}${path}`;
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
       await safeWaitForNetworkIdle(page);
 

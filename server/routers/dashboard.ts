@@ -18,13 +18,15 @@ import {
   batches,
   clients,
   lots,
+  orders as ordersTable,
   paymentHistory,
   sales as salesTable,
   type Invoice,
+  type Order,
   type Payment,
 } from "../../drizzle/schema";
 import { subDays, differenceInDays } from "date-fns";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, notInArray, sql } from "drizzle-orm";
 
 // ============================================================================
 // Input Schema Constants
@@ -182,6 +184,35 @@ interface TotalDebtResponse {
   totalDebtOwedToMe: number;
   totalDebtIOwedToVendors: number;
   netPosition: number;
+}
+
+/**
+ * Operational KPIs response (TER-1055)
+ * Lightweight daily operating snapshot surfaced in the dashboard header row.
+ */
+interface OperationalKpisResponse {
+  openOrders: {
+    count: number;
+    totalValue: number;
+  };
+  fulfilledToday: {
+    count: number;
+  };
+  outstandingReceivables: {
+    total: number;
+    invoiceCount: number;
+  };
+  cashCollected: {
+    thisWeek: number;
+    lastWeek: number;
+    /** Percent change this-week vs last-week. null when last-week was 0 (no baseline). */
+    percentChange: number | null;
+  };
+}
+
+function toFiniteNumber(value: unknown): number {
+  const parsed = parseFloat(String(value ?? "0"));
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 /**
@@ -447,6 +478,137 @@ export const dashboardRouter = router({
         lowStockCount,
       };
     }),
+
+  /**
+   * Operational KPIs (TER-1055)
+   * Lightweight day-of operating snapshot: open orders, fulfillment, receivables,
+   * and week-over-week cash collection.
+   */
+  getOperationalKpis: protectedProcedure
+    .use(requirePermission("dashboard:read"))
+    .query(async (): Promise<OperationalKpisResponse> => {
+      const db = await getDb();
+      const now = new Date();
+      const startOfToday = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      );
+      const startOfThisWeek = subDays(startOfToday, 7);
+      const startOfLastWeek = subDays(startOfToday, 14);
+
+      // Open orders: confirmed SALE orders not yet paid/cancelled and not
+      // fulfilled beyond DELIVERED/CANCELLED.
+      const openOrdersQuery: Promise<Pick<Order, "total">[]> = db
+        ? db
+            .select({ total: ordersTable.total })
+            .from(ordersTable)
+            .where(
+              and(
+                isNull(ordersTable.deletedAt),
+                eq(ordersTable.orderType, "SALE"),
+                sql`${ordersTable.isDraft} = 0`,
+                notInArray(ordersTable.fulfillmentStatus, [
+                  "DELIVERED",
+                  "CANCELLED",
+                  "RETURNED",
+                  "RESTOCKED",
+                  "RETURNED_TO_VENDOR",
+                ])
+              )
+            )
+        : Promise.resolve([]);
+
+      const fulfilledTodayQuery: Promise<{ id: number }[]> = db
+        ? db
+            .select({ id: ordersTable.id })
+            .from(ordersTable)
+            .where(
+              and(
+                isNull(ordersTable.deletedAt),
+                eq(ordersTable.orderType, "SALE"),
+                inArray(ordersTable.fulfillmentStatus, [
+                  "SHIPPED",
+                  "DELIVERED",
+                ]),
+                sql`${ordersTable.shippedAt} >= ${startOfToday}`,
+                sql`${ordersTable.shippedAt} <= ${now}`
+              )
+            )
+        : Promise.resolve([]);
+
+      // All five queries run in parallel so dashboard TTFB is gated by the
+      // slowest one rather than the sum.
+      const [
+        openOrdersRows,
+        fulfilledRows,
+        receivablesResult,
+        thisWeekPayments,
+        lastWeekPayments,
+      ] = await Promise.all([
+        openOrdersQuery,
+        fulfilledTodayQuery,
+        arApDb.getOutstandingReceivables(),
+        arApDb.getPayments({
+          paymentType: "RECEIVED",
+          startDate: startOfThisWeek,
+          endDate: now,
+        }),
+        arApDb.getPayments({
+          paymentType: "RECEIVED",
+          startDate: startOfLastWeek,
+          endDate: startOfThisWeek,
+        }),
+      ]);
+
+      const openOrdersCount = openOrdersRows.length;
+      const openOrdersValue = openOrdersRows.reduce(
+        (sum, row) => sum + toFiniteNumber(row.total),
+        0
+      );
+      const fulfilledTodayCount = fulfilledRows.length;
+
+      const receivablesInvoices = receivablesResult.invoices || [];
+      const receivablesTotal = toFiniteNumber(receivablesResult.total);
+
+      const thisWeekCash = (thisWeekPayments.payments || []).reduce(
+        (sum: number, p: Payment) => sum + toFiniteNumber(p.amount),
+        0
+      );
+      const lastWeekCash = (lastWeekPayments.payments || []).reduce(
+        (sum: number, p: Payment) => sum + toFiniteNumber(p.amount),
+        0
+      );
+
+      // Null when no baseline exists — client renders "N/A" rather than
+      // fabricating a "+0% vs last week" trend.
+      const percentChange =
+        lastWeekCash > 0
+          ? Math.round(
+              ((thisWeekCash - lastWeekCash) / lastWeekCash) * 100 * 100
+            ) / 100
+          : null;
+
+      return {
+        openOrders: {
+          count: openOrdersCount,
+          totalValue: openOrdersValue,
+        },
+        fulfilledToday: {
+          count: fulfilledTodayCount,
+        },
+        outstandingReceivables: {
+          total: receivablesTotal,
+          invoiceCount: receivablesInvoices.length,
+        },
+        cashCollected: {
+          thisWeek: thisWeekCash,
+          lastWeek: lastWeekCash,
+          percentChange,
+        },
+      };
+    }),
+
   // Get user's widget layout
   getLayout: protectedProcedure
     .use(requirePermission("dashboard:read"))

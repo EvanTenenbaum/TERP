@@ -1,13 +1,58 @@
 /**
  * Sales Sheets Workflow Critical Path Tests
  *
- * Verifies the sales sheet creation functionality
- * including client selection, inventory browsing, and draft management.
+ * Verifies the standardized sales catalogue workflow
+ * including workspace navigation, client selection, inventory browsing,
+ * and draft/output controls.
  *
  * Sprint D Requirement: QA-062
  */
-import { test, expect } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 import { loginAsStandardUser } from "../fixtures/auth";
+
+async function openSalesSheets(page: Page): Promise<void> {
+  await page.goto("/sales-sheets");
+
+  await expect(page).not.toHaveURL(/404/);
+  await expect(page.locator("body")).not.toContainText("Page Not Found");
+  await expect(page.getByRole("heading", { name: "Sales" })).toBeVisible();
+}
+
+async function getClientTrigger(page: Page): Promise<Locator> {
+  const trigger = page.getByRole("combobox", { name: /select a client/i });
+  await expect(trigger).toBeVisible();
+  return trigger;
+}
+
+async function openClientPicker(page: Page): Promise<void> {
+  const trigger = await getClientTrigger(page);
+  await trigger.click();
+  await expect(page.getByPlaceholder("Search clients...")).toBeVisible();
+}
+
+async function selectFirstClient(page: Page): Promise<string> {
+  await openClientPicker(page);
+
+  const firstOption = page
+    .locator('[role="option"], [cmdk-item]')
+    .filter({ hasText: /\S/ })
+    .first();
+  await expect(firstOption).toBeVisible();
+
+  const clientName = (
+    (await firstOption.locator("span").first().textContent()) ?? ""
+  ).trim();
+
+  await firstOption.click();
+  await expect(page.getByText(/Client-priced inventory/i)).toBeVisible({
+    timeout: 15000,
+  });
+  await expect(await getClientTrigger(page)).not.toContainText(
+    /^Client\.\.\.$/
+  );
+
+  return clientName;
+}
 
 test.describe("Sales Sheets Page", () => {
   test.beforeEach(async ({ page }) => {
@@ -15,25 +60,28 @@ test.describe("Sales Sheets Page", () => {
   });
 
   test("should navigate to sales sheets page", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    
-    await expect(page).not.toHaveURL(/404/);
-    await expect(page.locator("body")).not.toContainText("Page Not Found");
+    await openSalesSheets(page);
+
+    await expect(page).toHaveURL(
+      /\/sales(?:\?.*tab=sales-sheets.*)?|\/sales-sheets/
+    );
   });
 
-  test("should display Sales Sheet Creator title", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    
-    const title = page.locator('h1:has-text("Sales"), text=/sales sheet/i').first();
-    await expect(title).toBeVisible();
+  test("should display the unified sales workspace shell", async ({ page }) => {
+    await openSalesSheets(page);
+
+    await expect(page.getByText("Sales Catalogues")).toBeVisible();
+    await expect(page.getByText("Sales Catalogue").first()).toBeVisible();
   });
 
-  test("should have client selector", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    
-    // Should have client selection dropdown
-    const clientSelector = page.locator('text=/select.*client|choose.*client/i, [data-testid="client-selector"], select').first();
-    await expect(clientSelector).toBeVisible();
+  test("should have client selector and draft controls", async ({ page }) => {
+    await openSalesSheets(page);
+
+    await expect(await getClientTrigger(page)).toBeVisible();
+    await expect(page.getByPlaceholder("Draft name...")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /save draft/i })
+    ).toBeVisible();
   });
 });
 
@@ -43,61 +91,36 @@ test.describe("Sales Sheet Client Selection", () => {
   });
 
   test("should open client dropdown", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    
-    // Click client selector
-    const clientSelector = page.locator('[data-testid="client-selector"], select, button:has-text("Select Client")').first();
-    
-    if (await clientSelector.isVisible()) {
-      await clientSelector.click();
-      
-      // Should show dropdown options
-      const options = page.locator('[role="option"], option, [data-testid="client-option"]').first();
-      await expect(options).toBeVisible();
-    }
+    await openSalesSheets(page);
+    await openClientPicker(page);
+
+    await expect(
+      page
+        .locator('[role="option"], [cmdk-item]')
+        .filter({ hasText: /\S/ })
+        .first()
+    ).toBeVisible();
   });
 
   test("should select a client from dropdown", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    
-    // Click client selector
-    const clientSelector = page.locator('[data-testid="client-selector"], select, button:has-text("Select")').first();
-    
-    if (await clientSelector.isVisible()) {
-      await clientSelector.click();
-      await page.waitForTimeout(500);
-      
-      // Select first client option
-      const firstOption = page.locator('[role="option"], option').first();
-      if (await firstOption.isVisible()) {
-        await firstOption.click();
-        
-        // Client should be selected
-        await page.waitForLoadState("networkidle");
-      }
-    }
+    await openSalesSheets(page);
+
+    const clientName = await selectFirstClient(page);
+    expect(clientName.length).toBeGreaterThan(0);
   });
 
-  test("should show inventory browser after client selection", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    
-    // Select a client first
-    const clientSelector = page.locator('[data-testid="client-selector"], select, button:has-text("Select")').first();
-    
-    if (await clientSelector.isVisible()) {
-      await clientSelector.click();
-      await page.waitForTimeout(500);
-      
-      const firstOption = page.locator('[role="option"], option').first();
-      if (await firstOption.isVisible()) {
-        await firstOption.click();
-        await page.waitForLoadState("networkidle");
-        
-        // Should show inventory browser
-        const inventoryBrowser = page.locator('text=/inventory|product|item|browse/i').first();
-        await expect(inventoryBrowser).toBeVisible();
-      }
-    }
+  test("should show inventory browser after client selection", async ({
+    page,
+  }) => {
+    await openSalesSheets(page);
+    await selectFirstClient(page);
+
+    await expect(page.getByText(/^Inventory$/)).toBeVisible();
+    await expect(page.getByText(/Client-priced inventory/i)).toBeVisible();
+    await expect(page.getByText(/^Preview$/)).toBeVisible();
+    await expect(
+      page.getByText(/Empty catalogue|Loading inventory/i)
+    ).toBeVisible();
   });
 });
 
@@ -106,59 +129,45 @@ test.describe("Sales Sheet Inventory Browser", () => {
     await loginAsStandardUser(page);
   });
 
-  test("should display inventory items", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    
-    // Select a client first
-    const clientSelector = page.locator('[data-testid="client-selector"], select, button:has-text("Select")').first();
-    if (await clientSelector.isVisible()) {
-      await clientSelector.click();
-      await page.waitForTimeout(500);
-      const firstOption = page.locator('[role="option"], option').first();
-      if (await firstOption.isVisible()) {
-        await firstOption.click();
-        await page.waitForLoadState("networkidle");
-      }
-    }
-    
-    // Should show inventory table or grid
-    const inventoryList = page.locator('table, [data-testid="inventory-grid"]').first();
-    await expect(inventoryList).toBeVisible();
+  test("should replace the empty state with the inventory workspace after client selection", async ({
+    page,
+  }) => {
+    await openSalesSheets(page);
+    await selectFirstClient(page);
+
+    await expect(
+      page.getByText(/Select a client to start building a catalogue/i)
+    ).not.toBeVisible();
+    await expect(page.getByText(/Client-priced inventory/i)).toBeVisible();
   });
 
-  test("should have Add to Sheet button for items", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    
-    // Select a client first
-    const clientSelector = page.locator('[data-testid="client-selector"], select, button:has-text("Select")').first();
-    if (await clientSelector.isVisible()) {
-      await clientSelector.click();
-      await page.waitForTimeout(500);
-      const firstOption = page.locator('[role="option"], option').first();
-      if (await firstOption.isVisible()) {
-        await firstOption.click();
-        await page.waitForLoadState("networkidle");
-      }
-    }
-    
-    // Should have Add button
-    const addButton = page.locator('button:has-text("Add"), button:has-text("+")').first();
-    await expect(addButton).toBeVisible();
+  test("should have row and pricing actions after client selection", async ({
+    page,
+  }) => {
+    await openSalesSheets(page);
+    await selectFirstClient(page);
+
+    await expect(page.getByRole("button", { name: /add row/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /bulk add/i })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /select all/i })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /customer pricing/i })
+    ).toBeVisible();
   });
 
-  test("should filter inventory by category", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    
-    // Look for category filter
-    const categoryFilter = page.locator('[data-testid="category-filter"], select[name="category"], text=/filter.*category/i').first();
-    
-    if (await categoryFilter.isVisible()) {
-      await categoryFilter.click();
-      
-      // Should show category options
-      const categoryOption = page.locator('[role="option"]:has-text("Flower"), option:has-text("Flower")').first();
-      await expect(categoryOption).toBeVisible();
-    }
+  test("should show view and filter controls after client selection", async ({
+    page,
+  }) => {
+    await openSalesSheets(page);
+    await selectFirstClient(page);
+
+    await expect(page.getByText(/Quick View/i).first()).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /save view/i })
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /filters/i })).toBeVisible();
   });
 });
 
@@ -167,63 +176,69 @@ test.describe("Sales Sheet Draft Management", () => {
     await loginAsStandardUser(page);
   });
 
-  test("should have Save Draft button", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    await page.waitForLoadState("networkidle");
+  test("should keep Save Draft available on the empty state", async ({
+    page,
+  }) => {
+    await openSalesSheets(page);
 
-    // Page may not exist in all environments; skip if 404
-    if (page.url().includes("404") || await page.locator("text=/page not found/i").isVisible().catch(() => false)) {
-      test.skip();
-      return;
-    }
-
-    // Look for Save Draft button (broad match for various UI labels)
-    const saveDraftButton = page.locator('button:has-text("Save Draft"), button:has-text("Save"), button:has-text("Draft")').first();
-    await expect(saveDraftButton).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole("button", { name: /save draft/i })
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Select a client to start building a catalogue/i)
+    ).toBeVisible();
   });
 
-  test("should have Load Draft option", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    await page.waitForLoadState("networkidle");
+  test("should reveal load draft options from the overflow menu after client selection", async ({
+    page,
+  }) => {
+    await openSalesSheets(page);
+    await selectFirstClient(page);
 
-    // Page may not exist in all environments; skip if 404
-    if (page.url().includes("404") || await page.locator("text=/page not found/i").isVisible().catch(() => false)) {
-      test.skip();
-      return;
-    }
+    const saveDraftButton = page.getByRole("button", { name: /save draft/i });
+    const overflowMenuButton = saveDraftButton.locator(
+      "xpath=following::button[@aria-haspopup='menu'][1]"
+    );
 
-    // Look for Load Draft button or dropdown (broad match)
-    const loadDraftButton = page.locator('button:has-text("Load Draft"), button:has-text("Load"), button:has-text("Drafts"), text=/draft/i').first();
-    await expect(loadDraftButton).toBeVisible({ timeout: 10000 });
+    await expect(overflowMenuButton).toBeVisible();
+    await overflowMenuButton.click();
+
+    await expect(
+      page.getByRole("menuitem", { name: /load draft/i })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("menuitem", { name: /load saved sheet/i })
+    ).toBeVisible();
   });
 
-  test("should have Clear/Reset button", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    await page.waitForLoadState("networkidle");
+  test("should show next-step actions before a client is selected", async ({
+    page,
+  }) => {
+    await openSalesSheets(page);
 
-    // Page may not exist in all environments; skip if 404
-    if (page.url().includes("404") || await page.locator("text=/page not found/i").isVisible().catch(() => false)) {
-      test.skip();
-      return;
-    }
-
-    // Look for Clear or Reset button
-    const clearButton = page.locator('button:has-text("Clear"), button:has-text("Reset"), button:has-text("New"), button:has-text("Start Over")').first();
-    await expect(clearButton).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole("button", { name: /sales order/i })
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /quote/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^live$/i })).toBeVisible();
   });
 
-  test("should have Export/Generate button", async ({ page }) => {
-    await page.goto("/sales-sheets");
-    await page.waitForLoadState("networkidle");
+  test("should show output actions after client selection", async ({
+    page,
+  }) => {
+    await openSalesSheets(page);
+    await selectFirstClient(page);
 
-    // Page may not exist in all environments; skip if 404
-    if (page.url().includes("404") || await page.locator("text=/page not found/i").isVisible().catch(() => false)) {
-      test.skip();
-      return;
-    }
-
-    // Look for Export or Generate button
-    const exportButton = page.locator('button:has-text("Export"), button:has-text("Generate"), button:has-text("PDF"), button:has-text("Download")').first();
-    await expect(exportButton).toBeVisible({ timeout: 10000 });
+    await expect(
+      page.getByRole("button", { name: /save sheet/i })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /share link/i })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /open shared view/i })
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: /^export$/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /print/i })).toBeVisible();
   });
 });

@@ -32,7 +32,7 @@ import {
   type Batch,
   type OrderLineItem,
 } from "../../drizzle/schema";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, sql, asc, desc, gte, lte, type SQL } from "drizzle-orm";
 import { safeInArray } from "../lib/sqlSafety";
 import { TRPCError } from "@trpc/server";
 import { softDelete, restoreDeleted } from "../utils/softDelete";
@@ -54,10 +54,13 @@ import {
 import { getCompatibleBatchSelect } from "../lib/batchColumnCompatibility";
 import { resolveBatchCogs } from "../cogsCalculator";
 import { validateTransition } from "../services/orderStateMachine";
+import { resolveQuoteValidUntilDate } from "../lib/quoteValidity";
 
 // ============================================================================
-// BUG-502: In-memory rate limiting for confirm endpoint
-// Tracks timestamps of confirm calls per user to enforce 10 confirms/minute limit
+// Process-local confirm throttling.
+// This reduces accidental duplicate confirms on a single app instance, but it
+// is not a shared cross-instance guarantee. A distributed limiter is still
+// required for true production-wide enforcement.
 // ============================================================================
 const confirmRateLimitMap = new Map<number, number[]>();
 const CONFIRM_RATE_LIMIT = 10; // max confirms per minute
@@ -102,12 +105,17 @@ function checkConfirmRateLimit(userId: number): void {
 
 const lineItemInputSchema = z.object({
   batchId: z.number(),
+  batchSku: z.string().optional(),
+  productId: z.number().optional(),
   productDisplayName: z.string().optional(),
   quantity: z.number().positive("Quantity must be greater than 0"),
   isSample: z.boolean().default(false),
   // ORD-002: COGS must be non-negative
   cogsPerUnit: z.number().nonnegative("COGS per unit cannot be negative"),
   originalCogsPerUnit: z.number().nonnegative().optional(),
+  cogsMode: z.enum(["FIXED", "RANGE"]).optional(),
+  unitCogsMin: z.number().nonnegative().nullable().optional(),
+  unitCogsMax: z.number().nonnegative().nullable().optional(),
   effectiveCogsBasis: z
     .enum(["LOW", "MID", "HIGH", "MANUAL"])
     .optional()
@@ -122,6 +130,17 @@ const lineItemInputSchema = z.object({
   isCogsOverridden: z.boolean().default(false),
   cogsOverrideReason: z.string().optional(),
   isMarginOverridden: z.boolean().default(false),
+  marginSource: z.enum(["CUSTOMER_PROFILE", "DEFAULT", "MANUAL"]).optional(),
+  profilePriceAdjustmentPercent: z.number().nullable().optional(),
+  appliedRules: z
+    .array(
+      z.object({
+        ruleId: z.number(),
+        ruleName: z.string(),
+        adjustment: z.string(),
+      })
+    )
+    .optional(),
 });
 
 const orderAdjustmentSchema = z.object({
@@ -147,10 +166,28 @@ const createOrderInputSchema = z.object({
   paymentTerms: z
     .enum(["NET_7", "NET_15", "NET_30", "COD", "PARTIAL", "CONSIGNMENT"])
     .optional(),
+  shipping: z.number().min(0).optional(),
   cashPayment: z.number().optional(),
 });
 
 type DraftLineItemInput = z.infer<typeof lineItemInputSchema>;
+
+type PersistedDraftItemMetadata = Pick<
+  DraftLineItemInput,
+  | "batchId"
+  | "batchSku"
+  | "productId"
+  | "productDisplayName"
+  | "quantity"
+  | "isSample"
+  | "cogsMode"
+  | "unitCogsMin"
+  | "unitCogsMax"
+  | "profilePriceAdjustmentPercent"
+  | "appliedRules"
+> & {
+  unitPrice?: number;
+};
 
 type DraftBatchPricingContext = Pick<
   Batch,
@@ -175,6 +212,74 @@ export function buildDraftPricingLookupOptions(
     grade: batchContext.batchGrade ?? undefined,
     vendor: batchContext.supplierName ?? undefined,
   };
+}
+
+function buildPersistedDraftItems(
+  lineItems: Array<
+    DraftLineItemInput & {
+      unitPrice: number;
+    }
+  >
+): PersistedDraftItemMetadata[] {
+  return lineItems.map(item => ({
+    batchId: item.batchId,
+    batchSku: item.batchSku,
+    productId: item.productId,
+    productDisplayName: item.productDisplayName,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+    isSample: item.isSample,
+    cogsMode: item.cogsMode,
+    unitCogsMin: item.unitCogsMin ?? null,
+    unitCogsMax: item.unitCogsMax ?? null,
+    profilePriceAdjustmentPercent: item.profilePriceAdjustmentPercent ?? null,
+    appliedRules: item.appliedRules ?? [],
+  }));
+}
+
+export function buildPersistedDraftItemKey(
+  batchId: number,
+  isSample: boolean
+): string {
+  return `${batchId}:${isSample ? "sample" : "regular"}`;
+}
+
+export function parsePersistedDraftItems(
+  items: unknown
+): Map<string, PersistedDraftItemMetadata[]> {
+  if (!Array.isArray(items)) {
+    return new Map();
+  }
+
+  const persistedItems = items.filter(
+    (item): item is PersistedDraftItemMetadata =>
+      typeof item === "object" &&
+      item !== null &&
+      typeof (item as PersistedDraftItemMetadata).batchId === "number"
+  );
+
+  const lookup = new Map<string, PersistedDraftItemMetadata[]>();
+  for (const item of persistedItems) {
+    const key = buildPersistedDraftItemKey(
+      item.batchId,
+      Boolean(item.isSample)
+    );
+    const existing = lookup.get(key);
+    if (existing) {
+      existing.push(item);
+    } else {
+      lookup.set(key, [item]);
+    }
+  }
+
+  return lookup;
+}
+
+export function isOrderAlreadyConfirmed(order: {
+  isDraft: boolean;
+  confirmedAt: Date | null;
+}): boolean {
+  return !order.isDraft && order.confirmedAt !== null;
 }
 
 async function getDraftBatchPricingContext(
@@ -204,7 +309,10 @@ async function getDraftBatchPricingContext(
     .then(rows => rows[0]);
 
   if (!batchContext) {
-    throw new Error(`Batch ${batchId} not found`);
+    throw new TRPCError({
+      code: "NOT_FOUND",
+      message: `Batch ${batchId} not found`,
+    });
   }
 
   return batchContext;
@@ -437,6 +545,179 @@ export const ordersRouter = router({
       const offset = input?.offset || 0;
 
       return createSafeUnifiedResponse(orders, -1, limit, offset);
+    }),
+
+  /**
+   * Get shipping pick list — flattened view of open-order line items
+   * for warehouse staff to pull against. TER-1063.
+   *
+   * "pending" = CONFIRMED + READY_FOR_PACKING (not yet picked)
+   * "partial" = PACKED (picked, awaiting ship)
+   * "fulfilled" = SHIPPED + DELIVERED
+   */
+  getPickList: protectedProcedure
+    .use(requirePermission("orders:read"))
+    .input(
+      z
+        .object({
+          status: z.enum(["pending", "partial", "fulfilled"]).optional(),
+          dateFrom: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional(),
+          dateTo: z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/)
+            .optional(),
+        })
+        .optional()
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Database not available",
+        });
+      }
+
+      const statusFilter = input?.status;
+      const fulfillmentStatusList =
+        statusFilter === "pending"
+          ? (["CONFIRMED", "READY_FOR_PACKING"] as const)
+          : statusFilter === "partial"
+            ? (["PACKED"] as const)
+            : statusFilter === "fulfilled"
+              ? (["SHIPPED", "DELIVERED"] as const)
+              : null;
+
+      const conditions: SQL<unknown>[] = [
+        eq(orders.orderType, "SALE"),
+        sql`${orders.isDraft} = 0`,
+        isNull(orders.deletedAt),
+      ];
+      if (fulfillmentStatusList) {
+        conditions.push(
+          safeInArray(orders.fulfillmentStatus, [...fulfillmentStatusList])
+        );
+      }
+
+      const parseBoundaryDate = (value: string, endOfDay: boolean) => {
+        const parsed = new Date(value);
+        if (Number.isNaN(parsed.getTime())) return null;
+        if (endOfDay) parsed.setUTCHours(23, 59, 59, 999);
+        else parsed.setUTCHours(0, 0, 0, 0);
+        return parsed;
+      };
+
+      if (input?.dateFrom) {
+        const from = parseBoundaryDate(input.dateFrom, false);
+        if (from) conditions.push(gte(orders.createdAt, from));
+      }
+      if (input?.dateTo) {
+        const to = parseBoundaryDate(input.dateTo, true);
+        if (to) conditions.push(lte(orders.createdAt, to));
+      }
+
+      const rows = await db
+        .select({ orders: orders, clients: clients })
+        .from(orders)
+        .leftJoin(clients, eq(orders.clientId, clients.id))
+        .where(and(...conditions))
+        .orderBy(desc(orders.createdAt))
+        .limit(500);
+
+      // Collect batch IDs from JSON items payload across all rows so we can
+      // enrich line items with real SKU / product name / sellable UOM in a
+      // bounded number of follow-up queries.
+      const batchIdSet = new Set<number>();
+      const parsedRows = rows.map(row => {
+        let items: Array<{
+          batchId?: number;
+          displayName?: string | null;
+          productName?: string | null;
+          quantity?: number | string | null;
+        }> = [];
+        if (row.orders.items) {
+          try {
+            const raw =
+              typeof row.orders.items === "string"
+                ? JSON.parse(row.orders.items)
+                : row.orders.items;
+            if (Array.isArray(raw)) items = raw;
+          } catch {
+            items = [];
+          }
+        }
+        for (const it of items) {
+          const parsed = Number(it.batchId);
+          if (Number.isFinite(parsed) && parsed > 0) batchIdSet.add(parsed);
+        }
+        return { row, items };
+      });
+
+      const batchIds = [...batchIdSet];
+      const batchRows = batchIds.length
+        ? await db
+            .select({
+              id: batches.id,
+              sku: batches.sku,
+              productId: batches.productId,
+            })
+            .from(batches)
+            .where(safeInArray(batches.id, batchIds))
+        : [];
+
+      const productIds = [...new Set(batchRows.map(b => b.productId))];
+      const productRows = productIds.length
+        ? await db
+            .select({
+              id: products.id,
+              nameCanonical: products.nameCanonical,
+              uomSellable: products.uomSellable,
+            })
+            .from(products)
+            .where(safeInArray(products.id, productIds))
+        : [];
+
+      const batchById = new Map(batchRows.map(b => [b.id, b]));
+      const productById = new Map(productRows.map(p => [p.id, p]));
+
+      return parsedRows.map(({ row, items }) => {
+        const lineItems = items.flatMap(item => {
+          const batchId = Number(item.batchId);
+          const batch = Number.isFinite(batchId)
+            ? batchById.get(batchId)
+            : undefined;
+          const product = batch ? productById.get(batch.productId) : undefined;
+          const sku = batch?.sku ?? null;
+          if (sku === null) return [];
+          const qtyNum = Number(item.quantity);
+          return [
+            {
+              batchId: Number.isFinite(batchId) ? batchId : null,
+              sku,
+              productName:
+                item.displayName ??
+                item.productName ??
+                product?.nameCanonical ??
+                (batch ? `Batch ${batch.id}` : "Unknown item"),
+              quantity: Number.isFinite(qtyNum) ? qtyNum : 0,
+              unit: product?.uomSellable ?? "EA",
+            },
+          ];
+        });
+
+        return {
+          orderId: row.orders.id,
+          orderNumber: row.orders.orderNumber,
+          clientId: row.orders.clientId,
+          clientName: row.clients?.name ?? null,
+          fulfillmentStatus: row.orders.fulfillmentStatus,
+          createdAt: row.orders.createdAt,
+          lineItems,
+        };
+      });
     }),
 
   /**
@@ -1001,6 +1282,8 @@ export const ordersRouter = router({
         lineItemsWithPrices,
         input.orderLevelAdjustment
       );
+      const shipping = input.shipping ?? 0;
+      const orderTotal = totals.finalTotal + shipping;
 
       // Validate order
       const validation = orderValidationService.validateOrder({
@@ -1014,20 +1297,23 @@ export const ordersRouter = router({
           marginPercent: item.marginPercent,
           isSample: item.isSample,
         })),
-        finalTotal: totals.finalTotal,
+        finalTotal: orderTotal,
         overallMarginPercent: totals.avgMarginPercent,
       });
 
-      // Generate order number
-      const orderNumber = await ordersDb.generateOrderNumber(
-        input.orderType,
-        true
-      );
       // paymentTerms is NOT NULL in the orders table; ensure draft paths always persist a valid value.
       const resolvedPaymentTerms = input.paymentTerms || "NET_30";
+      const resolvedValidUntil =
+        input.orderType === "QUOTE"
+          ? resolveQuoteValidUntilDate(input.validUntil)
+          : null;
 
       // Create order + line items atomically
-      const { orderId } = await withTransaction(async tx => {
+      const { orderId, orderNumber } = await withTransaction(async tx => {
+        const orderNumber = await ordersDb.generateOrderNumber(
+          input.orderType,
+          true
+        );
         const [orderResult] = await tx.insert(orders).values({
           orderNumber,
           orderType: input.orderType,
@@ -1036,19 +1322,14 @@ export const ordersRouter = router({
           isDraft: true,
           referredByClientId: input.referredByClientId ?? null,
           isReferralOrder: Boolean(input.referredByClientId),
-          items: JSON.stringify(
-            lineItemsWithPrices.map(item => ({
-              batchId: item.batchId,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              isSample: item.isSample,
-            }))
-          ),
-          total: totals.finalTotal.toString(),
+          items: JSON.stringify(buildPersistedDraftItems(lineItemsWithPrices)),
+          total: orderTotal.toString(),
           subtotal: totals.subtotal.toString(),
+          shipping: shipping.toString(),
+          showAdjustmentOnDocument: input.showAdjustmentOnDocument,
           avgMarginPercent: totals.avgMarginPercent.toString(),
           notes: input.notes || null,
-          validUntil: input.validUntil ? new Date(input.validUntil) : null,
+          validUntil: resolvedValidUntil,
           paymentTerms: resolvedPaymentTerms,
           cashPayment: input.cashPayment?.toString() || null,
           createdBy: userId,
@@ -1092,7 +1373,7 @@ export const ordersRouter = router({
           )
         );
 
-        return { orderId: newOrderId };
+        return { orderId: newOrderId, orderNumber };
       });
 
       // Log audit entry (outside transaction — non-critical side effect)
@@ -1100,14 +1381,17 @@ export const ordersRouter = router({
         orderType: input.orderType,
         clientId: input.clientId,
         lineItemCount: lineItemsWithPrices.length,
-        total: totals.finalTotal,
+        total: orderTotal,
       });
 
       return {
         orderId,
         orderNumber,
         version: 1,
-        totals,
+        totals: {
+          ...totals,
+          finalTotal: orderTotal,
+        },
         validation,
       };
     }),
@@ -1129,17 +1413,16 @@ export const ordersRouter = router({
 
       const userId = getAuthenticatedUserId(ctx);
 
-      // ST-026: Check version for concurrent edit detection
-      const { checkVersion } = await import("../_core/optimisticLocking");
-      await checkVersion(db, orders, "Order", input.orderId, input.version);
-
       // Get full existing order
       const existingOrder = await db.query.orders.findFirst({
         where: eq(orders.id, input.orderId),
       });
 
       if (!existingOrder) {
-        throw new Error("Order not found");
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Order not found",
+        });
       }
 
       const client = await db
@@ -1251,6 +1534,8 @@ export const ordersRouter = router({
         lineItemsWithPrices,
         input.orderLevelAdjustment
       );
+      const shipping = input.shipping ?? 0;
+      const orderTotal = totals.finalTotal + shipping;
 
       // Validate order
       const validation = orderValidationService.validateOrder({
@@ -1264,7 +1549,7 @@ export const ordersRouter = router({
           marginPercent: item.marginPercent,
           isSample: item.isSample,
         })),
-        finalTotal: totals.finalTotal,
+        finalTotal: orderTotal,
         overallMarginPercent: totals.avgMarginPercent,
       });
 
@@ -1272,8 +1557,36 @@ export const ordersRouter = router({
       const { sql } = await import("drizzle-orm");
       const resolvedPaymentTerms =
         input.paymentTerms || existingOrder.paymentTerms || "NET_30";
-      const nextVersion = existingOrder.version + 1;
+      const resolvedValidUntil =
+        input.orderType === "QUOTE"
+          ? resolveQuoteValidUntilDate(input.validUntil)
+          : null;
+      let nextVersion = input.version + 1;
       await withTransaction(async tx => {
+        const [lockedOrder] = await tx
+          .select()
+          .from(orders)
+          .where(eq(orders.id, input.orderId))
+          .for("update")
+          .limit(1);
+
+        if (!lockedOrder) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Order not found",
+          });
+        }
+
+        if (lockedOrder.version !== input.version) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message:
+              "Order was modified by another user. Please refresh and try again.",
+          });
+        }
+
+        nextVersion = lockedOrder.version + 1;
+
         // Update order with version increment
         await tx
           .update(orders)
@@ -1284,23 +1597,22 @@ export const ordersRouter = router({
             referredByClientId: input.referredByClientId ?? null,
             isReferralOrder: Boolean(input.referredByClientId),
             items: JSON.stringify(
-              lineItemsWithPrices.map(item => ({
-                batchId: item.batchId,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                isSample: item.isSample,
-              }))
+              buildPersistedDraftItems(lineItemsWithPrices)
             ),
-            total: totals.finalTotal.toString(),
+            total: orderTotal.toString(),
             subtotal: totals.subtotal.toString(),
+            shipping: shipping.toString(),
+            showAdjustmentOnDocument: input.showAdjustmentOnDocument,
             avgMarginPercent: totals.avgMarginPercent.toString(),
             notes: input.notes,
-            validUntil: input.validUntil ? new Date(input.validUntil) : null,
+            validUntil: resolvedValidUntil,
             paymentTerms: resolvedPaymentTerms,
             cashPayment: input.cashPayment?.toString() || null,
             version: sql`version + 1`,
           })
-          .where(eq(orders.id, input.orderId));
+          .where(
+            and(eq(orders.id, input.orderId), eq(orders.version, input.version))
+          );
 
         // Delete existing line items
         await tx
@@ -1347,13 +1659,16 @@ export const ordersRouter = router({
       // Log audit entry
       await orderAuditService.logOrderUpdate(input.orderId, userId, {
         lineItemCount: lineItemsWithPrices.length,
-        total: totals.finalTotal,
+        total: orderTotal,
       });
 
       return {
         orderId: input.orderId,
         version: nextVersion,
-        totals,
+        totals: {
+          ...totals,
+          finalTotal: orderTotal,
+        },
         validation,
       };
     }),
@@ -1368,6 +1683,7 @@ export const ordersRouter = router({
       z.object({
         orderId: z.number(),
         version: z.number(),
+        overrideReason: z.string().trim().min(10).optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -1527,6 +1843,9 @@ export const ordersRouter = router({
               fulfillmentStatus: coerceOrderFulfillmentStatus(
                 readyForPackingStatus
               ),
+              creditOverrideApproved: input.overrideReason ? true : undefined,
+              creditOverrideBy: input.overrideReason ? userId : undefined,
+              creditOverrideReason: input.overrideReason ?? undefined,
               version: sqlFn`version + 1`,
             })
             .where(eq(orders.id, input.orderId));
@@ -1575,9 +1894,11 @@ export const ordersRouter = router({
         ...order,
         fulfillmentStatus: normalizeFulfillmentStatus(order.fulfillmentStatus),
       };
+      const persistedDraftItems = parsePersistedDraftItems(order.items);
 
       const lineItems = await db.query.orderLineItems.findMany({
         where: eq(orderLineItems.orderId, input.orderId),
+        orderBy: [asc(orderLineItems.id)],
       });
 
       const batchIds = Array.from(new Set(lineItems.map(item => item.batchId)));
@@ -1615,16 +1936,39 @@ export const ordersRouter = router({
 
       return {
         order: normalizedOrder,
-        lineItems: lineItems.map(lineItem => ({
-          ...lineItem,
-          productId: batchMetadataById.get(lineItem.batchId)?.productId ?? null,
-          batchSku: batchMetadataById.get(lineItem.batchId)?.batchSku ?? null,
-          cogsMode: batchMetadataById.get(lineItem.batchId)?.cogsMode ?? null,
-          unitCogsMin:
-            batchMetadataById.get(lineItem.batchId)?.unitCogsMin ?? null,
-          unitCogsMax:
-            batchMetadataById.get(lineItem.batchId)?.unitCogsMax ?? null,
-        })),
+        lineItems: lineItems.map(lineItem => {
+          const persistedMetadataQueue = persistedDraftItems.get(
+            buildPersistedDraftItemKey(lineItem.batchId, lineItem.isSample)
+          );
+          const persistedMetadata = persistedMetadataQueue?.shift();
+
+          return {
+            ...lineItem,
+            productId:
+              batchMetadataById.get(lineItem.batchId)?.productId ??
+              persistedMetadata?.productId ??
+              null,
+            batchSku:
+              batchMetadataById.get(lineItem.batchId)?.batchSku ??
+              persistedMetadata?.batchSku ??
+              null,
+            cogsMode:
+              batchMetadataById.get(lineItem.batchId)?.cogsMode ??
+              persistedMetadata?.cogsMode ??
+              null,
+            unitCogsMin:
+              batchMetadataById.get(lineItem.batchId)?.unitCogsMin ??
+              persistedMetadata?.unitCogsMin ??
+              null,
+            unitCogsMax:
+              batchMetadataById.get(lineItem.batchId)?.unitCogsMax ??
+              persistedMetadata?.unitCogsMax ??
+              null,
+            profilePriceAdjustmentPercent:
+              persistedMetadata?.profilePriceAdjustmentPercent ?? null,
+            appliedRules: persistedMetadata?.appliedRules ?? [],
+          };
+        }),
       };
     }),
 
@@ -2007,6 +2351,14 @@ export const ordersRouter = router({
               code: "BAD_REQUEST",
               message: "Only SALE orders can be confirmed",
             });
+          }
+
+          if (isOrderAlreadyConfirmed(order)) {
+            logger.info({
+              msg: "INV-003: confirmOrder skipped inventory mutation for already-confirmed order",
+              orderId: input.id,
+            });
+            return { success: true, orderId: input.id, alreadyConfirmed: true };
           }
 
           if (
@@ -2660,7 +3012,9 @@ export const ordersRouter = router({
       const vendorRows = await db
         .select({ id: clients.id, name: clients.name })
         .from(clients)
-        .where(safeInArray(clients.id, vendorIdList));
+        .where(
+          and(safeInArray(clients.id, vendorIdList), isNull(clients.deletedAt))
+        );
 
       return {
         orderStatus: normalizedOrderStatus,
@@ -2995,5 +3349,82 @@ export const ordersRouter = router({
         unitCost: parseMoneyOrZero(alloc.unitCost),
         allocatedAt: alloc.allocatedAt,
       }));
+    }),
+
+  /**
+   * TER-1056: Batch update order status
+   * Updates multiple orders to a new status in a single operation
+   */
+  batchUpdateOrderStatus: protectedProcedure
+    .use(requirePermission("orders:update"))
+    .input(
+      z.object({
+        orderIds: z.array(z.number()).min(1).max(100),
+        newStatus: z.enum([
+          "READY_FOR_PACKING",
+          "PACKED",
+          "SHIPPED",
+          "DELIVERED",
+          "CANCELLED",
+        ]),
+        notes: z.string().optional(),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const userId = getAuthenticatedUserId(ctx);
+
+      // Cancellation requires the more specific orders:cancel permission
+      if (input.newStatus === "CANCELLED") {
+        const { hasPermission } = await import("../services/permissionService");
+        const canCancel = await hasPermission(String(userId), "orders:cancel");
+        if (!canCancel) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message:
+              "You do not have permission to cancel orders. Required permission: orders:cancel",
+          });
+        }
+      }
+
+      const results: Array<{
+        orderId: number;
+        success: boolean;
+        error?: string;
+      }> = [];
+
+      // Process each order sequentially to maintain data integrity
+      for (const orderId of input.orderIds) {
+        try {
+          await ordersDb.updateOrderStatus({
+            orderId,
+            newStatus: input.newStatus,
+            notes: input.notes,
+            userId,
+          });
+          results.push({ orderId, success: true });
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : "Unknown error";
+          results.push({ orderId, success: false, error: errorMessage });
+          logger.error({
+            msg: "TER-1056: Failed to update order status in batch",
+            orderId,
+            newStatus: input.newStatus,
+            error: errorMessage,
+          });
+        }
+      }
+
+      const successCount = results.filter(r => r.success).length;
+      const failureCount = results.length - successCount;
+
+      return {
+        results,
+        summary: {
+          total: input.orderIds.length,
+          succeeded: successCount,
+          failed: failureCount,
+        },
+      };
     }),
 });

@@ -81,7 +81,7 @@ export function ShipOrderModal({
         </DialogHeader>
         <div className="space-y-4">
           {warningText && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 text-sm text-yellow-800 flex items-start gap-2">
+            <div className="bg-[var(--warning-bg)] border border-yellow-200 rounded-md p-3 text-sm text-[var(--warning)] flex items-start gap-2">
               <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
               <span>{warningText}</span>
             </div>

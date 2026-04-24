@@ -246,7 +246,7 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
           </div>
           <div className="border rounded-lg p-4">
             <div className="flex items-center gap-2 mb-2">
-              <TrendingDown className="h-5 w-5 text-red-500" />
+              <TrendingDown className="h-5 w-5 text-destructive" />
               <h3 className="font-semibold">Defective Items</h3>
             </div>
             <p className="text-3xl font-bold">{stats.defectiveCount}</p>
@@ -293,11 +293,14 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
                     <TableCell>#{returnRecord.id}</TableCell>
                     <TableCell>#{returnRecord.orderId}</TableCell>
                     <TableCell>
-                      <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-red-100 text-red-700">
+                      <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-destructive/10 text-destructive">
                         {returnRecord.returnReason}
                       </span>
                     </TableCell>
-                    <TableCell>User #{returnRecord.processedBy}</TableCell>
+                    <TableCell>
+                      {returnRecord.processedByName ||
+                        `User #${returnRecord.processedBy}`}
+                    </TableCell>
                     <TableCell>
                       {new Date(returnRecord.processedAt).toLocaleDateString()}
                     </TableCell>
@@ -387,8 +390,8 @@ export default function ReturnsPage({ embedded = false }: ReturnsPageProps) {
                 </div>
               )}
               {selectedOrderId && !orderDetails && (
-                <div className="mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <div className="text-sm text-yellow-800">
+                <div className="mt-2 p-3 bg-[var(--warning-bg)] border border-yellow-200 rounded-lg">
+                  <div className="text-sm text-[var(--warning)]">
                     Loading order details...
                   </div>
                 </div>

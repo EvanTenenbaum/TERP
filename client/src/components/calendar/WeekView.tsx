@@ -8,6 +8,9 @@ interface Event {
   endDate: string;
   endTime?: string | null;
   eventType: string;
+  entityType?: string;
+  entityId?: number;
+  clientId?: number | null;
   status: string;
   priority: string;
 }
@@ -63,7 +66,7 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
             <div
               key={`weekday-${day.toISOString()}`}
               className={`border-r border-gray-200 p-3 text-center last:border-r-0 ${
-                isToday ? "bg-blue-50" : ""
+                isToday ? "bg-[var(--info-bg)]" : ""
               }`}
             >
               <div className="text-xs font-medium text-gray-500">
@@ -72,7 +75,7 @@ export default function WeekView({ currentDate, events, onEventClick }: WeekView
               <div
                 className={`mt-1 text-lg font-semibold ${
                   isToday
-                    ? "flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white mx-auto"
+                    ? "flex h-8 w-8 items-center justify-center rounded-full bg-[var(--info)] text-white mx-auto"
                     : "text-gray-900"
                 }`}
               >
@@ -149,13 +152,15 @@ function formatHour(hour: number): string {
 }
 
 function getEventColorClass(event: Event): string {
-  if (event.priority === "URGENT") {
-    return "bg-red-100 text-red-800";
-  } else if (event.priority === "HIGH") {
-    return "bg-orange-100 text-orange-800";
-  } else if (event.priority === "MEDIUM") {
-    return "bg-blue-100 text-blue-800";
+  // Event-type-based colors
+  if (event.eventType === "INTAKE") {
+    return "bg-[var(--success-bg)] text-[var(--success)] border-l-4 border-green-500";
+  } else if (event.eventType === "DELIVERY") {
+    return "bg-[var(--info-bg)] text-[var(--info)] border-l-4 border-blue-500";
+  } else if (event.eventType === "PAYMENT_DUE") {
+    return "bg-[var(--warning-bg)] text-[var(--warning)] border-l-4 border-orange-500";
   } else {
+    // Fallback for other event types
     return "bg-gray-100 text-gray-800";
   }
 }
