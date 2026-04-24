@@ -158,6 +158,25 @@ function ManusSheetContent({
       >
         {children}
         {/*
+         * TER-1366: Enforced "Esc to close" hint.
+         *
+         * Previously the hint was only rendered when consumers opted into
+         * `ManusSheetFooter` (its `showEscHint` prop). That left drawers
+         * without an explicit footer silently missing the affordance, which
+         * violated the UX v2 drawer contract. Rendering it directly in
+         * `ManusSheetContent` — below `{children}` — guarantees every drawer
+         * surface shows the hint regardless of whether a footer is used.
+         */}
+        <div
+          data-slot="manus-sheet-esc-hint"
+          className="text-muted-foreground flex items-center gap-1 border-t px-4 py-2 text-xs"
+        >
+          <kbd className="border-border bg-muted rounded border px-1.5 py-0.5 font-mono text-xs">
+            Esc
+          </kbd>
+          <span>to close</span>
+        </div>
+        {/*
          * Enforced close-X affordance.
          * Always rendered; cannot be opted out. Clicking this triggers
          * Radix's onOpenChange(false) via the Dialog.Close primitive, which
@@ -229,9 +248,10 @@ function ManusSheetDescription({
 
 export interface ManusSheetFooterProps extends React.ComponentProps<"div"> {
   /**
-   * If `false`, suppresses the "Esc to close" hint. Defaults to `true`.
-   * Consumers should only disable this in exceptional cases (e.g. nested
-   * footers inside multi-step flows) — the hint is a UX v2 contract.
+   * @deprecated TER-1366: The "Esc to close" hint is now rendered directly
+   * inside {@link ManusSheetContent} so that every drawer surface shows it
+   * regardless of whether a footer is used. This prop is preserved only
+   * for back-compat and has no effect.
    */
   showEscHint?: boolean;
 }
@@ -239,31 +259,20 @@ export interface ManusSheetFooterProps extends React.ComponentProps<"div"> {
 function ManusSheetFooter({
   className,
   children,
-  showEscHint = true,
+  // TER-1366: `showEscHint` is intentionally destructured (but unused) so
+  // that existing call sites compile without warnings. The hint itself now
+  // lives in `ManusSheetContent`.
+  showEscHint: _showEscHint,
   ...props
 }: ManusSheetFooterProps): React.ReactElement {
+  void _showEscHint;
   return (
     <div
       data-slot="manus-sheet-footer"
-      className={cn(
-        "mt-auto flex flex-col gap-2 border-t p-4",
-        className
-      )}
+      className={cn("mt-auto flex flex-col gap-2 border-t p-4", className)}
       {...props}
     >
       {children}
-      {showEscHint ? (
-        <p
-          data-slot="manus-sheet-esc-hint"
-          className="text-muted-foreground mt-1 text-xs"
-        >
-          Press{" "}
-          <kbd className="border-border bg-muted rounded border px-1.5 py-0.5 font-mono text-[10px]">
-            Esc
-          </kbd>{" "}
-          to close
-        </p>
-      ) : null}
     </div>
   );
 }
