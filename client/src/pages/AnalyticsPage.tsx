@@ -62,21 +62,72 @@ const periodLabels: Record<Period, string> = {
   all: "All time",
 };
 
+/**
+ * Convert the selected Period into an explicit { startDate, endDate } window
+ * so the client can pass matching filters to tRPC queries that accept date
+ * bounds. "all" returns undefined bounds so the server treats the request as
+ * unbounded.
+ */
+function getPeriodDateRange(period: Period): {
+  startDate?: Date;
+  endDate?: Date;
+} {
+  if (period === "all") {
+    return { startDate: undefined, endDate: undefined };
+  }
+
+  const endDate = new Date();
+  const startDate = new Date();
+
+  switch (period) {
+    case "day":
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    case "week":
+      startDate.setDate(startDate.getDate() - 7);
+      break;
+    case "month":
+      startDate.setDate(startDate.getDate() - 30);
+      break;
+    case "quarter":
+      startDate.setDate(startDate.getDate() - 90);
+      break;
+    case "year":
+      startDate.setDate(startDate.getDate() - 365);
+      break;
+  }
+
+  return { startDate, endDate };
+}
+
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState<Period>("month");
   const [, setLocation] = useLocation();
+
+  const { startDate: periodStart, endDate: periodEnd } = useMemo(
+    () => getPeriodDateRange(period),
+    [period]
+  );
+  const granularity: "day" | "month" =
+    period === "day" || period === "week" ? "day" : "month";
+  const revenueTrendsLimit = granularity === "day" ? 7 : 12;
 
   const { data, isLoading, error, refetch } =
     trpc.analytics.getExtendedSummary.useQuery({ period });
   const { data: revenueTrends, isLoading: trendsLoading } =
     trpc.analytics.getRevenueTrends.useQuery({
-      granularity: period === "day" || period === "week" ? "day" : "month",
-      limit: 12,
+      granularity,
+      limit: revenueTrendsLimit,
+      startDate: periodStart,
+      endDate: periodEnd,
     });
   const { data: topClients, isLoading: clientsLoading } =
     trpc.analytics.getTopClients.useQuery({
       limit: 10,
       sortBy: "revenue",
+      startDate: periodStart,
+      endDate: periodEnd,
     });
 
   const exportMutation = trpc.analytics.exportData.useMutation({
@@ -196,13 +247,14 @@ export default function AnalyticsPage() {
               title="Total Revenue"
               href="/accounting"
               value={formatCurrency(data?.totalRevenue ?? 0)}
-              subtitle="Total from all orders"
+              subtitle="All time · from all orders"
               icon={DollarSign}
               isLoading={isLoading}
             />
             <MetricCard
-              title="Period Revenue"
+              title={`Revenue (${periodLabels[period]})`}
               value={formatCurrency(data?.revenueThisPeriod ?? 0)}
+              subtitle={`Period: ${periodLabels[period]}`}
               icon={BarChart3}
               isLoading={isLoading}
               trend={
@@ -214,14 +266,14 @@ export default function AnalyticsPage() {
             <MetricCard
               title="Avg Order Value"
               value={formatCurrency(data?.averageOrderValue ?? 0)}
-              subtitle="Average per order"
+              subtitle="All time · avg per order"
               icon={CreditCard}
               isLoading={isLoading}
             />
             <MetricCard
               title="Outstanding Balance"
               value={formatCurrency(data?.outstandingBalance ?? 0)}
-              subtitle="Unpaid invoices"
+              subtitle="All time · unpaid invoices"
               icon={Percent}
               isLoading={isLoading}
             />
@@ -232,28 +284,36 @@ export default function AnalyticsPage() {
               title="Total Orders"
               href="/sales?tab=orders"
               value={(data?.totalOrders ?? 0).toLocaleString()}
-              subtitle={`${data?.ordersThisPeriod ?? 0} this period`}
+              subtitle={
+                period === "all"
+                  ? "All time"
+                  : `All time · ${(data?.ordersThisPeriod ?? 0).toLocaleString()} in ${periodLabels[period].toLowerCase()}`
+              }
               icon={TrendingUp}
               isLoading={isLoading}
             />
             <MetricCard
               title="Active Clients"
               value={(data?.totalClients ?? 0).toLocaleString()}
-              subtitle={`${data?.newClientsThisPeriod ?? 0} new this period`}
+              subtitle={
+                period === "all"
+                  ? "All time"
+                  : `All time · ${(data?.newClientsThisPeriod ?? 0).toLocaleString()} new in ${periodLabels[period].toLowerCase()}`
+              }
               icon={Users}
               isLoading={isLoading}
             />
             <MetricCard
               title="Batches"
               value={(data?.totalInventoryItems ?? 0).toLocaleString()}
-              subtitle="Active batches in inventory"
+              subtitle="All time · active batches in inventory"
               icon={Package}
               isLoading={isLoading}
             />
             <MetricCard
               title="Payments Received"
               value={formatCurrency(data?.totalPaymentsReceived ?? 0)}
-              subtitle="Total collected"
+              subtitle="All time · total collected"
               icon={DollarSign}
               isLoading={isLoading}
             />
