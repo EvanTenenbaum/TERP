@@ -62,21 +62,72 @@ const periodLabels: Record<Period, string> = {
   all: "All time",
 };
 
+/**
+ * Convert the selected Period into an explicit { startDate, endDate } window
+ * so the client can pass matching filters to tRPC queries that accept date
+ * bounds. "all" returns undefined bounds so the server treats the request as
+ * unbounded.
+ */
+function getPeriodDateRange(period: Period): {
+  startDate?: Date;
+  endDate?: Date;
+} {
+  if (period === "all") {
+    return { startDate: undefined, endDate: undefined };
+  }
+
+  const endDate = new Date();
+  const startDate = new Date();
+
+  switch (period) {
+    case "day":
+      startDate.setHours(0, 0, 0, 0);
+      endDate.setHours(23, 59, 59, 999);
+      break;
+    case "week":
+      startDate.setDate(startDate.getDate() - 7);
+      break;
+    case "month":
+      startDate.setDate(startDate.getDate() - 30);
+      break;
+    case "quarter":
+      startDate.setDate(startDate.getDate() - 90);
+      break;
+    case "year":
+      startDate.setDate(startDate.getDate() - 365);
+      break;
+  }
+
+  return { startDate, endDate };
+}
+
 export default function AnalyticsPage() {
   const [period, setPeriod] = useState<Period>("month");
   const [, setLocation] = useLocation();
+
+  const { startDate: periodStart, endDate: periodEnd } = useMemo(
+    () => getPeriodDateRange(period),
+    [period]
+  );
+  const granularity: "day" | "month" =
+    period === "day" || period === "week" ? "day" : "month";
+  const revenueTrendsLimit = granularity === "day" ? 7 : 12;
 
   const { data, isLoading, error, refetch } =
     trpc.analytics.getExtendedSummary.useQuery({ period });
   const { data: revenueTrends, isLoading: trendsLoading } =
     trpc.analytics.getRevenueTrends.useQuery({
-      granularity: period === "day" || period === "week" ? "day" : "month",
-      limit: 12,
+      granularity,
+      limit: revenueTrendsLimit,
+      startDate: periodStart,
+      endDate: periodEnd,
     });
   const { data: topClients, isLoading: clientsLoading } =
     trpc.analytics.getTopClients.useQuery({
       limit: 10,
       sortBy: "revenue",
+      startDate: periodStart,
+      endDate: periodEnd,
     });
 
   const exportMutation = trpc.analytics.exportData.useMutation({
