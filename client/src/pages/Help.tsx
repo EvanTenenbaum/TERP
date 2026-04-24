@@ -8,6 +8,7 @@ import {
   BarChart3,
   DollarSign,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Download,
   FileText,
@@ -269,7 +270,7 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
               <div
                 key={section.id}
                 onClick={() => handleCardClick(section.id)}
-                className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all cursor-pointer"
+                className="group bg-white rounded-lg border border-gray-200 p-6 hover:shadow-lg transition-all cursor-pointer"
               >
                 <div className="flex items-start gap-4 overflow-hidden">
                   <div className="p-3 bg-[var(--info-bg)] rounded-lg flex-shrink-0">
@@ -293,10 +294,12 @@ Run profitability analysis monthly rather than quarterly or annually. Market con
                       {section.topics.map(topic => (
                         <li
                           key={`topic-${topic.substring(0, 30)}`}
-                          className="flex items-start gap-2"
+                          className="flex items-center gap-2"
                         >
-                          <span className="text-[var(--info)] mt-1">•</span>
-                          <span className="text-sm text-gray-700">{topic}</span>
+                          <ChevronRight className="w-3 h-3 text-gray-400 group-hover:text-[var(--info)] transition-colors flex-shrink-0" />
+                          <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">
+                            {topic}
+                          </span>
                         </li>
                       ))}
                     </ul>
