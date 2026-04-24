@@ -318,11 +318,21 @@ function mapInvoicesToGridRows(
 // STATUS BADGE CELL RENDERER
 // ============================================================================
 
-function statusCellRenderer(params: { value: string }): string {
+// TER-1360: AG Grid React renders strings returned from cellRenderer as
+// escaped text nodes, so returning an HTML string surfaced raw markup in
+// the cell (e.g. `<span class="...">Paid</span>`). Return JSX so the badge
+// is rendered as an actual DOM element, mirroring the TER-1253 Amount Due fix.
+function statusCellRenderer(params: { value: string }) {
   const status = params.value ?? "DRAFT";
   const color = getInvoiceStatusClass(status);
   const label = getInvoiceStatusLabel(status);
-  return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium ${color}">${label}</span>`;
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border text-xs font-medium ${color}`}
+    >
+      {label}
+    </span>
+  );
 }
 
 // ============================================================================
@@ -343,6 +353,7 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
     flex: 1.4,
     minWidth: 180,
     cellClass: "powersheet-cell--locked",
+    // TER-1360: Return JSX so contact details render as DOM, not escaped HTML.
     cellRenderer: (params: { data?: InvoiceGridRow; value: string }) => {
       if (!params.data) return params.value ?? "-";
       const { customerEmail, customerPhone, status } = params.data;
@@ -352,7 +363,14 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
       const contact = [customerPhone, customerEmail]
         .filter(Boolean)
         .join(" · ");
-      return `<div class="flex flex-col leading-tight"><span>${params.value}</span><span class="text-[10px] text-muted-foreground truncate">${contact}</span></div>`;
+      return (
+        <div className="flex flex-col leading-tight">
+          <span>{params.value}</span>
+          <span className="text-[10px] text-muted-foreground truncate">
+            {contact}
+          </span>
+        </div>
+      );
     },
   },
   {
@@ -368,10 +386,18 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
     minWidth: 120,
     maxWidth: 140,
     cellClass: "powersheet-cell--locked",
+    // TER-1360: Return JSX so the overdue badge renders as a DOM element.
     cellRenderer: (params: { data?: InvoiceGridRow; value: string }) => {
       if (!params.data) return params.value ?? "-";
       if (params.data.daysOverdue > 0) {
-        return `<span class="text-destructive font-medium">${params.value}</span> <span class="inline-flex items-center px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-xs font-medium ml-1">${params.data.daysOverdue}d</span>`;
+        return (
+          <span>
+            <span className="text-destructive font-medium">{params.value}</span>{" "}
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded bg-destructive/10 text-destructive text-xs font-medium ml-1">
+              {params.data.daysOverdue}d
+            </span>
+          </span>
+        );
       }
       return params.value ?? "-";
     },
@@ -439,6 +465,7 @@ const ledgerColumnDefs: ColDef<LedgerGridRow>[] = [
     minWidth: 120,
     maxWidth: 150,
     cellClass: "powersheet-cell--locked",
+    // TER-1360: Return JSX so the ledger type badge renders as a DOM element.
     cellRenderer: (params: { value: string }) => {
       if (!params.value) return "";
       const cfgMap: Record<string, string> = {
@@ -450,7 +477,13 @@ const ledgerColumnDefs: ColDef<LedgerGridRow>[] = [
       };
       const cls =
         cfgMap[params.value] ?? "bg-gray-100 text-gray-700 border-gray-200";
-      return `<span class="inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${cls}">${params.value}</span>`;
+      return (
+        <span
+          className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${cls}`}
+        >
+          {params.value}
+        </span>
+      );
     },
   },
   {

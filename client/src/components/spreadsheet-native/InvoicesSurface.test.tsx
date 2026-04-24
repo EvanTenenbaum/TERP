@@ -398,7 +398,10 @@ describe("InvoicesSurface", () => {
       }>;
       columnDefs: Array<{
         field?: string;
-        cellRenderer?: (params: { data?: unknown; value: string }) => string;
+        cellRenderer?: (params: {
+          data?: unknown;
+          value: string;
+        }) => ReactNode;
       }>;
     }>;
 
@@ -407,14 +410,24 @@ describe("InvoicesSurface", () => {
     );
     expect(clientColumn?.cellRenderer).toBeDefined();
 
-    const overdueMarkup = clientColumn?.cellRenderer?.({
+    // TER-1360: cellRenderer now returns JSX (React element), not an HTML
+    // string — AG Grid React escapes strings as text nodes. Render the node
+    // and inspect the resulting DOM instead of asserting on string contents.
+    const overdueNode = clientColumn?.cellRenderer?.({
       data: gridProps.rows[0],
       value: gridProps.rows[0]?.clientName,
     });
 
-    expect(overdueMarkup).toContain("Acme Corp");
-    expect(overdueMarkup).toContain("555-0100");
-    expect(overdueMarkup).toContain("billing@acme.test");
+    const { container: overdueContainer, unmount: unmountOverdue } = render(
+      <>{overdueNode as ReactNode}</>
+    );
+    expect(overdueContainer.textContent).toContain("Acme Corp");
+    expect(overdueContainer.textContent).toContain("555-0100");
+    expect(overdueContainer.textContent).toContain("billing@acme.test");
+    // Guardrail: no raw `<span class=` text should leak into the rendered
+    // DOM — that was the exact bug TER-1360 fixes.
+    expect(overdueContainer.textContent ?? "").not.toContain("<span class=");
+    unmountOverdue();
 
     const paidMarkup = clientColumn?.cellRenderer?.({
       data: gridProps.rows[1],
