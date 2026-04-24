@@ -122,6 +122,12 @@ export interface InvoiceGridRow {
   paymentPct: number;
   status: string;
   daysOverdue: number;
+  // TER-1333: True when the invoice is past its due date and still payable
+  // (not PAID/VOID). Used to drive the row-level visual priority (red tint)
+  // on the invoice grid so users can spot delinquent invoices at a glance,
+  // even if the DB `status` column has not yet flipped to 'OVERDUE' via the
+  // `invoices.checkOverdue` mutation.
+  isDelinquent: boolean;
   version: number | null;
   customerEmail: string | null;
   customerPhone: string | null;
@@ -298,8 +304,15 @@ function mapInvoicesToGridRows(
     const amountPaid = Math.min(amountPaidRaw, totalAmountNum).toFixed(2);
 
     const dueDate = item.dueDate ? new Date(item.dueDate) : null;
+    // TER-1333: Compute `daysOverdue` for any payable invoice past its due
+    // date, not only those whose DB status has flipped to 'OVERDUE'. The
+    // `invoices.checkOverdue` mutation can lag, so anchoring the delinquent
+    // signal to the live due-date keeps the grid badges, row highlight, and
+    // Inspector overdue chip consistent with what users see in the world.
+    const isPayable = status !== "PAID" && status !== "VOID";
     const daysOverdue =
-      status === "OVERDUE" && dueDate ? getDaysOverdue(dueDate) : 0;
+      isPayable && dueDate ? getDaysOverdue(dueDate) : 0;
+    const isDelinquent = daysOverdue > 0;
 
     return {
       rowKey: String(item.id),
@@ -318,6 +331,7 @@ function mapInvoicesToGridRows(
       paymentPct: getPaymentProgress(item),
       status,
       daysOverdue,
+      isDelinquent,
       customerEmail: clientObj?.email ?? null,
       customerPhone: clientObj?.phone ?? null,
       version:
@@ -368,8 +382,11 @@ const invoiceColumnDefs: ColDef<InvoiceGridRow>[] = [
     // TER-1360: Return JSX so contact details render as DOM, not escaped HTML.
     cellRenderer: (params: { data?: InvoiceGridRow; value: string }) => {
       if (!params.data) return params.value ?? "-";
-      const { customerEmail, customerPhone, status } = params.data;
-      if (status !== "OVERDUE" || (!customerEmail && !customerPhone)) {
+      const { customerEmail, customerPhone, isDelinquent } = params.data;
+      // TER-1333: Surface contact details for any delinquent invoice, not
+      // only those with DB status flipped to 'OVERDUE'. Matches the row-
+      // level visual priority driven by `isDelinquent`.
+      if (!isDelinquent || (!customerEmail && !customerPhone)) {
         return params.value ?? "-";
       }
       const contact = [customerPhone, customerEmail]
@@ -1481,6 +1498,14 @@ export function InvoicesSurface() {
               enableFillHandle={false}
               enableUndoRedo={false}
               onSelectionSummaryChange={setSelectionSummary}
+              // TER-1333: Paint delinquent invoice rows with a red-tinted
+              // background and destructive left-border accent so users can
+              // spot past-due accounts at a glance while scanning the grid.
+              getRowClass={params =>
+                params.data?.isDelinquent
+                  ? "bg-destructive/5 hover:bg-destructive/10 border-l-2 border-l-destructive"
+                  : undefined
+              }
               isLoading={invoicesQuery.isLoading}
               errorMessage={invoicesQuery.error?.message ?? null}
               emptyTitle="No invoices match"
