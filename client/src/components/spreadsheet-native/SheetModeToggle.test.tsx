@@ -216,6 +216,10 @@ describe("SheetModeToggle", () => {
     });
   });
 
+  // TER-1364: View-mode toggle is not a primary action. The active tab uses
+  // the "secondary" variant (neutral selected state) rather than "default"
+  // (filled primary) so it doesn't compete with the real primary "New Order"
+  // CTA in the Sales workspace header. The inactive tab stays as "outline".
   it("renders a consistent active state for both modes", () => {
     render(
       <SheetModeToggle
@@ -227,7 +231,7 @@ describe("SheetModeToggle", () => {
 
     expect(
       screen.getByRole("tab", { name: "Spreadsheet View" })
-    ).toHaveAttribute("data-variant", "default");
+    ).toHaveAttribute("data-variant", "secondary");
     expect(
       screen.getByRole("tab", { name: "Standard View" })
     ).toHaveAttribute("data-variant", "outline");
