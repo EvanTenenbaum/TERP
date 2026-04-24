@@ -340,6 +340,16 @@ function buildRowKey(entityType: string, id: number): string {
   return `${entityType}:${id}`;
 }
 
+// TER-1339: Format a date-ish value as "YYYY-MM-DD" for <input type="date">.
+function toDateInputValue(
+  value: Date | string | null | undefined
+): string {
+  if (!value || value === "") return "";
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().slice(0, 10);
+}
+
 function hasExpectedDeliveryDate(
   value: Date | string | null | undefined
 ): boolean {
@@ -1775,6 +1785,21 @@ function PurchaseOrderQueueMode({
     },
   });
 
+  // TER-1339: Inline update for expectedDeliveryDate on the receiving tab.
+  const updatePO = trpc.purchaseOrders.update.useMutation({
+    onSuccess: () => {
+      notifyToast("success", "Purchase order updated");
+      void posQuery.refetch();
+      void detailQuery.refetch();
+    },
+    onError: error => {
+      notifyToast(
+        "error",
+        error.message || "Failed to update purchase order"
+      );
+    },
+  });
+
   // ---------------------------------------------------------------------------
   // Handlers
   // ---------------------------------------------------------------------------
@@ -2540,12 +2565,33 @@ function PurchaseOrderQueueMode({
                 </p>
               </InspectorField>
               <InspectorField label="Expected Delivery">
-                <p>
-                  {getExpectedDeliveryLabel(
-                    selectedRow.expectedDeliveryDate,
-                    selectedRow.status
-                  )}
-                </p>
+                {/* TER-1339: inline editor so users can set the expected
+                    delivery date directly from the Receiving tab — the
+                    column no longer requires the Classic Surface. */}
+                <div className="space-y-1">
+                  <Input
+                    type="date"
+                    className="h-8 text-xs"
+                    aria-label="Expected delivery date"
+                    value={toDateInputValue(selectedRow.expectedDeliveryDate)}
+                    disabled={updatePO.isPending}
+                    onChange={e => {
+                      const next = e.target.value;
+                      updatePO.mutate({
+                        id: selectedRow.poId,
+                        expectedDeliveryDate: next
+                          ? new Date(`${next}T00:00:00`).toISOString()
+                          : null,
+                      });
+                    }}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {getExpectedDeliveryLabel(
+                      selectedRow.expectedDeliveryDate,
+                      selectedRow.status
+                    )}
+                  </p>
+                </div>
               </InspectorField>
               <InspectorField label="Payment Terms">
                 <p>{getPaymentTermLabel(selectedRow.paymentTerms)}</p>
