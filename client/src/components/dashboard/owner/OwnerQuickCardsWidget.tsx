@@ -10,28 +10,40 @@ import { useLocation } from "wouter";
 
 export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
   const [, setLocation] = useLocation();
+  const snapshotQuery = trpc.dashboard.getTransactionSnapshot.useQuery(
+    undefined,
+    {
+      refetchInterval: 60000,
+    }
+  );
   const {
     data: snapshot,
     isLoading: isSnapshotLoading,
     error: snapshotError,
-  } = trpc.dashboard.getTransactionSnapshot.useQuery(undefined, {
-    refetchInterval: 60000,
-  });
-  const {
-    data: inboxData,
-    isLoading: isInboxLoading,
-    error: inboxError,
-  } = trpc.inbox.getMyItems.useQuery(
+  } = snapshotQuery;
+  const inboxQuery = trpc.inbox.getMyItems.useQuery(
     { includeArchived: false, limit: 3, offset: 0 },
     { refetchInterval: 60000 }
   );
   const {
+    data: inboxData,
+    isLoading: isInboxLoading,
+    error: inboxError,
+  } = inboxQuery;
+  const inboxStatsQuery = trpc.inbox.getStats.useQuery(undefined, {
+    refetchInterval: 60000,
+  });
+  const {
     data: inboxStats,
     isLoading: isInboxStatsLoading,
     error: inboxStatsError,
-  } = trpc.inbox.getStats.useQuery(undefined, {
-    refetchInterval: 60000,
-  });
+  } = inboxStatsQuery;
+
+  const handleRetry = () => {
+    void snapshotQuery.refetch();
+    void inboxQuery.refetch();
+    void inboxStatsQuery.refetch();
+  };
 
   const isLoading = isSnapshotLoading || isInboxLoading || isInboxStatsLoading;
   const error = snapshotError || inboxError || inboxStatsError;
@@ -58,6 +70,7 @@ export const OwnerQuickCardsWidget = memo(function OwnerQuickCardsWidget() {
             size="sm"
             title="Unable to load daily snapshot"
             description="Transaction or inbox data could not be loaded"
+            action={{ label: "Retry", onClick: handleRetry }}
           />
         </CardContent>
       </Card>

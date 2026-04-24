@@ -1845,7 +1845,7 @@ export function OrdersWorkSurface({
         className="px-6 py-4"
         actions={
           <>
-            {SaveStateIndicator}
+            <FreshnessBadge queryResult={draftOrdersQuery} cadence="live" />
             <div className="text-sm text-muted-foreground flex gap-4">
               <span>
                 Drafts:{" "}

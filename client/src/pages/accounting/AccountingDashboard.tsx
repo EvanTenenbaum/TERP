@@ -39,6 +39,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate } from "@/lib/dateFormat";
 import { formatInvoiceNumberForDisplay } from "@/lib/invoiceNumber";
 import { usePermissions } from "@/hooks/usePermissions";
+import { FreshnessBadge } from "@/components/ui/freshness-badge";
 
 const OVERDUE_ALERT_THRESHOLD = 25;
 
@@ -130,11 +131,14 @@ export default function AccountingDashboard({
 
   // Wave 5C: New AR/AP Dashboard endpoints
   // BUG-092 fix: Add error/loading tracking
-  const { data: arSummary } =
-    trpc.accounting.arApDashboard.getARSummary.useQuery(undefined, {
+  const arSummaryQuery = trpc.accounting.arApDashboard.getARSummary.useQuery(
+    undefined,
+    {
       retry: 2,
       retryDelay: 1000,
-    });
+    }
+  );
+  const { data: arSummary } = arSummaryQuery;
   const { data: apSummary } =
     trpc.accounting.arApDashboard.getAPSummary.useQuery(undefined, {
       retry: 2,
@@ -192,12 +196,18 @@ export default function AccountingDashboard({
         <CardContent className="space-y-4 p-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1.5">
-              <Badge
-                variant="outline"
-                className="w-fit border-slate-300 bg-white/80 text-slate-700"
-              >
-                Finance control center
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="w-fit border-slate-300 bg-white/80 text-slate-700"
+                >
+                  Finance control center
+                </Badge>
+                <FreshnessBadge
+                  queryResult={arSummaryQuery}
+                  cadence="live"
+                />
+              </div>
               <div className="space-y-1">
                 <h1 className="text-xl font-semibold tracking-tight">
                   Accounting Dashboard

@@ -1027,7 +1027,7 @@ export function ClientsWorkSurface() {
         className="px-6 py-4"
         actions={
           <>
-            {SaveStateIndicator}
+            <FreshnessBadge queryResult={clientsQuery} cadence="live" />
             <div className="text-sm text-muted-foreground flex gap-4">
               <span>
                 Total:{" "}
