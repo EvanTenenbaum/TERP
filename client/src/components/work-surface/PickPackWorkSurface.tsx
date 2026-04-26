@@ -1230,30 +1230,55 @@ export function PickPackWorkSurface() {
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
-            <div className="text-center p-2 bg-[var(--warning-bg)] rounded-lg">
-              <div className="text-lg font-bold text-[var(--warning)]">
-                {statusCounts.pending}
-              </div>
-              <div className="text-xs text-[var(--warning)]">Pending</div>
-            </div>
-            <div className="text-center p-2 bg-[var(--info-bg)] rounded-lg">
-              <div className="text-lg font-bold text-[var(--info)]">
-                {statusCounts.partial}
-              </div>
-              <div className="text-xs text-[var(--info)]">Partial</div>
-            </div>
-            <div className="text-center p-2 bg-[var(--success-bg)] rounded-lg">
-              <div className="text-lg font-bold text-[var(--success)]">
-                {statusCounts.ready}
-              </div>
-              <div className="text-xs text-[var(--success)]">Ready</div>
-            </div>
-            <div className="text-center p-2 bg-slate-50 rounded-lg">
-              <div className="text-lg font-bold text-slate-600">
-                {statusCounts.shipped}
-              </div>
-              <div className="text-xs text-slate-700">Shipped</div>
-            </div>
+            {(
+              [
+                {
+                  status: "PENDING",
+                  count: statusCounts.pending,
+                  label: "Pending",
+                  bgClass: "bg-[var(--warning-bg)]",
+                  textClass: "text-[var(--warning)]",
+                },
+                {
+                  status: "PARTIAL",
+                  count: statusCounts.partial,
+                  label: "Partial",
+                  bgClass: "bg-[var(--info-bg)]",
+                  textClass: "text-[var(--info)]",
+                },
+                {
+                  status: "READY",
+                  count: statusCounts.ready,
+                  label: "Ready",
+                  bgClass: "bg-[var(--success-bg)]",
+                  textClass: "text-[var(--success)]",
+                },
+                {
+                  status: "SHIPPED",
+                  count: statusCounts.shipped,
+                  label: "Shipped",
+                  bgClass: "bg-slate-50",
+                  textClass: "text-slate-600",
+                },
+              ] as const
+            ).map(({ status, count, label, bgClass, textClass }) => (
+              <button
+                key={status}
+                type="button"
+                onClick={() =>
+                  setStatusFilter(prev => (prev === status ? "ALL" : status))
+                }
+                className={`text-center p-2 rounded-lg transition-opacity cursor-pointer hover:opacity-80 ${bgClass} ${
+                  statusFilter === status
+                    ? "ring-2 ring-offset-1 ring-current"
+                    : ""
+                }`}
+                title={`Filter by ${label} (click again to clear)`}
+              >
+                <div className={`text-lg font-bold ${textClass}`}>{count}</div>
+                <div className={`text-xs ${textClass}`}>{label}</div>
+              </button>
+            ))}
           </div>
 
           {/* Search & Filter */}
