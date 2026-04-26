@@ -75,11 +75,13 @@ type PickPackSortKey =
   | "client_asc"
   | "client_desc"
   | "order_asc"
-  | "order_desc";
+  | "order_desc"
+  | "status";
 const PICK_PACK_SORT_OPTIONS: Array<{
   value: PickPackSortKey;
   label: string;
 }> = [
+  { value: "status", label: "Status (Ready first)" },
   { value: "newest", label: "Newest" },
   { value: "oldest", label: "Oldest" },
   { value: "client_asc", label: "Client A-Z" },
@@ -572,7 +574,7 @@ export function PickPackWorkSurface() {
     "ALL"
   );
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortKey, setSortKey] = useState<PickPackSortKey>("newest");
+  const [sortKey, setSortKey] = useState<PickPackSortKey>("status");
   const [focusedOrderIndex, setFocusedOrderIndex] = useState(0);
   const [focusedItemIndex, setFocusedItemIndex] = useState(0);
   const [focusZone, setFocusZone] = useState<"list" | "items">("list");
@@ -667,6 +669,19 @@ export function PickPackWorkSurface() {
           return orderA.localeCompare(orderB);
         case "order_desc":
           return orderB.localeCompare(orderA);
+        case "status": {
+          const statusOrder: Record<PickPackStatus, number> = {
+            READY: 0,
+            PARTIAL: 1,
+            PENDING: 2,
+            SHIPPED: 3,
+          };
+          const statusA = statusOrder[a.pickPackStatus] ?? 99;
+          const statusB = statusOrder[b.pickPackStatus] ?? 99;
+          if (statusA !== statusB) return statusA - statusB;
+          // Secondary sort: newest within same status
+          return createdB - createdA;
+        }
         case "newest":
         default:
           return createdB - createdA;
@@ -677,12 +692,12 @@ export function PickPackWorkSurface() {
   const hasActiveFilters =
     statusFilter !== "ALL" ||
     searchQuery.trim().length > 0 ||
-    sortKey !== "newest";
+    sortKey !== "status";
 
   const resetQueueView = useCallback(() => {
     setStatusFilter("ALL");
     setSearchQuery("");
-    setSortKey("newest");
+    setSortKey("status");
     setFocusedOrderIndex(0);
     setFocusZone("list");
     window.requestAnimationFrame(() => {
