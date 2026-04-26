@@ -280,7 +280,7 @@ export default function SampleManagement({
         const productSummary = products
           .map(
             product =>
-              `Product #${product.productId} (${product.quantity || "1"})`
+              `Product #${product.productId} (qty: ${product.quantity || "1"})`
           )
           .join(", ");
 
