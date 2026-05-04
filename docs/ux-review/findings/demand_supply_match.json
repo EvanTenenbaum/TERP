@@ -1,0 +1,93 @@
+{
+  "page": "MatchmakingServicePage",
+  "route": "/demand-supply?tab=matchmaking",
+  "assessment": "The page tries to do three jobs at once \u2014 summarize KPIs, browse needs/supply, and surface suggested matches \u2014 and ends up wasting the viewport on redundancy. The four KPI cards restate the exact counts already shown in the column headers (Active Needs 0 / Client Needs (0), Available Supply 12 / Supplier Supply (12), Suggested Matches 0/0), so the top third of the screen adds no information. The matching workflow itself is under-supported: there is no visible 'compute matches' action, no last-updated timestamp, no way to dismiss or override a match per the baseline, and the two empty columns are dead-end 'No X found' states with no CTA despite the fact that Add Need/Add Supply live 300px away at the top. Two right-aligned links ('Open Matchmaking', 'Jump to Supplier Supply') duplicate the tab navigation and muddy the mental model. The supplier cards themselves are reasonably scannable, but 'Urgent Needs 0' rendered in red is semantically wrong and 'Supplier: Unknown supplier' is a data leak the UI should absorb.",
+  "notable_strengths": [
+    "Supplier supply cards pack strain, category, grade, weight and price into one compact, scannable block with clear Available status.",
+    "Primary action hierarchy on the header is correct: Add Need is the filled/primary button reflecting the page's supply-heavy, needs-starved state.",
+    "Search + Active/Priority filters and the four-tab structure give a single predictable entry point for the whole Demand & Supply surface."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "MatchmakingServicePage",
+      "severity": "P1",
+      "title": "KPI strip duplicates the column headers directly below it",
+      "what_is_wrong": "The four cards 'Active Needs 0 / 0 with matches', 'Available Supply 12 / 0 with buyers', 'Suggested Matches 0 / 0 high confidence', 'Urgent Needs 0' repeat the counts already shown in 'Client Needs (0)', 'Supplier Supply (12)', 'Suggested Matches (0)' sitting one row below. The KPI row consumes ~120px of prime viewport without adding new data.",
+      "why_it_matters": "Users have to scan the same three numbers twice before they reach the actual content. On a 0-needs / 12-supply state like this, the entire KPI strip is noise and pushes the first Supplier card below the fold on short laptops.",
+      "proposed_fix": "Collapse the KPI strip into the column headers: 'Client Needs \u00b7 0 total \u00b7 0 matched', 'Supplier Supply \u00b7 12 total \u00b7 0 with buyers', 'Suggested Matches \u00b7 0 \u00b7 0 high-confidence'. Move 'Urgent Needs' into a small amber/red pill on the Client Needs header only when the count is >0. Reclaim the vertical space for a fourth row of supply cards.",
+      "functionality_preserved": "All four metrics (Active Needs, Available Supply, Suggested Matches, Urgent Needs) remain visible as inline counters on each column header; no counter is removed and the underlying `matching.*`, `clientNeeds.*`, `vendorSupply.*` queries are unchanged."
+    },
+    {
+      "id": "UX-2",
+      "surface": "MatchmakingServicePage",
+      "severity": "P1",
+      "title": "No 'Compute/Update Matches' control surfaces the core action of the page",
+      "what_is_wrong": "The baseline explicitly lists 'compute/update matches' and 'override match' / 'dismiss' as page actions, but the only buttons visible are Add Need, Add Supply, View Buyers, and Reserve. There is no trigger, status, or last-run timestamp for the matching engine itself.",
+      "why_it_matters": "The page is literally called Matchmaking Service yet a user cannot tell whether the empty 'Suggested Matches (0)' column reflects reality, a stale run, or a never-run engine. With 12 supply rows and 0 needs, the zero may be legitimate \u2014 but the user has no way to verify, and match review/override workflows are unreachable.",
+      "proposed_fix": "Add a 'Recompute matches' split-button in the Suggested Matches column header with a subtitle like 'Last run 4m ago \u00b7 12 supply \u00d7 0 needs evaluated'. When matches exist, each match row exposes a kebab with Override and Dismiss, mapping 1:1 to the baseline actions.",
+      "functionality_preserved": "Directly exposes the `matching.compute`/`matching.update`, override, and dismiss routes named in the baseline; no existing action is removed, only surfaced."
+    },
+    {
+      "id": "UX-3",
+      "surface": "MatchmakingServicePage",
+      "severity": "P1",
+      "title": "Empty Client Needs and Suggested Matches columns are dead-ends",
+      "what_is_wrong": "Both 'Client Needs (0)' and 'Suggested Matches (0)' render only the text 'No client needs found' / 'No matches found'. There is no in-column CTA, no explanation of what unblocks matches (needs must exist first), and no link to the 'Add Need' button 300px above.",
+      "why_it_matters": "A first-time user staring at two empty columns has no idea that Suggested Matches will stay at 0 until they add Client Needs, nor that Add Need is the unblocker. The page reads as broken rather than unpopulated.",
+      "proposed_fix": "In the Client Needs empty state: headline 'No active client needs', body 'Add a client need to start matching against your 12 available supply lots.', with a filled 'Add Need' button right there. In the Suggested Matches empty state: 'Matches appear here once you have at least one active client need' with a secondary link 'Add a need \u2192' that scrolls/focuses the Client Needs column.",
+      "functionality_preserved": "Reuses the same `clientNeeds.create` flow already bound to the top 'Add Need' button; no new behavior, just a second entry point."
+    },
+    {
+      "id": "UX-4",
+      "surface": "MatchmakingServicePage",
+      "severity": "P2",
+      "title": "'Urgent Needs 0' is rendered in red",
+      "what_is_wrong": "The fourth KPI card shows the label 'Urgent Needs', value '0', and subtitle 'Requires immediate attention' \u2014 all colored red \u2014 even though zero urgent needs is the healthy state.",
+      "why_it_matters": "Red is the page's strongest attention signal. Using it for a neutral/positive state trains users to ignore it, which means an actual urgent count of 3 will not register when it matters.",
+      "proposed_fix": "Color the Urgent Needs number red only when count > 0; render 0 in the same neutral ink as the other cards and drop the 'Requires immediate attention' subtitle to 'All clear' when 0. Assuming UX-1 is adopted, fold this into an amber/red pill on the Client Needs header that only appears above zero.",
+      "functionality_preserved": "The Urgent Needs metric (derived from `clientNeeds` priority field) is still displayed; only its visual treatment becomes state-sensitive."
+    },
+    {
+      "id": "UX-5",
+      "surface": "MatchmakingServicePage",
+      "severity": "P2",
+      "title": "'Open Matchmaking' and 'Jump to Supplier Supply' duplicate the tab bar",
+      "what_is_wrong": "Directly to the right of the tabs 'Matchmaking | Client Needs | Interest List | Supplier Supply' sit two buttons: 'Open Matchmaking' (while the Matchmaking tab is already active) and 'Jump to Supplier Supply' (which appears to duplicate the tab).",
+      "why_it_matters": "Two navigation systems in the same row create decision friction and make users hesitant to click either \u2014 especially 'Open Matchmaking' which is unreachable logic from the user's current state. It also burns header real estate that could hold the recompute/status affordance.",
+      "proposed_fix": "Remove the buttons from the tab row and relocate their targets: if 'Open Matchmaking' opens a full-screen matchmaking workspace distinct from this tab, rename it to 'Open full workspace' and move it to the Suggested Matches column header; if 'Jump to Supplier Supply' deep-links into the supplier catalogue, rename to 'View full catalogue \u2192' and place it inline on the Supplier Supply column header.",
+      "functionality_preserved": "Both navigation targets remain reachable \u2014 the links are relocated and relabeled, not removed \u2014 and the underlying route handlers (tab switch + full-workspace entry) are untouched."
+    },
+    {
+      "id": "UX-6",
+      "surface": "MatchmakingServicePage",
+      "severity": "P2",
+      "title": "Reserve button's muted-tan fill is ambiguous",
+      "what_is_wrong": "On each supplier card, 'View Buyers' is rendered as a standard outlined button and 'Reserve' is a filled pale-tan pill that reads as neither primary nor secondary \u2014 lighter than the Add Need orange, darker than a ghost button.",
+      "why_it_matters": "Reserve is the commit action that turns supply into a draft order \u2014 per the baseline, this is how matches become orders. Making it visually weaker than the header's Add Need button inverts the local hierarchy and users will miss it.",
+      "proposed_fix": "Apply the same filled primary treatment used for Add Need to Reserve, and demote View Buyers to a ghost/text link. Alternatively, if Reserve is destructive-adjacent (locks inventory), keep the tan but add an explicit secondary-action outline and a tooltip 'Hold 45.6100 lbs for up to 24h'.",
+      "functionality_preserved": "The `vendorSupply.reserve` mutation and the View Buyers drill-in both remain; only their visual weight is corrected."
+    },
+    {
+      "id": "UX-7",
+      "surface": "MatchmakingServicePage",
+      "severity": "P2",
+      "title": "'Supplier: Unknown supplier' leaks a null-state into the UI",
+      "what_is_wrong": "Both visible supplier cards (Blue Dream, Wedding Cake) render the literal string 'Supplier: Unknown supplier'. This is the raw fallback when the vendor relation is missing.",
+      "why_it_matters": "On a matchmaking page, supplier identity is a first-class decision input \u2014 'who am I buying from' drives trust, pricing, and lead time. Surfacing the raw null fallback tells the user the system does not know, with no path to fix it.",
+      "proposed_fix": "Replace the string with a subtle amber badge 'Supplier not linked' plus a 'Link supplier' inline action that opens the vendor picker against the existing `vendorSupply.update` route. Rows with a known supplier render normally.",
+      "functionality_preserved": "Uses `vendorSupply.*` update to attach a supplier \u2014 no schema change \u2014 and keeps rows visible rather than filtering them out."
+    },
+    {
+      "id": "UX-8",
+      "surface": "MatchmakingServicePage",
+      "severity": "P2",
+      "title": "Search and Active/All Priorities filter scope is not declared",
+      "what_is_wrong": "A single search box ('Search strain, category, client, supplier\u2026') and two selects ('Active', 'All Priorities') sit above three columns, but there is no visual indication of which column each filter affects. 'All Priorities' is a client-need concept; 'Active' could be status for either need or supply.",
+      "why_it_matters": "Users either narrow one column and are confused why another still shows full counts, or assume filters are global and get unexpected results. With the page's three-column intent, filter scope is load-bearing.",
+      "proposed_fix": "Label the filter row 'Filter across all panels' and reflect the active filter as a chip on each column header ('Priority: All', 'Status: Active'). When a filter only applies to a subset (Priority \u2192 needs only), show the chip only on the affected column. Keep the same selects, just bind their effect visibly.",
+      "functionality_preserved": "The existing filter state bound to `clientNeeds.list` / `vendorSupply.list` queries is unchanged; this is label and chip presentation only."
+    }
+  ],
+  "redesign_sketch": "Header unchanged: 'Demand & Supply' breadcrumb, tabs (Matchmaking | Client Needs | Interest List | Supplier Supply) \u2014 with the two orphan buttons removed from the tab row. Below the tabs, a single row: page title 'Matchmaking Service' with one-line subtitle on the left; 'Add Need' (primary) and 'Add Supply' (secondary) on the right. Next row: full-width search, then filter chips (Status: Active, Priority: All) that echo into each column header. Delete the four-card KPI strip entirely; its counts move inline into the column headers. Three-column workspace below: (1) 'Client Needs \u00b7 0 total \u00b7 0 matched' with empty-state headline 'No active client needs', body copy pointing to the matching engine dependency, and an in-column 'Add Need' button; urgent count renders as an amber pill only when >0. (2) 'Supplier Supply \u00b7 12 \u00b7 0 with buyers' with a right-aligned 'View full catalogue \u2192' link and the existing card list; Reserve gets primary-filled treatment, View Buyers becomes a text link, missing suppliers show an amber 'Supplier not linked \u00b7 Link' inline action. (3) 'Suggested Matches \u00b7 0 \u00b7 0 high-confidence' with a header-level 'Recompute matches' split-button showing 'Last run 4m ago'; empty state reads 'Matches appear once you have at least one active client need' with a secondary link that focuses column 1. Each future match row carries a score badge and a kebab exposing Override and Dismiss per the baseline. Net effect: one screen, zero redundant counters, every baseline action (add need, add supply, compute/update, open order, override, dismiss) reachable within one click from where the user is already looking."
+}

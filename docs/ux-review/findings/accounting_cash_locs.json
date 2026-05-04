@@ -1,0 +1,43 @@
+{
+  "page": "CashLocations",
+  "route": "/accounting/cash-locations",
+  "assessment": "The page is functional but squanders its most valuable real estate. Three large KPI cards dominate the viewport showing zeros and a dead 'Select Location' placeholder, pushing the actual locations table below the fold. The empty state is a single sentence with no call-to-action despite 'New Location' being the whole point of an empty account. Transfer is prominently displayed as a top action even though transferring between zero locations is impossible, and Ledger/Shift tabs are visible with no indication they require a location selection first. Hierarchy, defaulting, and empty-state guidance are all weak.",
+  "notable_strengths": [
+    "Clear breadcrumb and 'Back to Accounting' affordance orient the user inside the Accounting section.",
+    "Tab structure (Locations / Ledger / Shift) cleanly maps to the three baseline content areas.",
+    "Primary 'New Location' CTA uses the correct accent treatment and is immediately discoverable."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "CashLocations",
+      "severity": "P1",
+      "title": "Empty state is a dead-end sentence, not a guided first action",
+      "what_is_wrong": "With zero locations, the table body shows only the line 'No cash locations found. Create your first location to get started.' \u2014 no inline button, no illustration, no example. The user must scroll their eye back up to the top-right 'New Location' button.",
+      "why_it_matters": "First-run is the single most predictable state for a fresh tenant, and the page offers no scaffolding. New admins hunting for the CTA slows MEET-002 setup and erodes trust that the module is ready.",
+      "proposed_fix": "Replace the empty-row text with a centered empty state that includes a primary '+ New Location' button, a one-line example ('e.g. Front Counter, Warehouse Safe'), and a secondary link to docs. Keep the top-right 'New Location' button for consistency once rows exist.",
+      "functionality_preserved": "Uses the existing Create location action from `cashAudit.*`; the fix only adds a second entry point to the same mutation, no behavior removed."
+    },
+    {
+      "id": "UX-2",
+      "surface": "CashLocations",
+      "severity": "P2",
+      "title": "'Select Location' KPI card is a placeholder, not a metric",
+      "what_is_wrong": "The third stat card reads 'Select Location' with a '-' value and the helper 'Click a location to view details'. It occupies a third of the KPI row but displays no data and is not actionable as a card.",
+      "why_it_matters": "A KPI slot that says 'click something else' wastes the most scannable area of the page and visually balances against two real KPIs (Total Locations, Total Cash Balance), misleading users into thinking it's a number.",
+      "proposed_fix": "Collapse the KPI row to two cards (Total Locations, Total Cash Balance) and move the selected-location detail into a right-hand side panel or an inline expanded row triggered by selecting a row in the table. Add a third KPI later for 'Negative Balance Alerts' per the baseline's alerts requirement.",
+      "functionality_preserved": "The per-location detail view driven by `cashAudit.*` selection is retained \u2014 only its surface changes from a KPI tile to a selection-bound panel; no route or data call is removed."
+    },
+    {
+      "id": "UX-3",
+      "surface": "CashLocations",
+      "severity": "P2",
+      "title": "Transfer button active with zero locations and no disabled reasoning",
+      "what_is_wrong": "The 'Transfer' button in the top-right is fully enabled even though there are zero locations, so a transfer between two accounts is logically impossible. Clicking it will either error or open a modal with empty dropdowns.",
+      "why_it_matters": "Enabled-but-useless buttons create micro dead-ends and train users to distrust button states, particularly harmful in a finance module where mis-clicks have audit consequences.",
+      "proposed_fix": "Disable 'Transfer' whenever `totalLocations < 2` and attach a tooltip: 'Create at least two locations to transfer cash.' Keep the button visible so the capability remains discoverable.",
+      "functionality_preserved": "Transfer action from `cashAudit.*` is untouched; fix only adds a client-side guard based on the existing Total Locations value."
+    }
+  ],
+  "redesign_sketch": "Header row unchanged: breadcrumb, 'Back to Accounting', H1 'Cash Locations' with subcopy, and right-aligned actions ['Transfer' (disabled until \u22652 locations), '+ New Location']. KPI row reduced to two equal cards: 'Total Locations' and 'Total Cash Balance'; a third slot is reserved for 'Alerts' (negative balance / missing audits count) per the baseline. Below KPIs, keep the Locations / Ledger / Shift tab bar, but gray out Ledger and Shift until a row is selected with helper text 'Select a location to view its ledger'. The Locations tab renders a single panel: when empty, a centered empty state ('No cash locations yet. Create one to start tracking deposits, withdrawals, and shifts.' + primary '+ New Location' button + example names). When populated, the table gets columns Name | Current Balance (right-aligned monospace) | Status (pill) | Last Updated (relative time) | Actions (kebab: Edit, Deposit, Withdraw, Toggle Active, Download Audit Log). Selecting a row slides in a right-hand detail drawer with balance, today's shift status, and quick deposit/withdraw \u2014 this replaces the dead 'Select Location' KPI card."
+}

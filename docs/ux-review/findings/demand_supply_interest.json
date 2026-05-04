@@ -1,0 +1,43 @@
+{
+  "page": "InterestListPage",
+  "route": "/demand-supply?tab=interest-list",
+  "assessment": "The page has a clear tab structure and reasonable empty state, but it wastes the entire above-the-fold on four stat cards that all read zero, pushing the primary action (Add Interest Item) and the empty table below the fold. The KPI row duplicates information already visible in the empty state, and the two cross-navigation buttons (Open Matchmaking, Jump to Supplier Supply) compete visually with Export and Add Interest despite being secondary. Filter defaults are sensible, but the 'Status: Active' chip plus the 'Active' dropdown is redundant.",
+  "notable_strengths": [
+    "Tab bar makes the four Demand & Supply surfaces (Matchmaking, Client Needs, Interest List, Supplier Supply) easy to pivot between.",
+    "Empty state clearly explains purpose and offers a direct CTA to add the first interest item.",
+    "Filter row exposes priority, status, sort, and a clear-all in a single compact line."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "InterestListPage",
+      "severity": "P1",
+      "title": "Four zero-value KPI cards dominate the fold",
+      "what_is_wrong": "Active Interests, Urgent Priority, Available Matches, and Conversion Rate each occupy a full card rendering '0' or '0%', consuming roughly 180px of vertical real estate before the user reaches the filters or the 'Add Interest Item' CTA in the empty state.",
+      "why_it_matters": "On an empty or near-empty list, the user has to scroll past meaningless zeros to reach the primary action; on a populated list these four metrics are low-signal compared to seeing actual interest rows.",
+      "proposed_fix": "Collapse the four cards into a single inline stat strip above the filter row (e.g. '0 active \u00b7 0 urgent \u00b7 0 matches \u00b7 0% conversion') and reclaim the vertical space for the table. Keep the trending/top-products stats from the baseline behind a 'Stats' disclosure or side panel.",
+      "functionality_preserved": "The baseline 'stats (top products, trending categories)' feature stays \u2014 metrics are still computed from `clientNeeds.*` and displayed, just in a denser inline layout instead of four hero cards."
+    },
+    {
+      "id": "UX-2",
+      "surface": "InterestListPage",
+      "severity": "P2",
+      "title": "Redundant status filter chip duplicates the Active dropdown",
+      "what_is_wrong": "The filter row shows an 'Active' dropdown and immediately below it a 'Status: Active \u2715' chip representing the same value, with '0 items' sitting far to the right.",
+      "why_it_matters": "Users see the same constraint expressed twice and wonder if clearing one clears the other; the chip row also pushes the item count away from where users expect it.",
+      "proposed_fix": "Only render the chip row when a filter deviates from its default, or only render the dropdown \u2014 not both. Move the '0 items' count immediately adjacent to the 'Interest Items' heading so list size reads with the list, not with the filters.",
+      "functionality_preserved": "Priority/status/sort filters and 'Clear all' still operate against `clientNeeds.*` queries; only the visual duplication is removed."
+    },
+    {
+      "id": "UX-3",
+      "surface": "InterestListPage",
+      "severity": "P2",
+      "title": "Cross-tab jumps styled as primary buttons compete with page actions",
+      "what_is_wrong": "'Open Matchmaking' and 'Jump to Supplier Supply' sit at the top-right of the page header with the same weight as 'Export' and 'Add Interest', but they just re-enter tabs already visible in the tab bar immediately below.",
+      "why_it_matters": "The eye lands on four equally-weighted buttons and cannot tell which is the primary action for this page. 'Add Interest' should be unambiguously the hero.",
+      "proposed_fix": "Demote the two jump buttons to subtle text links or move them into an overflow menu. Keep 'Add Interest' as the only filled/primary button, with 'Export' as a secondary outline button beside it.",
+      "functionality_preserved": "The navigation targets still exist via the tab bar (`Matchmaking`, `Supplier Supply`) and the demoted links, so the baseline cross-surface navigation is untouched."
+    }
+  ],
+  "redesign_sketch": "Header row: 'Interest List' H1 with subtitle, right-aligned actions limited to [Export] (outline) and [+ Add Interest] (primary); 'Open Matchmaking' and 'Jump to Supplier Supply' become small text links under the subtitle. Below header: a single-line stat strip ('0 active \u00b7 0 urgent \u00b7 0 matches \u00b7 0% conversion \u00b7 top products \u25be') replacing the four KPI cards. Below that: one filter row containing search, priority, status, sort, and clear-all, with the item count ('0 items') moved onto the 'Interest Items (0)' section header. The table/empty state fills the rest of the viewport; empty state keeps its illustration, 'No interest items' copy, and the 'Add Interest Item' button now visible without scrolling."
+}

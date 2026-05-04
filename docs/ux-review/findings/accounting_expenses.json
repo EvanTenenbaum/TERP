@@ -1,0 +1,43 @@
+{
+  "page": "Expenses",
+  "route": "/accounting?tab=expenses",
+  "assessment": "The Expenses tab loads into a spreadsheet grid that is entirely empty with no obvious path to create the first expense beyond a small '+ Add Row' button aligned right. The summary chips ($0.00 total \u00b7 0 entries \u00b7 0 pending reimbursement) are useful but visually compete with the page title. Category CRUD and category-breakdown cards promised by the baseline are nowhere visible on the empty state, so the user has no way to set up categories before adding expenses. Keyboard hints are helpful but occupy disproportionate screen real estate relative to the one action (Add Row) a new user actually needs.",
+  "notable_strengths": [
+    "Summary chips surface total, entry count, and pending reimbursement inline with the section title \u2014 fast scan for finance users.",
+    "Keyboard hint panel teaches spreadsheet interactions explicitly, which matches the grid paradigm.",
+    "Filter controls (All Categories, Reimbursable only) are placed directly above the grid where expected."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "Expenses",
+      "severity": "P1",
+      "title": "Empty state doesn't guide first expense creation",
+      "what_is_wrong": "The grid shows a generic file icon with 'No expenses \u2014 No expenses match your filters' even when there are zero expenses total (0 entries, 0 total). The only CTA is a small '+ Add Row' button in the toolbar corner; there's no primary action inside the empty canvas.",
+      "why_it_matters": "A first-time user on an empty ledger has to hunt the toolbar to discover how to create an expense, and the 'match your filters' copy is misleading when no filters are applied.",
+      "proposed_fix": "Conditional empty state: when total entries = 0, show 'No expenses yet. Add your first expense to start tracking reimbursables and category spend.' with a prominent 'Add Expense' button (same handler as + Add Row) and a secondary 'Manage Categories' link. Keep the current 'No expenses match your filters' copy only when a filter is active.",
+      "functionality_preserved": "Reuses the existing + Add Row action and category CRUD entry points from the baseline \u2014 only the empty-state copy and CTA placement change."
+    },
+    {
+      "id": "UX-2",
+      "surface": "Expenses",
+      "severity": "P2",
+      "title": "Category-breakdown cards and category CRUD are not discoverable",
+      "what_is_wrong": "Baseline lists 'category-breakdown cards' and 'category CRUD' as features, but the rendered page shows only a flat 'All Categories' dropdown filter and no way to create/edit categories or view spend-by-category.",
+      "why_it_matters": "Users cannot set up the category taxonomy they need before entering expenses, and lose the per-category spend signal that's the primary reason to track expenses at all.",
+      "proposed_fix": "Add a collapsible 'Categories' strip above the grid with breakdown cards (category name, total, count, reimbursable badge) and an overflow menu on each card for Rename/Archive. Add a 'Manage categories' button next to the 'All Categories' filter dropdown that opens the existing category CRUD.",
+      "functionality_preserved": "Surfaces the baseline's category CRUD and category-breakdown-cards features without altering their data model or tRPC contracts."
+    },
+    {
+      "id": "UX-3",
+      "surface": "Expenses",
+      "severity": "P3",
+      "title": "Keyboard hint panel dominates the empty viewport",
+      "what_is_wrong": "The six keyboard shortcuts (Click, Double-click, Ctrl+C, Ctrl+V, Ctrl+Z, Escape) render as a large pill cluster bottom-right, taking more visual weight than the primary Add Row CTA.",
+      "why_it_matters": "On an empty page this pushes the user's attention away from the one action they need; on a populated page it consumes row space unnecessarily.",
+      "proposed_fix": "Collapse the hints into a single '?' icon (or 'Shortcuts' link) that reveals the panel on hover/click, and suppress it entirely when the grid is empty. Preserve all six shortcut labels inside the expanded popover.",
+      "functionality_preserved": "No shortcut is removed; behaviors (select, edit, copy, paste, undo, cancel) remain globally bound \u2014 only the hint chrome is collapsed."
+    }
+  ],
+  "redesign_sketch": "Heading row: 'Expenses' H2 with inline muted meta chips ($0.00 total \u00b7 0 entries \u00b7 0 pending reimbursement) and a right-aligned primary 'Add Expense' button plus secondary 'Export CSV' and overflow menu containing 'Manage Categories'. Below the heading, a horizontally scrollable strip of category breakdown cards (name, total, count) \u2014 hidden when no categories exist, replaced by a 'Create your first category' inline prompt. Filter bar below: 'All Categories' dropdown, 'Reimbursable only' toggle, search on the right. Grid fills remaining space; when empty and unfiltered, show a centered empty state with icon, 'No expenses yet' headline, subcopy explaining reimbursable tracking, and an 'Add Expense' primary button. Keyboard hints collapse to a '?' chip bottom-right that expands to the current six-shortcut popover. Status footer ('0 selected | All Categories | 0 total') stays as-is beneath the grid."
+}

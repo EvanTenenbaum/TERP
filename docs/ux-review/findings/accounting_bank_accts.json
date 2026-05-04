@@ -1,0 +1,43 @@
+{
+  "page": "BankAccounts",
+  "route": "/accounting?tab=bank-accounts",
+  "assessment": "The page delivers the documented features \u2014 a type-segmented table of accounts with the total cash card ($2,075,000.00), an Add Row action, and per-column filter/sort affordances \u2014 but the information hierarchy is inverted. The most important number (total cash balance) is a tiny green pill beside the title instead of a headline KPI, the Balance column is truncated to '$1,250,00\u2026' so users cannot read the numbers the page exists to show, and the 'active' state is rendered as a raw checkbox with no label. For a four-row reference table, the dense grid chrome (per-column filter icons, kebab menus, column resizers) is overkill and competes with the data itself.",
+  "notable_strengths": [
+    "Type filter chips (All Types / Checking / Savings / Credit Card / Money Market) give fast segmentation over the four-account list.",
+    "Account numbers are masked to last-4 (****6789), which is the correct default for a wholesale ERP.",
+    "Total cash, account count, and active count are all surfaced in the header strip rather than hidden in a footer."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "BankAccounts",
+      "severity": "P1",
+      "title": "Balance column truncates the page's headline numbers",
+      "what_is_wrong": "The Balance column renders '$1,250,00\u2026', '$350,000.\u2026', '$500,000.\u2026', '-$25,000.\u2026' \u2014 every row is clipped with an ellipsis despite roughly 300px of empty space to the right of the Active checkbox column.",
+      "why_it_matters": "Users open Bank Accounts specifically to read balances. Truncated currency is unreadable and forces a resize or row-click just to see the cents, directly undermining the table's primary purpose.",
+      "proposed_fix": "Right-align the Balance column, widen it to fit '$9,999,999.99' at the default zoom, and drop the per-column filter/kebab icons from Balance and Type so the header isn't eating horizontal space. Format negatives as red '-$25,000.00' rather than monospace text.",
+      "functionality_preserved": "Baseline 'current balance' column in the accounts table \u2014 the fix only changes width, alignment, and formatting, not the data source or tRPC shape."
+    },
+    {
+      "id": "UX-2",
+      "surface": "BankAccounts",
+      "severity": "P1",
+      "title": "Total cash balance is buried as a header pill, not a KPI",
+      "what_is_wrong": "The documented 'total cash balance card' renders as a small green chip ($2,075,000.00) tucked next to the 'Bank Accounts' label, the same visual weight as the '4 accounts' / '4 active' counters.",
+      "why_it_matters": "Cash-on-hand is the one number a controller scans this page for. Rendering it at ~12px next to metadata chips wastes the prime real estate above the table and buries the most actionable figure.",
+      "proposed_fix": "Promote it to a proper KPI card above the type filter row: large numeric ($2,075,000.00), label 'Total Cash Balance', sublabel '4 accounts \u00b7 4 active', right-aligned mini-breakdown by type (Checking $1.6M, Savings $500K, Credit -$25K). Keep the existing tRPC aggregation.",
+      "functionality_preserved": "Baseline 'total cash balance card' \u2014 fix restores the card treatment the baseline already calls for without changing the underlying sum."
+    },
+    {
+      "id": "UX-3",
+      "surface": "BankAccounts",
+      "severity": "P2",
+      "title": "Active column is a bare checkbox with no label or meaning",
+      "what_is_wrong": "The rightmost column header reads 'BALA\u2026' (the Balance header bleeding) and the cells show only a blue checkbox with no column title visible and no indication whether clicking toggles state or is read-only.",
+      "why_it_matters": "Users can't tell if they're about to deactivate a bank account by mis-clicking, and the column header is indistinguishable from Balance's filter glyph.",
+      "proposed_fix": "Rename the column 'Status', render values as pill badges ('Active' green / 'Inactive' gray) rather than a checkbox, and move toggling into the row's kebab menu with a confirm step. Fix the TYPE cell values by title-casing ('Credit Card' instead of 'CREDIT_C\u2026').",
+      "functionality_preserved": "Baseline 'active' boolean field \u2014 still displayed and still editable, just via an explicit action instead of an ambiguous inline checkbox."
+    }
+  ],
+  "redesign_sketch": "Header: H1 'Accounting' with the existing tab strip unchanged. Below the 'Bank Accounts' tab, a single full-width KPI card: 'Total Cash Balance \u2014 $2,075,000.00', with a right-side mini-breakdown (Checking $1.6M \u00b7 Savings $500K \u00b7 Credit Card -$25K \u00b7 4 active of 4 accounts). Below that, a single toolbar row: type chips on the left (All Types / Checking / Savings / Credit Card / Money Market), search and refresh in the middle, primary '+ New Bank Account' button on the right (replacing the generic '+ Add Row'). Table columns, left to right: Account Name \u00b7 Bank \u00b7 Last 4 \u00b7 Type (title-cased badge) \u00b7 Balance (right-aligned, full currency, negatives in red) \u00b7 Status (Active/Inactive pill) \u00b7 row kebab (Edit, Deactivate, View transactions). Remove per-column filter/kebab icons from Type, Balance, and Status; keep them only on Account Name and Bank where search is useful. Empty-cell space below the four rows becomes a thin footer 'Showing 4 of 4 accounts'."
+}

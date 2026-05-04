@@ -1,0 +1,93 @@
+{
+  "page": "InventoryWorkspacePage.shipping",
+  "route": "/inventory?tab=shipping",
+  "assessment": "The Shipping queue shows the right raw ingredients \u2014 status counts, a sortable list, per-shipment progress bars \u2014 but the workflow is broken in two decisive ways. First, selecting the highlighted shipment S-1773368587219 leaves the entire right two-thirds of the viewport blank; there's no detail pane, no pick list, no empty state. The page is a dead-end the moment a user tries to act. Second, the defaults are inverted for the actual job: 381 Pending shipments drown the 2 Ready ones that are the only ones a packer can actually work on right now, and there's no way to pivot except through a generic 'All statuses' dropdown. The four stat cards tease filtering affordance (colored, clickable-looking) but are decorative. The 'Spreadsheet View / Standard View' toggle top-right and the floating 'Standard' pill bottom-right appear to be doing overlapping jobs and neither is labeled in a way a new packer would understand.",
+  "notable_strengths": [
+    "Stat cards give an immediate, honest read on queue health (Pending/Partial/Ready/Shipped) with sensible color coding.",
+    "Each shipment row surfaces packing progress (2/2 items packed, bag count, progress bar) without requiring a drill-down.",
+    "Status chip on each row (Ready, Pending) is high-contrast and scannable at list speed."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "InventoryWorkspacePage.shipping",
+      "severity": "P0",
+      "title": "Selected shipment renders a blank right pane",
+      "what_is_wrong": "S-1773368587219 is clearly selected (blue border, 'Ready' chip, 2/2 items packed) but the entire area to the right of the list is empty white space. There is no detail, no pick list, no pack action, and no empty-state copy.",
+      "why_it_matters": "Picking/packing is the single reason a user opens this tab. A ready-to-pack shipment that cannot be opened is a hard dead-end \u2014 the user has to fall back to Spreadsheet View or the classic PickPackWorkSurface to get anything done, which defeats the purpose of the queue view.",
+      "proposed_fix": "Always render the FulfillmentPilotSurface detail pane in the right column. When nothing is selected show an explicit empty state ('Select a shipment to start packing'); when a row is selected, mount the pick list, bag breakdown, and primary 'Start Packing'/'Mark Ready'/'Mark Shipped' action there. If the blank pane is an unhandled loading state, show a skeleton with the row header echoed so the user knows the click registered.",
+      "functionality_preserved": "FulfillmentPilotSurface (and the PickPackWorkSurface classic fallback behind SheetModeToggle) continues to own the detail UI; the fix only guarantees it mounts and has a defined empty state, leaving all pick/pack mutations and tRPC calls untouched."
+    },
+    {
+      "id": "UX-2",
+      "surface": "InventoryWorkspacePage.shipping",
+      "severity": "P1",
+      "title": "Default sort buries the 2 Ready shipments under 381 Pending",
+      "what_is_wrong": "The list is sorted 'Newest' with 'All statuses' selected. Ready: 2, Pending: 381 \u2014 yet the queue leads with the one Ready shipment only because it happens to be newest. The next three rows are all Pending, and the user must scroll or change the filter to find shipments they can actually act on.",
+      "why_it_matters": "Packers come here to ship things that are Ready, not to browse 381 Pending orders awaiting pick assignment. The current defaults optimise for recency, not for action-readiness, which slows the primary workflow every single session.",
+      "proposed_fix": "Change the default sort to 'Action needed': Ready first, then Partial, then Pending, then Shipped (within each group, Newest). Keep 'Newest' selectable in the existing sort dropdown. Alternatively, default the status filter to 'Ready + Partial' and show a persistent 'Show all (381 Pending)' link above the list.",
+      "functionality_preserved": "The existing 'All statuses' dropdown and 'Newest' sort control remain and can still be selected; only the initial default values change, and the underlying shipment query (status counts of 381/0/2/127) is untouched."
+    },
+    {
+      "id": "UX-3",
+      "surface": "InventoryWorkspacePage.shipping",
+      "severity": "P1",
+      "title": "Stat cards look clickable but are not filters",
+      "what_is_wrong": "The four numbered cards (381 Pending, 0 Partial, 2 Ready, 127 Shipped) are styled like interactive pills with colored backgrounds and bold numbers, but they sit alongside a separate 'All statuses' dropdown and do nothing when clicked. This is wasted real estate and a misleading affordance.",
+      "why_it_matters": "Users instinctively click the number of items they want to work on ('2 Ready'). When that doesn't filter the list, they have to learn a second, hidden mechanism (the dropdown). That breaks Fitts's law and doubles the cognitive cost of the most common filter action.",
+      "proposed_fix": "Promote the four stat cards into the primary status filter control: clicking 'Ready' filters the list to Ready, shows an active-state border, and keeps the count live. The existing 'All statuses' dropdown becomes 'All' as a fifth reset chip, or is removed from the filter row in favor of the cards. Zero-count cards (0 Partial) render disabled rather than hidden so the layout stays stable.",
+      "functionality_preserved": "The 'All statuses' filter control and its underlying query parameter are retained \u2014 the cards simply drive the same filter state. The stat counts already come from the same shipment-by-status aggregation; we just wire their click handlers."
+    },
+    {
+      "id": "UX-4",
+      "surface": "InventoryWorkspacePage.shipping",
+      "severity": "P1",
+      "title": "Two view toggles with overlapping meaning",
+      "what_is_wrong": "Top-right has a 'Spreadsheet View / Standard View' segmented control. Bottom-right has a floating pill showing 'Standard' with a list icon. Both appear to toggle between sheet-native and classic surfaces (the SheetModeToggle documented in the baseline command strip), but they are visually unrelated and the floating one has no label explaining its purpose.",
+      "why_it_matters": "Users cannot tell whether the two controls are the same thing, whether one overrides the other, or which one to trust. The floating pill's sole word 'Standard' reads as a value, not a control, so hovering it is the only way to learn its function.",
+      "proposed_fix": "Keep one SheetModeToggle in a single location \u2014 the top-right header row next to 'Refresh Queue' \u2014 and style it consistently (Spreadsheet | Standard with a clear selected state). Remove the floating duplicate or repurpose the FAB for the shipping-specific 'New Shipment' / 'Manage MCP & Webhooks' action it already surfaces in the button list, with a proper label.",
+      "functionality_preserved": "SheetModeToggle behavior (switching between FulfillmentPilotSurface and PickPackWorkSurface) and the 'Manage MCP & Webhooks' entry point are both retained \u2014 the fix consolidates their placement so only one control owns view mode."
+    },
+    {
+      "id": "UX-5",
+      "surface": "InventoryWorkspacePage.shipping",
+      "severity": "P2",
+      "title": "Page heading hierarchy duplicates itself",
+      "what_is_wrong": "Breadcrumb says 'Inventory', H1 says 'Inventory', the active tab is 'Shipping', and the section header below the tabs also says 'Shipping' with a 'Saved' badge. The user gets told they are on Inventory twice before finding out they are actually on Shipping.",
+      "why_it_matters": "The redundancy pushes the actual work area (queue + detail) further down the viewport and makes scanning slower. The ambiguous 'Saved' badge adds more noise \u2014 it is not clear whether it refers to a saved filter, a saved view, or queue persistence.",
+      "proposed_fix": "Collapse the H1 to reflect the active tab: 'Inventory \u203a Shipping' in the breadcrumb, H1 'Shipping', and drop the second 'Shipping' section header. Replace the 'Saved' badge with a specific label like 'Filters saved' or move it onto the filter row where it belongs; keep it only when the user has actually saved a custom filter state.",
+      "functionality_preserved": "The tab set from INVENTORY_WORKSPACE, the `tab=shipping` URL parameter, and the saved-filter state remain \u2014 only the typographic hierarchy and badge placement change."
+    },
+    {
+      "id": "UX-6",
+      "surface": "InventoryWorkspacePage.shipping",
+      "severity": "P2",
+      "title": "Shipment cards omit customer, destination, and due date",
+      "what_is_wrong": "Rows show only: shipment ID, a free-text line (e.g. 'wer werwe', 'San Jose Supply', 'Mendocino Supply'), packed count, bag count, and status. There is no carrier, no ship-by date, no order value, no origin/destination pair. The 'wer werwe' entry on the Ready row is particularly damning \u2014 clearly a test note, but indistinguishable from a real customer name with current formatting.",
+      "why_it_matters": "A packer deciding what to work next needs to triage by due date and customer priority. Without those fields on the card they must open each shipment to compare, which \u2014 given UX-1 \u2014 they currently cannot do.",
+      "proposed_fix": "Standardize each card to three lines: (1) shipment ID + status chip + ship-by date on the right; (2) customer name + destination city/state; (3) items-packed progress + bag count + progress bar. Label the customer line explicitly so free-text reference notes don't masquerade as customer names.",
+      "functionality_preserved": "The underlying shipment record (customer, destination, ship date, items, bags) already drives the existing card; this fix only renders more of those fields. No baseline field is removed."
+    },
+    {
+      "id": "UX-7",
+      "surface": "InventoryWorkspacePage.shipping",
+      "severity": "P3",
+      "title": "Pluralization bug: '1 bags'",
+      "what_is_wrong": "The Ready row reads '1 bags' in the right corner. All other rows show '0 bags' which is correct, but the singular case is not handled.",
+      "why_it_matters": "Pluralization errors on numeric counts are the kind of thing enterprise buyers flag in demos; in a wholesale ERP where bags are the literal shipping unit, it reads as sloppy.",
+      "proposed_fix": "Use a pluralization helper (`${n} ${n === 1 ? 'bag' : 'bags'}`) wherever the bag count is rendered on shipment rows. Apply the same treatment to 'items packed' if the same bug exists there.",
+      "functionality_preserved": "The bag count value from the shipment model is unchanged; only the rendered string is corrected."
+    },
+    {
+      "id": "UX-8",
+      "surface": "InventoryWorkspacePage.shipping",
+      "severity": "P2",
+      "title": "No bulk actions or keyboard affordances for a 381-row queue",
+      "what_is_wrong": "With 381 Pending shipments and 127 Shipped, the list offers no multi-select, no keyboard arrow-navigation cue, no 'J/K' hint, and no bulk 'Mark Ready' / 'Assign to picker' action. The command palette (CTRL K) exists at app level but there is no per-row quick action or right-click menu visible.",
+      "why_it_matters": "Fulfillment ops at this volume are keyboard-and-batch workflows. Forcing one-at-a-time clicking through 381 pending shipments is the reason teams abandon ERPs like this for spreadsheets.",
+      "proposed_fix": "Add (a) arrow-key navigation between rows with the detail pane updating live, (b) a checkbox column and a sticky bulk-action bar ('Assign picker', 'Mark Ready', 'Print labels') that appears when \u22651 row is selected, and (c) a subtle 'J/K to navigate, Enter to open' hint in the list header.",
+      "functionality_preserved": "Existing per-shipment actions remain on the detail pane (FulfillmentPilotSurface); bulk actions call the same shipment status mutations in a loop, so no new business rule is introduced."
+    }
+  ],
+  "redesign_sketch": "Header: breadcrumb 'Inventory \u203a Shipping', H1 'Shipping', inline subtitle 'Pick, pack, and ship customer orders.' Right-aligned in the header: SheetModeToggle (Spreadsheet | Standard) + 'Refresh Queue' + overflow menu (Saved filters, Manage MCP & Webhooks). Remove the duplicate bottom-right floating toggle.\n\nPrimary filter row = the four stat cards, now interactive: [Ready 2] [Partial 0] [Pending 381] [Shipped 127] [All 510]. Active card gets a filled border. Below them: search input, secondary 'Sort: Action needed \u25be' (default), ship-by-date range picker, customer filter, and 'Reset'.\n\nBody is a two-column split: left 360px shipment list, right flex detail pane.\n\nList rows (default sorted Ready \u2192 Partial \u2192 Pending \u2192 Shipped, newest within): checkbox \u00b7 ID + status chip \u00b7 ship-by date (right) // customer name + destination // progress bar + '2/2 items \u00b7 1 bag'. Arrow keys navigate, Enter opens, Space selects for bulk. When \u22651 checkbox is selected, a sticky action bar slides in: 'Assign picker \u00b7 Mark Ready \u00b7 Print labels \u00b7 Cancel'.\n\nDetail pane (always mounted) shows the selected shipment's header (customer, destination, ship-by, carrier), a pick list table (SKU, lot, required, picked, location), bag breakdown, and a sticky footer action strip whose primary button changes by status: Pending \u2192 'Start Picking', Partial \u2192 'Continue Picking', Ready \u2192 'Mark Shipped', Shipped \u2192 'View BOL'. Empty state when nothing is selected: centered icon + 'Select a shipment to start packing' + 'or press N to create a new shipment'.\n\nMicrocopy: '1 bag' / 'n bags' pluralized; '0/1 items packed' becomes 'Not started'; 'wer werwe'-style free-text is relabeled 'Reference' and rendered smaller beneath the real customer name."
+}

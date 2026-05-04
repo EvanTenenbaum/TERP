@@ -1,0 +1,83 @@
+{
+  "page": "Settings",
+  "route": "/settings",
+  "assessment": "The Settings page has the right bones \u2014 a clean four-group top nav (Access Control, Master Data, Organization, Developer) and sub-tabs under each \u2014 but the Access Control landing wastes the entire first viewport on a Create-User form while hiding the thing admins actually come here for: the existing user list. Hierarchy is muddled (the page title, top tab label, and H2 below all read 'Access Control'; tabs and sub-tabs look visually similar), and core admin moves like resetting a password or granting a role force the user to hand-type a username rather than pick from a list. Master Data and Organization tabs are unvisited on this capture but the pattern would repeat. The shell (breadcrumb, Back-to-Dashboard link, deep-link `?tab=` support) is solid and must be preserved.",
+  "notable_strengths": [
+    "Four-group segmented nav (Access Control / Master Data / Organization / Developer) is the right mental model and matches `SETTINGS_GROUPS`; deep-link via `?tab=` means links can be shared.",
+    "Sub-tab row under each group (Users / User Roles / Roles / Permissions) keeps the admin surface shallow instead of sprawling into a tree.",
+    "The workspace header pattern (H1 + one-line subtitle) is consistent with the rest of TERP, so users are not learning a new chrome here."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "Settings",
+      "severity": "P1",
+      "title": "Users tab leads with a creation form, not the user list",
+      "what_is_wrong": "On `/settings?tab=access-control` \u2192 Users, the entire first viewport is the 'Create New User' card. The 'All Roles / 10 per page / Roles' controls suggested by the runtime DOM (which belong to the existing users table) are pushed below the fold, along with 'Reset Password'. An admin landing here to audit, disable, or role-assign an existing user has to scroll past a create form every single time.",
+      "why_it_matters": "User management is overwhelmingly a read/modify task (find user \u2192 change role, reset password, deactivate) in a wholesale ERP with a fixed team. Putting the rare 'create' action above the common 'find' action adds a scroll on every visit and hides the fact that a user list even exists.",
+      "proposed_fix": "Flip the order: render the existing users table (search, 'All Roles' filter, paginator, per-row actions) as the primary surface at the top of the Users sub-tab, with a single 'New User' button in the section header that opens the Create-New-User form in a right-side drawer or inline expansion. Reset Password becomes a per-row action in the table, not a separate card.",
+      "functionality_preserved": "The `UserManagement` component's Create User inputs (Username min-3, Password min-8, Display Name optional) and the Reset Password form are both retained verbatim \u2014 only their entry point and position change; no tRPC call signatures shift."
+    },
+    {
+      "id": "UX-2",
+      "surface": "Settings",
+      "severity": "P1",
+      "title": "Reset Password requires hand-typing the username",
+      "what_is_wrong": "The 'Reset Password' card under Users exposes a free-text 'Username' input with placeholder `username` instead of a user picker. There is a separate users list elsewhere on the page (the 'All Roles / 10 / page' controls confirm it), yet the reset flow forces the admin to re-type an identifier they just read from that list.",
+      "why_it_matters": "Typos silently hit the wrong user or error out; there's no disambiguation if two display names are similar. In an ERP with warehouse + sales staff, this is a daily support task and the retyping is pure friction \u2014 and a security risk if an admin fat-fingers a similar username.",
+      "proposed_fix": "Replace the free-text username input with an autocomplete combobox bound to the same user list shown above (search by username or display name, show avatar + role chips in the result row). Keep the existing 'New Password' input and validation. When the workflow moves into the row-action drawer from UX-1, the user is already resolved.",
+      "functionality_preserved": "The reset mutation contract (username + new password) is unchanged; the combobox resolves to the same `username` string the current textbox submits, so the `UserManagement` reset handler keeps its current payload shape."
+    },
+    {
+      "id": "UX-3",
+      "surface": "Settings",
+      "severity": "P2",
+      "title": "Triple-stacked 'Access Control' label creates navigational noise",
+      "what_is_wrong": "The word 'Access Control' appears three times in the first 350 px: as the active top tab chip, as the H2 section heading inside the card, and implicitly again in the sub-tab row context. The H2 subtitle 'Manage users, role assignments, and system permissions' also paraphrases the page subtitle 'Manage system configurations and master data'.",
+      "why_it_matters": "Repetition makes the viewport feel shallow \u2014 there is almost nothing actionable above the fold \u2014 and obscures which element is the active selection. New admins can't tell whether 'Access Control' at H2 level is clickable, a label, or a breadcrumb step.",
+      "proposed_fix": "Drop the duplicate H2 'Access Control' heading and its paraphrased description. Keep the top tab as the single source of truth for the active group, and let the sub-tab row (Users / User Roles / Roles / Permissions) be the next visible element, with each sub-tab rendering its own scoped H2 ('Users', 'Roles', etc.) and one-line description only when that description adds information not already on the tab label.",
+      "functionality_preserved": "The `SETTINGS_GROUPS`/`SETTINGS_SECTIONS` routing and `?tab=` deep-linking are untouched \u2014 this is a purely layout/copy change inside the existing component tree."
+    },
+    {
+      "id": "UX-4",
+      "surface": "Settings",
+      "severity": "P2",
+      "title": "Top-level group tabs and sub-tabs use nearly identical styling",
+      "what_is_wrong": "The top tabs (Access Control / Master Data / Organization / Developer) and the sub-tabs (Users / User Roles / Roles / Permissions) both render as light pill/segmented chips in the same tonal family, separated only by ~70 px and the 'Access Control' H2 in between. There is no visual weight distinction between 'switch settings group' and 'switch subsection within a group'.",
+      "why_it_matters": "Users misread the hierarchy and don't realise Users, User Roles, Roles, Permissions all live *under* Access Control \u2014 they look like a second peer navigation. Clicking a top tab then clicking a sub-tab feels like two equal-level navigations, which makes the URL's `?tab=` behaviour and browser-back behaviour surprising.",
+      "proposed_fix": "Style the top row as full-width segmented control with a filled active state (the current chromed look), and restyle the sub-tab row as underline tabs (text-only, 1 px underline on active) tucked tight under a thin divider. This gives a clear 'primary / secondary' gradient that matches the rest of TERP's workspace-header pattern (title \u2192 blue band \u2192 tab chips).",
+      "functionality_preserved": "Both tab rows still fire the same route/state transitions and respect `SETTINGS_SECTIONS` gating; only CSS classes and the vertical spacing between the two rows change."
+    },
+    {
+      "id": "UX-5",
+      "surface": "Settings",
+      "severity": "P2",
+      "title": "Create New User collects no role at creation time",
+      "what_is_wrong": "The Create New User card has exactly three fields: Username, Password, Display Name. There is no role picker. To actually give the account any capability, the admin must create the user, switch to the Permissions sub-tab, find the user again, and assign a role \u2014 a three-step dance with no in-form guidance that the created user is currently access-less.",
+      "why_it_matters": "A new-hire onboarding that should take 15 seconds takes two or three minutes and invites forgotten assignments. Users get created and sit with zero roles, which is a silent failure.",
+      "proposed_fix": "Add an 'Initial Role' multi-select (populated from `RoleManagement`) to the Create New User form, defaulting to an org-wide 'Default' role if configured. Below the Create User button, show a one-line confirmation: 'User will be created with role: Sales'. Keep the Permissions tab for later re-assignment exactly as-is.",
+      "functionality_preserved": "The existing Create User tRPC call keeps its current fields; the new `initialRoles` argument is optional and \u2014 if empty \u2014 reproduces today's 'create then assign' flow, so the `PermissionAssignment` surface keeps its authority over role changes."
+    },
+    {
+      "id": "UX-6",
+      "surface": "Settings",
+      "severity": "P2",
+      "title": "Password field has no confirm, strength, or show/hide",
+      "what_is_wrong": "The Password input shows placeholder `password`, a 'Minimum 8 characters' helper, and nothing else: no confirm-password field, no strength meter, no show/hide eye icon. The same applies to the Reset Password card's 'New Password' input.",
+      "why_it_matters": "In an admin-set password flow, a single typo silently locks the new user out \u2014 there's no confirmation to catch it, and the admin can't reveal what they typed to verify. For Reset Password, the admin sets a credential they will have to communicate out-of-band, so accuracy matters.",
+      "proposed_fix": "Add a 'Confirm Password' input next to 'Password', a show/hide toggle (eye icon) on both password inputs, and a lightweight strength hint ('Weak / Medium / Strong') driven locally. Validation block the Create/Reset button until Password === Confirm and length \u2265 8.",
+      "functionality_preserved": "The Create User and Reset Password mutations keep their single-password contract; confirm and strength are client-side only, so `UserManagement`'s server handlers don't change."
+    },
+    {
+      "id": "UX-7",
+      "surface": "Settings",
+      "severity": "P3",
+      "title": "'Back to Dashboard' link duplicates the breadcrumb home icon",
+      "what_is_wrong": "Directly above the 'System Settings' H1 sits a '\u2190 Back to Dashboard' link. The topbar already shows the Home icon + 'Settings' breadcrumb two rows up, which is the canonical back-affordance on every other TERP page.",
+      "why_it_matters": "Two back-affordances on the same page look like two different destinations ('Dashboard' vs 'Home'), and the extra row pushes the H1 down ~40 px on every settings visit. Minor, but compounding with UX-3 it eats the first viewport.",
+      "proposed_fix": "Remove the 'Back to Dashboard' link from the page body and rely on the existing topbar breadcrumb `Home \u25b8 Settings`. If the breadcrumb's home icon doesn't currently route to the Dashboard, fix the href there so a single affordance does both jobs.",
+      "functionality_preserved": "No baseline component is removed \u2014 the route `/` (dashboard) is still reachable via the top breadcrumb, which is the documented shell chrome across every protected page."
+    }
+  ],
+  "redesign_sketch": "Keep the existing workspace header (H1 'System Settings', subtitle 'Manage system configurations and master data') and the topbar breadcrumb as the only back-affordance. Directly below the subtitle, render a single full-width **segmented control** with the four group tabs (Access Control \u00b7 Master Data \u00b7 Organization \u00b7 Developer), filled active state, matching TERP's blue workspace band. Drop the duplicate H2 and its paraphrased description. Under the segmented control, a thin divider, then an **underline-tab** row for the group's sub-sections (Users \u00b7 User Roles \u00b7 Roles \u00b7 Permissions) \u2014 clearly secondary. For the Users sub-tab specifically: (1) section header 'Users' with a right-aligned primary button **+ New User** and a search box + 'All Roles' filter + paginator; (2) the existing users table as the primary surface \u2014 columns: Username, Display Name, Roles (chips), Last Login, Status, with a row-level kebab exposing 'Reset password\u2026', 'Change roles\u2026', 'Disable'. (3) Clicking **+ New User** opens a right drawer with Username, Display Name, Password + Confirm Password (both with show/hide), a strength hint, and an **Initial Role** multi-select; footer action 'Create user'. (4) 'Reset password\u2026' from the kebab opens the same drawer pre-filled with the user, showing only New Password + Confirm. Master Data, Organization, and Developer tabs follow the same pattern: search + list first, creation in a drawer, one H2 per sub-tab. `?tab=` deep links and unsaved-changes guard are preserved."
+}

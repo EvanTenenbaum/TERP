@@ -1,0 +1,43 @@
+{
+  "page": "PricingProfilesPage",
+  "route": "/pricing/profiles",
+  "assessment": "The page cleanly surfaces the CRUD primitives (name, description, rules count, edit/delete) and the Create Profile affordance is well-placed. But the table is informationally thin \u2014 'Rules Count' showing '1 rule(s)' tells me nothing about what the profile actually does, there is no column for client assignments (the stated purpose of bundling rules for clients), and the profile names here are timestamp-stamped QA garbage with no way to tell which is active or in use. The page reads as a list rather than a working management surface.",
+  "notable_strengths": [
+    "Clear page header with purpose subtitle ('Manage collections of pricing rules for easy application to clients') anchors the task.",
+    "Create Profile CTA is prominent, top-right, with the conventional + icon.",
+    "Search input and table columns are scannable; edit/delete iconography matches the rest of the app."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "PricingProfilesPage",
+      "severity": "P1",
+      "title": "Rules Count column is dead weight \u2014 show what's in the bundle",
+      "what_is_wrong": "The 'Rules Count' column renders a badge that says '1 rule(s)' with no indication of which rules (volume discount? tier pricing? client-specific markup?) are in the profile. Users must click Edit on every row to learn what a profile does.",
+      "why_it_matters": "The whole premise of a profile is that it's a named bundle of rules assigned to clients. Forcing an edit round-trip to see contents defeats the scanning value of the list view and slows any 'which profile should I apply?' decision.",
+      "proposed_fix": "Replace the 'Rules Count' badge with a 'Rules' column that renders the count + a comma-separated preview of rule types (e.g., '3 \u00b7 Volume discount, Tier pricing, +1'). Keep the numeric badge on hover/tooltip. Column remains sortable by count.",
+      "functionality_preserved": "Baseline 'checkbox list of rules + priority ordering' form stays intact; this is a read-only projection of the same rule relationship already loaded for the profile row."
+    },
+    {
+      "id": "UX-2",
+      "surface": "PricingProfilesPage",
+      "severity": "P1",
+      "title": "No visibility into which clients use each profile",
+      "what_is_wrong": "The page purpose explicitly states profiles are 'assignable to clients', but the table has no 'Assigned Clients' or usage column. Deleting a profile via the trash icon gives no warning about downstream client impact.",
+      "why_it_matters": "Admins can't answer 'is this profile safe to delete?' or 'which profile is Acme on?' without leaving the page. The trash action becomes a silent footgun on a pricing entity.",
+      "proposed_fix": "Add an 'Assigned Clients' column showing a count badge (e.g., '12 clients') that opens a popover listing the clients. Gate the delete icon: if count > 0, disable with tooltip 'Reassign 12 clients before deleting' or force a confirmation modal listing affected clients.",
+      "functionality_preserved": "The CRUD delete action and pricing profile router remain unchanged; this is an additive read column and a confirmation guard around the existing delete mutation \u2014 no behavior removed."
+    },
+    {
+      "id": "UX-3",
+      "surface": "PricingProfilesPage",
+      "severity": "P2",
+      "title": "No empty/zero-profile guidance and timestamp-named rows read as debug data",
+      "what_is_wrong": "The only two rows shown \u2014 'Codex QA Pricing Profile 2026-03-12T23-51-30-199Z' and 'QA Pricing Proof 2026-03-12 Profile' \u2014 are ISO-stamped test artifacts, and the description column exposes internal ticket references ('TER-696'). There's also no status chip (Active/Draft/Archived) to distinguish real profiles from staging noise.",
+      "why_it_matters": "On real tenants this same lack of metadata means no way to filter out archived or draft profiles, and long names will wrap or truncate without a visible default sort (newest/most-used).",
+      "proposed_fix": "Add a Status column with Active/Draft/Archived chips, a default sort by 'Last updated' descending, and a filter chip row above the table ('All | Active | Draft | Archived'). Truncate long names at ~48 chars with a tooltip on hover.",
+      "functionality_preserved": "No baseline field is removed; status is derived from existing profile records (or defaults to 'Active' if the field doesn't yet exist), and the existing Search input and table columns remain."
+    }
+  ],
+  "redesign_sketch": "Keep the current header block ('Pricing Profiles' H1 + subtitle, Create Profile CTA top-right). Below the search input, add a filter chip row: All \u00b7 Active \u00b7 Draft \u00b7 Archived. Replace the current 4-column table with: Name (with status chip inline) \u00b7 Rules (count + preview of top 2 rule names, '+N' overflow) \u00b7 Assigned Clients (count badge, clickable popover) \u00b7 Last Updated \u00b7 Actions. Default sort: Last Updated desc. Delete icon shows a confirm modal listing affected clients when count > 0; otherwise deletes immediately. Empty state (zero profiles) shows an illustrated card: 'No pricing profiles yet \u2014 bundle your rules into reusable profiles to assign to clients in one click' with a primary Create Profile button."
+}

@@ -1,0 +1,43 @@
+{
+  "page": "ShippingPickListPage",
+  "route": "/sales?tab=pick-list",
+  "assessment": "The page gets the fundamentals right: a dense warehouse-style table, a clear title with subtitle announcing '500 orders, 2311 line items', and a prominent truncation warning. But it fails as a pick list in practice. The baseline promises date, batch, location, picker columns \u2014 none are visible. Continuation rows (the SKU-00000002 rows with no Order or Client cells) create ambiguity about which order a line belongs to. Status badges dominate the right edge but there's no bulk action to mark PENDING\u2192PACKED from the list, forcing a row-by-row drilldown. Density is fine, but information architecture is wrong for a warehouse operator scanning a 2311-line queue.",
+  "notable_strengths": [
+    "Explicit truncation banner ('Showing first 500 results \u2014 use filters to narrow results') keeps operators from trusting a partial list.",
+    "Subtitle surfaces both order count and line-item count, which is the correct unit of work for picking.",
+    "Status filter defaults to 'All open', which matches the operator's default intent."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "ShippingPickListPage",
+      "severity": "P1",
+      "title": "Continuation line-item rows lose their order context",
+      "what_is_wrong": "Rows for SKU-00000002 ('Licensed Pre-Roll - cutover') appear repeatedly with blank Order and Client cells because they're secondary lines of the order above. A picker scanning mid-table can't tell which order a line belongs to without counting upward.",
+      "why_it_matters": "In a warehouse, mis-attributing a line to the wrong order causes mis-picks and short-shipments. The blank cells also break CSV export readability for anyone sorting the sheet.",
+      "proposed_fix": "Either (a) repeat the order number and client on every line with muted typography for continuation rows, or (b) group lines under a sticky order header row that shows order #, client, date, and a line count (e.g., 'S-1772839406310 \u00b7 Sunset Dispensary \u00b7 2 lines'). Keep the flat row model for CSV but repeat order/client values in the export.",
+      "functionality_preserved": "Preserves `orders.getPickList` response shape and the documented columns (order, client, line items); only the rendering groups/repeats values."
+    },
+    {
+      "id": "UX-2",
+      "surface": "ShippingPickListPage",
+      "severity": "P1",
+      "title": "Baseline columns date, batch, location, picker are missing from the table",
+      "what_is_wrong": "FUNCTIONAL_BASELINE specifies rows include date, batch + qty, location, and picker. The rendered table shows only Order, Client, SKU, Product, Qty, Unit, Status. A warehouse picker cannot route themselves without bin location, cannot pick FIFO without batch, and cannot see due date for prioritization.",
+      "why_it_matters": "Operators must leave this page and open each order to find bin/batch/date, defeating the purpose of a consolidated pick list.",
+      "proposed_fix": "Add Location (bin), Batch, and Due Date columns. Default sort by Location ascending so the physical pick path is already ordered. Make Picker a compact avatar column on the right, assignable inline. If horizontal space is tight, collapse Unit into Qty ('1 LB').",
+      "functionality_preserved": "Uses fields already returned by `orders.getPickList` (baseline lists batch + qty, location, picker); this is a rendering change only, no router changes."
+    },
+    {
+      "id": "UX-3",
+      "surface": "ShippingPickListPage",
+      "severity": "P2",
+      "title": "No bulk status action; PENDING\u2192PACKED requires leaving the list",
+      "what_is_wrong": "Every non-PACKED row shows a passive PENDING badge with no affordance to mark packed. There's no row checkbox, no bulk selector, and Export CSV is the only primary action.",
+      "why_it_matters": "The pick list's job is to be worked down. Forcing a drilldown per line on 2311 line items turns a 10-minute warehouse pass into hours of navigation.",
+      "proposed_fix": "Add a leading checkbox column with a select-all in the header. When one or more rows are selected, swap the Export CSV header zone for a sticky action bar: 'Mark packed', 'Assign picker', 'Print pick ticket'. Keep Export CSV accessible in an overflow menu.",
+      "functionality_preserved": "No baseline behavior removed \u2014 CSV export stays, status mutation already exists per order; bulk action just batches existing mutations without introducing new routers beyond what status transitions already require."
+    }
+  ],
+  "redesign_sketch": "Header: 'Shipping Pick List' H1 with subtitle '500 orders \u00b7 2,311 lines \u00b7 1,842 pending'. Right-aligned: primary 'Print pick sheet', secondary 'Export CSV'. Filter bar on one row: Status chip group (All open / Pending / Partial / Fulfilled), Date range, Warehouse, Picker, Client typeahead, Reset. Truncation banner kept as-is. Table grouped by order with a sticky muted header row: 'S-1772839406310 \u00b7 Sunset Dispensary \u00b7 Due Oct 14 \u00b7 2 lines \u00b7 [Assign picker]'. Line rows beneath show: [checkbox] \u00b7 Location (bin) \u00b7 SKU \u00b7 Product \u00b7 Batch \u00b7 Qty+Unit \u00b7 Status. Default sort: Location asc, then Order. Selecting rows reveals a sticky bottom action bar: 'N lines selected \u2014 Mark packed \u00b7 Assign picker \u00b7 Print tickets \u00b7 Clear'. Status column uses color only for exceptions (partial = amber, pending = neutral outline, packed = green solid) so packed rows visually recede as the operator works the list down."
+}

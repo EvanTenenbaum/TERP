@@ -1,0 +1,93 @@
+{
+  "page": "CalendarPage",
+  "route": "/calendar",
+  "assessment": "The calendar gets the basics right \u2014 a clean month grid, consistent tabbed navigation to Invitations/Requests/Time Off, a legible legend, and a clear primary CTA. But it's underpowered for an ERP that touches deliveries, payments, and appointments: event pills show raw order IDs that no human can parse at a glance, the tab row is missing the pending-count badges the baseline promises, the view switcher is four unlabeled icons, the Filters bar is a collapsed empty band eating prime vertical space, and the legend is decoration rather than a filter. The header also buries 'April 2026' between Next and the view switcher instead of making it the anchor of the page. Nothing on this page is broken, but almost every interaction takes one more click than it should.",
+  "notable_strengths": [
+    "Color-coded legend (Intake Appointments / Order Deliveries / Payment Due) gives a domain-specific semantic layer most generic calendars don't have.",
+    "Tab structure (Calendar / Invitations / Requests / Time Off) correctly collapses four related inboxes behind one route.",
+    "Today (23rd) is clearly marked with a filled blue pill and the whole Thursday column is tinted, so the user never loses orientation."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "CalendarPage",
+      "severity": "P1",
+      "title": "Tab labels are missing the pending-count badges",
+      "what_is_wrong": "The Invitations, Requests, and Time Off tabs render as plain text. The baseline explicitly states 'pending appointment requests and pending team time-off counts surface on tab labels', but no badge is visible next to any tab.",
+      "why_it_matters": "Pending approvals are the one reason an admin comes to this page from outside a calendar context. Without counts, users must click each tab to discover whether action is needed, which defeats the point of a unified calendar hub.",
+      "proposed_fix": "Render a small pill badge (e.g. neutral-100 bg, 11px, tabular) to the right of each tab label when the corresponding count > 0: 'Invitations 3', 'Requests 2', 'Time Off 1'. Hide the badge when zero. Color the Requests badge in the accent orange when count > 0 to match the page CTA so it reads as 'needs attention'.",
+      "functionality_preserved": "Sourced from the same `appointmentRequests.*` and `timeOffRequests.*` counts already feeding `PendingInvitationsWidget` / `AppointmentRequestsList` / `TimeOffRequestsList`; we're only surfacing data that routers already return."
+    },
+    {
+      "id": "UX-2",
+      "surface": "CalendarPage",
+      "severity": "P1",
+      "title": "Event pills show truncated order IDs, not customer/amount",
+      "what_is_wrong": "The five delivery events on Apr 13/14 all read 'Order S-1772839382419\u2026' / 'Order S-1772839399561\u2026' etc. The IDs are truncated at the same prefix so no pill is distinguishable from any other, and the pill never says who the delivery is for or how much it's worth.",
+      "why_it_matters": "A wholesale scheduler is trying to answer 'which customer is getting what today'. Right now they have to click into every event to read it, and three deliveries on the same day look identical in the grid. This makes the calendar view worse than a spreadsheet of deliveries.",
+      "proposed_fix": "Render each pill as `{CategoryDot} {Customer short name} \u00b7 {Order short code}` \u2014 e.g. '\u25cf Greenwave \u00b7 S-382419'. Keep the color dot mapped to the legend category. On hover, show a tooltip with full order ID, line total, and scheduled time. Order short code = last 6 digits of the ID to stay unique on screen.",
+      "functionality_preserved": "The underlying event object from `calendar.*` already carries `orderId` and (via `calendarFinancials.*`) the linked customer/amount \u2014 this is a display-layer change to the month/week/day cell renderer; click-through to the event detail is unchanged."
+    },
+    {
+      "id": "UX-3",
+      "surface": "CalendarPage",
+      "severity": "P2",
+      "title": "View switcher is four unlabeled icons",
+      "what_is_wrong": "The four buttons to the right of 'April 2026' (calendar icon, grid icon, clock icon, list icon) have no visible label and no text beside them indicating the current view is 'Month'. The active state (the calendar icon) is only marked by a thin border.",
+      "why_it_matters": "Users have to hover each one to learn what it does, and the pattern 'grid icon means Week' / 'clock icon means Day' is not conventional. First-time use is a guessing game, and the active-view feedback is too subtle to notice.",
+      "proposed_fix": "Convert to a segmented control with text labels: [Month | Week | Day | Agenda], 120px wide, with the active segment filled. Keep icons as optional leading glyphs only if space allows. Move 'April 2026' to the left of the segmented control and render it at 18px semibold so the period label \u2014 not the switcher \u2014 is the visual anchor.",
+      "functionality_preserved": "Drives the same `MonthView` / `WeekView` / `DayView` / `AgendaView` components and the same `calendarViews.*` persistence; only the control's visual treatment changes."
+    },
+    {
+      "id": "UX-4",
+      "surface": "CalendarPage",
+      "severity": "P2",
+      "title": "'Filters' bar is a full-width empty band",
+      "what_is_wrong": "A 40px-tall horizontal container reading only 'Filters' with a funnel icon sits between the page header and the tabs. It is not expanded and shows no active chips, so it consumes vertical space without conveying any state.",
+      "why_it_matters": "On a 900px-tall viewport this bar plus the redundant header eats ~15% of the visible calendar grid, so only 3\u00bd weeks of April fit above the fold. For a page whose entire job is showing a month, every pixel counts.",
+      "proposed_fix": "Collapse the filter entry to a single 'Filters' button adjacent to 'Create Event'. When filters are active, show them as inline chips next to the button ('Calendar: Sales \u00b7 Owner: Me'). Open the filter UI in a popover anchored to the button. Recover the vertical band for calendar grid height.",
+      "functionality_preserved": "The `CalendarFilters` component and its calendar/owner/category inputs stay intact; only the entry point and layout change \u2014 filter state still reads/writes through the same hook."
+    },
+    {
+      "id": "UX-5",
+      "surface": "CalendarPage",
+      "severity": "P2",
+      "title": "Legend is decorative, not interactive",
+      "what_is_wrong": "The three legend items (Intake Appointments, Order Deliveries, Payment Due) are displayed as static swatches with no affordance for clicking. Users cannot temporarily hide one category to de-clutter the grid.",
+      "why_it_matters": "On a busy day (like Apr 13 with three delivery pills) an operations user wants to see only payments or only intake. Today they must open Filters and find the Category control \u2014 two clicks to do what the legend visually invites.",
+      "proposed_fix": "Make each legend item a toggle chip: clicking 'Order Deliveries' dims all blue pills in the grid and its swatch goes outlined. Add a 'Reset' link that appears when any category is hidden. Keyboard: each chip focusable and toggles with Space.",
+      "functionality_preserved": "Toggles write to the same category filter state consumed by `CalendarFilters`; this is a shortcut into an existing filter, not a new data path."
+    },
+    {
+      "id": "UX-6",
+      "surface": "CalendarPage",
+      "severity": "P2",
+      "title": "Empty day cells have no visible click affordance for 'Create Event on this date'",
+      "what_is_wrong": "Clicking the '+Create Event' button opens `EventFormDialog` with an unspecified date. There is no inline hover state on empty cells (Apr 2, 3, 7, 8 etc.) to suggest 'click here to add an event on this date'.",
+      "why_it_matters": "The most natural gesture on a calendar \u2014 'I want something on the 8th, so I click the 8th' \u2014 is unsupported or at least undiscoverable. Users must click Create Event, then hunt for a date picker inside the dialog.",
+      "proposed_fix": "On hover of any cell, show a ghost '+ Add' button in the top-right of the cell and change cursor to pointer. Clicking the cell (or the ghost button) opens `EventFormDialog` with `startDate` prefilled to that cell's date. Keep the global Create Event button for keyboard-first users.",
+      "functionality_preserved": "Opens the existing `EventFormDialog` with the same `calendar.create` mutation \u2014 only the entry point and `startDate` default change; recurrence/participants/reminders fields remain the dialog's responsibility."
+    },
+    {
+      "id": "UX-7",
+      "surface": "CalendarPage",
+      "severity": "P2",
+      "title": "Floating action button in bottom-right duplicates Create Event with no label",
+      "what_is_wrong": "A circular orange button in the bottom-right corner shows an icon only. There is already a full-width orange 'Create Event' button in the header, and the FAB's purpose is not self-evident.",
+      "why_it_matters": "Two unlabeled primary CTAs for the same action is either redundant or misleading \u2014 users may click expecting a different behavior (quick add? command menu?) and get confused.",
+      "proposed_fix": "If the FAB is the command/quick-action launcher, replace its icon with a distinct glyph and give it a tooltip ('Quick actions \u00b7 \u2318K'). If it is Create Event, remove the FAB on this route and rely on the header CTA plus the per-cell affordance from UX-6. Decide and label.",
+      "functionality_preserved": "No router behavior changes \u2014 this is a label/tooltip/routing decision. If the FAB is wired to `EventFormDialog`, the dialog and its tRPC calls are untouched."
+    },
+    {
+      "id": "UX-8",
+      "surface": "CalendarPage",
+      "severity": "P3",
+      "title": "'Back to Dashboard' button is redundant with breadcrumb and sidebar",
+      "what_is_wrong": "Immediately left of the 'Calendar' H1 sits a 'Back to Dashboard' button. The top bar already shows the Home \u2192 Calendar breadcrumb, and the sidebar's Admin \u2192 Calendar highlights the current page.",
+      "why_it_matters": "It's a third navigation affordance pointing at one destination, and it pushes the H1 rightward so the page title no longer aligns with the filter bar below it.",
+      "proposed_fix": "Remove the explicit 'Back to Dashboard' button and rely on the existing breadcrumb. Move the Calendar H1 flush-left and place the Previous/Today/Next cluster, period label, and view switcher as a single right-aligned toolbar.",
+      "functionality_preserved": "Navigation remains available through the top-bar breadcrumb (Home link) and the sidebar Dashboard item; no route is removed."
+    }
+  ],
+  "redesign_sketch": "Header row, flush-left: H1 'Calendar' (24px semibold). Immediately below, a single toolbar row: left side shows '\u2039 Previous  Today  Next \u203a' and the active period 'April 2026' at 18px semibold; right side shows a segmented control [Month | Week | Day | Agenda] and a primary 'Create Event' button (with \u2318N hint). Remove the standalone Back to Dashboard button; breadcrumb handles that. Second row: tabs 'Calendar \u00b7 Invitations 3 \u00b7 Requests 2 \u00b7 Time Off 1' with orange badge on any non-zero count. Third row (compact, 32px): left-aligned clickable legend chips for Intake Appointments / Order Deliveries / Payment Due that double as category toggles; right-aligned 'Filters' button with any active filters rendered as inline chips. Grid: seven columns Sun\u2013Sat with slightly dimmed weekend columns, cells 110px tall minimum, today's cell with a blue left border and filled date badge. Event pills render as '\u25cf Customer \u00b7 S-382419' with a hover tooltip containing full order code, amount, time, and owner. Empty cells show a ghost '+ Add' in the top-right on hover and open EventFormDialog with that date prefilled. Drop the ambiguous bottom-right FAB on this route, or relabel it as a scoped Quick Actions launcher with a tooltip."
+}

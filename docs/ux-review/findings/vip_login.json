@@ -1,0 +1,43 @@
+{
+  "page": "VIPLogin",
+  "route": "/vip-portal/login",
+  "assessment": "The login card is functional but generic and undifferentiated \u2014 it reads like a Tailwind starter template rather than a VIP wholesale portal. The card is vertically centered with heavy whitespace above, the 'VIP Client Portal' title carries no brand or context (no TERP logo, no hemp/THCA framing), and the password field offers no visibility toggle. 'Forgot password?' is styled as plain muted text under the button with no affordance hinting it's a link. The primary action works and the layout is clean, but the page misses an opportunity to signal legitimacy to external buyers landing here from an email.",
+  "notable_strengths": [
+    "Single-column card with clear label \u2192 input \u2192 submit flow, no distracting navigation",
+    "Primary 'Sign In' button is high-contrast terracotta and spans the full form width, making the CTA unambiguous",
+    "Email and Password are the only fields \u2014 zero friction to authenticate"
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "VIPLogin",
+      "severity": "P2",
+      "title": "No brand identity \u2014 page doesn't look like a legitimate TERP portal",
+      "what_is_wrong": "The card header just says 'VIP Client Portal' in black sans-serif with the subtitle 'Sign in to access your account'. There is no TERP logo, no wordmark, and no visual tie to the ERP brand. An external wholesale buyer arriving from a password-reset or invite email has no visual confirmation they're on the real TERP system.",
+      "why_it_matters": "External VIP clients are not internal staff \u2014 they need trust signals to enter credentials. A bare card raises phishing suspicion and undersells a premium 'VIP' tier that the business is positioning.",
+      "proposed_fix": "Add the TERP wordmark/logo above the card (centered, ~40px tall) and rename the card H1 to 'TERP VIP Portal' with the existing subtitle kept underneath. Apply the same warm off-white background treatment but anchor the card with a subtle terracotta top border (4px) matching the Sign In button so the brand color appears twice.",
+      "functionality_preserved": "Does not touch `vipPortal.auth.login` or the email/password/submit DOM \u2014 purely additive header chrome above the form."
+    },
+    {
+      "id": "UX-2",
+      "surface": "VIPLogin",
+      "severity": "P2",
+      "title": "Password field has no show/hide toggle",
+      "what_is_wrong": "The Password input renders as a masked field with no eye-icon affordance to reveal typed characters.",
+      "why_it_matters": "VIP clients often receive long system-generated passwords from support; typos on a masked field cause failed logins, and the baseline flow for 'Forgot password?' is 'contact support' \u2014 a high-friction dead end. Letting the user verify what they typed prevents that round-trip.",
+      "proposed_fix": "Add a right-aligned eye/eye-off icon button inside the password input that toggles `type` between `password` and `text`. Keep default state masked. No change to submit behavior.",
+      "functionality_preserved": "`vipPortal.auth.login` still receives the same password string from the same input element; only the input's `type` attribute toggles client-side."
+    },
+    {
+      "id": "UX-3",
+      "surface": "VIPLogin",
+      "severity": "P3",
+      "title": "'Forgot password?' doesn't read as a link",
+      "what_is_wrong": "The 'Forgot password?' control sits below the Sign In button rendered in muted gray with no underline, no color differentiation, and no icon. It's a button per the DOM, but visually indistinguishable from the 'Sign in to access your account' subtitle above.",
+      "why_it_matters": "Users who need the recovery flow scan past it and either retry guesses or abandon. Given the recovery path is already a soft one (toast telling them to contact support), discoverability is the only lever we have.",
+      "proposed_fix": "Style 'Forgot password?' as an underlined link in the terracotta accent color, and append helper microcopy: 'Forgot password? Contact your account manager.' so the outcome is set before the click.",
+      "functionality_preserved": "Preserves the existing Forgot-password button handler that fires the support-contact toast \u2014 only the label text and CSS change."
+    }
+  ],
+  "redesign_sketch": "Centered card on warm off-white, ~420px wide. Above the card: TERP wordmark logo, 40px tall, centered. Card has a 4px terracotta top border. Inside card: H1 'TERP VIP Portal' (28px, semibold), subtitle 'Sign in to access your wholesale account' (14px, muted). Form: Email label + input (placeholder `you@company.com`), Password label + input with trailing eye-toggle icon. Full-width terracotta 'Sign In' button. Below button, a single line of microcopy: 'Forgot password? Contact your account manager.' where 'Forgot password?' is an underlined terracotta link. Footer line under the card (outside): '\u00a9 TERP \u00b7 Authorized wholesale buyers only'."
+}

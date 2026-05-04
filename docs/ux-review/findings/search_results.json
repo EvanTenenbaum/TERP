@@ -1,0 +1,43 @@
+{
+  "page": "SearchResultsPage",
+  "route": "/search?q=batch",
+  "assessment": "The page returns results and groups them correctly under 'Products (10)', but it squanders vertical space catastrophically. Each result card is ~130px tall to display four short fields (batch code, product line, qty, price), so only 4 hits fit above the fold on a 900px viewport. Worse, the page duplicates the global command palette input ('Search, jump, or run a command\u2026' in the top bar) with a second in-page search box immediately below the H2 \u2014 two inputs, same purpose, no clear authority. The 'Product' pill repeated on every row is visual noise since we're already under a 'Products' heading, and there's no section for Quotes/Orders/Customers even though the baseline promises them. No filters, no sort, no result-type tabs.",
+  "notable_strengths": [
+    "Clear result count in the heading ('Products (10)') sets expectations.",
+    "Each row shows the identifier, descriptive name, quantity, and price \u2014 enough to disambiguate without a click.",
+    "Results for \"batch\" subheading echoes the query, which helps orient after navigation."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "SearchResultsPage",
+      "severity": "P1",
+      "title": "Result cards waste vertical space; density is ~4 rows per viewport",
+      "what_is_wrong": "Each of the ten BATCH-* cards occupies roughly 130px with generous padding and a full line for 'Qty:' and 'Price:' labels. On a standard laptop viewport only BATCH-00001 through BATCH-00004 are fully visible; scanning ten results requires scrolling, and any multi-section result set (Quotes, Orders, Customers, Products) will push non-product sections entirely below the fold.",
+      "why_it_matters": "Global search is a power-user shortcut; slow scanning defeats the purpose of CTRL-K. Users will give up and navigate manually, especially when searching across types.",
+      "proposed_fix": "Collapse each result to a single-line row: `[type badge] BATCH-20260222-00001  \u00b7  Gorgeous Flower \u2014 hawk \u2014 OG Kush  \u00b7  Qty 185.45  \u00b7  $761.32`. Target row height ~44px so 12+ results fit above the fold. Keep the card border only around the section, not per row.",
+      "functionality_preserved": "Preserves `search.global` row-click navigation \u2014 the entire row remains the click target to its surface, and all four fields continue to render; only layout density changes."
+    },
+    {
+      "id": "UX-2",
+      "surface": "SearchResultsPage",
+      "severity": "P1",
+      "title": "Duplicate search inputs create ambiguity about authority",
+      "what_is_wrong": "The top bar shows the command palette input ('Search, jump, or run a command\u2026' with CTRL-K chip), and the page body shows a second input prefilled with 'batch' plus a maroon 'Search' button. Both target the same `search.global` query param, but it's unclear which is canonical or whether editing one syncs the other.",
+      "why_it_matters": "Users type into the wrong field, hit Enter, and don't know why nothing updated (or get bug-042-style stale UI). It also bloats the header of the results page and duplicates the CTRL-K affordance.",
+      "proposed_fix": "Keep the in-page input (it's the one tied to the URL query param and visible on this route) and downgrade the top-bar palette trigger on this route to a button-style 'Jump to\u2026' so the two don't read as twins. Alternatively, remove the redundant 'Search' submit button \u2014 input onChange already updates the query param per bug-042.",
+      "functionality_preserved": "Preserves the `search.global` router binding and the bug-042 query-param sync \u2014 we're only resolving which control owns the URL state on this route, not changing the behavior."
+    },
+    {
+      "id": "UX-3",
+      "surface": "SearchResultsPage",
+      "severity": "P2",
+      "title": "Only Products section renders; no Quotes/Orders/Customers headings or empty-state hints",
+      "what_is_wrong": "The baseline specifies sections for Quotes, Orders, Customers, and Products & Batches with 'empty-state operational guidance when none match.' The rendered page shows only 'Products (10)' with no indication that other result types exist or that they returned zero. The user cannot tell whether 'batch' simply has no Quote/Order/Customer matches or whether those sections aren't implemented.",
+      "why_it_matters": "Silent missing sections erode trust in global search \u2014 users will fall back to per-module search instead of using CTRL-K as their primary navigation.",
+      "proposed_fix": "Always render all four section headers (Quotes, Orders, Customers, Products & Batches) with counts, and when a section is empty show a single muted line: 'No quotes match \"batch\".' Add result-type filter chips above the list ('All \u00b7 Quotes \u00b7 Orders \u00b7 Customers \u00b7 Products') so users can narrow without re-querying.",
+      "functionality_preserved": "Preserves the `search.global` contract which already returns all four result types; we're rendering the empty sections the router already supplies rather than hiding them."
+    }
+  ],
+  "redesign_sketch": "Header: 'Search Results' H1 with muted 'Results for \"batch\" \u00b7 10 matches' caption. Below it, one input (no duplicate submit button) with type-filter chips directly underneath: [All 10] [Quotes 0] [Orders 0] [Customers 0] [Products 10]. Results area is a single bordered panel with sticky section headers ('Products & Batches \u00b7 10') and dense 44px-tall rows: left-aligned type badge, monospace batch code, em-dashed product descriptor, right-aligned Qty and Price columns in a fixed grid. Empty sections collapse to a one-line muted row ('No orders match \"batch\".'). Remove the per-row 'Product' pill (redundant under the section header). Keep top-bar CTRL-K palette but restyle as a compact 'Jump to\u2026' button on this route so it reads as navigation, not search input."
+}

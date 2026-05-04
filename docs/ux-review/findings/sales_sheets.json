@@ -1,0 +1,43 @@
+{
+  "page": "SalesWorkspacePage.sales-sheets",
+  "route": "/sales?tab=sales-sheets",
+  "assessment": "The Sales Catalogues tab sets up a reasonable three-zone layout (draft header, builder canvas, handoff rail) and the keyboard legend in the footer is a nice power-user touch. But the page is dead on arrival: the tab strip visually collides (Sales Catalogues overlaps Live Shopping), the 'Draft ready' chip is showing next to an empty draft with no client, and the conversion actions (Sales Order / Quote / Live) are duplicated verbatim in the right 'Next Step' card and the bottom 'Handoff' bar while the canvas just says 'Select a client to start building a catalogue.' A new user lands here and sees six active-looking CTAs that all go nowhere until they discover the tiny Client combobox at the top.",
+  "notable_strengths": [
+    "Clear gating microcopy (\"Select a client to unlock view and inventory actions\") tells the user what blocks progress.",
+    "Keyboard shortcut legend (Ctrl+S / Ctrl+C / Click / Shift+Click) is visible without opening a help modal.",
+    "Three downstream conversion paths (Sales Order, Quote, Live) are surfaced as first-class outcomes, matching the baseline's multi-workflow handoff model."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "SalesWorkspacePage.sales-sheets",
+      "severity": "P1",
+      "title": "Tab row overlaps: 'Sales Catalogues' collides with 'Live Shopping'",
+      "what_is_wrong": "In the tabs row (Orders / Pick List / Quotes / Returns / Sales Catalogues / Live Shopping / New Order), the 'Sales Catalogues' label visibly runs into 'Live Shopping' \u2014 the glyphs touch, and the active-tab highlight box is clipped around 'Sales Catalogues'. This is the one tab where you're currently standing, so the misalignment is dead-center in the user's field of view.",
+      "why_it_matters": "Users can't cleanly click between Sales Catalogues and Live Shopping, and the clipped active-state makes the page feel broken on first load \u2014 a credibility hit for a wholesale ERP where operators run this surface all day.",
+      "proposed_fix": "Give the tab container a fixed minimum per-tab padding (e.g. 12px horizontal) and let the row scroll horizontally or wrap instead of compressing. Shorten the label to 'Catalogues' (the surface is already scoped to Sales) so the two long labels stop competing. Keep the active-tab pill rendering above any sibling to prevent z-clipping.",
+      "functionality_preserved": "All seven sub-tabs from the baseline (`tab=orders|pick-list|quotes|returns|sales-sheets|live-shopping|create-order`) remain; only the label string and the tab-strip layout change, so routing and `useWorkspaceHomeTelemetry('sales', activeTab)` are untouched."
+    },
+    {
+      "id": "UX-2",
+      "surface": "SalesWorkspacePage.sales-sheets",
+      "severity": "P1",
+      "title": "Conversion actions duplicated between 'Next Step' card and 'Handoff' bar",
+      "what_is_wrong": "The right-side 'Next Step' card exposes \u2192 Sales Order, \u2192 Quote, Live. The bottom 'Handoff' bar exposes Share Link, \u2192 Sales Order, \u2192 Quote, Live. Same three destination buttons, side-by-side, both active-looking even though no client is selected and no lines exist.",
+      "why_it_matters": "Duplication doubles the decision surface and implies the two regions do different things. Worse, all buttons render as enabled while the canvas is empty \u2014 clicking any of them either no-ops or dumps the user into a half-filled document, a classic dead-end for a brand-new rep.",
+      "proposed_fix": "Collapse to one handoff row at the bottom (Share Link \u00b7 \u2192 Sales Order \u00b7 \u2192 Quote \u00b7 Live) and replace the right card with a live checklist ('1. Pick client \u25b8 2. Add SKUs \u25b8 3. Convert'). Disable the three conversion buttons until `clientId` is set and the catalogue has \u22651 line; show a tooltip explaining what's missing. Keep Save Draft enabled once a draft name exists.",
+      "functionality_preserved": "All four handoff actions (`salesSheets.shareLink`, convert-to-order, convert-to-quote, convert-to-live) remain reachable \u2014 this is a layout + disabled-state change, not a removal. The `SalesCatalogueSurface` component and its tRPC calls are unchanged."
+    },
+    {
+      "id": "UX-3",
+      "surface": "SalesWorkspacePage.sales-sheets",
+      "severity": "P2",
+      "title": "'Draft ready' status badge lies about the draft",
+      "what_is_wrong": "Next to the 'Sales Catalogue' pill a green 'Draft ready' chip is shown, but the draft has no name, no client, and no lines \u2014 and the canvas literally says 'Select a client to start building a catalogue.'",
+      "why_it_matters": "A green 'ready' status on an empty draft trains users to ignore status chips everywhere else in TERP, and masks the real blocker (missing client). Reps who trust the chip will try to share/convert and hit errors.",
+      "proposed_fix": "Drive the chip from actual draft state: 'Empty' (gray) \u2192 'Needs client' (amber) \u2192 'Needs lines' (amber) \u2192 'Ready to share' (green). Place it right-aligned in the header row so it reads as a status, not a label.",
+      "functionality_preserved": "The chip is presentational over the existing `salesSheets.*` draft object \u2014 computing its label from fields the router already returns (name, clientId, lineCount) requires no schema or business-rule change."
+    }
+  ],
+  "redesign_sketch": "Header: 'Sales' H1 unchanged. Tab strip gets min-padding + horizontal scroll, and 'Sales Catalogues' shortens to 'Catalogues' so it no longer kisses 'Live Shopping'. Below the tabs, a single draft header row: [\u2190 Orders] [Catalogue \u00b7 draft name input] [Client combobox] ............... [status chip: Empty/Needs client/Needs lines/Ready] [Save Draft] [\u22ef]. Main area becomes two columns: left 70% is the catalogue canvas (empty state shows a 3-step checklist \u2014 Pick client \u2192 Add SKUs \u2192 Convert \u2014 with the first step pulsing), right 30% is a context rail that starts as 'Recent catalogues for this client' once a client is picked (today it's wasted on duplicate CTAs). Bottom dock is the single Handoff bar: Share Link \u00b7 \u2192 Sales Order \u00b7 \u2192 Quote \u00b7 Live \u2014 all four disabled with tooltips until clientId + \u22651 line exist. Keyboard legend stays pinned bottom-right."
+}

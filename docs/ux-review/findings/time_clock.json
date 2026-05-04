@@ -1,0 +1,43 @@
+{
+  "page": "TimeClockPage",
+  "route": "/time-clock",
+  "assessment": "The page is functional but over-uses vertical space for a user who hasn't clocked in yet. The hero 'Ready to start your day?' banner, the 'Not Clocked In' badge, and the Clock In button all repeat the same information, pushing the weekly timesheet and reports below the fold. The four KPI tiles render '0h 0m' with no contextual framing, which looks like a broken dashboard rather than a fresh week. The navigation pattern is solid (status badge, week stepper, Reports grouping), but the layout reads like a landing page instead of a working time tool.",
+  "notable_strengths": [
+    "Clear status communication: the 'Not Clocked In' badge top-right and the green Clock In CTA give an unambiguous entry point.",
+    "Week navigation is well-formed \u2014 prev/next chevrons, a 'This Week' reset, and an explicit date range ('Apr 20 - Apr 26, 2026') remove ambiguity.",
+    "Reports section exposes the group-by control (Day/Week/Employee) inline rather than hiding it in a modal."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "TimeClockPage",
+      "severity": "P1",
+      "title": "Hero 'Ready to start your day?' card triples up with the status badge and wastes the fold",
+      "what_is_wrong": "The full-width card containing 'Ready to start your day? / Click Clock In to begin tracking your hours / Clock In' occupies roughly 140px at the top of the content area, while the 'Not Clocked In' pill in the header and the green Clock In button inside the card communicate the same state. The KPI row, weekly timesheet, and reports all sit lower than necessary as a result.",
+      "why_it_matters": "Employees clock in multiple times per day (start of shift, after breaks). Every extra scroll to see 'did my last punch register, and what's my week total?' compounds. The prompt copy also becomes stale/wrong the moment the user is clocked in.",
+      "proposed_fix": "Collapse the hero into a single compact status bar spanning the top of the content: left side shows status icon + 'Not Clocked In' / 'Clocked In since 8:14 AM' / 'On Break', right side shows the primary action button (Clock In / Clock Out / Start Break / End Break). Remove the separate 'Not Clocked In' header pill, or keep only one of the two. Height target ~64px.",
+      "functionality_preserved": "All four state actions (Clock In, Clock Out, Start Break, End Break from `hourTracking.*`) remain as the primary button, swapping label/color based on live clock status \u2014 identical behavior to today's Clock In button, just in a denser container."
+    },
+    {
+      "id": "UX-2",
+      "surface": "TimeClockPage",
+      "severity": "P2",
+      "title": "KPI tiles render four zeroes with no framing or comparison",
+      "what_is_wrong": "'Regular Hours 0h 0m', 'Overtime Hours 0h 0m' (rendered in amber, implying a warning when the value is literally zero), 'Total Hours 0h 0m', 'Days Worked 0' all display simultaneously with no secondary context such as target hours, prior week, or week-to-date percentage. For a Monday-morning view this looks like a broken or unloaded dashboard.",
+      "why_it_matters": "Managers and employees use this page to gauge pace against a 40h target and to spot overtime before it happens. Four identical zeros give them no information and make the amber overtime color semantically misleading.",
+      "proposed_fix": "Keep the four tiles but add a secondary line under each value: Regular shows '/ 40h target', Overtime shows 'vs last week 0h' and stays neutral gray when value is 0 (only turn amber >0), Total shows a tiny progress bar to 40h, Days Worked shows '/ 5 scheduled'. Keep '0h 0m' as the headline number.",
+      "functionality_preserved": "Hours aggregation continues to come from `hourTracking.*` weekly totals bound to the 'Apr 20 - Apr 26, 2026' range \u2014 only the tile template changes, not the data source or calculation."
+    },
+    {
+      "id": "UX-3",
+      "surface": "TimeClockPage",
+      "severity": "P2",
+      "title": "'Back' button on a top-level nav destination is a dead-end pattern",
+      "what_is_wrong": "A '\u2190 Back' control sits directly above the 'Time Clock' H1, but /time-clock is reached from the sidebar (ADMIN group) or command palette, not from a parent detail page. The button either no-ops, goes to an arbitrary referrer, or drops the user wherever they last were, which for a deep-linked or bookmarked landing is disorienting.",
+      "why_it_matters": "Employees bookmark /time-clock or launch it from the CTRL+K palette. A Back button that sometimes exits the app, sometimes returns to an unrelated screen, erodes trust in the navigation model and clutters the page header.",
+      "proposed_fix": "Replace the 'Back' button with a breadcrumb ('Admin \u203a Time Clock') that mirrors the sidebar grouping, or remove it on this route and reserve the Back affordance for true detail pages (e.g., an employee timesheet drill-in). Keep the icon+title 'Time Clock' heading block unchanged.",
+      "functionality_preserved": "No baseline action is attached to Back in the documented `hourTracking.*` surface; removing it affects chrome only. Sidebar, command palette, and browser back button continue to provide navigation out of the page."
+    }
+  ],
+  "redesign_sketch": "Header row: breadcrumb 'Admin \u203a Time Clock', H1 'Time Clock' with clock icon, subhead 'Track your work hours and manage timesheets'. Directly below, a single compact status strip: left = colored dot + 'Clocked In since 8:14 AM' or 'Not Clocked In'; right = context-aware primary button (Clock In / Clock Out) plus secondary Break toggle. Next, the 4 KPI tiles unchanged in layout but each gains a small secondary line (target, delta vs last week, or progress bar) and overtime color only activates when >0. Below KPIs, Weekly Timesheet card with the existing \u2039 This Week \u203a stepper and 'Apr 20 - Apr 26, 2026' range, empty state reading 'No punches yet this week \u2014 your first Clock In will appear here'. Reports card at the bottom retains the Group by (Day/Week/Employee) dropdown with microcopy 'Manager reports include all team members'. Net result: status + primary action visible in ~64px instead of ~200px, KPIs gain meaning, and the weekly timesheet clears the fold on a 1440\u00d7900 viewport."
+}

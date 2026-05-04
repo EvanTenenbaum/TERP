@@ -1,0 +1,93 @@
+{
+  "page": "ProcurementWorkspacePage",
+  "route": "/purchase-orders",
+  "assessment": "The page delivers the essentials \u2014 a dense PO queue, supplier pivots with counts, and clear primary actions (New Purchase Order, Export CSV) \u2014 but it wastes a full screen of hierarchy before the user reaches the data. 'Buying' as H1 sits above an almost-empty card whose only payload is an 'Expected Today' button; then 'Purchase Orders' appears again as H2 with three count chips; then 'Purchase Orders Queue' appears a third time with those same counts re-written as prose. Meanwhile the Expected Today control is duplicated (once in the command strip, once in the filter bar as 'Expected Today (0)'), the EST. DELI\u2026 column is 100% 'Not set' for every visible row, two column headers are truncated, statuses are rendered as plain text with no color cue, and the critical instruction 'Select a row to see details and actions' is floated as 12px grey copy in dead space to the right of the filters. This is a functional tool undermined by redundant chrome and weak scanability.",
+  "notable_strengths": [
+    "Supplier pivot chips with inline counts (Sierra Nevada Farms 22, Trinity Alps 2, \u2026) make it trivial to scope the queue to a vendor.",
+    "Status summary chips next to the 'Purchase Orders' title give an at-a-glance split of draft / confirmed / receiving without a click.",
+    "Primary workflow entry points (New Purchase Order, Export CSV, Expected Today) are all visible above the fold and never collapse behind a menu."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "ProcurementWorkspacePage",
+      "severity": "P1",
+      "title": "Expected Today control is duplicated and the top copy is misleading",
+      "what_is_wrong": "There are two Expected Today affordances: a solo 'Expected Today' button in the 'Buying' card at the very top, and 'Expected Today (0)' in the filter row beside 'All statuses'. They both toggle the same `expectedToday=1` query param / `initialShowExpectedToday` filter. The top one shows no count; the bottom one correctly shows (0).",
+      "why_it_matters": "Users have to guess whether the two buttons are the same control, and the top one hides the fact that there are zero POs expected today, so clicking it yields an empty surface with no explanation \u2014 a dead end.",
+      "proposed_fix": "Remove the duplicate button slot in the 'Buying' card and keep only the filter-row pill 'Expected Today (0)', which already displays the live count. Reclaim the empty card space for a compact KPI row (draft / confirmed / receiving / expected today) that clicking filters the queue.",
+      "functionality_preserved": "The 'Expected Today' command strip behavior in the baseline (toggles `expectedToday=1` + `initialShowExpectedToday`) is preserved on the filter-row pill, which already fires the same action; only the redundant twin is removed."
+    },
+    {
+      "id": "UX-2",
+      "surface": "ProcurementWorkspacePage",
+      "severity": "P1",
+      "title": "Three duplicate summaries of the same counts stacked above the table",
+      "what_is_wrong": "The counts '1 draft \u00b7 10 confirmed \u00b7 2 receiving' appear (a) as chips next to the 'Purchase Orders' H2, and then (b) again in prose under 'Purchase Orders Queue': '30 visible purchase orders \u00b7 1 draft purchase orders \u00b7 10 confirmed purchase orders \u00b7 2 receiving purchase orders.' The descriptive sentence 'Unified purchase order queue with status, supplier, dates, total, and payment terms at a glance.' is also pure boilerplate.",
+      "why_it_matters": "Roughly 180px of vertical space is burned repeating information the user already has, pushing the actual table below the fold on a 13\" laptop. The 'Purchase Orders Queue' heading is a third title for the same entity.",
+      "proposed_fix": "Collapse to a single title block: keep the 'Purchase Orders' H2 with its count chips, delete the 'Purchase Orders Queue' header + description + restated counts, and let the table sit directly under the filter row.",
+      "functionality_preserved": "PurchaseOrderSurface's queue table and all filters stay untouched \u2014 this is a pure layout deletion of a decorative section, not a functional one."
+    },
+    {
+      "id": "UX-3",
+      "surface": "ProcurementWorkspacePage",
+      "severity": "P1",
+      "title": "EST. DELIVERY column is 100% 'Not set' but still consumes a prime column slot",
+      "what_is_wrong": "Every one of the 13 visible rows shows 'Not set' under 'EST. DELI\u2026' (the header itself is truncated). The column adds no information and pushes TOTAL ($) and PAYMENT TERMS further right.",
+      "why_it_matters": "A column that is empty for every row makes the table look broken and costs ~140px that could surface payment terms or a status badge. It also undermines trust in the `expectedToday` filter \u2014 users see zero dates and wonder if delivery tracking even works.",
+      "proposed_fix": "Keep the column but (a) inline-edit the cell with a muted '+ Set date' button rather than dead 'Not set' text, and (b) when 100% of the visible page is unset, collapse the column to a narrow icon column with a tooltip prompt. Unhide automatically once any row has a date.",
+      "functionality_preserved": "The `estimatedDeliveryDate` field on the PurchaseOrderSurface row stays writable and the `expectedToday` business rule (delivery date \u2264 end-of-day today) continues to read the same field; only the empty-state rendering changes."
+    },
+    {
+      "id": "UX-4",
+      "surface": "ProcurementWorkspacePage",
+      "severity": "P1",
+      "title": "Status values are unstyled text, killing scanability",
+      "what_is_wrong": "The STATUS column renders 'Received', 'Confirmed', 'Sent' as plain grey prose identical in weight to the supplier name next to it. There is no color, badge, or icon differentiating draft/confirmed/sent/received.",
+      "why_it_matters": "The baseline explicitly says 'Queue first, then receiving handoff' \u2014 operators must visually separate the Confirmed batch (to work) from the Received batch (done). Right now the only way to sort them is literally reading each row.",
+      "proposed_fix": "Render status as a colored pill: amber for Draft, blue for Sent, violet for Confirmed, green for Received, grey for Cancelled. Keep the text label; only add background + 12px dot. Apply the same style inside the count chips at the top so the palette stays consistent.",
+      "functionality_preserved": "The underlying status enum from PurchaseOrderSurface and its status-switch action are unchanged; this is a cell renderer change only."
+    },
+    {
+      "id": "UX-5",
+      "surface": "ProcurementWorkspacePage",
+      "severity": "P2",
+      "title": "'Select a row to see details and actions' is hidden as 12px grey copy next to filters",
+      "what_is_wrong": "The critical instruction telling users that the queue is row-selection-driven is floated to the far right of the filter row, in light grey, at body-small size. At first glance it looks like a secondary filter label, not guidance.",
+      "why_it_matters": "New users click rows expecting a drawer and, when nothing visually changes (or when they miss the side panel), they think the row isn't interactive. This directly slows the first PO edit or receive action.",
+      "proposed_fix": "Move this hint into an empty-state panel on the right side of the page (below the filter row) that says 'Select a PO to edit, confirm, split, or receive' with inline icons for each action. When a row is selected, the panel populates with actions; when none is selected, it shows the hint at readable size.",
+      "functionality_preserved": "The row-selection-driven detail panel and the underlying action set (edit, confirm, split, receive, cancel/archive, notes, docs, status switch) remain identical; only the idle-state copy becomes visible and persistent."
+    },
+    {
+      "id": "UX-6",
+      "surface": "ProcurementWorkspacePage",
+      "severity": "P2",
+      "title": "Column headers are truncated to ellipses instead of wrapping or resizing",
+      "what_is_wrong": "'ORDER D\u2026' and 'EST. DELI\u2026' both render with a trailing ellipsis in the header row. Every header also carries a filter icon plus a kebab menu, so the text column gets squeezed first.",
+      "why_it_matters": "Users have to hover to discover what 'ORDER D\u2026' means. In a procurement workflow where 'Order Date' and 'Estimated Delivery' are very different concepts, ambiguous headers cause misreads.",
+      "proposed_fix": "Allow header text to wrap to two lines (min-height 40px) before truncating; move the kebab into the filter popover instead of rendering two icons per header; shorten labels to 'Order date' / 'Est. delivery' in sentence case rather than ALL CAPS to recover width.",
+      "functionality_preserved": "Column filter and per-column menu actions on PurchaseOrderSurface stay reachable \u2014 they are just consolidated into one icon per header instead of two."
+    },
+    {
+      "id": "UX-7",
+      "surface": "ProcurementWorkspacePage",
+      "severity": "P2",
+      "title": "Count chips have broken singular/plural grammar",
+      "what_is_wrong": "The chips beside 'Purchase Orders' read '1 draft purchase orders', '10 confirmed purchase orders', '2 receiving purchase orders'. The queue description repeats '1 draft purchase orders'.",
+      "why_it_matters": "Small, but on a finance-adjacent tool, broken pluralization looks unprofessional and chips away at trust \u2014 especially when these same numbers drive downstream decisions.",
+      "proposed_fix": "Pluralize via `count === 1 ? 'order' : 'orders'`. Also drop the word 'purchase' inside chips that already sit next to a 'Purchase Orders' H2 \u2014 '1 draft', '10 confirmed', '2 receiving' is cleaner and saves horizontal space.",
+      "functionality_preserved": "Counts still bind to the same aggregate from PurchaseOrderSurface; only the label template changes."
+    },
+    {
+      "id": "UX-8",
+      "surface": "ProcurementWorkspacePage",
+      "severity": "P2",
+      "title": "'QUEUE FIRST, THEN RECEIVING HANDOFF' tagline is jargon with no call to action",
+      "what_is_wrong": "Directly under the 'Purchase Orders' title sits the all-caps micro-line 'QUEUE FIRST, THEN RECEIVING HANDOFF'. It describes the page's mental model to the engineer who built it, not the user who is about to click 'New Purchase Order'.",
+      "why_it_matters": "It occupies prime real estate above the filter row but tells the user nothing actionable, and its all-caps treatment visually competes with the title.",
+      "proposed_fix": "Replace with a one-line, lower-case helper: 'Queue draft and confirmed POs here. Click Receive on any row to open receiving.' Remove the all-caps styling so it reads as a subtitle, not a section flag.",
+      "functionality_preserved": "The receiving auto-route business rule (`/inventory?tab=receiving&draftId=\u2026`) is unchanged; copy merely describes it accurately."
+    }
+  ],
+  "redesign_sketch": "Single-column workspace. Top band: breadcrumb + 'Buying' H1 removed in favor of a single H1 'Purchase orders' with a subtitle helper 'Queue draft and confirmed POs. Click Receive on any row to hand off.' Immediately under the H1, a KPI strip of four clickable tiles \u2014 Draft (1), Confirmed (10), Receiving (2), Expected today (0) \u2014 replacing both the old top 'Expected Today' button AND the duplicate filter pill; clicking a tile applies the filter. Right side of that row: 'New Purchase Order' (primary) and 'Export CSV' (secondary). Second band: supplier pivot chips (unchanged) on one wrap row. Third band: filter row \u2014 search, status dropdown, date range; the 'Select a PO to edit, confirm, split, or receive' hint moves OUT of this row and INTO a persistent right-rail detail panel. Main body: full-width queue table, columns in order \u2014 PO #, Supplier, Status (colored pill), Order date, Est. delivery (inline '+ Set date' instead of 'Not set'), Total, Payment terms, with wrapping sentence-case headers and a single combined filter/menu icon per header. Right rail (320px, collapsible): when no row selected, shows action legend (Edit, Confirm, Split, Receive, Cancel, Notes, Attach); when a row is selected, shows that PO's meta + the same actions as buttons. All existing PurchaseOrderSurface behaviors (create, edit, confirm, split, receive-routes-to-inventory, cancel, notes, docs, status switch, Expected Today filter) remain wired to the same trpc calls \u2014 only chrome, hierarchy, and cell rendering change."
+}

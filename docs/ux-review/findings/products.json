@@ -1,0 +1,43 @@
+{
+  "page": "ProductsPage",
+  "route": "/products",
+  "assessment": "This is a functional but under-designed reference catalogue. The table renders strain name, a color-coded type badge, and description in a clear 3-column layout with an obvious search and a single prominent 'Create Strain' CTA. But for an ERP 'Products & Strains' screen, this page shockingly under-delivers: there is no column for product count, SKU count, stock/availability, last-updated, or any numeric context; descriptions are lorem-ipsum filler eating 50% of the horizontal space; there is no filter by Type (Indica/Sativa/Hybrid) despite the badge being the second column; and each row has no affordance for the 'edit strain' action promised by the baseline. Users browsing to pick a strain for an order get zero operational signal from this page.",
+  "notable_strengths": [
+    "Clear H2 + subtitle pattern ('Products & Strains' / 'Manage strains and product varieties') with a single, unambiguous primary action.",
+    "Color-coded Type badges (Hybrid/Indica/Sativa) give instant visual categorization while scanning.",
+    "Search input is large, prominent, and sits directly above the table \u2014 matches `useTableUrlState` URL-state behavior."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "ProductsPage",
+      "severity": "P1",
+      "title": "Row has no visible edit affordance or row action",
+      "what_is_wrong": "The baseline lists 'edit strain' as a feature, but rows (Apple Fritter, Biscotti, Blue Dream, etc.) show no pencil icon, kebab menu, hover action, or clickable name. There's no way to discover how to edit a strain from this table.",
+      "why_it_matters": "Admins maintaining the catalogue hit a dead-end \u2014 the only visible write action is 'Create Strain', so editing an existing strain is undiscoverable and requires guessing (click the row? the name?).",
+      "proposed_fix": "Add a trailing Actions column with a kebab menu per row ('Edit strain', 'View products', 'Archive') and make the strain name a clickable link that opens the same edit dialog. Show the kebab at low opacity by default, full opacity on row hover.",
+      "functionality_preserved": "Uses the existing `strains.update` tRPC mutation and the edit strain dialog from the baseline \u2014 this is purely surfacing an existing feature, no behavior change."
+    },
+    {
+      "id": "UX-2",
+      "surface": "ProductsPage",
+      "severity": "P1",
+      "title": "No Type filter despite Type being a first-class column",
+      "what_is_wrong": "Type (Indica/Sativa/Hybrid) is rendered as a badge column but the toolbar offers only a free-text search. There is no chip filter, segmented control, or dropdown to narrow by category.",
+      "why_it_matters": "A catalogue of dozens of strains is the exact case where category filtering matters most; users currently have to scroll and visually scan badges. This slows every 'find me all Indicas' task by well over 30%.",
+      "proposed_fix": "Add a segmented filter to the right of the search input: 'All | Indica | Sativa | Hybrid', persisted to URL state alongside the existing search param.",
+      "functionality_preserved": "Extends the existing `useTableUrlState`-driven search by adding a `type` query param consumed by `strains.list`; the search input and its URL-state behavior are untouched."
+    },
+    {
+      "id": "UX-3",
+      "surface": "ProductsPage",
+      "severity": "P2",
+      "title": "Table carries no operational signal \u2014 just name, badge, and filler description",
+      "what_is_wrong": "Three columns: Strain Name, Type, Description. Description is the widest column and is pure lorem-ipsum on staging. There is no product/SKU count, no 'last updated', no indicator of whether the strain is in active use.",
+      "why_it_matters": "On a wholesale ERP, a catalogue page that can't tell you how many SKUs map to a strain \u2014 or which strains are orphaned \u2014 is decorative rather than operational. Admins can't triage stale entries.",
+      "proposed_fix": "Replace the Description column width with two new numeric columns from `productCatalogue.*`: '# Products' (right-aligned) and 'Last updated' (relative time). Truncate Description to a single line at ~40ch with a tooltip for the full text.",
+      "functionality_preserved": "Description remains visible (truncated with tooltip) and the new columns are read-only projections over existing `products.*` / `productCatalogue.*` routers \u2014 no schema or mutation changes."
+    }
+  ],
+  "redesign_sketch": "Header: H1 'Products & Strains' with subtitle unchanged, 'Create Strain' stays top-right. Toolbar row: left \u2014 search input (unchanged width); right \u2014 segmented Type filter [All | Indica | Sativa | Hybrid], then a small 'Refresh' icon button. Table columns: Strain Name (clickable, opens edit dialog) | Type (badge) | Products (right-aligned count, links to filtered products view) | Description (single-line truncate, tooltip on hover) | Last updated (relative) | \u22ef kebab (Edit, View products, Archive). Row hover reveals kebab at full opacity and highlights the row. Empty state inside the table when search returns nothing: 'No strains match \"{query}\" \u2014 Clear search or Create strain.' All URL state continues flowing through `useTableUrlState`."
+}

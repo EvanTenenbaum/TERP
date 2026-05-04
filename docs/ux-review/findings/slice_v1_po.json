@@ -1,0 +1,43 @@
+{
+  "page": "PurchaseOrdersSlicePage",
+  "route": "/slice-v1-lab/purchase-orders",
+  "assessment": "The page presents a clear, readable list of POs with a sensible column set (PO / Supplier / Status / Order Date / Expected / Total), but the action bar is a flat row of six disabled-looking buttons that carry equal visual weight regardless of selection state, and the 'Start Receiving' CTA \u2014 arguably the point of this queue \u2014 is rendered in the same muted style as Activity Log. The EXPECTED column is 100% dashes, Total lacks alignment discipline at the thousands place (e.g. $6054.00 vs $1000.00 formatting inconsistency), and Status sorting is nonexistent so RECEIVED POs dominate the top of a queue whose stated purpose is to 'start receiving.' The helper text 'Select a purchase order row to inspect detail context and start receiving' is doing work that the UI itself should do via hierarchy.",
+  "notable_strengths": [
+    "Clear breadcrumb-style subtitle (Purchase Order \u2192 Receiving \u2192 Received) orients users to the three-tab workflow.",
+    "Status pills are color-coded and legible (RECEIVED green, CONFIRMED darker green, SENT blue).",
+    "Density toggle ('Comfortable') and 'Columns' control are surfaced prominently for power users."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "PurchaseOrdersSlicePage",
+      "severity": "P1",
+      "title": "Primary action 'Start Receiving' is visually indistinguishable from secondary actions and gives no feedback about selection",
+      "what_is_wrong": "The action row renders Create PO, Place Order, Place Order (Bulk), Start Receiving, and Activity Log at identical weight. 'Start Receiving' appears faintly highlighted but reads as disabled, and the '0 selected / Clear' counter sits far right, disconnected from the button that consumes the selection. Supporting copy 'Select a purchase order row to inspect detail context and start receiving' is required to explain the state.",
+      "why_it_matters": "Receiving is the core daily workflow this queue feeds. Users cannot tell at a glance which action is primary, whether Start Receiving is enabled, or how many rows they've selected \u2014 slowing the highest-frequency task on the page.",
+      "proposed_fix": "Promote 'Start Receiving' to a filled primary button (same brown as Create PO or a distinct accent), and make it explicitly disabled with a tooltip ('Select one or more SENT/CONFIRMED POs') when 0 selected. Move the '0 selected' counter directly adjacent to it (e.g. 'Start Receiving (3)'). Group Create PO / Place Order / Place Order (Bulk) as a left cluster, and right-align Activity Log / Columns as utilities.",
+      "functionality_preserved": "Retains the Create PO, Place Order, Place Order (Bulk), Start Receiving, Activity Log, and Clear buttons from the runtime button list \u2014 only their styling, grouping, and disabled-state copy change; all click handlers and tRPC calls remain wired."
+    },
+    {
+      "id": "UX-2",
+      "surface": "PurchaseOrdersSlicePage",
+      "severity": "P1",
+      "title": "Default sort buries actionable POs under completed ones",
+      "what_is_wrong": "The list is sorted newest-first by PO number, so the viewport is dominated by RECEIVED rows (11 of 16 visible). The single SENT row (PO-2026-0019) and four CONFIRMED rows \u2014 the only ones that can actually be received \u2014 are scattered between finished work.",
+      "why_it_matters": "A user opening this queue to 'start receiving' must visually filter out completed rows every time. On a full-screen list this is ~30s of scanning per session and invites selecting an already-received PO.",
+      "proposed_fix": "Default-sort by status priority (SENT \u2192 CONFIRMED \u2192 RECEIVED), then by order date desc within each group. Keep the current 'All Statuses' filter dropdown; additionally default it to 'Actionable' (SENT + CONFIRMED) with a one-click 'Show received' toggle. Status column should be sortable on click.",
+      "functionality_preserved": "The 'All Statuses' filter button in the runtime button list is retained and its options unchanged; only the default value and row ordering heuristic change. Data source and status taxonomy are untouched."
+    },
+    {
+      "id": "UX-3",
+      "surface": "PurchaseOrdersSlicePage",
+      "severity": "P2",
+      "title": "EXPECTED column is entirely empty and TOTAL formatting is inconsistent",
+      "what_is_wrong": "Every row in EXPECTED shows '-'. TOTAL mixes $50.00, $500.00, $1000.00, $6054.00 with no thousands separators, so $6054.00 and $1000.00 don't visually align with $500.00 at the decimal \u2014 scanning for large orders is harder than necessary.",
+      "why_it_matters": "A dead column wastes ~15% of horizontal real estate and trains users to ignore it. Non-tabular currency formatting defeats the purpose of right-alignment in a financial ERP list.",
+      "proposed_fix": "If 'Expected' (expected delivery date) is genuinely empty across suppliers, hide the column by default and expose it via the existing 'Columns' chooser. Format TOTAL as '$6,054.00' with thousands separators and a tabular-figure font so decimals stack.",
+      "functionality_preserved": "The 'Columns' button already exists in the runtime button list; this fix routes the Expected column through that existing chooser rather than removing it. TOTAL values and underlying tRPC fields are unchanged \u2014 only the client-side Intl.NumberFormat call changes."
+    }
+  ],
+  "redesign_sketch": "Keep the H1 'Purchase Orders' and the three-step subtitle. Collapse the toolbar into two rows: row 1 = search (wider) + status filter (default 'Actionable: SENT + CONFIRMED') + density + columns; row 2 = left cluster [Create PO (primary brown), Place Order, Place Order (Bulk)] \u00b7 right cluster [Activity Log], with a contextual action bar that slides in above the table when rows are selected showing 'N selected \u00b7 Start Receiving (primary) \u00b7 Clear'. Table default-sorts SENT first, then CONFIRMED, then RECEIVED; Status column header shows a sort caret. Hide the empty EXPECTED column behind Columns; right-align TOTAL with tabular figures and comma separators. Replace the 'Select a purchase order row\u2026' helper line with an empty-contextual-bar state that only appears when Start Receiving is the relevant next step."
+}

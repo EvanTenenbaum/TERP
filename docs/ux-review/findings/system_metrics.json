@@ -1,0 +1,43 @@
+{
+  "page": "SystemMetricsPage",
+  "route": "/admin/metrics",
+  "assessment": "The page delivers the core monitoring data in scannable cards, but it reads like a raw dump of `monitoring.*` fields rather than a health dashboard. There is no overall status verdict, no thresholds/color-coding, no timestamp for when the metrics were captured, and no indication that the data refreshes. The baseline promises event-loop lag but it is not surfaced anywhere visible. Disk Used is already at 70% yet rendered in the same neutral black as Uptime, so the one number that actually matters gets no visual weight.",
+  "notable_strengths": [
+    "Clear card grid with label + one-line description + big value is easy to scan.",
+    "Back to Dashboard affordance at the top gives an obvious exit from this admin detour.",
+    "Grouping CPU Usage into its own titled panel separates cumulative counters from point-in-time gauges."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "SystemMetricsPage",
+      "severity": "P1",
+      "title": "No overall health verdict or threshold coloring",
+      "what_is_wrong": "Every metric card uses the same neutral typography. Disk Used at 65.0 GB (70%) looks identical in weight/color to Uptime at 1h 43m 19s, and there is no summary banner telling the admin whether the instance is Healthy/Degraded/Critical.",
+      "why_it_matters": "The page exists so an on-call admin can answer 'is TERP OK right now?' in two seconds. Without thresholds or a rollup, they must mentally evaluate eight numbers and remember what 'good' looks like for each.",
+      "proposed_fix": "Add a status pill next to the H1 ('Healthy' green / 'Degraded' amber / 'Critical' red) derived from the same `monitoring.*` payload, and color the value text on Disk Used, Heap Used/Total ratio, and event-loop lag amber \u226570% and red \u226590%. Keep the numeric value and label unchanged.",
+      "functionality_preserved": "Consumes the existing `monitoring.*` tRPC response; only the presentation layer adds derived status \u2014 no router or field is removed."
+    },
+    {
+      "id": "UX-2",
+      "surface": "SystemMetricsPage",
+      "severity": "P2",
+      "title": "No 'as of' timestamp or refresh control",
+      "what_is_wrong": "The subtitle says 'Runtime health and resource usage for the current TERP instance' but nothing tells the user when these numbers were sampled or how to refresh. Values like Uptime '1h 43m 19s' are stale the moment the page renders.",
+      "why_it_matters": "Admins will reasonably doubt whether they are looking at live data during an incident, and will resort to hard-reloading the browser to be sure.",
+      "proposed_fix": "Add a small right-aligned 'Updated Xs ago \u00b7 Refresh' control under the H1, wired to re-invoke `monitoring.*` on click and auto-poll every 15s. Show the timestamp in the user's locale on hover.",
+      "functionality_preserved": "Uses the existing `monitoring.*` query; auto-poll is a client-side refetch, does not alter the router contract."
+    },
+    {
+      "id": "UX-3",
+      "surface": "SystemMetricsPage",
+      "severity": "P2",
+      "title": "Event-loop lag promised by baseline is not visible",
+      "what_is_wrong": "Baseline lists 'event loop lag' as a first-class purpose of this page, but the rendered cards only show Uptime, Heap Used/Total, RSS, Disk Used/Free/Status, and CPU User/System. There is no event-loop lag card on screen.",
+      "why_it_matters": "Event-loop lag is the single best 'is the Node process healthy' signal; omitting it defeats the page's stated purpose and forces admins to infer from CPU counters.",
+      "proposed_fix": "Add an 'Event Loop Lag' card to the top row (next to Heap/RSS) showing current ms with the same label/description/value pattern, sourced from the existing `monitoring.*` lag field.",
+      "functionality_preserved": "Surfaces an existing `monitoring.*` field already guaranteed by the baseline; adds a card rather than touching data or routing."
+    }
+  ],
+  "redesign_sketch": "Header row: H1 'System Metrics' with a status pill ('Healthy' / 'Degraded' / 'Critical') inline, subtitle unchanged, and a right-aligned 'Updated 4s ago \u00b7 Refresh' control. Below it, a 4-column card grid in three logical bands: (1) Process \u2014 Uptime, Event Loop Lag, Heap Used (of Total, with % bar), RSS; (2) Disk \u2014 Disk Used (with % bar), Disk Free, Disk Status, of Total; (3) CPU Usage panel retained as today with User/System counters side by side plus a tiny 'cumulative since boot' footnote. Threshold coloring applied to the value text on Heap%, Disk%, and Lag. Back to Dashboard link stays at the top-left. No functionality removed; every card binds to an existing `monitoring.*` field."
+}

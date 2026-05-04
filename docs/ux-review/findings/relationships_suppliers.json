@@ -1,0 +1,43 @@
+{
+  "page": "RelationshipsWorkspacePage.suppliers",
+  "route": "/relationships?tab=suppliers",
+  "assessment": "The Suppliers tab presents a clean, scannable directory with a consistent row pattern, but the page squanders most of its horizontal real estate on near-empty columns. Every supplier shows identical 'Seller / Supplier' chips, $0.00 value, and 0 orders, so the table reads as data-less noise rather than a useful directory. The header stats ('Total: 18, Active: 18, Value: $0.00') echo the same emptiness, and there is no filter, sort control, or segmentation to help an operator find who actually matters. Search and Add Supplier placement are fine; the problem is hierarchy and signal density.",
+  "notable_strengths": [
+    "Clear Clients/Suppliers tab toggle with the active state visible and a persistent Add Supplier CTA in the upper right.",
+    "Row layout cleanly pairs display name with SUPV#### ID, making lookup by ID or name both viable.",
+    "Header summary band (Total/Active/Value) is a good pattern to keep \u2014 it just needs better metrics."
+  ],
+  "findings": [
+    {
+      "id": "UX-1",
+      "surface": "RelationshipsWorkspacePage.suppliers",
+      "severity": "P2",
+      "title": "Relationship column is dead weight \u2014 every row shows 'Seller / Supplier'",
+      "what_is_wrong": "The Relationship column renders two chips ('Seller' and 'Supplier') on every single visible row, consuming ~20% of table width with zero differentiating information.",
+      "why_it_matters": "On a list whose whole purpose is differentiating suppliers, the widest non-name column carries no signal, pushing useful fields (Contact, Value, Orders) into a narrower strip and making the page feel empty.",
+      "proposed_fix": "Collapse Relationship into a compact single chip next to the supplier name (e.g., 'Seller+Supplier' or a two-letter pill 'S\u00b7S'), and reclaim the freed column for a Last Order Date or Status field. Keep the chip clickable as a filter affordance.",
+      "functionality_preserved": "VendorsWorkSurface still reflects the `isSeller=true` client flag and any supplier role \u2014 the chip stays, it is just relocated, so no data or filter capability is removed."
+    },
+    {
+      "id": "UX-2",
+      "surface": "RelationshipsWorkspacePage.suppliers",
+      "severity": "P2",
+      "title": "Header stats broadcast '$0.00' across an 18-supplier book with no context",
+      "what_is_wrong": "The summary strip reads 'Total: 18  Active: 18  Value: $0.00' while every row also shows $0.00 value and 0 orders. The 'Saved' badge sits next to these metrics as if they were an editable form state.",
+      "why_it_matters": "An operator opening Suppliers sees a book that looks broken or unused. There is no hint whether Value means lifetime PO spend, open PO balance, or this-period purchases, and the 'Saved' chip is misleading here (this is a read-only directory).",
+      "proposed_fix": "Relabel stats to 'Suppliers: 18 \u00b7 Active: 18 \u00b7 PO spend (YTD): $0' with a tooltip defining the metric, and drop the 'Saved' chip on this read-only tab (keep it on editable surfaces). Add a small timeframe selector (YTD / 30d / All-time) driving the Value column and the header total together.",
+      "functionality_preserved": "VendorsWorkSurface continues to aggregate supplier totals from the same client/PO source; only the label, scope selector, and Saved badge visibility change."
+    },
+    {
+      "id": "UX-3",
+      "surface": "RelationshipsWorkspacePage.suppliers",
+      "severity": "P2",
+      "title": "No filter, segment, or sort beyond column headers on an all-equal list",
+      "what_is_wrong": "The toolbar has only a search input and a refresh icon. With every row at $0 / 0 orders, there is no way to segment 'suppliers I actually buy from' vs. dormant or archived accounts, and no status column exists to tell them apart.",
+      "why_it_matters": "Buyers will grow past 18 suppliers quickly; without 'Active in last 90d', 'Has open PO', or tag filters, this page becomes a scroll-and-guess list \u2014 the same problem Clients will eventually inherit.",
+      "proposed_fix": "Add a segmented filter row under the tabs: 'All \u00b7 Active \u00b7 Has open PO \u00b7 Dormant \u00b7 Archived', plus a simple tag/region multi-select. Default to 'Active'. Persist the selection per user.",
+      "functionality_preserved": "VendorsWorkSurface query already reads `isSeller=true` clients; the filter layer is additive (client-side or a new `status` param) and does not remove the existing full-list view, which remains accessible via 'All'."
+    }
+  ],
+  "redesign_sketch": "Keep the H1 'Relationships' with Clients/Suppliers pill tabs. Replace the current stats strip with a left-aligned metric row: 'Suppliers 18 \u00b7 Active 18 \u00b7 Open POs 0 \u00b7 PO spend YTD $0' and a right-aligned timeframe selector; drop the 'Saved' chip on this read-only tab. Below it, a filter bar: segmented control (All / Active / Has open PO / Dormant / Archived) on the left, search + tag multi-select in the middle, Refresh and Add Supplier on the right. Table columns become: Supplier (name + SUPV####, with a tiny 'Seller+Supplier' chip inline), Contact (email + phone), Tags/Region, Last PO (date), Open POs (#), PO spend (scoped by header timeframe), with a chevron to the profile. Empty-state microcopy for zero-activity suppliers: 'No POs yet \u2014 Create PO'."
+}
