@@ -540,6 +540,14 @@ function Router() {
                   component={withErrorBoundary(ClientLedgerPage)}
                 />
                 <Route
+                  path="/settings/users"
+                  component={RedirectWithTab(
+                    "/settings/users",
+                    "/settings",
+                    "users"
+                  )}
+                />
+                <Route
                   path="/users"
                   component={RedirectWithTab("/users", "/settings", "users")}
                 />

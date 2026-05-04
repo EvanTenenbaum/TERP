@@ -142,6 +142,11 @@ describe("TER-859 dead route redirects", () => {
   });
 
   describe("new admin/calendar/product aliases", () => {
+    it("redirects /settings/users to the users settings tab", () => {
+      const destination = buildRedirectWithTab("/settings", "users");
+      expect(destination).toBe("/settings?tab=users");
+    });
+
     it("redirects /admin/users to the users settings tab", () => {
       const destination = buildRedirectWithTab("/settings", "users");
       expect(destination).toBe("/settings?tab=users");
